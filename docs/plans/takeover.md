@@ -17,6 +17,16 @@ section current. Any coding agent picking the work up starts here.
 - **Upstream courtesy.** The two critical installer fixes (phase 0) go
   upstream as two separate pull requests, in upstream's style, before the
   fork diverges.
+- **Identity.** The fork's name everywhere (copyright, the exe's
+  `CompanyName`, signing roles) is the GitHub handle `domoarigatomrburato`;
+  upstream's copyright stays beside it.
+- **Compatibility feed on GitHub Pages.** The workflow already builds and
+  deploys the searchable page; `compatibility.json` is published beside it
+  and the client reads it from
+  `https://domoarigatomrburato.github.io/DLSS5-Autopilot/compatibility.json`.
+  No bot commits on any branch. The build reads this repository's issues and,
+  read-only, upstream's, so results shared by upstream's users keep counting;
+  a failed read fails the run and Pages keeps the previous file.
 - **Runtime stays standard library only.** The shipped exe carries Python,
   tkinter and certifi, nothing else. Development tools are welcome, pinned
   in `uv.lock`.
@@ -49,6 +59,8 @@ section current. Any coding agent picking the work up starts here.
 Until the pytest migration, `test_all.py` needs a 64-bit PE fixture and
 downloads real components (about 700 MB) into a cache under `HOME`. Keep
 both out of the repository and point the suite at them:
+
+Python 3.12 comes from `uv python install 3.12` where the system has none.
 
 ```
 python3.12 -I -c "import sys; sys.path.insert(0, '_tools'); import fake_pe; open('<lab>/fake-host64.exe', 'wb').write(fake_pe.dll('1.0.0'))"
@@ -90,8 +102,8 @@ whole suite should run; that has not been checked yet.
       keep the original copyright and add ours.
 - [ ] SECURITY.md: private advisories on this repository only.
 - [ ] Compatibility results stop committing to `main` (87% of upstream's
-      history is that bot): publish `compatibility.json` to a `data` branch
-      or as a release asset, read by the client from there.
+      history is that bot): `compatibility.json` is published with the
+      Pages site, read by the client from there (see Decisions).
 - [ ] Release workflow: pinned PyInstaller and certifi, actions by SHA,
       signing off until this fork has its own SignPath project.
 
