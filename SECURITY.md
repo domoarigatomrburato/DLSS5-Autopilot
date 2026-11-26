@@ -1,8 +1,7 @@
 # Reporting a security problem
 
-Mail **ismeturkk@gmail.com** with "DLSS5-Autopilot" in the subject, or open
-a [private advisory](../../security/advisories/new). Please do not put a
-working exploit in a public issue.
+Open a [private advisory](../../security/advisories/new) on this repository.
+Please do not put a working exploit in a public issue.
 
 What is worth reporting, in the order it matters here:
 

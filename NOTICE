@@ -1,6 +1,10 @@
 DLSS 5 Autopilot
 ================
 
+This is a fork of Kizzuwatnaa/DLSS5-Autopilot
+(https://github.com/Kizzuwatnaa/DLSS5-Autopilot), used under the MIT licence.
+The original copyright notice is kept in LICENSE, with this fork's beside it.
+
 The MIT licence in LICENSE covers only this project's own source code. The tool
 downloads third-party components at run time; those remain under their own
 licences. In particular the DLSS 5 neural-rendering add-on and the NVIDIA NGX
