@@ -44,3 +44,7 @@ container with Xvfb, as the tracker's "Running the current suite before
 phase 3" describes. `python test_reshade_ini.py` and
 `python -m unittest test_scan` are safe anywhere; `python _tools/verdict_check.py`
 replays the report corpus without windows.
+
+## Git
+
+After cloning, run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
