@@ -41,10 +41,15 @@ section current. Any coding agent picking the work up starts here.
 - **Runtime stays standard library only.** The shipped exe carries Python,
   tkinter and certifi, nothing else. Development tools are welcome, pinned
   in `uv.lock`.
-- **Tests move to pytest.** `test_all.py` is split by module into
-  `tests/`; checks that read source text (`src_of`) are rewritten as
-  behaviour tests or dropped. Unit tests run offline; tests that need the
-  network or Windows are marked and run where those exist.
+- **Tests are written fresh, at triage.** The inherited `test_all.py`
+  (about 2,300 checks over 129 sections that share state) is deleted, not
+  ported: it pins how the code works, and the code is being rewritten. When
+  phase 4 triages a module, its pytest tests come first and describe what
+  it does for the user; then it is kept, repaired or rewritten behind them.
+  A module not triaged yet has no tests. The old checks stay in git history
+  as a list of behaviours to look up (`git show 3d8c276:test_all.py`).
+  Unit tests run offline and open no window; tests that need the network
+  or Windows are marked and run where those exist.
 - **Gates mirror the IDP Quality Gates model**, translated to Python:
   formatter and linter with autofix, a strict type checker, dead code,
   import layering and cycles, complexity, tests with a coverage floor.
@@ -78,54 +83,6 @@ section current. Any coding agent picking the work up starts here.
 | Complexity | ruff `C901`, `PLR0912`, `PLR0915` | everywhere |
 | Tests and coverage | pytest, pytest-cov | failures; coverage floor that only rises |
 | CI | Later: GitHub Actions on push and pull request; the platform-neutral checks (format, lint, types, dead code, imports) on Ubuntu, the tests on Windows, the only platform the tool runs on; actions pinned by SHA; Dependabot for actions and uv. Until then the gate runs locally | required checks, once the tree is clean |
-
-## Running the current suite before phase 3
-
-Until the pytest migration, `test_all.py` needs a 64-bit PE fixture and
-downloads real components (about 700 MB) into a cache under `HOME`. Keep
-both out of the repository and point the suite at them:
-
-Use Python 3.12.11 (`uv python install 3.12.11`): it is the last uv build
-with Tk 8.6, the Tk the Windows build ships; later builds carry Tk 9.0, which
-segfaults on macOS (`Tk_MacOSXGetTkWindow`) when a test updates a window.
-
-```
-python3.12 -I -c "import sys; sys.path.insert(0, '_tools'); import fake_pe; open('<lab>/fake-host64.exe', 'wb').write(fake_pe.dll('1.0.0'))"
-env HOME=<lab>/home DLSS5_TEST_X64=<lab>/fake-host64.exe python3.12 test_all.py > <lab>/run.log 2>&1
-```
-
-On macOS it takes about 2.5 minutes and stops in section 31 (it needs
-`C:\Windows\System32\where.exe`). After the phase 0 fixes the 40 sections
-before that give 728 PASS and 24 FAIL. All 24 are Windows-only APIs
-(`winreg`, `ctypes.WINFUNCTYPE`, Windows paths): compare the sorted
-`  FAIL  ` lines with a baseline run, never the exit code. On Windows the
-whole suite should run; that has not been checked yet.
-`test_reshade_ini.py` and `_tools/verdict_check.py` open no window and run
-anywhere; `test_scan.py` creates an invisible Tk window, so it runs in the
-container too.
-
-The lab scripts that rebuild this (export a revision, wrap it, run it
-headless, compare check titles) live outside the repository, next to it.
-
-The suite opens real Tk windows, which take the focus on a desktop. On a
-developer's machine run it headless in a Linux container (Docker, or
-`colima` on macOS) with Tk drawing into Xvfb:
-
-```
-FROM python:3.12.11-bookworm
-RUN apt-get update && apt-get install -y --no-install-recommends xvfb xauth && rm -rf /var/lib/apt/lists/*
-WORKDIR /src
-```
-
-```
-docker run --rm -v "$PWD":/src -v <lab>/home:/cache -v <lab>:/lab -e HOME=/cache \
-  -e DLSS5_TEST_X64=/lab/fake-host64.exe dlss5-tests xvfb-run -a python test_all.py
-```
-
-The suite still stops at the first Windows-only section there. To see every
-section, run a copy rewritten so each top-level statement catches its own
-exception and prints it as a `FAIL` line; compare base and change the same
-way.
 
 ## Phases
 
@@ -193,46 +150,45 @@ complexity limits.
 - [x] `AGENTS.md` (and a `CLAUDE.md` that points to it): layout, the gate
       command, when each check is needed, autofix first.
 
-### 3. Tests
+### 3. Test scaffold
 
-- [ ] pytest scaffold, fixtures for a game folder and an isolated HOME and
-      cache; the 64-bit PE fixture built by `_tools/fake_pe.py`, never a
-      file on someone's disk.
+- [ ] The inherited top-level tests deleted (`test_all.py`,
+      `test_clean_machine.py`, `test_reshade_ini.py`, `test_scan.py`; see
+      Decisions).
+- [ ] pytest configured in `pyproject.toml` and run by `check`: strict
+      markers (`windows`, `network`), Windows-only tests skipped elsewhere,
+      the `network` ones only on request.
 - [ ] Every test has a timeout (`pytest-timeout`): a low default for all,
       raised only where a test needs it, with the reason beside it. A hung
       test fails with its stack instead of stopping the suite.
-- [ ] `test_all.py` sections moved to `tests/` module by module; source
-      text checks rewritten or dropped. The tests describe what the tool
-      does for the user (the route it picks, the files it writes, backs up
-      and restores, what it reports), not how the code does it: a check that
-      pins an implementation detail is dropped, since the code under it may
-      be rewritten.
-- [ ] Network replaced by local fixture archives in unit tests; a marked
-      network suite for the real publishers.
-- [ ] Windows-only tests marked and skipped elsewhere, so macOS and Linux
-      run everything else; no test opens a window on the screen of the
-      person running it.
-- [ ] The DLSS page's behaviour gets tests again; the pruned
-      `_tools/dlss_page_check.py` (in git history) drove the real window and
-      listed it: update all takes only what it may (not an anti-cheat game,
-      not a running one), the originals stay beside the new files and
-      restore puts them back, a refused file says where and why with
-      nothing changed, versions read "current -> newest", a stale read waits
-      for the new one.
-- [ ] `verdict_baseline.json` re-checked: 28 reports already get a verdict
-      other than the recorded one on `main` before this fork's changes;
-      each is judged right or wrong, then the baseline is saved.
-- [ ] The whole suite run once on Windows, when a Windows machine is
-      available.
-- [ ] Coverage measured, floor set.
+- [ ] Unit tests cannot reach the network or open a window: an unexpected
+      socket or Tk root fails the test.
+- [ ] Fixtures for an isolated HOME and cache and a game folder; the
+      64-bit PE fixture built by `fake_pe.py`, never a file on someone's
+      disk.
+- [ ] First test: every module imports, with warnings as errors.
+- [ ] Coverage measured, floor set; it only rises.
+- [ ] The release workflow runs the tests on Windows before it builds, in
+      place of the two deleted scripts.
 
 ### 4. Clean-up of the remaining findings
 
 Every fix here can change behaviour, so each one comes with a test.
 
-- [ ] Triage every module by what it does for the user: keep, repair or
-      rewrite. Rewrites go module by module behind the phase 3 tests;
-      kept and repaired modules get their annotations here.
+- [ ] Triage every module by what it does for the user: first its tests
+      (the old checks in git history say what to look for), then keep,
+      repair or rewrite behind them; kept and repaired modules get their
+      annotations here.
+- [ ] The DLSS page's behaviour, when its module is triaged; the pruned
+      `_tools/dlss_page_check.py` (in git history) listed it: update all
+      takes only what it may (not an anti-cheat game, not a running one),
+      the originals stay beside the new files and restore puts them back,
+      a refused file says where and why with nothing changed, versions read
+      "current -> newest", a stale read waits for the new one.
+- [ ] The diagnosis, when triaged: the report corpus (`_tools/reports`,
+      `verdict_baseline.json`) becomes a parametrised test; 28 reports
+      already get a verdict other than the recorded one, each judged right
+      or wrong before the baseline is saved.
 - [ ] basedpyright findings that need a behaviour change (attributes that
       do not exist, unhandled `None`, wrong argument types).
 - [ ] `except Exception` audit: each one either narrows, logs with intent,
