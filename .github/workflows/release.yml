@@ -125,11 +125,20 @@ jobs:
             echo "third-party import found"; exit 1
           fi
 
-      - name: Tests that need no network
+      # The tests run from the locked dev group, with uv; the build below
+      # stays on the pinned pip path. The windows-marked tests run here, the
+      # network ones do not (pyproject.toml). No cache: a release run must not
+      # restore anything another run wrote.
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          version: "0.13.10"
+          enable-cache: false
+
+      - name: Tests
         shell: bash
         run: |
-          python test_reshade_ini.py
-          python -m unittest -v test_scan
+          uv sync --locked --group dev
+          uv run pytest
 
       - name: Build
         run: |

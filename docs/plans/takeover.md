@@ -168,7 +168,7 @@ complexity limits.
       disk.
 - [x] First test: every module imports, with warnings as errors.
 - [x] Coverage measured, floor set; it only rises.
-- [ ] The release workflow runs the tests on Windows before it builds, in
+- [x] The release workflow runs the tests on Windows before it builds, in
       place of the two deleted scripts.
 
 ### 4. Clean-up of the remaining findings
