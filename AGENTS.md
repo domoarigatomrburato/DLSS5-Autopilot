@@ -36,6 +36,11 @@ Run from the repository root:
 
 Do not re-run `check` on a tree that has not changed since it passed.
 
+The gate turns off .NET, test-platform and Avalonia build telemetry for its
+own runs. For builds outside it, set `DOTNET_CLI_TELEMETRY_OPTOUT`,
+`TESTINGPLATFORM_TELEMETRY_OPTOUT` and `AVALONIA_TELEMETRY_OPTOUT` to `1` in
+your shell.
+
 Everything blocks: warnings are errors, nullable is on, every analyzer is on
 (`AnalysisLevel` `latest-all`) and every rule left out is named in
 `.editorconfig` with its reason, complexity limits live in

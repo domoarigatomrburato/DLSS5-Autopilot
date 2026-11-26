@@ -68,9 +68,10 @@ internal static class Gate
     private static bool Run(string fileName, params string[] arguments)
     {
         ProcessStartInfo start = new(fileName, arguments);
-        // Test runs send nothing to Microsoft.
+        // Builds and test runs send nothing to Microsoft or Avalonia.
         start.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
         start.Environment["TESTINGPLATFORM_TELEMETRY_OPTOUT"] = "1";
+        start.Environment["AVALONIA_TELEMETRY_OPTOUT"] = "1";
 
         try
         {
