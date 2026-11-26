@@ -18,8 +18,7 @@ four.
 ```
 python dlss5_autopilot.py        needs Python 3.10+ (3.12 is what ships)
 python test_all.py               the whole suite, a few minutes
-python test_install.py           install and uninstall in temp folders
-build.bat                        a local .exe; the release build is GitHub's
+uv run poe build                 a local .exe (Windows only); the release build is GitHub's
 ```
 
 ## If you send a pull request
@@ -32,15 +31,7 @@ build.bat                        a local .exe; the release build is GitHub's
   file made up for it. A rule that has never seen a real input is a guess.
 - **Run the checks that guard what you touched.** `_tools/verdict_check.py`
   after anything in `core/diagnose.py` - it replays every report anybody has
-  sent and prints the ones whose answer moved. `_tools/detect_check.py`
-  after anything in `core/pe.py` or `core/games.py`.
-- **The checks can run themselves.** `_tools/hooks/` holds four small
-  scripts - refuse a shell heredoc that the tool's escaping would mangle,
-  run the check that guards a file after editing it, check the tree at the
-  end of a turn, and print where the project stands at the start of a
-  session. They are wired through a `.claude/settings.json` that lives
-  outside this repository (it carries absolute paths), so they are opt-in:
-  point your own at them if you want them.
+  sent and prints the ones whose answer moved.
 - **Match the file you are editing.** Comments here say why a line exists,
   usually with the issue number that caused it; that is what stops the same
   thing being undone six months later.

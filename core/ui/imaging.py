@@ -281,8 +281,8 @@ def exe_icon(exe, size: int, bg: str) -> bytes | None:
     """The executable's own icon on bg, for games without store art."""
     try:
         # Private handles: setting argtypes on ctypes.windll.gdi32 changes
-        # the prototypes for every other module in the process (it broke
-        # _tools/shot.py's PrintWindow call the first time it ran).
+        # the prototypes for every other module in the process (it broke a
+        # PrintWindow call the first time it ran).
         shell32 = ctypes.WinDLL("shell32")
         user32 = ctypes.WinDLL("user32")
         gdi32 = ctypes.WinDLL("gdi32")

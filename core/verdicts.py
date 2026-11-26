@@ -5,11 +5,11 @@ the feed never got going -> set up but not switched on -> loaded and we
 cannot see -> the add-on crashed -> the model refused -> the driver's
 runtime faulted -> working.
 
-One list, read by two things that must never disagree: the corpus tool that
-says which kind of failure to fix next (_tools/stuck_games.py), and the
-autopilot pass that decides whether another route is worth a try.
+One list, read by two things that must never disagree: the ranking of which
+kind of failure to fix next, and the autopilot pass that decides whether
+another route is worth a try.
 The verdicts are matched by their own printed words; a verdict nobody added
-here is "unmapped", which the corpus tool reports and the pass treats as "do
+here is "unmapped", which the ranking reports and the pass treats as "do
 not guess".
 """
 from __future__ import annotations

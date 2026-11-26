@@ -859,9 +859,8 @@ for the OpenGL findings.
 <summary>Building, tests, layout</summary>
 
 ```
-build.bat                      needs Python 3.10+ and pyinstaller; the release build is GitHub's
+uv run poe build               a local .exe (Windows only); the release build is GitHub's
 python test_all.py             the whole suite
-python test_install.py         end-to-end install + uninstall in temp folders
 python test_clean_machine.py   empty cache, no local files
 ```
 
@@ -896,11 +895,8 @@ core/ui/              interface: shell (window, log drawer, dialogs), kit
                       (controls), library, game page and settings, video,
                       remix, the tray icon, game art and colours
 
-_tools/upstream_watch.py     what moved upstream, and what they say they fixed
 _tools/replay_report.py      a bug report's own logs, through the diagnosis
-_tools/gui_scale_check.py    the window measured at other display scalings
-_tools/walkthrough.py        the window itself, driven through every route
-_tools/detect_check.py       what every game in a library detects as
+_tools/verdict_check.py      every saved report through the diagnosis, against the recorded answers
 docs/releases/               the notes for every release, named after its tag
 ```
 </details>

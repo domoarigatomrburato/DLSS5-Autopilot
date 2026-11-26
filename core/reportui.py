@@ -31,7 +31,7 @@ MIN_WORDS = 3
 
 class _Go(Button):
     """The canvas button, answering `go["state"]` like the Tk button it
-    replaced (the walkthrough reads it)."""
+    replaced."""
 
     def __getitem__(self, key):
         if key == "state":

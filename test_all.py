@@ -350,6 +350,44 @@ def _ui_game(folder=None, name="Test Game", api="DX12", bitness=64, installed=Fa
                       api_detected=api, source="Manual", candidates=[exe])
 
 
+# Every window a check has finished with, kept referenced until the process
+# ends: the window's own workers outlive it, and when the last reference to a
+# destroyed interpreter falls in one of them, Tcl deletes the interpreter on
+# the wrong thread and aborts the run ("Tcl_AsyncDelete: async handler
+# deleted by the wrong thread").
+_UI_KEPT: list = []
+
+
+def _ui_keep(*objs) -> None:
+    _UI_KEPT.extend(o for o in objs if o is not None)
+
+
+def _ui_drop_images(root) -> int:
+    """Delete every Tk image of this interpreter on the Tk thread and leave
+    the Python objects unable to do it themselves: tkinter's Image.__del__
+    calls into Tcl from whatever thread the garbage collector runs on."""
+    import gc
+    import tkinter as _tkd
+    n = 0
+    try:
+        names = root.tk.splitlist(root.tk.call("image", "names"))
+    except Exception:
+        names = ()
+    for name in names:
+        try:
+            root.tk.call("image", "delete", name)
+            n += 1
+        except Exception:
+            pass
+    for obj in gc.get_objects():
+        try:
+            if isinstance(obj, _tkd.Image) and getattr(obj, "tk", None) is root.tk:
+                obj.name = None          # __del__ is a no-op from now on
+        except Exception:
+            pass
+    return n
+
+
 class _UiLive:
     """The real window, invisible, with no network. close() puts back what
     it changed."""
@@ -540,13 +578,11 @@ class _UiLive:
         # every Tk image dropped here, on this thread, while the interpreter
         # is still alive: one collected later on a worker aborts the process
         try:
-            sys.path.insert(0, str(SRC_DIR / "_tools"))
-            from ui_sandbox import drop_images as _drop, keep as _keep
-            _drop(self.root)
+            _ui_drop_images(self.root)
             # and the window itself is kept referenced: its workers outlive
             # it, and the last reference falling in one of them deletes the
             # Tcl interpreter from the wrong thread and aborts the run
-            _keep(self.root, getattr(self.root, "tk", None), self.app)
+            _ui_keep(self.root, getattr(self.root, "tk", None), self.app)
         except Exception:
             pass
         try:
@@ -8349,17 +8385,6 @@ check("...and 7-Zip is looked for on PATH and in Program Files",
       all(x in src_of(optiscaler._seven_zip)
           for x in ("shutil.which", "Program Files")))
 
-# ...and build.bat, which the same reporter found broken: a relative
-# --version-file cannot be resolved against a --specpath somewhere else.
-_bat = (Path(__file__).resolve().parent / "build.bat").read_text(encoding="utf8")
-check("build.bat names version_info.txt by an absolute path",
-      "--version-file \"%~dp0version_info.txt\"" in _bat, "relative path")
-check("...because it puts the spec somewhere else",
-      "--specpath" in _bat)
-_ga = (Path(__file__).resolve().parent / ".gitattributes").read_text(encoding="utf8")
-check("batch files are pinned to CRLF, whatever git is configured to do",
-      "*.bat text eol=crlf" in _ga)
-
 # Issues #103 and #97: a publisher's server answering 5xx.
 check("a 5xx is retried and then explained, on every path that fetches",
       all("RETRY_CODES" in src_of(f)
@@ -10052,42 +10077,6 @@ for _b in _re.findall(r"[*][*]([^*\n]{2,40})[*][*]", _readme):
 check("every control the README names in bold exists in the tool",
       _named >= 30 and not _gone, _gone or _named)
 
-# The loop that measures itself: state.py turns every saved verdict into a
-# ranked backlog, and a class at the top is a shape to fix. Checked here so
-# the ranking cannot silently stop describing the corpus.
-import importlib.util as _ilu3  # noqa: E402
-_st_spec = _ilu3.spec_from_file_location("state", SRC_DIR / "_tools" / "state.py")
-_st = _ilu3.module_from_spec(_st_spec)
-_st_spec.loader.exec_module(_st)
-_stc = _st.corpus()
-_stsaved = json.loads((SRC_DIR / "_tools" / "verdict_baseline.json")
-                     .read_text(encoding="utf8"))
-check("the loop measures every report in the corpus, not a sample",
-      _stc.get("total", 0) == len(_stsaved)
-      == len(list((SRC_DIR / "_tools" / "reports").glob("*.txt"))),
-      (_stc.get("total"), len(_stsaved)))
-check("...and almost nothing falls through its classes",
-      _stc["counts"].get("other", 0) <= max(6, _stc["total"] // 10),
-      _stc["counts"].get("other"))
-check("the biggest class is named, with the reports behind it",
-      bool(_stc["counts"].most_common(1)[0][0])
-      and len(_stc["where"][_stc["counts"].most_common(1)[0][0]]) ==
-      _stc["counts"].most_common(1)[0][1])
-check("a verdict this project has actually given lands in the right class",
-      _st.classify("Not started since the install - run the game once.")
-      == "nothing we wrote ever loaded"
-      and _st.classify("Inconclusive - the feed did not get far enough to tell.")
-      == "we cannot tell from the logs"
-      and _st.classify("Working.") == "working")
-_settings182 = SRC_DIR.parent / ".claude" / "settings.json"
-check("...and the guard rails report themselves as wired",
-      _st.guards() == [] if _settings182.is_file() else True,
-      _st.guards() if _settings182.is_file()
-      else "(no .claude/settings.json beside the repo - skipped)")
-check("the session opens with that measurement",
-      (SRC_DIR / "_tools" / "hooks" / "session_start.py").is_file()
-      and "state.py" in (SRC_DIR / "_tools" / "hooks"
-                         / "session_start.py").read_text(encoding="utf8"))
 
 # 34 of the first 84 reports are "no log at all", and the answer to them
 # opened with "the game has not been started since the install" - a guess,
@@ -10187,7 +10176,7 @@ check("the look is bounded - entries and a clock, never a walk",
       diagnose._RAN_ENTRIES <= 8000 and diagnose._RAN_SECONDS <= 2.0
       and "os.walk" not in src_of(diagnose._game_ran))
 
-# The owner's own machine, found by detect_check: an Unreal game whose
+# The owner's own machine: an Unreal game whose
 # shipping exe imports no graphics DLL at all was read as OpenGL, because
 # the only renderer name in the file is Unreal's unused OpenGL RHI string.
 # ReShade would have gone in as opengl32.dll, which the game never loads -
@@ -10278,29 +10267,6 @@ check("the diagnosis raises on none of them",
 check("no report's verdict moved without being recorded "
       "(_tools/verdict_check.py --save)",
       not _vmoved, " | ".join(_vmoved[:6]))
-
-# The words every verdict about somebody else's log is matched against
-# live in their builds, and they move (#168: "cost:" became "elapsed:").
-# _tools/phrase_check.py downloads the current builds and looks for them;
-# here, offline, only that its table still describes THIS code.
-import importlib.util as _ilu  # noqa: E402
-_spec = _ilu.spec_from_file_location("phrase_check",
-                                     SRC_DIR / "_tools" / "phrase_check.py")
-_pcmod = _ilu.module_from_spec(_spec)
-_spec.loader.exec_module(_pcmod)
-_dg = _diag_src() + src_of(__import__("core.remix", fromlist=["x"]))  # the Remix words live in core/remix.py (2.0.8)
-_pairs = [pair for group in _pcmod.PHRASES.values() for pair in group]
-_missing = [c for _b, c in _pairs if c not in _dg]
-check("every phrase the rot check watches is one the diagnosis really reads",
-      len(_pairs) >= 20 and not _missing, _missing or len(_pairs))
-# The skills and the hook wiring live beside the repository, not in it, so
-# on anybody else's checkout there is nothing to read. Absent means "not set
-# up here", which is not a failure; present means it has to say so.
-_skill182 = SRC_DIR.parent / ".claude" / "skills" / "issue-triage" / "SKILL.md"
-check("...and the check is in the standing audits, so it runs by itself",
-      "phrase_check.py" in _skill182.read_text(encoding="utf8")
-      if _skill182.is_file() else True,
-      "" if _skill182.is_file() else "(no .claude beside the repo - skipped)")
 
 # #137: Cyberpunk's CET IS an ASI loader and owns version.dll. The unlock
 # used to write Ultimate ASI Loader over it - CET, and every mod that needs
@@ -11972,7 +11938,6 @@ shutil.rmtree(_blob.parent, ignore_errors=True)
 
 section("1.9.1: what people asked for - sort, hide, start, a bigger log "
         "(#201, #241, #234, #214)")
-# Imported again here so the section also runs on its own (dryrun_section).
 import tkinter as _tk  # noqa: E402
 from core import library as _library_iso  # noqa: E402
 from core import autopilot as _ap  # noqa: E402
@@ -13743,26 +13708,6 @@ finally:
     _art._found.clear()
 
 
-section("2.0: the dlss page in the real window, every state, real events "
-        "(dlss_page_check)")
-
-# The page is driven in its own process: the sandbox switches the network
-# off and moves every settings file for the life of that process, which must
-# not leak into the sections of this run. Each of its checks comes back as
-# one check here, and a run that died part way is a failure of its own - a
-# half-run check looks green (see the memory note).
-_dpc = subprocess.run([sys.executable, str(SRC_DIR / "_tools" / "dlss_page_check.py")],
-                      capture_output=True, text=True, encoding="utf-8", errors="replace",
-                      timeout=600, cwd=str(SRC_DIR))
-_dpc_lines = [ln for ln in _dpc.stdout.splitlines() if ln.startswith(("   PASS  ", "   FAIL  "))]
-for _ln in _dpc_lines:
-    check("dlss page: " + _ln[9:].split("   ")[0], _ln.startswith("   PASS  "),
-          "" if _ln.startswith("   PASS  ") else _ln[9:])
-check("dlss page: the check ran to its end",
-      _dpc.returncode == 0 and "FAILED: none" in _dpc.stdout and len(_dpc_lines) >= 48,
-      (_dpc.returncode, len(_dpc_lines), _dpc.stderr[-400:]))
-
-
 section("2.0 gate: DLSS evidence beside our own files, dlss page backups, the page's reads, "
         "the covers switch")
 
@@ -14163,11 +14108,6 @@ check("gate 2.0 watcher: the verdicts are staged where they belong and offer a r
 _g3base = json.loads((SRC_DIR / "_tools" / "verdict_baseline.json").read_text(encoding="utf8"))
 _g3unm = sorted({v["verdict"][:60] for v in _g3base.values() if _g3v.stage(v["verdict"])[0].startswith("unmapped")})
 check("gate 2.0 watcher: no verdict in the 84-report baseline is unmapped", not _g3unm, _g3unm)
-_g3sg = subprocess.run([sys.executable, str(SRC_DIR / "_tools" / "stuck_games.py"), "--json"],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
-                       cwd=str(SRC_DIR))
-check("...and _tools/stuck_games.py still runs on the chain", _g3sg.returncode == 0 and _g3sg.stdout.startswith("["),
-      _g3sg.stderr[-300:])
 
 # -- the watcher: a route for "nothing of ours loaded", kept, bounded, out of a job's way ----
 with _ui_isolated():
@@ -17082,7 +17022,7 @@ class _FakeGame:
 
 
 # --- 2.0.6: games like this one, and the driver within its route ------------
-# brain.py said feeder 44 of 110 against optiscaler 55 of 73, and the first
+# The shared list said feeder 44 of 110 against optiscaler 55 of 73, and the first
 # idea was "put optiscaler first for games with an upscaler". Measured from
 # the records, only 3 of the 110 feeder results were on games shown to have
 # one; 53 of 69 optiscaler DX12 results were games with their own DLSS and
@@ -17398,8 +17338,7 @@ check("...the 32-bit feeder's 64-bit helper is set as well - NGX runs in it",
       [p.name for p in _host427] == ["Game.exe", installer.FEEDER_HOST]
       and _host427[1].parent.name == installer.HOST_DIR, _host427)
 _suites427 = {n: (SRC_DIR / n).read_text(encoding="utf8") for n in
-              ("test_all.py", "test_install.py", "test_scan.py", "test_clean_machine.py",
-               "_tools/dryrun_section.py")}
+              ("test_all.py", "test_scan.py", "test_clean_machine.py")}
 _ta427 = _suites427["test_all.py"]
 check("...the test suites never write the machine's own registry (a dict stands in, before any install)",
       isinstance(_gp427.backend, _gp427.Memory)
@@ -17587,7 +17526,6 @@ section("2.0.7: the bridge's own log - frames delivered, the line it stopped on,
 # from the bridge's own format strings, as printf would fill them in.
 import re as _re21b  # noqa: E402
 from core import verdicts as _vd21b, reshade_ini as _ini21b  # noqa: E402
-import state as _st21b  # noqa: E402
 
 
 def _c21b(fmt: str, *args) -> str:
@@ -17686,15 +17624,13 @@ check("...with the frame rate the bridge measured, and no 'leaves no frame log' 
       and not any("leaves no frame log" in f.title for f in _ok21b.findings),
       [f.title for f in _ok21b.findings])
 check("...its next step names the add-on's own panel, and it has a class of its own",
-      "switch the pass off and on in the DLSS 5 Neural Rendering panel" in _ok21b.verdict
-      and _st21b.classify(_ok21b.verdict) == "frames reach the add-on, and no log says if the pass drew them",
-      _st21b.classify(_ok21b.verdict))
+      "switch the pass off and on in the DLSS 5 Neural Rendering panel" in _ok21b.verdict,
+      _ok21b.verdict)
 
 _bad21b = _run21b(_ATT21B + _FRAMES21B + _FAULT21B)
 check("frames, then the bridge's own stop line: 'it started, then the bridge stopped', stage 8",
       _bad21b.verdict == "It started, then the bridge stopped - see why below."
-      and _vd21b.stage(_bad21b.verdict)[0] == "8 the add-on crashed"
-      and _st21b.classify(_bad21b.verdict) == "it ran and then something stopped", _bad21b.verdict)
+      and _vd21b.stage(_bad21b.verdict)[0] == "8 the add-on crashed", _bad21b.verdict)
 check("...and the reason is a finding, in the bridge's words with the exception code",
       any(f.level == diagnose.BAD and f.title == "The bridge stopped after delivering at least 1800 "
           "frames: NGX raised an exception inside the D3D12 evaluate (0xC0000005)."
