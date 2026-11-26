@@ -422,8 +422,8 @@ def install_layer(setup_exe: Path, log=None, also32: bool = False) -> tuple[Path
     stale = name_clash() if also32 else None
     if stale is not None:
         log(
-            f"      the 32-bit layer registered here shares the 64-bit "
-            f"layer's name, which is why it never loaded - rewriting it"
+            "      the 32-bit layer registered here shares the 64-bit "
+            "layer's name, which is why it never loaded - rewriting it"
         )
 
     found = registered_for(x64=not also32)

@@ -12,13 +12,11 @@ import math
 import os
 import subprocess
 import sys
+import tkinter as tk
 from pathlib import Path
 
-import tkinter as tk
-
 from . import compare
-from .ui import theme as T
-from .ui import win as W
+from .ui import theme as T, win as W
 from .ui.kit import Kit
 
 TOGGLE_KEY = "F6"

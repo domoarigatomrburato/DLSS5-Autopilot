@@ -1288,7 +1288,7 @@ _LAUNCHER_NAME = re.compile(
     r"|^launch([\s._-]|$)"  # Launch, Launch Game
     r"|^start_protected_game$"  # Easy Anti-Cheat's bootstrapper
     r"|^(eos|epic|ea|origin|uplay|ubisoft)[\s._-]?(launch|start)",
-    re.I,
+    re.IGNORECASE,
 )
 
 

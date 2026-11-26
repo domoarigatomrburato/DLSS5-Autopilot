@@ -16,11 +16,10 @@ import re
 import time
 import tkinter as tk
 
-from .. import log, prefs, update
-from . import theme as T
-from . import win
+from .. import log, prefs
+from . import theme as T, win
 from .kit import Kit, Layer
-from .motion import Motion, ink_on, mix
+from .motion import Motion, mix
 
 TITLE = "DLSS 5 Autopilot"
 
@@ -31,7 +30,7 @@ class Page:
     name = ""
     rail = 0  # which rail item lights up
 
-    def __init__(self, shell: "Shell"):
+    def __init__(self, shell: Shell):
         self.shell = shell
         self.kit = shell.kit
         self.c = shell.content
@@ -154,7 +153,7 @@ class Shell:
         self.on_watch = None
         self.on_help = None  # list of (label, cmd) for the help menu
         self.log_open = False
-        self.dialog: "Dialog | None" = None  # the question on screen, if any
+        self.dialog: Dialog | None = None  # the question on screen, if any
 
         self._build_log()
         self.content.bind("<Configure>", self._configured)

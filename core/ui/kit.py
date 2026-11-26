@@ -47,7 +47,7 @@ class Kit:
         self._binds: dict[str, dict] = {}
         # the embedded widgets (a Field's Entry) by tag: deleting the canvas
         # item does not destroy the widget, so prune() does
-        self._widgets: dict[str, "Field"] = {}
+        self._widgets: dict[str, Field] = {}
         # what a click on empty canvas does when nothing is open (the shell
         # closes the log drawer with it)
         self.on_background = None

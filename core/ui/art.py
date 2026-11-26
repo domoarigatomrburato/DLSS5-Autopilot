@@ -24,15 +24,13 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 
-from .. import covers
-from .. import games as _games
-from .. import log
+from .. import covers, games as _games, log
 from . import imaging
 
 _lock = threading.Lock()
 _appids: dict[str, str] | None = None
-_found: dict[str, "Art"] = {}
-_jobs: "queue.Queue" = queue.Queue()
+_found: dict[str, Art] = {}
+_jobs: queue.Queue = queue.Queue()
 _asked: set[str] = set()  # asked online this run - never twice (no retry loop)
 _running = False
 _listeners: list = []

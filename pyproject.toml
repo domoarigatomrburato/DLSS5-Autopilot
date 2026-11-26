@@ -79,6 +79,13 @@ ignore = [
     "ISC001",
 ]
 
+[tool.ruff.lint.isort]
+# A statement that imports several modules with `as` stays one statement:
+# isort's default splits it, and a split turns an import that fails on a
+# non-Windows host (core.ui.tray) from "the whole statement fails" into
+# "the rest still ran".
+combine-as-imports = true
+
 [tool.basedpyright]
 typeCheckingMode = "strict"
 pythonVersion = "3.12"

@@ -15,8 +15,7 @@ import webbrowser
 from pathlib import Path
 
 from .. import community, gpu, library, log, prefs, selfupdate, update
-from . import theme as T
-from . import win
+from . import theme as T, win
 from .ctl_dlss import DlssControl
 from .ctl_game import GameControl
 from .ctl_library import LibraryControl
@@ -26,9 +25,9 @@ from .dlsspage import DlssPage
 from .gamepage import GamePage
 from .libpage import LibraryPage
 from .remixpage import RemixPage
+from .shell import TITLE, Shell
 from .vidpage import VideoPage
 from .vrpage import VrPage
-from .shell import TITLE, Shell
 
 REPO_URL = f"https://github.com/{update.REPO}"
 

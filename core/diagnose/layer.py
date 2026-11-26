@@ -11,10 +11,10 @@ Part of core/diagnose; see __init__.py.
 """
 
 from __future__ import annotations
+
 from pathlib import Path
 
 from . import model
-
 
 __all__ = [
     "_addon_in",

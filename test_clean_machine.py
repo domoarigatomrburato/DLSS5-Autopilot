@@ -17,11 +17,19 @@ try:
 except Exception:
     pass
 
-from core import games, installer, net, pe, prefs, reshade_ini, feedcfg, gpu
-
 # Installs here run for real and this machine may have two GPUs: Windows'
 # graphics preference goes to a dict, never the machine's own HKCU.
-from core import gpupref as _gpupref  # noqa: E402
+from core import (
+    feedcfg,
+    games,
+    gpu,
+    gpupref as _gpupref,
+    installer,
+    net,
+    pe,
+    prefs,
+    reshade_ini,
+)
 
 _gpupref.backend = _gpupref.Memory()
 # ...and runs as a one-GPU machine, whatever this one has: a check that
@@ -217,7 +225,7 @@ if __name__ == "__main__":
     print()
     print("-" * 76)
     print("NVIDIA's published runtimes")
-    from core import sources, installer as _inst
+    from core import installer as _inst, sources
 
     nv = sources.nvidia_dlss()
     if not nv:

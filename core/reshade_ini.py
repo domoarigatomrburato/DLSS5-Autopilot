@@ -57,7 +57,7 @@ class Ini:
         self.sections: list[tuple[str, list[list[str]]]] = [("", [])]
 
     @classmethod
-    def parse(cls, text: str) -> "Ini":
+    def parse(cls, text: str) -> Ini:
         ini = cls()
         cur = 0
         for line in text.lstrip("\ufeff").splitlines():
@@ -73,7 +73,7 @@ class Ini:
         return ini
 
     @classmethod
-    def load(cls, path: Path) -> "Ini":
+    def load(cls, path: Path) -> Ini:
         try:
             return cls.parse(path.read_text(encoding="utf8", errors="replace"))
         except OSError:

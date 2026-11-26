@@ -48,14 +48,16 @@ import os
 import re
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from core.community import parse  # noqa: E402  the one parser
-from core.community import counts  # noqa: E402  and what it cannot see
+from core.community import (
+    counts,
+    parse,
+)
 
 # The repository this one was forked from, read as well as REPO.
 UPSTREAM = "Kizzuwatnaa/DLSS5-Autopilot"
@@ -214,7 +216,7 @@ def main() -> int:
         # name the dropdown does not have into somebody's advice.
         exe = text(rec.get("exe"), 120).lower()
         route = text(rec.get("route"), 40).lower()
-        if not exe or not route or len(games) >= MAX_GAMES and exe not in games:
+        if not exe or not route or (len(games) >= MAX_GAMES and exe not in games):
             continue
         seen += 1
         g = games.setdefault(
@@ -287,7 +289,7 @@ def main() -> int:
             g.pop("measured", None)  # a game nobody measured says nothing
 
     payload = {
-        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "reports": seen,
         "games": dict(sorted(games.items())),
         "by_class": dict(sorted(by_class.items())),

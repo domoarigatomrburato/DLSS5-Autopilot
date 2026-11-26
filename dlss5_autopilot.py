@@ -65,7 +65,7 @@ from core import (
     dlss,
     games,
     gpu,
-    installer,  # noqa: E402
+    installer,
     optiscaler,
     prefs,
     reshade_ini,

@@ -21,12 +21,12 @@ buffer manually from ReShade's DX11/DX12 tab.
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 import shutil
+from collections.abc import Callable
 from dataclasses import dataclass
-import pathlib
 from pathlib import Path
-from typing import Callable
 
 
 def _isdir(p) -> bool:

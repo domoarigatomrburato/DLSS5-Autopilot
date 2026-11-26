@@ -23,7 +23,7 @@ import threading
 import time
 import webbrowser
 
-from .. import openxr, prefs, update
+from .. import openxr, update
 from . import theme as T
 from .shell import Page
 

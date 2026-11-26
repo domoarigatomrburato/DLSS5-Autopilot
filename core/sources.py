@@ -12,12 +12,12 @@ This tool never contacts a private server. It stays within these hosts:
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import os
 import re
 import time
 import urllib.error
-import http.client
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -54,7 +54,7 @@ UPSTREAM_API = (
 UPLIFT_API = (
     "https://api.github.com/repos/ghostinthecamera/GITC-Uplift/releases?per_page=10"
 )
-UPLIFT_ZIP_RE = re.compile(r"^GITC-Uplift-v?(\d[\w.\-]*)\.zip$", re.I)
+UPLIFT_ZIP_RE = re.compile(r"^GITC-Uplift-v?(\d[\w.\-]*)\.zip$", re.IGNORECASE)
 UPLIFT_SUMS = "SHA256SUMS.txt"
 # What the zip carries and the tool places: the Addons folder beside the
 # executable, the shaders in ReShade's shader folder.
@@ -426,7 +426,7 @@ def _get(url: str, timeout: int = 60, attempts: int = 3) -> bytes:
                     raise net.unreachable(url.split("/")[2], e) from e
                 raise
             time.sleep(2.0 * (attempt + 1))
-    raise last if last else RuntimeError(url)
+    raise last or RuntimeError(url)
 
 
 # GitHub allows 60 anonymous API calls an hour per address. That is easy to

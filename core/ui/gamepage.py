@@ -13,9 +13,8 @@ from __future__ import annotations
 import threading
 import tkinter as tk
 
-from .. import community, dlss, installer, sessioncard
-from . import art, imaging
-from . import theme as T
+from .. import community, installer, sessioncard
+from . import art, imaging, theme as T
 from .motion import mix
 from .setpanel import SettingsSection
 from .shell import Page

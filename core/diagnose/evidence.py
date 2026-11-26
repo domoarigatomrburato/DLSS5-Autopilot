@@ -7,27 +7,33 @@ Part of core/diagnose; see __init__.py.
 """
 
 from __future__ import annotations
+
 import itertools
 import json
 import os
 import re
 import time
-from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
 from . import model
-from .model import *  # noqa: F401,F403
 from .layer import (
     _addon_in,
     _dxvk_files,
-    _layer_clash,  # noqa: F401
+    _layer_clash,
     _layer_detail,
     _through_layer,
 )
-
+from .model import *  # noqa: F403
 
 __all__ = [
+    "TAIL_FEED",
+    "TAIL_HOST",
+    "TAIL_OPTI",
+    "TAIL_REMIX",
+    "TAIL_RESHADE",
+    "TAIL_STANDALONE",
+    "_NET_VERDICTS",
     "_addon_switch",
     "_addons",
     "_anything_of_ours",
@@ -38,6 +44,7 @@ __all__ = [
     "_dlss_mod",
     "_dxvk_gone",
     "_engine_says_not_dxgi",
+    "_exc_line",
     "_family",
     "_fault_chain",
     "_feed_shaders",
@@ -48,10 +55,6 @@ __all__ = [
     "_installed_at",
     "_last_feed_session",
     "_last_session",
-    "_NET_VERDICTS",
-    "_exc_line",
-    "_net_cause",
-    "_net_stop",
     "_launcher_installed",
     "_layer_gone",
     "_live_evidence",
@@ -61,6 +64,8 @@ __all__ = [
     "_missing_addons",
     "_missing_core",
     "_near",
+    "_net_cause",
+    "_net_stop",
     "_nrpre_picks",
     "_opti_log",
     "_opti_sighting",
@@ -72,17 +77,11 @@ __all__ = [
     "_shader_failures",
     "_stale_install",
     "_standalone_named",
+    "_strip_ngx",
     "_tail",
     "_upstream_named",
     "_user_data_names",
     "windows_crash",
-    "TAIL_RESHADE",
-    "TAIL_FEED",
-    "TAIL_HOST",
-    "TAIL_OPTI",
-    "TAIL_STANDALONE",
-    "TAIL_REMIX",
-    "_strip_ngx",
 ]
 
 # How much of each log is read - by the analyser AND by the report body. The
@@ -109,7 +108,7 @@ _NGX_BLOCK = re.compile(
     r"(?:(?![^\n]*\[feed)[^\n]*\n)*?"
     r"(?:[^\n]*(?i:end of NGX's own log)[^\n]*(?:\n|$)"
     r"|(?=[^\n]*\[feed)|(?![^\n]*\[feed)[^\n]*\Z)",
-    re.M,
+    re.MULTILINE,
 )
 
 
@@ -1480,7 +1479,7 @@ def _install_crash(last_error: str) -> tuple[str, str]:
     return "it stopped with an error", line[:200]
 
 
-def _crash_verdict(rep: "Report", last_error: str) -> bool:
+def _crash_verdict(rep: Report, last_error: str) -> bool:
     """Say that the install crashed, when that is what emptied this folder.
 
     Only when nothing of ours arrived at all. A folder with our files in it
@@ -1550,7 +1549,7 @@ def _net_cause(last_error: str) -> tuple[str, str, str]:
     )
 
 
-def _net_stop(rep: "Report", last_error: str) -> bool:
+def _net_stop(rep: Report, last_error: str) -> bool:
     """An unfinished install whose own traceback (installer.last_failure,
     this folder's only) names the connection fault: "install again" cannot
     help a socket Windows refuses (#434)."""
@@ -1627,7 +1626,7 @@ def _feed_shaders(
     return recorded, gone
 
 
-def _stale_install(rep: "Report", man: dict) -> None:
+def _stale_install(rep: Report, man: dict) -> None:
     """Note when another build of this tool set the folder up.
 
     Every rule under this one reads files that build wrote, and half the
@@ -1660,7 +1659,7 @@ def _stale_install(rep: "Report", man: dict) -> None:
     )
 
 
-def _addon_switch(install_dir: Path, rep: "Report") -> str:
+def _addon_switch(install_dir: Path, rep: Report) -> str:
     """Say what the DLSS 5 add-on's own switch is set to.
 
     Returns "on", "off", "default" or "" - and the caller writes the

@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import fields, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from . import dlss, feedcfg, optiscaler, prefs, reshade_ini
@@ -127,7 +127,7 @@ def save(name: str, opt: Options) -> Path:
 
     data = {
         "name": name.strip(),
-        "saved": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "saved": datetime.now(UTC).isoformat(timespec="seconds"),
         "app_version": VERSION,
     }
     data.update(_to_dict(opt))

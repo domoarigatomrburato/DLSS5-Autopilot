@@ -26,8 +26,7 @@ from .. import (
     verdicts,
 )
 from ..lookout import Lookout
-from . import theme as T
-from . import win
+from . import theme as T, win
 from .ctl_game import (
     CLOSING_FAULT_NOTE,
     crash_is_this_session,

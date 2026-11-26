@@ -38,7 +38,6 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from . import prefs
 
@@ -228,13 +227,19 @@ def ran_at_exact(install_dir, route: str) -> int | None:
     try:
         if route == "optiscaler":
             txt = (d / "OptiScaler.ini").read_text(encoding="utf8", errors="replace")
-            m = re.search(r"^\s*WorkingScale\s*=\s*([\d.,]+)", txt, re.M | re.I)
+            m = re.search(
+                r"^\s*WorkingScale\s*=\s*([\d.,]+)", txt, re.MULTILINE | re.IGNORECASE
+            )
             v = _num(m.group(1)) if m else None
             if v is not None:
                 return _clamp(v * 100)
         else:
             txt = (d / "dlss5-feed.cfg").read_text(encoding="utf8", errors="replace")
-            m = re.search(r"^\s*work_resolution\s*=\s*([\d.,]+)", txt, re.M | re.I)
+            m = re.search(
+                r"^\s*work_resolution\s*=\s*([\d.,]+)",
+                txt,
+                re.MULTILINE | re.IGNORECASE,
+            )
             v = _num(m.group(1)) if m else None
             if v is not None:
                 return _clamp(v)

@@ -7,27 +7,22 @@ Part of core/diagnose; see __init__.py.
 """
 
 from __future__ import annotations
-import itertools
-import json
-import os
+
 import re
-import time
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from . import model
-from .model import *  # noqa: F401,F403
-from .evidence import *  # noqa: F401,F403
+from .evidence import *  # noqa: F403
+from .model import *  # noqa: F403
 from .process import _loaded_note
-
 
 __all__ = [
     "_analyse_optiscaler",
     "_analyse_remix",
     "_analyse_standalone",
-    "_analyse_upstream",
     "_analyse_uplift",
+    "_analyse_upstream",
     "_check_inputs",
     "_last_run",
     "_opti_checklist",
@@ -49,7 +44,7 @@ def _last_run(text: str) -> str:
     cutting there would throw away most of a healthy log.
     """
     cut, prev = 0, None
-    for m in re.finditer(r"^\[(\d{2}):(\d{2}):(\d{2})", text, re.M):
+    for m in re.finditer(r"^\[(\d{2}):(\d{2}):(\d{2})", text, re.MULTILINE):
         now = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
         # A clock that goes back over midnight is one run crossing a day,
         # not two runs; cutting there would throw away everything before
@@ -61,7 +56,7 @@ def _last_run(text: str) -> str:
     return text[cut:]
 
 
-def _check_inputs(text: str, upscaler: str, rep: "Report") -> None:
+def _check_inputs(text: str, upscaler: str, rep: Report) -> None:
     """Did the game's FSR/XeSS calls ever reach OptiScaler?"""
     if not upscaler:
         return
@@ -111,7 +106,7 @@ def _one_frame(line: str) -> bool:
 
 # When wilsjo2's page had display-filter as its newest release (#364): from
 # its publication to 2.0.4, which refuses a package with no OptiScaler.dll.
-_DISPLAY_FILTER_FROM = datetime(2026, 9, 20, 13, 25, tzinfo=timezone.utc).timestamp()
+_DISPLAY_FILTER_FROM = datetime(2026, 9, 20, 13, 25, tzinfo=UTC).timestamp()
 
 
 def _display_filter_window(man: dict, install_dir: Path) -> bool:
@@ -133,8 +128,8 @@ def _display_filter_window(man: dict, install_dir: Path) -> bool:
 
 
 def _analyse_optiscaler(
-    install_dir: Path, rep: "Report", since: float, man: dict | None = None
-) -> "Report":
+    install_dir: Path, rep: Report, since: float, man: dict | None = None
+) -> Report:
     """The OptiScaler route has no ReShade: its own log says everything.
 
     The fork's DLSS-NR lines are unambiguous - "running at WxH" is success,
@@ -157,7 +152,9 @@ def _analyse_optiscaler(
                 encoding="utf8", errors="replace"
             )
             logging_on = bool(
-                re.search(r"^\s*LogToFile\s*=\s*true\b", _ini, re.M | re.I)
+                re.search(
+                    r"^\s*LogToFile\s*=\s*true\b", _ini, re.MULTILINE | re.IGNORECASE
+                )
             )
         except OSError:
             pass
@@ -603,7 +600,9 @@ def _opti_checklist(install_dir: Path, man: dict) -> list[str]:
     try:
         text = ini.read_text(encoding="utf8", errors="replace")
         m = re.search(
-            r"^\s*Enabled\s*=\s*(\S+)", _section(text, _opti.NR_SECTION), re.M | re.I
+            r"^\s*Enabled\s*=\s*(\S+)",
+            _section(text, _opti.NR_SECTION),
+            re.MULTILINE | re.IGNORECASE,
         )
         enabled = m.group(1).strip().lower() if m else None
     except OSError:
@@ -669,14 +668,14 @@ def _opti_checklist(install_dir: Path, man: dict) -> list[str]:
 def _section(text: str, name: str) -> str:
     """One [section] out of an ini, without the ones after it."""
     m = re.search(
-        rf"^\[{re.escape(name)}\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S | re.I
+        rf"^\[{re.escape(name)}\]\s*$(.*?)(?=^\[|\Z)",
+        text,
+        re.MULTILINE | re.DOTALL | re.IGNORECASE,
     )
     return m.group(1) if m else ""
 
 
-def _analyse_remix(
-    install_dir: Path, rep: "Report", since: float, man: dict
-) -> "Report":
+def _analyse_remix(install_dir: Path, rep: Report, since: float, man: dict) -> Report:
     """Read the Remix runtime's own log, which is the only one that applies.
 
     Every phrase matched here was read out of this machine's runtime binary

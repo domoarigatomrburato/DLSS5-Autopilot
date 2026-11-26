@@ -13,54 +13,47 @@ Part of core/diagnose; see __init__.py.
 """
 
 from __future__ import annotations
-import itertools
-import json
+
 import os
 import re
-import time
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 
-
 __all__ = [
-    "UPLIFT_ADDON_NAME",
     "BAD",
     "BRIDGE_LOG",
     "FEED_LOG",
     "FEED_SHADERS",
-    "Finding",
+    "HOST_LOG",
+    "INFO",
+    "LEGACY_MANIFESTS",
+    "MANIFEST",
+    "NATIVE_ADDON_NAME",
+    "NEVER_RAN_SAID",
+    "OK",
+    "OPTI_LOG",
+    "PROVIDER_FX",
+    "RESHADE_LOG",
+    "RR_RUNTIME",
+    "STANDALONE_ADDON_NAME",
+    "STANDALONE_LOG",
+    "STANDALONE_PANEL",
+    "UPLIFT_ADDON_NAME",
+    "UPSTREAM_ADDON_NAME",
+    "UPSTREAM_PANEL",
+    "VULKAN_LAYER",
+    "WARN",
+    "_BACKUP_SUFFIX",
     "_BRIDGE_ATTACHED",
     "_BRIDGE_CALLED",
-    "_BRIDGE_CREATE_FAILED",
     "_BRIDGE_CRASH",
+    "_BRIDGE_CREATE_FAILED",
     "_BRIDGE_FAILED",
     "_BRIDGE_FAULTED",
     "_BRIDGE_FRAME",
     "_BRIDGE_REGISTERED",
     "_BRIDGE_STATS",
     "_BRIDGE_STOPS",
-    "HOST_LOG",
-    "INFO",
-    "LEGACY_MANIFESTS",
-    "MANIFEST",
-    "NATIVE_ADDON_NAME",
-    "OK",
-    "OPTI_LOG",
-    "PROVIDER_FX",
-    "RESHADE_LOG",
-    "RR_RUNTIME",
-    "Report",
-    "STANDALONE_ADDON_NAME",
-    "STANDALONE_LOG",
-    "STANDALONE_PANEL",
-    "UPSTREAM_ADDON_NAME",
-    "UPSTREAM_PANEL",
-    "NEVER_RAN_SAID",
-    "drop_never_ran",
-    "VULKAN_LAYER",
-    "WARN",
-    "_BACKUP_SUFFIX",
     "_COMPILER_FIX",
     "_CORE_NAMES",
     "_CRASH_CAUSES",
@@ -74,8 +67,6 @@ __all__ = [
     "_INSTALL_FRAMES",
     "_NGX_IN_STACK",
     "_OURS_IN_STACK",
-    "_SHARED_MODULES",
-    "_install_modules",
     "_OUR_MARKS",
     "_RAN_CONTAINERS",
     "_RAN_ENTRIES",
@@ -97,10 +88,15 @@ __all__ = [
     "_RESHADE_SESSION",
     "_RESHADE_STARTED",
     "_SCAN_NOISE",
+    "_SHARED_MODULES",
     "_STANDALONE_NO_RUNTIME",
     "_STANDALONE_SESSION",
+    "Finding",
+    "Report",
+    "_install_modules",
     "_layer_state",
     "_user_data_roots",
+    "drop_never_ran",
 ]
 
 FEED_LOG = "dlss5-feed.log"
@@ -119,7 +115,8 @@ RESHADE_LOG = "ReShade.log"
 # read with a comma as well: a C++ add-on's locale is not ours (#69).
 BRIDGE_LOG = "dlss5-bridge.log"
 _BRIDGE_ATTACHED = re.compile(
-    r"^(\d\d:\d\d:\d\d\.\d{3})\s+dlss5-bridge (\S+) \(built [^)\n]*\) attached\.", re.M
+    r"^(\d\d:\d\d:\d\d\.\d{3})\s+dlss5-bridge (\S+) \(built [^)\n]*\) attached\.",
+    re.MULTILINE,
 )
 # "[bridge] frame %llu delivered (%ux%u)" at frame 1 and every 1800, the
 # synthetic path's D3D12 and Vulkan spellings, CountDelivered's
@@ -183,7 +180,7 @@ _BRIDGE_CRASH = re.compile(
 # ReShade's own line for the bridge add-on, which ties the bridge's log to
 # ReShade's session: the bridge writes "attached." just after it registers.
 _BRIDGE_REGISTERED = re.compile(
-    r"^(\d\d:\d\d:\d\d[:.]\d{3})[^\n]*Registered add-on \"DLSS 5 Bridge", re.M
+    r"^(\d\d:\d\d:\d\d[:.]\d{3})[^\n]*Registered add-on \"DLSS 5 Bridge", re.MULTILINE
 )
 
 
@@ -311,13 +308,15 @@ _RESHADE_SESSION = "Initializing crosire's ReShade"
 
 # 1.18.0-beta prints "attached%s." - a suffix such as "; loader notifications
 # unavailable, ..." can sit between the word and the full stop.
-_FEED_SESSION = re.compile(r"^[\d:.]+\s+dlss5-feed\S*\s[^\n]*attached[.;]", re.M)
+_FEED_SESSION = re.compile(
+    r"^[\d:.]+\s+dlss5-feed\S*\s[^\n]*attached[.;]", re.MULTILINE
+)
 
 
 _FEED_GOT_RUNTIME = re.compile(
     r"effect runtime|runtime \w+ initialis|effects:|technique|building:"
     r"|feature ready|session ready|frame \d+",
-    re.I,
+    re.IGNORECASE,
 )
 
 
@@ -394,7 +393,9 @@ def _install_modules() -> frozenset:
     the shared modules, the window and the diagnosis."""
     if _install_graph:
         return _install_graph[0]
-    import dis, importlib, types  # noqa: E401
+    import dis
+    import importlib
+    import types
 
     pkg = __name__.split(".")[0]
     seen: set = set()

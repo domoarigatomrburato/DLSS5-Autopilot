@@ -33,15 +33,16 @@ from .. import (
     components,
     diagnose,
     dlss,
-    dxvk,
     feedcfg,
     games,
     gpu,
     gpupref,
     installer,
     log,
+    mfg as _mfg,
     net,
     optiscaler,
+    ownfg,
     pe,
     prefs,
     profiles,
@@ -53,9 +54,6 @@ from .. import (
     watch,
     wincrash,
 )
-from .. import mfg as _mfg
-from .. import ownfg
-from .ctl_library import first_line
 
 AUTO = "auto"
 DLSSD_KEEP = "keep"
@@ -823,7 +821,7 @@ class GameControl:
                 mine.append(
                     (
                         "warn",
-                        F10_CLASH[3:] if F10_CLASH.startswith("!! ") else F10_CLASH,
+                        F10_CLASH.removeprefix("!! "),
                     )
                 )
         self.notes = mine + list(self._route_notes)

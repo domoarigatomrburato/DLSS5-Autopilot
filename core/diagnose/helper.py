@@ -18,26 +18,25 @@ Part of core/diagnose; see __init__.py.
 """
 
 from __future__ import annotations
-import re
 
+import re
 from pathlib import Path
 
-from .model import *  # noqa: F401,F403
 from .evidence import _same_launch
-
+from .model import *  # noqa: F403
 
 __all__ = [
-    "_helper_session",
-    "_helper_excerpt",
-    "_helper_verdict",
     "_fed_the_helper",
+    "_helper_excerpt",
     "_helper_same_launch",
+    "_helper_session",
+    "_helper_verdict",
 ]
 
-_HOST_BANNER = re.compile(r"^[\d:.]+\s+dlss5-feed-host\S*\s", re.M)
+_HOST_BANNER = re.compile(r"^[\d:.]+\s+dlss5-feed-host\S*\s", re.MULTILINE)
 # DXGI_ERROR_DEVICE_REMOVED. Any other Present code is left alone: the
 # helper says a failed present of its own window does not touch the feed.
-_REMOVED = re.compile(r"\[host\] Present failed (0x887A0005)", re.I)
+_REMOVED = re.compile(r"\[host\] Present failed (0x887A0005)", re.IGNORECASE)
 _OUTCOME = re.compile(r"\[host\] neural consumer outcome: ([^\n]+)")
 _KEEP = re.compile(
     r"DLSS 5 add-on|NGX_D3D12_Init|NeuralUplift|Present failed|"
@@ -152,7 +151,9 @@ def _helper_same_launch(text: str, htext: str, feed: Path, host: Path) -> bool:
     the time check threw away the helper's log of that very launch (gate
     2.0.6, the twin of #482's). Without both stamps, the files' times."""
     spawn = None
-    for spawn in re.finditer(r"^(\S+)\s+\[feed32\] host spawned", text or "", re.M):
+    for spawn in re.finditer(
+        r"^(\S+)\s+\[feed32\] host spawned", text or "", re.MULTILINE
+    ):
         pass
     # The helper's LAST run, and only when its start is there: a log with
     # a helper respawned after a lost device holds two runs, and a tail cut
@@ -160,7 +161,9 @@ def _helper_same_launch(text: str, htext: str, feed: Path, host: Path) -> bool:
     # first stamp is then not the start (gate 2.0.7).
     run = _helper_session(htext)
     first = (
-        re.search(r"^(\S+)\s+\[host\]", run, re.M) if _HOST_BANNER.match(run) else None
+        re.search(r"^(\S+)\s+\[host\]", run, re.MULTILINE)
+        if _HOST_BANNER.match(run)
+        else None
     )
     lo = _clock(spawn.group(1)) if spawn else None
     t0 = _clock(first.group(1)) if first else None
@@ -181,19 +184,21 @@ def _gave_up_early(rep: Report, text: str, htext: str, stale: bool = False) -> b
     report already carries.
     """
     lost = re.search(
-        r"^(\S+)\s+\[feed32\] host lost: pipe never appeared", text or "", re.M
+        r"^(\S+)\s+\[feed32\] host lost: pipe never appeared", text or "", re.MULTILINE
     )
     if not lost:
         return False
     gave_up = _clock(lost.group(1))
     spawn = None
-    for spawn in re.finditer(r"^(\S+)\s+\[feed32\] host spawned", text or "", re.M):
+    for spawn in re.finditer(
+        r"^(\S+)\s+\[feed32\] host spawned", text or "", re.MULTILINE
+    ):
         pass
     # Is the helper's log from this launch? Its first stamp has to fall
     # between the spawn and two minutes after the feed gave up - read off
     # the logs' own clocks, because the feed log keeps growing while the
     # person plays on and the files' times drift apart (gate 2.0.6).
-    first = re.search(r"^(\S+)\s+\[host\]", htext or "", re.M)
+    first = re.search(r"^(\S+)\s+\[host\]", htext or "", re.MULTILINE)
     t0 = _clock(first.group(1)) if first else None
     lo = _clock(spawn.group(1)) if spawn else gave_up
     if t0 is not None and lo is not None and gave_up is not None:
@@ -204,7 +209,9 @@ def _gave_up_early(rep: Report, text: str, htext: str, stale: bool = False) -> b
     both = (htext or "") + "\n" + (text or "")
     ready = None
     for m in re.finditer(
-        r"^(\S+)\s+\[host\] NVSDK_NGX_D3D12_Init -> 0x0*1 \(Success\)", both, re.M
+        r"^(\S+)\s+\[host\] NVSDK_NGX_D3D12_Init -> 0x0*1 \(Success\)",
+        both,
+        re.MULTILINE,
     ):
         t = _clock(m.group(1))
         if t is None or gave_up is None:

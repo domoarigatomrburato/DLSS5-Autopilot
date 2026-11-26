@@ -8,7 +8,6 @@ own colour and warms the page's glow towards that colour.
 
 from __future__ import annotations
 
-from . import imaging
 from . import theme as T
 from .ctl_library import ARCH, FILTERS, SORTS
 from .motion import mix

@@ -297,7 +297,7 @@ GRAPHICS = (
 )
 
 
-def graphics_of(got: "Loaded") -> list[str]:
+def graphics_of(got: Loaded) -> list[str]:
     """Which GRAPHICS names a process has loaded, from any folder."""
     have = {os.path.basename(p).lower() for p in got.paths}
     return [n for n in GRAPHICS if n in have]
@@ -515,7 +515,7 @@ def _load_records() -> dict:
         return {}
 
 
-def remember(folder: Path, s: "Sighting") -> None:
+def remember(folder: Path, s: Sighting) -> None:
     """Keep what one sighting saw, so it can be read after the game closes.
 
     The window is open while people play - they install, launch, play, come

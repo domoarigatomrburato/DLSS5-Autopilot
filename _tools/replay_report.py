@@ -46,8 +46,10 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core import diagnose  # noqa: E402
-from core import remix  # noqa: E402
+from core import (
+    diagnose,
+    remix,
+)
 
 # The report template's own headings, so a pasted issue can be taken apart.
 BLOCKS = {
@@ -77,7 +79,7 @@ def _blocks(text: str) -> dict:
         m = re.search(
             r"\*\*" + re.escape(name) + r"[^\n]*\*\*\s*\n```[^\n]*\n(.*?)```",
             text,
-            re.S,
+            re.DOTALL,
         )
         if m and m.group(1).strip() not in ("(none)", ""):
             out[key] = m.group(1)
@@ -105,7 +107,7 @@ def _header(text: str) -> dict:
         "compatibility flags",
         "this tool",
     ):
-        m = re.search(r"^- " + re.escape(k) + r":\s*(.+)$", text, re.M)
+        m = re.search(r"^- " + re.escape(k) + r":\s*(.+)$", text, re.MULTILINE)
         if m:
             out[k] = m.group(1).strip()
     return out
@@ -129,7 +131,7 @@ UNFINISHED = (
 
 def printed_verdict(text: str) -> str:
     """The verdict the tool printed on the reporter's own machine."""
-    m = re.search(r"^\*\*Diagnosis\*\*:\s*(.+)$", text, re.M)
+    m = re.search(r"^\*\*Diagnosis\*\*:\s*(.+)$", text, re.MULTILINE)
     return m.group(1).strip() if m else ""
 
 
@@ -145,13 +147,13 @@ def finished(text: str) -> dict:
     said = printed_verdict(text)
     extra = (
         {"native_dlss": False}
-        if re.search(r"^- bridge contract: synthetic\s*$", text, re.M)
+        if re.search(r"^- bridge contract: synthetic\s*$", text, re.MULTILINE)
         else {}
     )
     if said:
         return {"complete": said not in UNFINISHED, **extra}
     crashed = (
-        re.search(r"\*\*Last error\*\*(.*?)```", text, re.S) is not None
+        re.search(r"\*\*Last error\*\*(.*?)```", text, re.DOTALL) is not None
         and "installer.py" in text
     )
     return {"complete": not crashed, **extra}
@@ -165,7 +167,9 @@ def started(text: str) -> str:
 
 def presence(text: str) -> list[str]:
     """The report's "Files in the folder" lines, as printed."""
-    m = re.search(r"\*\*Files in the folder\*\*\s*\n(.*?)(?:\n\*\*|\Z)", text, re.S)
+    m = re.search(
+        r"\*\*Files in the folder\*\*\s*\n(.*?)(?:\n\*\*|\Z)", text, re.DOTALL
+    )
     return (
         [ln.strip() for ln in m.group(1).splitlines() if ln.strip().startswith("- ")]
         if m
@@ -187,7 +191,9 @@ def analyse(d: Path, text: str):
         if _video.PLAYER_EXE.lower() in _header(text).get("exe", "").lower()
         else "game"
     )
-    ev = re.search(r"^- windows event: (.+?) at [\d-]+ [\d:]+ UTC\s*$", text, re.M)
+    ev = re.search(
+        r"^- windows event: (.+?) at [\d-]+ [\d:]+ UTC\s*$", text, re.MULTILINE
+    )
     if ev and not getattr(rep, "never_ran", False):
         # The window's correction of a "play once" verdict over a counted
         # fault (ctl_game.crash_overrides, #748). The event line is printed
@@ -201,8 +207,8 @@ def analyse(d: Path, text: str):
                 for f in rep.findings
                 if "play once and check again" not in f"{f.title} {f.detail}"
             ]
-    ref = re.search(r"^- DLL list: refused - (.+?)\s*$", text, re.M)
-    ac = re.search(r"^- anti-cheat: (.+?)\s*$", text, re.M)
+    ref = re.search(r"^- DLL list: refused - (.+?)\s*$", text, re.MULTILINE)
+    ac = re.search(r"^- anti-cheat: (.+?)\s*$", text, re.MULTILINE)
     acs = ac.group(1) if ac else ""
     if not acs:
         # Reports from before 2.1.1 carry no anti-cheat line; the live tool
@@ -222,7 +228,7 @@ def analyse(d: Path, text: str):
     )
 
 
-_DXVK_LOG = re.compile(r"_(d3d8|d3d9|d3d10|d3d11|dxgi)\.log$", re.I)
+_DXVK_LOG = re.compile(r"_(d3d8|d3d9|d3d10|d3d11|dxgi)\.log$", re.IGNORECASE)
 
 
 def folder_state(text: str) -> dict | None:
@@ -246,7 +252,9 @@ def folder_state(text: str) -> dict | None:
     `_presence` had nothing to name them from - there was no install record
     in that folder at all.
     """
-    m = re.search(r"\*\*Files in the folder\*\*\s*\n(.*?)(?:\n\*\*|\Z)", text, re.S)
+    m = re.search(
+        r"\*\*Files in the folder\*\*\s*\n(.*?)(?:\n\*\*|\Z)", text, re.DOTALL
+    )
     if not m:
         return None
     files: dict[str, bool] = {}
@@ -369,7 +377,7 @@ def folder_state(text: str) -> dict | None:
                 r"(dxgi|d3d9|d3d10|d3d11|d3d12|opengl32|winmm|version|"
                 r"dinput8|nvngx)\.dll$",
                 name,
-                re.I,
+                re.IGNORECASE,
             )
             or ".addon" in name.lower()
         ):
@@ -383,7 +391,7 @@ def folder_state(text: str) -> dict | None:
             if re.match(
                 r"(dxgi|d3d9|d3d10|d3d11|d3d12|opengl32|winmm|version|dinput8)\.dll$",
                 n,
-                re.I,
+                re.IGNORECASE,
             )
         ),
         "",
@@ -468,7 +476,7 @@ def build(
     if (
         state is not None
         and state.get("layer") is not None
-        and re.match(r"(d3d9|d3d10|d3d11|dxgi)\.dll$", proxy or "", re.I)
+        and re.match(r"(d3d9|d3d10|d3d11|dxgi)\.dll$", proxy or "", re.IGNORECASE)
     ):
         man["dxvk"] = True
         man["proxy"] = diagnose.VULKAN_LAYER
@@ -590,7 +598,7 @@ def _build_remix(d: Path, rx: dict) -> None:
         (d / remix.CONF).write_text(f"{rx['key']} = True\n", encoding="utf8")
 
 
-_LAST_ERROR_RE = re.compile(r"\*\*Last error\*\*\s*```(.*?)```", re.S)
+_LAST_ERROR_RE = re.compile(r"\*\*Last error\*\*\s*```(.*?)```", re.DOTALL)
 
 
 def last_error(text: str) -> str:
@@ -636,9 +644,7 @@ def machine(text: str, d: Path):
     layer = (state or {}).get("layer")
     reg = (True, True) if layer is None else (layer, layer)
     drv = re.search(r"driver\s+([\d.]+)", _header(text).get("gpu", ""))
-    from core import gpu as _gpu
-    from core import watch as _watch
-    from core import vulkan as _vk
+    from core import gpu as _gpu, vulkan as _vk, watch as _watch
 
     # What the watcher saw on their machine, put where the diagnosis reads
     # it. The block was printed in every 1.9.0 report and the replay never
@@ -695,7 +701,7 @@ def _seen_at(text: str) -> float:
     from datetime import datetime
 
     m = re.search(r"\(seen at (\d{1,2} \w{3} \d{2}:\d{2})\)", text)
-    y = re.search(r"^(20\d\d)-\d\d-\d\d \d\d:\d\d", text, re.M)
+    y = re.search(r"^(20\d\d)-\d\d-\d\d \d\d:\d\d", text, re.MULTILINE)
     try:
         return datetime.strptime(
             f"{m.group(1)} {y.group(1) if y else 2026}", "%d %b %H:%M %Y"
@@ -707,7 +713,9 @@ def _seen_at(text: str) -> float:
 def sighting(text: str) -> dict:
     """The report's "What ran, and what it loaded" block, as a record."""
     m = re.search(
-        r"\*\*What ran, and what it loaded\*\*[^\n]*\n(.*?)(?:\n\s*\n|\Z)", text, re.S
+        r"\*\*What ran, and what it loaded\*\*[^\n]*\n(.*?)(?:\n\s*\n|\Z)",
+        text,
+        re.DOTALL,
     )
     if not m:
         return {}

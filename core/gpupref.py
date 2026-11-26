@@ -27,7 +27,6 @@ Rules, because this is written outside the game folder:
 from __future__ import annotations
 
 import functools
-from pathlib import Path
 
 KEY = r"Software\Microsoft\DirectX\UserGpuPreferences"
 TOKEN = "GpuPreference"

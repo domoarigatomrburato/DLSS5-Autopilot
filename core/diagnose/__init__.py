@@ -22,7 +22,7 @@ replay tools: patch them on `diagnose.model`, which is where they live
 and what the package reads.
 """
 
-from . import model, layer, evidence, process, helper, live, routes, body, chain  # noqa: F401
+from . import body, chain, evidence, helper, layer, live, model, process, routes
 
 # Everything the nine parts define, under this name, so every caller
 # outside the package - and 1,500 checks in the suite - keeps reaching

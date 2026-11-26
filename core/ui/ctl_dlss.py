@@ -13,8 +13,7 @@ import threading
 import time
 from pathlib import Path
 
-from .. import dlssupdate as du
-from .. import log, watch
+from .. import dlssupdate as du, log, watch
 
 # A scan older than this is run again when the page opens: NVIDIA publishes
 # a few builds a year, and a launcher can put an old file back any day.
@@ -516,7 +515,7 @@ class DlssControl:
                 f"{g.name} ships {r['anticheat']}"
                 + (f" ({r['anticheat_found']})" if r.get("anticheat_found") else "")
                 + ". An anti-cheat can read a changed DLSS file as "
-                f"tampering, and online that can mean a ban. The game's own files are kept either way.",
+                "tampering, and online that can mean a ban. The game's own files are kept either way.",
                 "update anyway",
                 "cancel",
                 danger=True,

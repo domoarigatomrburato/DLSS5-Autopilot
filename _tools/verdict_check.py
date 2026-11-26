@@ -34,7 +34,6 @@ import json
 import re
 import shutil
 import sys
-import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -42,7 +41,6 @@ sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE))
 
 import replay_report  # noqa: E402
-from core import diagnose  # noqa: E402
 
 REPORTS = HERE / "reports"
 BASELINE = HERE / "verdict_baseline.json"
@@ -112,7 +110,7 @@ def printed_verdict(text: str) -> str:
     machine it came from - if the replay says something else, the fault may
     be in the rule OR in the replay, and until 1.8.2 nothing compared them.
     """
-    m = re.search(r"^\*\*Diagnosis\*\*:\s*(.+)$", text, re.M)
+    m = re.search(r"^\*\*Diagnosis\*\*:\s*(.+)$", text, re.MULTILINE)
     return m.group(1).strip() if m else ""
 
 

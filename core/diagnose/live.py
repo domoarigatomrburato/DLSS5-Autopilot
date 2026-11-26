@@ -16,22 +16,22 @@ Part of core/diagnose; see __init__.py.
 """
 
 from __future__ import annotations
+
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .model import *  # noqa: F401,F403
 from .helper import _clock
-
+from .model import *  # noqa: F403
 
 __all__ = [
     "BridgeRun",
-    "bridge_run",
-    "read_bridge",
     "_bridge_excerpt",
     "_bridge_session",
     "_bridge_text",
     "_bridge_verdict",
+    "bridge_run",
+    "read_bridge",
 ]
 
 # BridgeFail's one word for what failed, three times in a row, in words.

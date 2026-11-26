@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import re
 import time
 from dataclasses import dataclass, field
-import pathlib
 from pathlib import Path
 
 from . import emulators, log, pe
@@ -135,7 +135,7 @@ def is_locked_store_path(path: Path) -> bool:
     return any(p.lower() in _LOCKED_STORE_DIRS for p in parts)
 
 
-def _xbox_locked(g: "Game") -> bool:
+def _xbox_locked(g: Game) -> bool:
     """Warn about EXE protection without inferring directory write access."""
     # Any folder, not only C:\XboxGames and WindowsApps: a Game Pass library
     # on another drive has a name of the person's choosing, and its protected

@@ -274,7 +274,7 @@ def swap_script(current: Path, new_exe: Path) -> str:
             f'if exist "{old_int}" rmdir /s /q "{old_int}" >nul 2>&1',
             f'if exist "{cur_int}" move /y "{cur_int}" "{old_int}" >nul 2>&1',
             f'xcopy "{new_int}" "{cur_int}\\" /E /I /Q /Y /H >nul 2>&1',
-            f"if errorlevel 1 goto rollback",
+            "if errorlevel 1 goto rollback",
             f'if not exist "{cur_int}\\*" goto rollback',
             'copy /y "%SOURCE%" "%TARGET%" >nul 2>&1',
             "if errorlevel 1 goto rollback",

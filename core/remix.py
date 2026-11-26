@@ -189,7 +189,7 @@ def log_path(game_folder: Path) -> Path:
     return Path(game_folder) / LOG
 
 
-def _line_re(key: str) -> "re.Pattern[bytes]":
+def _line_re(key: str) -> re.Pattern[bytes]:
     return re.compile(rb"^[ \t]*" + re.escape(key.encode("ascii")) + rb"[ \t]*=")
 
 

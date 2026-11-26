@@ -13,15 +13,15 @@ Part of core/diagnose; see __init__.py.
 """
 
 from __future__ import annotations
+
 import re
 from datetime import datetime
 from pathlib import Path
 
-from .model import *  # noqa: F401,F403
-from .evidence import _installed_at, _standalone_named, _upstream_named, TAIL_RESHADE
+from .evidence import TAIL_RESHADE, _installed_at, _standalone_named, _upstream_named
+from .model import *  # noqa: F403
 
-
-__all__ = ["_loaded_note", "_foreign_hooks", "_name_foreign_hooks"]
+__all__ = ["_foreign_hooks", "_loaded_note", "_name_foreign_hooks"]
 
 # NGX loads the neural runtime when the feature is CREATED, not when the
 # game starts. Not loaded at a sighting is what a session looks like before
@@ -37,7 +37,7 @@ _LOADS_ON_CREATE = ("nvngx_dlssnr.dll",)
 _LOG_CLOCK = re.compile(
     r"^(\d{2}):(\d{2}):(\d{2}):\d+ [^\n]*"
     r"(?:Initializing crosire's ReShade|Registered add-on)",
-    re.M,
+    re.MULTILINE,
 )
 
 # A launch later than the sighting by less than this is the same launch seen
@@ -195,7 +195,7 @@ def _loaded_note(install_dir: Path, man: dict, rep: Report) -> None:
 # What a registered add-on's name has to carry to be a DLSS hook, rather
 # than an HDR mod, a limiter or a shader tool. The RTX 40 MFG unlock this
 # tool installs ("Universal RTX 40 MFG Unlock V1.2") carries none of them.
-_HOOK_WORDS = re.compile(r"dlss|\bngx\b|nvngx|neural|optiscaler|uplift", re.I)
+_HOOK_WORDS = re.compile(r"dlss|\bngx\b|nvngx|neural|optiscaler|uplift", re.IGNORECASE)
 
 
 def _route_owns(name: str, route: str) -> bool:

@@ -732,7 +732,7 @@ def install(
             except OSError:
                 pass
 
-    tag, url = release if release else resolve()
+    tag, url = release or resolve()
     log(f"      OptiScaler DLSS-NR {tag}")
     z = dl(url, _archive_name(tag, url))
 

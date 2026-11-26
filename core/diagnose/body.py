@@ -7,43 +7,38 @@ Part of core/diagnose; see __init__.py.
 """
 
 from __future__ import annotations
-import itertools
-import json
-import os
+
 import re
-import time
-from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
 from . import model
-from .model import *  # noqa: F401,F403
-from .evidence import *  # noqa: F401,F403
+from .evidence import *  # noqa: F403
 from .helper import _helper_excerpt
 from .layer import _dxvk_files
 from .live import _bridge_excerpt, _bridge_text
-
+from .model import *  # noqa: F403
 
 __all__ = [
     "CLOSED_ITSELF",
     "NEVER_STARTED",
+    "NO_PASTE_FIRST",
+    "PASTE_FIRST",
     "_block",
     "_dlss_record_root",
     "_last_lines",
     "_presence",
-    "answered",
-    "refused_reason",
-    "anticheat_named",
-    "event_line",
-    "said_started",
     "_reshade_excerpt",
     "_their_provider",
     "_tool_log_lines",
-    "issue_body",
-    "PASTE_FIRST",
-    "NO_PASTE_FIRST",
-    "issue_url",
+    "answered",
+    "anticheat_named",
+    "event_line",
     "event_module",
+    "issue_body",
+    "issue_url",
+    "refused_reason",
+    "said_started",
 ]
 
 
@@ -437,7 +432,7 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
         st = _ini2.addon_state(install_dir)
         if st and route in ("native", "bridge", "feeder"):
             extra.append(
-                f"- DLSS 5 add-on switch: "
+                "- DLSS 5 add-on switch: "
                 + (
                     f"{_ini2.ADDON_SWITCH}={st['switch']}"
                     if st.get("switch") is not None
@@ -520,6 +515,7 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
     # that changed.
     try:
         from types import SimpleNamespace as _NS
+
         from .. import dlssupdate as _du
 
         _gf = _dlss_record_root(Path(install_dir), game_root)
@@ -751,7 +747,7 @@ _LOOK_IN_GAME = (
 
 
 _OVERLAY_ASK = re.compile(
-    r"\b(open|press|check)\b[^.]{0,60}\b(overlay|panel|tab)\b", re.I
+    r"\b(open|press|check)\b[^.]{0,60}\b(overlay|panel|tab)\b", re.IGNORECASE
 )
 
 

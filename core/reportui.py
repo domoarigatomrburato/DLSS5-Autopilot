@@ -17,8 +17,7 @@ from __future__ import annotations
 import tkinter as tk
 import tkinter.font as tkfont
 
-from .ui import theme as T
-from .ui import win
+from .ui import theme as T, win
 from .ui.kit import Button, Kit
 
 # (value written into the report, what the person reads)

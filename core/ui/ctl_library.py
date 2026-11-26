@@ -31,8 +31,7 @@ from .. import (
     update,
     video,
 )
-from . import art, imaging
-from . import theme as T
+from . import art, imaging, theme as T
 
 SORTS = (
     ("", "scan order"),

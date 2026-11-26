@@ -8,25 +8,21 @@ Part of core/diagnose; see __init__.py.
 """
 
 from __future__ import annotations
-import itertools
-import json
+
 import os
 import re
-import time
-from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
 from . import model
-from .model import *  # noqa: F401,F403
-from .evidence import *  # noqa: F401,F403
-from .process import *  # noqa: F401,F403
+from .body import *  # noqa: F403
+from .evidence import *  # noqa: F403
+from .helper import *  # noqa: F403
+from .live import *  # noqa: F403
+from .model import *  # noqa: F403
+from .process import *  # noqa: F403
 from .process import _route_owns
-from .helper import *  # noqa: F401,F403
-from .live import *  # noqa: F401,F403
-from .routes import *  # noqa: F401,F403
-from .body import *  # noqa: F401,F403
-
+from .routes import *  # noqa: F403
 
 __all__ = ["_explain_no_log", "analyse"]
 
@@ -359,7 +355,7 @@ def _explain_no_log(
         # same. Say only what is true - there is no log.
         rep.add(
             WARN,
-            f"Nothing has loaded ReShade in this folder.",
+            "Nothing has loaded ReShade in this folder.",
             "ReShade writes ReShade.log the moment it loads, and there is "
             "none here. With the install record gone there is no install "
             "time to measure against either, so this cannot tell an "
@@ -480,9 +476,9 @@ def _explain_no_log(
             ),
         )
     rep.verdict = (
-        f"It looks as though it ran and nothing this install "
-        f"wrote was loaded - most likely the proxy name or the "
-        f"executable."
+        "It looks as though it ran and nothing this install "
+        "wrote was loaded - most likely the proxy name or the "
+        "executable."
         if _ran_what
         else f"No install record here and no ReShade.log - install "
         f"again, then run the {app} once."
@@ -604,8 +600,8 @@ def _foreign_reshade(
             f"A ReShade with {_called} is still loading in this "
             "game: " + ", ".join(ours),
             (
-                f"renodx-dlss5 is the add-on this tool's ReShade routes "
-                f"install, and other DLSS 5 tools ship it too"
+                "renodx-dlss5 is the add-on this tool's ReShade routes "
+                "install, and other DLSS 5 tools ship it too"
                 if _renodx
                 else f"{', '.join(ours)} {'is' if len(ours) == 1 else 'are'} what "
                 f"this tool's ReShade routes "
@@ -654,7 +650,7 @@ def analyse(install_dir: Path, last_error: str = "") -> Report:
 
 
 _INVALID_REDIST = re.compile(
-    r"D3D12CreateDevice failed (?:with error code )?0x887e0003", re.I
+    r"D3D12CreateDevice failed (?:with error code )?0x887e0003", re.IGNORECASE
 )
 
 
@@ -1218,7 +1214,9 @@ def _analyse(install_dir: Path, last_error: str, foreign: list) -> Report:
         # record's api is then "Vulkan" - the game as the install saw it.
         # ".*?" up to "' into": a game folder may hold an apostrophe
         # ("Assassin's Creed"), and "[^']*" never matched one.
-        rs_d3d9 = re.search(r"loaded from '(.*?\\d3d9\.dll)' into", rtext or "", re.I)
+        rs_d3d9 = re.search(
+            r"loaded from '(.*?\\d3d9\.dll)' into", rtext or "", re.IGNORECASE
+        )
         via_dxvk = bool(man.get("dxvk")) and str(man.get("path") or "") in (
             "feeder",
             "native",
@@ -2366,53 +2364,52 @@ def _analyse(install_dir: Path, last_error: str, foreign: list) -> Report:
             # unless the bridge's own log shows it stopped (gate 2.0.7).
             if switch == "off" or (sub_off and not (brun.stop or brun.crashed)):
                 rep.verdict, bridged = was, False
+    # A log that stops at the hooks it installed is not "did not get far
+    # enough" in some vague way: everything the feed can say about the
+    # picture starts from the effect runtime ReShade hands it, and that
+    # log says it never got one (Web of Shadows, #164: eight lines, and
+    # the answer named none of them). Which of the two ends is at fault is
+    # not in this log, so ask for what would tell us instead of guessing.
+    #
+    # The absence of ONE wording is not that evidence, though - the word
+    # "effect runtime" is one build's. Ask for the absence of every line
+    # that can only be written once a runtime exists: a technique state, a
+    # build, a frame. With any of those present this is a different answer
+    # and the findings above have already given it.
+    # Frames shipped to the 64-bit helper prove a runtime existed, so
+    # that answer is read first (#252).
+    # Whether the helper's log is from this launch is read off the logs'
+    # own clocks inside _fed_the_helper, not the files' times: the feed
+    # log keeps growing while the person plays on (gate 2.0.6).
+    elif _fed_the_helper(rep, text, htext):
+        pass
+    elif (
+        _attached(text)
+        and not _FEED_GOT_RUNTIME.search(text or "")
+        and not _FEED_GOT_RUNTIME.search(htext or "")
+    ):
+        rep.add(
+            WARN,
+            "The add-on loaded, and ReShade never handed it an effect runtime.",
+            "Everything the feed does starts from that runtime, and "
+            "its log stops at the hooks it installed. Open the "
+            "ReShade overlay in the game and check that 'DLSS 5 Feed' "
+            "is ticked in the effect list - and if it is, send "
+            "dlss5-feed.log and ReShade.log whole: this pair of logs "
+            "cannot say which side stopped.",
+        )
+        rep.verdict = (
+            "The add-on loaded but ReShade never gave it an "
+            "effect runtime - check 'DLSS 5 Feed' is ticked in "
+            "the overlay."
+        )
+    elif _reshade_died_early(rtext):
+        rep.verdict = (
+            "It started and closed during start-up - ReShade "
+            "attached and nothing else got to run."
+        )
     else:
-        # A log that stops at the hooks it installed is not "did not get far
-        # enough" in some vague way: everything the feed can say about the
-        # picture starts from the effect runtime ReShade hands it, and that
-        # log says it never got one (Web of Shadows, #164: eight lines, and
-        # the answer named none of them). Which of the two ends is at fault is
-        # not in this log, so ask for what would tell us instead of guessing.
-        #
-        # The absence of ONE wording is not that evidence, though - the word
-        # "effect runtime" is one build's. Ask for the absence of every line
-        # that can only be written once a runtime exists: a technique state, a
-        # build, a frame. With any of those present this is a different answer
-        # and the findings above have already given it.
-        # Frames shipped to the 64-bit helper prove a runtime existed, so
-        # that answer is read first (#252).
-        # Whether the helper's log is from this launch is read off the logs'
-        # own clocks inside _fed_the_helper, not the files' times: the feed
-        # log keeps growing while the person plays on (gate 2.0.6).
-        if _fed_the_helper(rep, text, htext):
-            pass
-        elif (
-            _attached(text)
-            and not _FEED_GOT_RUNTIME.search(text or "")
-            and not _FEED_GOT_RUNTIME.search(htext or "")
-        ):
-            rep.add(
-                WARN,
-                "The add-on loaded, and ReShade never handed it an effect runtime.",
-                "Everything the feed does starts from that runtime, and "
-                "its log stops at the hooks it installed. Open the "
-                "ReShade overlay in the game and check that 'DLSS 5 Feed' "
-                "is ticked in the effect list - and if it is, send "
-                "dlss5-feed.log and ReShade.log whole: this pair of logs "
-                "cannot say which side stopped.",
-            )
-            rep.verdict = (
-                "The add-on loaded but ReShade never gave it an "
-                "effect runtime - check 'DLSS 5 Feed' is ticked in "
-                "the overlay."
-            )
-        elif _reshade_died_early(rtext):
-            rep.verdict = (
-                "It started and closed during start-up - ReShade "
-                "attached and nothing else got to run."
-            )
-        else:
-            rep.verdict = "Inconclusive - the feed did not get far enough to tell."
+        rep.verdict = "Inconclusive - the feed did not get far enough to tell."
 
     # Frames the bridge delivered say the game drew with the device this
     # install set up, so the D3D9 answers do not replace what it said.

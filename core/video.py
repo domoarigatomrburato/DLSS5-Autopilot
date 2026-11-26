@@ -294,7 +294,6 @@ def known() -> games.Game | None:
 
 def launch(folder: Path, target: str = "") -> None:
     """Start the player, optionally on a file or URL."""
-    import subprocess
 
     exe = Path(folder) / PLAYER_EXE
     args = [str(exe)]
@@ -1468,7 +1467,7 @@ class _WindowFeed:
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
 
-    def start(self) -> "_WindowFeed":
+    def start(self) -> _WindowFeed:
         self._thread.start()
         return self
 
@@ -1580,7 +1579,7 @@ class _WindowFeed:
                     pass
 
 
-_window_feed: "_WindowFeed | None" = None
+_window_feed: _WindowFeed | None = None
 
 
 def start_screen(folder: Path, target: str, fps: int = 30):

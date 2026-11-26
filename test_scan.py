@@ -10,19 +10,27 @@ from contextlib import ExitStack
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from core import dlss, games, installer, library, log, net, pe, prefs, watch
-
 # Installs here run for real and this machine may have two GPUs: Windows'
 # graphics preference goes to a dict, never the machine's own HKCU.
-from core import gpupref as _gpupref  # noqa: E402
+from core import (
+    dlss,
+    games,
+    gpupref as _gpupref,
+    installer,
+    library,
+    log,
+    net,
+    pe,
+    prefs,
+    watch,
+)
 
 _gpupref.backend = _gpupref.Memory()
 # ...and runs as a one-GPU machine, whatever this one has: a check that
 # needs two GPUs says so itself.
 _gpupref.other_gpu = lambda: ""
 from core.lookout import Lookout
-from core.ui import app as uiapp
-from core.ui import ctl_library, kit
+from core.ui import app as uiapp, ctl_library, kit
 from core.ui.ctl_game import GameControl
 from core.ui.ctl_library import LibraryControl
 

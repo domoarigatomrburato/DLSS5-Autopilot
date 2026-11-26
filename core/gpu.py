@@ -267,6 +267,7 @@ def driver_version() -> str | None:
     found = None
     try:
         import os
+
         from . import pe
 
         dll = (

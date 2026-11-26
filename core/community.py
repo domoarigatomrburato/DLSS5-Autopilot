@@ -793,6 +793,7 @@ def issue_url(rec: dict, note: str = "") -> str:
     """A pre-filled issue that carries the record. Nothing is posted by the
     tool itself - the person reads it in their browser and decides."""
     from urllib.parse import quote
+
     from . import update
 
     verb = "worked" if rec.get("result") == "worked" else "did not work"
@@ -856,18 +857,18 @@ def issue_url(rec: dict, note: str = "") -> str:
 
 
 __all__ = [
-    "record",
+    "FEED_URL",
+    "MARKER",
+    "MIN_MEASURED",
+    "MIN_REPORTS",
+    "advice",
     "block",
-    "parse",
-    "said_verdict",
     "counts",
     "fetch",
     "for_game",
-    "advice",
-    "measured_note",
     "issue_url",
-    "FEED_URL",
-    "MIN_REPORTS",
-    "MIN_MEASURED",
-    "MARKER",
+    "measured_note",
+    "parse",
+    "record",
+    "said_verdict",
 ]

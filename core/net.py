@@ -149,7 +149,7 @@ def untrusted(name: str, e: Exception) -> RuntimeError | None:
     text = str(e)
     if "CERTIFICATE_VERIFY_FAILED" not in text:
         return None
-    host = name.split("/")[0] or name
+    host = name.split("/", maxsplit=1)[0] or name
     low = text.lower()
     if "hostname mismatch" in low or "certificate is not valid for" in low:
         return RuntimeError(
@@ -322,7 +322,7 @@ class Unreachable(urllib.error.URLError):
         return self.message
 
 
-def unreachable(host: str, e: BaseException) -> "Unreachable | None":
+def unreachable(host: str, e: BaseException) -> Unreachable | None:
     """The error to raise for a connection net_kind() names, else None."""
     if isinstance(e, Unreachable):
         return e
@@ -538,7 +538,7 @@ def download(
                     raise unreachable(_host(url), e) from e
                 raise
             time.sleep(1.0 * (attempt + 1))
-    raise last if last else RuntimeError(f"{name}: download failed")
+    raise last or RuntimeError(f"{name}: download failed")
 
 
 def sha256(path: Path) -> str:

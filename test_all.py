@@ -6,7 +6,6 @@ Run this before cutting a release.
 
 import atexit
 import errno
-import inspect
 import json
 import os
 import shutil
@@ -14,8 +13,8 @@ import ssl
 import subprocess
 import sys
 import tempfile
-import urllib.parse
 import time
+import urllib.parse
 import warnings
 from pathlib import Path
 from unittest.mock import patch
@@ -131,7 +130,7 @@ def _ui_isolated():
     # ...and its route is the tool's own pick: the shared list this machine
     # last downloaded can move a recommendation (dlss._shared_steer), and a
     # test cannot depend on what was published this week
-    _cm.cached = lambda: {}
+    _cm.cached = dict
     try:
         yield d
     finally:
@@ -211,6 +210,7 @@ def _ui_ctl(game=None, support=None):
     and WatchControl on one object whose shell, root and log are recorders.
     Call inside _ui_isolated() - the controllers read settings as they start."""
     import queue as _queue
+
     from core.ui import (
         ctl_dlss as _cd,
         ctl_game as _cg,
@@ -235,7 +235,6 @@ def _ui_ctl(game=None, support=None):
 
         def ask_text(self, title, prompt, initial=""):
             self.asked.append((title, prompt, "save", "cancel"))
-            return None
 
         def busy(self, text=""):
             self.busy_text = text
@@ -431,7 +430,8 @@ class _UiLive:
 
     def __init__(self, scale: float = 1.0, games_=None):
         import tkinter as tk
-        from core import community as _cm, library as _l, prefs as _p, watch as _w
+
+        from core import community as _cm
         from core.ui import app as _a, theme as _t
 
         self.T = _t
@@ -585,7 +585,7 @@ class _UiLive:
             a.all_games = [g] + [x for x in a.all_games if x is not g]
             a.game = None
             a.open_game(g)
-        fit = {o: (True, "") for o in support.options}
+        fit = dict.fromkeys(support.options, (True, ""))
         ex = {
             "ac": None,
             "reengine": False,
@@ -709,28 +709,31 @@ with warnings.catch_warnings():
         except Exception as e:
             check(f"core.{m}", False, f"{type(e).__name__}: {e}")
 
-from core import remix, remixlist  # noqa: E402
-from core import pe, reengine, refw, watch, community  # noqa: E402
-from core import (
+# Installs here run for real and this machine may have two GPUs: Windows'
+# graphics preference goes to a dict, never the machine's own HKCU.
+from core import (  # noqa: E402  # noqa: E402
+    community,
     diagnose,
     dlss,
     games,
     gpu,
+    gpupref as _gpupref,
     installer,
+    log as _suite_log,
     net,
-    optiscaler,  # noqa: E402
+    optiscaler,
     pe,
     prefs,
+    reengine,
+    refw,
+    remix,
+    remixlist,
     reshade_ini,
     sources,
     update,
     vulkan,
+    watch,
 )
-from core import log as _suite_log  # noqa: E402
-
-# Installs here run for real and this machine may have two GPUs: Windows'
-# graphics preference goes to a dict, never the machine's own HKCU.
-from core import gpupref as _gpupref  # noqa: E402
 
 _gpupref.backend = _gpupref.Memory()
 # ...and runs as a one-GPU machine, whatever this one has: a check that
@@ -1317,8 +1320,7 @@ import tkinter as _tk  # noqa: E402
 from core import library as _library_iso  # noqa: E402
 
 _library_iso.FILE = Path(tempfile.mkdtemp(prefix="lib_iso_")) / "library.json"
-from core.ui import ctl_game as _uig, ctl_library as _uil  # noqa: E402
-
+from core.ui import ctl_library as _uil  # noqa: E402
 
 # The window, read while it is up: every toggle its settings draw on every
 # route, every button on its pages, and the one button the autopilot checks
@@ -1722,7 +1724,6 @@ check(
 shutil.rmtree(_d, ignore_errors=True)
 
 section("6h. the game list can be searched")
-from core.ui import ctl_library as _uil  # noqa: E402
 
 _m = getattr(
     _uil.LibraryControl, "matches", lambda g, t: "missing"
@@ -2074,7 +2075,7 @@ section(
     "9. dxvk for games that quit on reshade, stray reshade copies, "
     "settings that travel, the feeder zip"
 )
-from core import dxvk, reshade_ini, sources, prefs
+from core import dxvk, prefs, sources
 
 # The known list and the switch that follows it.
 d = Path(tempfile.mkdtemp(prefix="dxvk_"))
@@ -3431,6 +3432,7 @@ section("16. before/after screenshots")
 import os  # noqa: E402
 import struct  # noqa: E402
 import time as _time  # noqa: E402
+
 from core import compare  # noqa: E402
 
 _d = Path(tempfile.mkdtemp(prefix="compare_"))
@@ -6973,8 +6975,9 @@ check(
 shutil.rmtree(_d, ignore_errors=True)
 
 section("40. the updater understands a one-folder release before one exists")
-import zipfile as _zf2
 import hashlib
+import zipfile as _zf2
+
 from core import selfupdate  # noqa: E402
 
 _d = Path(tempfile.mkdtemp(prefix="upd_"))
@@ -7673,6 +7676,7 @@ shutil.rmtree(_d, ignore_errors=True)
 section("48. issue #40: pixel sizes follow the display scale, not only the fonts")
 import re as _re
 import types as _types48
+
 from core.ui import app as _uiapp48, theme as _uth, win as _uwin  # noqa: E402
 
 _uth.set_scale(96)
@@ -8033,16 +8037,13 @@ check(
     "'did it work?' lists the OpenXR registration for a VR install",
     any(
         "OpenXR layer" in ln
-        for ln in diagnose._presence(
-            Path("."), {"vr": True, "path": "feeder"}, "feeder"
-        )
+        for ln in diagnose._presence(Path(), {"vr": True, "path": "feeder"}, "feeder")
     ),
 )
 
 section(
     "52. reshade.me answers 500 with the page as the body; the installer link is still found"
 )
-import urllib.error as _ue
 
 _saved_get, _saved_json = sources._get, sources._json
 _page = b'<a href="/downloads/ReShade_Setup_6.8.0_Addon.exe">x</a>'
@@ -8657,7 +8658,7 @@ def _fits(scale: float, narrow: bool = False) -> list[str]:
             bad.append(
                 f"log {a.shell.log_text.winfo_height()} px, under three {line} px lines"
             )
-    except Exception as e:
+    except Exception:
         import traceback as _tb
 
         bad.append("raised: " + _tb.format_exc()[-400:])
@@ -9788,10 +9789,13 @@ check(
 )
 shutil.rmtree(_d, ignore_errors=True)
 
-from core import reportui as _reportui  # noqa: E402
-from core.ui import app as _uiapp60, ctl_game as _uig60  # noqa: E402
-from core import autotune as _tune  # noqa: E402
 import types as _types60  # noqa: E402
+
+from core import (
+    autotune as _tune,
+    reportui as _reportui,
+)
+from core.ui import app as _uiapp60, ctl_game as _uig60  # noqa: E402
 
 
 def _report60(ask, with_game: bool = False):
@@ -9943,13 +9947,15 @@ def _worker_only(call, module, name, ret=None):
     """Run `call` with module.name recorded: (asked before any worker ran,
     asked after, and whether each ask came from inside a worker)."""
     seen: list = []
-    with _ui_threads(run=False) as th:
-        with patch.object(
+    with (
+        _ui_threads(run=False) as th,
+        patch.object(
             module, name, lambda *a, **k: (seen.append(th.inside > 0), ret)[1]
-        ):
-            call()
-            before = list(seen)
-            th.go()
+        ),
+    ):
+        call()
+        before = list(seen)
+        th.go()
     return before, seen
 
 
@@ -10482,7 +10488,6 @@ check(
     _tune._clamp(3) == _tune.MIN_RES and _tune._clamp(400) == _tune.MAX_RES,
 )
 from core import feedcfg as _fc60  # noqa: E402
-from core.ui import ctl_game as _uig60t  # noqa: E402
 
 
 def _tuned60(
@@ -11482,19 +11487,18 @@ check(
     _w61,
 )
 _tails61: list = []
-with _ui_isolated(), _ui_threads(run=False):
-    with (
-        patch.object(
-            diagnose, "_tail", lambda *a, **k: (_tails61.append("tail"), "")[1]
-        ),
-        patch.object(
-            diagnose,
-            "_opti_log",
-            lambda *a, **k: (_tails61.append("opti_log"), None)[1],
-        ),
-    ):
-        _tuned60("feeder", target=60)
-        _tuned60("feeder", target=0)
+with (
+    _ui_isolated(),
+    _ui_threads(run=False),
+    patch.object(diagnose, "_tail", lambda *a, **k: (_tails61.append("tail"), "")[1]),
+    patch.object(
+        diagnose,
+        "_opti_log",
+        lambda *a, **k: (_tails61.append("opti_log"), None)[1],
+    ),
+):
+    _tuned60("feeder", target=60)
+    _tuned60("feeder", target=0)
 check("...and not on the thread drawing the window", _tails61 == [], _tails61)
 _nt61: list = []
 _th61 = __import__("threading").Thread(
@@ -12257,8 +12261,8 @@ check(
 
 # Issue #98: a recorded fault outranks a log that stopped in a good place -
 # but only a fault from the session that log describes.
-import calendar as _cal63  # noqa: E402
 import types as _types63  # noqa: E402
+
 from core.ui import ctl_game as _uig63, ctl_library as _uil63  # noqa: E402
 
 
@@ -13079,7 +13083,7 @@ try:
             "",
             Path("x"),
             None,
-            Path("."),
+            Path(),
             None,
             "m",
             "p",
@@ -13127,7 +13131,7 @@ try:
             "",
             Path("x"),
             None,
-            Path("."),
+            Path(),
             None,
             "m",
             "p",
@@ -13650,8 +13654,11 @@ section(
 )
 import io as _io141
 import zipfile as _zf141
-from core import mfg as _m141  # noqa: E402
-from core import selfupdate as _su136  # noqa: E402
+
+from core import (
+    mfg as _m141,
+    selfupdate as _su136,
+)
 
 # #136: the relaunched exe inherited the onefile child's _PYI_* variables and
 # its bootloader quit with "failed to obtain executable path for parent
@@ -13964,8 +13971,10 @@ check(
 shutil.rmtree(_o51, ignore_errors=True)
 
 section("1.8.2: a full drive, the missing Remix box, update leftovers (#148 #157)")
-from core import library as _lib148  # noqa: E402
-from core import selfupdate as _su148  # noqa: E402
+from core import (
+    library as _lib148,
+    selfupdate as _su148,
+)
 
 _full = OSError(
     28,
@@ -14333,8 +14342,8 @@ section(
 sys.path.insert(0, str(SRC_DIR / "_tools"))
 import replay_report as _rr182  # noqa: E402
 
-from core.ui import ctl_game as _uig182, ctl_library as _uil182  # noqa: E402
 from core import wincrash as _wcx  # noqa: E402
+from core.ui import ctl_library as _uil182  # noqa: E402
 
 # #175, word for word out of the report: the chain verified and the NAME on
 # the certificate did not match, which the old answer read as a missing
@@ -14640,7 +14649,7 @@ check(
 )
 check(
     "...and that nothing is bundled",
-    _re.search(r"nothing is bundled|bundles nothing", _readme[:3000], _re.I)
+    _re.search(r"nothing is bundled|bundles nothing", _readme[:3000], _re.IGNORECASE)
     is not None,
 )
 
@@ -15076,7 +15085,7 @@ with _ui_isolated(), _ui_threads(run=False):
             (
                 _pg182.game,
                 _st182,
-                {o: (True, "") for o in _st182.options},
+                dict.fromkeys(_st182.options, (True, "")),
                 {
                     "ac": None,
                     "reengine": False,
@@ -15554,7 +15563,6 @@ check(
 )
 shutil.rmtree(_wdir, ignore_errors=True)
 
-from core.ui import ctl_game as _uig190  # noqa: E402
 from core import autopilot as _ap190  # noqa: E402
 
 
@@ -16318,7 +16326,6 @@ check(
     _asked,
 )
 from core import anticheat as _ac190c  # noqa: E402
-from core.ui import ctl_game as _uig190c  # noqa: E402
 
 with _ui_isolated(), _ui_threads(run=False):
     _oc190 = _ui_ctl(
@@ -16525,7 +16532,7 @@ check(
 # What the page drew was read off the live window in 6c.
 check(
     "the window has the button this pass is driven from",
-    any("autopilot" == b.strip() for b in _LIVE_BUTTONS),
+    any(b.strip() == "autopilot" for b in _LIVE_BUTTONS),
     [b for b in _LIVE_BUTTONS if b.strip()][:8],
 )
 check(
@@ -17355,9 +17362,12 @@ section(
     "(#201, #241, #234, #214)"
 )
 import tkinter as _tk  # noqa: E402
-from core import library as _library_iso  # noqa: E402
-from core import autopilot as _ap  # noqa: E402
-from core.ui import ctl_library as _uil191, shell as _ush191  # noqa: E402
+
+from core import (
+    autopilot as _ap,
+    library as _library_iso,
+)
+from core.ui import shell as _ush191  # noqa: E402
 
 # A hand-edited sort or log share in settings.json: refused, not raised.
 _sorted191 = {}
@@ -18003,12 +18013,13 @@ shutil.rmtree(_top, ignore_errors=True)
 section("1.9.1 gate, second pass: names tied to their source, and the fixes")
 
 import re  # noqa: E402
+
 from core import autopilot, components, dxvk  # noqa: E402
 
 # A name copied from another module drifts apart from it in silence.
 check(
     "the watcher's helper-folder list is the installer's own HOST_DIR",
-    watch._OTHER_PROCESS_DIRS == (installer.HOST_DIR.lower(),),
+    (installer.HOST_DIR.lower(),) == watch._OTHER_PROCESS_DIRS,
     f"{watch._OTHER_PROCESS_DIRS} vs {installer.HOST_DIR}",
 )
 check(
@@ -18216,8 +18227,8 @@ check(
     and "issue" in _detail
     and _detail.index("install again") < _detail.index("issue"),
 )
-from core.ui import ctl_game as _uig_g2  # noqa: E402
 from core import wincrash as _wcx  # noqa: E402
+from core.ui import ctl_game as _uig_g2  # noqa: E402
 
 _F10_g2 = getattr(_uig_g2, "F10_CLASH", "")
 check(
@@ -18813,9 +18824,11 @@ section("2.0: keeping a game's DLSS up to date, beside a DLSS 5 install (dlssupd
 # DLLs Windows itself reads a version from, and the installer's own swap
 # and uninstall.
 sys.path.insert(0, str(SRC_DIR / "_tools"))
-import fake_pe as _fpe  # noqa: E402
-from core import dlssupdate as _du  # noqa: E402
 import stat as _du_stat  # noqa: E402
+
+import fake_pe as _fpe  # noqa: E402
+
+from core import dlssupdate as _du  # noqa: E402
 
 _du_saved = (prefs.FILE,)
 _du_tmp = Path(tempfile.mkdtemp(prefix="dlssupdate_"))
@@ -19494,6 +19507,7 @@ import base64 as _b64c
 import struct as _stc
 import urllib.request as _urc
 import zlib as _zlc
+
 from core import covers as _cv, prefs as _pfc
 from core.ui import art as _art
 
@@ -20016,7 +20030,6 @@ try:
         len(_cv_seen) == 1,
         _cv_seen,
     )
-    from core.ui import gamepage as _gpc
 
     # ---- the window: ("art", folder) drops that game's images only
     with _ui_isolated():
@@ -20134,7 +20147,8 @@ from types import SimpleNamespace as _G2NS  # noqa: E402
 
 sys.path.insert(0, str(SRC_DIR / "_tools"))
 import fake_pe as _g2fpe  # noqa: E402
-from core import dlssupdate as _g2du, covers as _g2cov, anticheat as _g2ac  # noqa: E402
+
+from core import covers as _g2cov, dlssupdate as _g2du  # noqa: E402
 from core.ui import ctl_dlss as _g2ctl  # noqa: E402
 
 _g2tmp = Path(tempfile.mkdtemp(prefix="gate20_"))
@@ -20214,7 +20228,7 @@ try:
         ".dlss5-dlss-write-test-abc",
     ):
         (_g2d / _n).write_bytes(b"x")
-    with patch.object(diagnose.model, "_user_data_roots", lambda: []):
+    with patch.object(diagnose.model, "_user_data_roots", list):
         _g2ran = diagnose._game_ran(_g2d, "Game.exe", _g2now - 3600, set())
         check(
             "gate 2.0 #2: fresh dlss page backups and its record are not 'the game ran'",
@@ -20450,7 +20464,7 @@ try:
     with (
         patch.object(_g2du, "scan", _g2scan),
         patch.object(_g2du, "running", lambda *a, **k: ""),
-        patch.object(_g2ctl.watch, "procs", lambda: []),
+        patch.object(_g2ctl.watch, "procs", list),
         patch.object(_g2du.sources, "nvidia_dlss", lambda: _g2cat("310.9.1")),
     ):
         _g2du._NEWEST = {}
@@ -20554,7 +20568,7 @@ try:
         with patch.object(_g2du.sources, "nvidia_dlss", lambda: _g2cat("310.10.0")):
             _g2old = _g2du.newest().get("dlss", {}).get("version")
             _g2new = _g2du.newest(refresh=True).get("dlss", {}).get("version")
-        with patch.object(_g2du.sources, "nvidia_dlss", lambda: {}):
+        with patch.object(_g2du.sources, "nvidia_dlss", dict):
             _g2off = _g2du.newest(refresh=True)
         check(
             "gate 2.0 #7: 'check again' asks NVIDIA's list again; a failed ask keeps the last answer "
@@ -20621,12 +20635,15 @@ finally:
 
 section("2.0 gate: toasts over redraws, the watcher's offer, kit bindings, one window")
 
-import ast as _g3ast  # noqa: E402
 import threading as _g3th  # noqa: E402
 import tkinter as _g3tk  # noqa: E402
 from types import SimpleNamespace as _G3NS  # noqa: E402
-from core import lookout as _g3look, verdicts as _g3v  # noqa: E402
-from core import log as _g3log  # noqa: E402
+
+from core import (  # noqa: E402
+    log as _g3log,
+    lookout as _g3look,
+    verdicts as _g3v,
+)
 from core.ui import app as _g3app, ctl_watch as _g3cw, kit as _g3kit, tray as _g3tray  # noqa: E402
 
 _g3cases = [
@@ -21472,6 +21489,7 @@ section(
 import queue as _q_rg
 import threading as _thr_rg
 import zipfile as _zip_rg
+
 from core import autopilot as _ap_rg, mfg as _mfg_rg, remixdl as _rdl_rg  # noqa: E402
 from core.ui import ctl_game as _cg_rg, ctl_library as _cl_rg, remixpage as _rp_rg  # noqa: E402
 
@@ -22400,7 +22418,7 @@ section(
 # listed next, with one route promoted by matching a sentence written for a
 # person to read. Now the order comes from the shared results, and the log
 # says what put each route where.
-from core import community as _cm201, autopilot as _ap201  # noqa: E402
+from core import autopilot as _ap201, community as _cm201  # noqa: E402
 
 _g201 = games.Game(
     name="Ranked",
@@ -22480,7 +22498,6 @@ check(
     == _offer201,
     _ap201.plan(dlss.FEEDER, _offer201, _thin201, _g201, limit=len(_offer201)),
 )
-from core.ui import ctl_game as _cgi201  # noqa: E402
 
 
 section(
@@ -22609,6 +22626,7 @@ else:
 # LAST line, which is written when the game closes, so one launch played for
 # half an hour read as "started again" and the module list was dropped.
 from datetime import datetime as _dt287  # noqa: E402
+
 from core.diagnose import process as _proc287  # noqa: E402
 
 _d287 = Path(tempfile.mkdtemp(prefix="sighting_"))
@@ -22685,6 +22703,7 @@ section("2.0.2: a game folder reached through a junction installs (#306)")
 # extract_tree returned raised - the install stopped after the add-on.
 try:
     import zipfile
+
     from core import net as _net306
 
     _real306 = Path(tempfile.mkdtemp(prefix="junction_real_"))
@@ -22761,8 +22780,8 @@ else:
 # The gate's finding on the first version: one add-on registering silenced all
 # of them. Add-on by add-on - the neural add-on registering says nothing about
 # a bridge that is not in the process.
-from core.diagnose import process as _proc352  # noqa: E402
 from core import watch as _watch352  # noqa: E402
+from core.diagnose import process as _proc352  # noqa: E402
 
 _d352 = Path(tempfile.mkdtemp(prefix="loaded_note_"))
 _man352 = {
@@ -22914,6 +22933,7 @@ section(
 # to every child process, ahead of System32 in its search order.
 try:
     import subprocess as _sp287
+
     from core import child as _child287
 
     _calls287: list = []
@@ -23704,7 +23724,8 @@ section(
 # folder out of that report's own lines - the only real inputs there are.
 sys.path.insert(0, str(SRC_DIR / "_tools"))
 import replay_report as _rr205  # noqa: E402
-from core import wincrash as _wc205, autopilot as _ap205, verdicts as _vd205  # noqa: E402
+
+from core import autopilot as _ap205, verdicts as _vd205, wincrash as _wc205  # noqa: E402
 
 
 def _replay205(n: str, extra_head: str = ""):
@@ -23997,7 +24018,7 @@ _aio458 = (
     / "ReShade.log"
 )
 if _aio458.is_file():
-    from core.diagnose import body as _body458, routes as _routes458, model as _model458
+    from core.diagnose import body as _body458, model as _model458, routes as _routes458
 
     _t458 = (SRC_DIR / "_tools" / "reports" / "458.txt").read_text(
         encoding="utf8", errors="replace"
@@ -24620,9 +24641,11 @@ section(
 # Enabler goes in as dlss-enabler-headless.dll. Neither can be fetched, so
 # the person picks the files and the tool does the placing, the record and
 # the undo.
-from core import ownfg as _ofg  # noqa: E402
-import fake_pe as _fpe206  # noqa: E402
 from dataclasses import replace as _rp206  # noqa: E402
+
+import fake_pe as _fpe206  # noqa: E402
+
+from core import ownfg as _ofg  # noqa: E402
 
 
 def _fg206_dir(files: dict) -> Path:
@@ -24986,8 +25009,8 @@ check(
 section(
     "2.0.6: a failed install is taken back out, and a failed connection says why (#434 #438)"
 )
-import ssl as _ssl206  # noqa: E402
 import importlib.util as _ilu206  # noqa: E402
+import ssl as _ssl206  # noqa: E402
 import urllib.error as _ue206  # noqa: E402
 
 # The lines exactly as the two reports carry them.
@@ -25298,8 +25321,9 @@ check(
 shutil.rmtree(_dg206, ignore_errors=True)
 section("2.0.6: games like this one, and the driver within its route")
 import importlib.util as _ilu206  # noqa: E402
+
 from core import autopilot as _ap206m, community as _comm  # noqa: E402
-from core.ui import ctl_game as _uig, ctl_library as _uil  # noqa: E402
+from core.ui import ctl_library as _uil  # noqa: E402
 
 _spec206 = _ilu206.spec_from_file_location(
     "_agg206", SRC_DIR / ".github" / "scripts" / "compatibility.py"
@@ -25604,20 +25628,19 @@ check(
 
 # The page itself: pick a game nobody has reported, and the note before the
 # install carries the class counts and the driver inside the route.
-with _ui_isolated():
-    with _ui_threads(run=False) as _th206:
-        _cc206 = _ui_ctl(
-            _ui_game(name="Class Note", api="DX11"),
-            _ui_support([dlss.FEEDER, dlss.STANDALONE], dlss.FEEDER, native_dlss=False),
-        )
-        with (
-            patch.object(community, "fetch", lambda *a, **k: _l206),
-            patch.object(gpu, "driver_version", lambda: "616.92"),
-        ):
-            _cc206.community_note()
-            _th206.go()
-            _cc206.pump()
-        _t206 = _cc206.text()
+with _ui_isolated(), _ui_threads(run=False) as _th206:
+    _cc206 = _ui_ctl(
+        _ui_game(name="Class Note", api="DX11"),
+        _ui_support([dlss.FEEDER, dlss.STANDALONE], dlss.FEEDER, native_dlss=False),
+    )
+    with (
+        patch.object(community, "fetch", lambda *a, **k: _l206),
+        patch.object(gpu, "driver_version", lambda: "616.92"),
+    ):
+        _cc206.community_note()
+        _th206.go()
+        _cc206.pump()
+    _t206 = _cc206.text()
 _ui_cleanup()
 check(
     "the page says what games like this one did, and the driver inside the route",
@@ -25634,8 +25657,9 @@ section(
 # #450: the swap kept dlss5-autopilot.old.exe "until the next update" - for
 # good, in practice - and people read the leftover as a failed update. It
 # now goes the second time the new build's window comes up.
-from core import selfupdate as _su450, gpupref as _gp427  # noqa: E402
 from dataclasses import replace  # noqa: E402
+
+from core import gpupref as _gp427, selfupdate as _su450  # noqa: E402
 
 with (
     tempfile.TemporaryDirectory() as _td450,
@@ -25889,7 +25913,7 @@ check(
     "...the test suites never write the machine's own registry (a dict stands in, before any install)",
     isinstance(_gp427.backend, _gp427.Memory),
 )
-from core.ui import setpanel as _sp427, ctl_game as _sp427_ctl  # noqa: E402
+from core.ui import setpanel as _sp427  # noqa: E402
 
 _rows427 = {r[0]: r[1] for _grp, rows in _sp427.GROUPS for r in rows}
 check(
@@ -25904,8 +25928,9 @@ check(
 section(
     "2.0.6 round 2: the new reports' own lines (#480 #497 #479 #482 #460 #348 #439)"
 )
-from core import wincrash as _wc2r  # noqa: E402
 import fake_pe as _fpe2r  # noqa: E402
+
+from core import wincrash as _wc2r  # noqa: E402
 
 # #480: Windows gave the faulting module as a full path, and the game's own
 # exe was "neither the game's executable nor anything this tool installs".
@@ -26172,7 +26197,8 @@ section(
 # the bridge wrote dlss5-bridge.log beside itself. The lines below are made
 # from the bridge's own format strings, as printf would fill them in.
 import re as _re21b  # noqa: E402
-from core import verdicts as _vd21b, reshade_ini as _ini21b  # noqa: E402
+
+from core import reshade_ini as _ini21b, verdicts as _vd21b  # noqa: E402
 
 
 def _c21b(fmt: str, *args) -> str:
@@ -26732,10 +26758,15 @@ check(
 section(
     "2.0.7: the 2.0.6 gate's open items - a rolled-back record, a locked file, forget, --own-fg, sm86's other names"
 )
-from core import verdicts as _vd207, community as _cm207  # noqa: E402
-from core.diagnose import helper as _hp207  # noqa: E402
-from core import mfg as _mfg207, ownfg as _ofg207  # noqa: E402
 import fake_pe as _fpe207  # noqa: E402
+
+from core import (  # noqa: E402  # noqa: E402
+    community as _cm207,
+    mfg as _mfg207,
+    ownfg as _ofg207,
+    verdicts as _vd207,
+)
+from core.diagnose import helper as _hp207  # noqa: E402
 
 _SM86_207 = _fpe207.dll("0.3.5") + b"\0config: dlssg_sm86.ini\0"
 
@@ -27181,6 +27212,7 @@ check(
 )
 
 import io as _io207  # noqa: E402
+
 import dlss5_autopilot as _cli207  # noqa: E402
 
 _dc207 = Path(tempfile.mkdtemp(prefix="cli207_"))
@@ -27228,7 +27260,7 @@ section(
     "2.0.7 gate 4: a successful install whose record cannot be saved says so - installer, autopilot, update all"
 )
 try:
-    from core import installer as _in4, autopilot as _ap4
+    from core import autopilot as _ap4, installer as _in4
 
     _r4 = _in4.Report()
     _r4.written = ["nvngx_dlssnr.dll", "dxgi.dll.dlss5-backup"]
@@ -27285,6 +27317,7 @@ try:
     import json as _js5
     import tempfile as _tf5
     from pathlib import Path as _P5
+
     from core import components as _co5, installer as _in5, net as _net5
 
     _d5 = _P5(_tf5.mkdtemp(prefix="gone_"))
@@ -27378,6 +27411,7 @@ try:
     import shutil as _sh6
     import tempfile as _tf6
     from pathlib import Path as _P6
+
     from core import (
         dlss as _dl6,
         games as _ga6,
@@ -27595,6 +27629,7 @@ try:
     import tempfile as _tf9
     import tkinter as _tk9
     from pathlib import Path as _P9
+
     from core import prefs as _pf9
     from core.ui import shell as _sh9
 
@@ -27694,9 +27729,12 @@ section("2.0.9: a game started as administrator gets ReShade's Vulkan layer (#56
 # the 64-bit manifest in the 64-bit view, the 32-bit one in the 32-bit view,
 # because HKLM\Software is redirected per architecture.
 try:
-    import types as _ty9v, tempfile as _tf9v, winreg as _wr9v
+    import tempfile as _tf9v
+    import types as _ty9v
+    import winreg as _wr9v
     from unittest.mock import patch as _patch9v
-    from core import vulkan as _vk9, wincrash as _wc9, net as _net9v
+
+    from core import net as _net9v, vulkan as _vk9, wincrash as _wc9
 
     _st9v, _adm9v = {}, {"on": False}
     _V64, _V32 = _wr9v.KEY_WOW64_64KEY, _wr9v.KEY_WOW64_32KEY
@@ -28021,7 +28059,6 @@ try:
             and str(_mdir9v / "ReShade64.json") not in _st9v[_HKLM64],
             str(_log9w),
         )
-    from core import autopilot as _ap9v
 
     _v562, _f562 = _replay205("562")
     check(
@@ -28034,7 +28071,6 @@ try:
     # ...and once a layer IS on the machine's list, the start is not blamed.
     # The replay pins reaches_elevated to False (their registry, not ours),
     # so the branch is asked directly, with the answer it would get there.
-    from core.diagnose import chain as _ch9v
     from core import verdicts as _vd9v
 
     check(
@@ -28157,7 +28193,7 @@ try:
         )
         check(f"#682 with '{_line9g}' in the process: {_want9g}", _want9g in _v9g, _v9g)
     # Gate 2.0.9: the sentence says what was seen and when, never "draws with".
-    _rep9w = _rr9g  # noqa
+    _rep9w = _rr9g
     from core import verdicts as _vd9g
 
     for _s9g in (
@@ -28233,10 +28269,10 @@ section(
 import re  # noqa: E402
 
 try:
-    import verdict_check as _vc9  # noqa: E402
-    from core import gpu as _gpu9
+    import verdict_check as _vc9
+
+    from core import gpu as _gpu9, verdicts, wincrash as _wcx
     from core.ui import ctl_game as _cg9
-    from core import wincrash as _wcx, verdicts  # noqa: F811
 
     _R9 = SRC_DIR / "_tools" / "reports"
 
@@ -28363,7 +28399,7 @@ try:
         lambda m: m.group(1) + _opti768 + m.group(3),
         _t768,
         count=1,
-        flags=re.S,
+        flags=re.DOTALL,
     )
     _a768 = _ans9(_t768b)
     # one failed Present in a session that went on drawing is not its end
@@ -28511,15 +28547,16 @@ section(
     "2.1.0 round 1: the October 17-24 reports (#562 #808 #850 #856 #862 #874 #886 #897)"
 )
 try:
-    import verdict_check as _vc10  # noqa: E402
-    import replay_report as _rr10  # noqa: E402
+    import replay_report as _rr10
+    import verdict_check as _vc10
+
     from core import (
         anticheat as _ac10,
+        dlssupdate as _du10,
         games as _gm10,
-        reshade_ini as _ri10,
         prefs as _pf10,
+        reshade_ini as _ri10,
     )
-    from core import dlssupdate as _du10
     from core.diagnose import body as _body10
 
     _R10 = SRC_DIR / "_tools" / "reports"
@@ -28721,8 +28758,8 @@ section("2.1.0 round 2: the session card and a report that never arrives empty")
 try:
     import tempfile as _tf11
     import zipfile as _zf11
-    from types import SimpleNamespace as _NS11
     from urllib.parse import parse_qs as _pq11, urlsplit as _us11
+
     from core import autotune as _at11, reportout as _ro11, sessioncard as _sc11
     from core.diagnose import body as _bd11
 
@@ -29011,10 +29048,11 @@ except Exception as _e11:
 
 section("2.1.0 round 3: the late-October reports' own lines (#917 #944)")
 try:
-    from core.diagnose import chain as _ch12, helper as _hp12, body as _bd12
-    from core.diagnose.model import Report as _Rep12, Finding as _Fi12
-    from core import installer as _in12
     import tempfile as _tf12
+
+    from core import installer as _in12
+    from core.diagnose import body as _bd12, chain as _ch12, helper as _hp12
+    from core.diagnose.model import Report as _Rep12
 
     # #944: Prey with the Luma mod - sixteen "[Prey Luma]" warnings and no
     # "Registered add-on" line in the excerpt.
@@ -29127,7 +29165,8 @@ try:
 
     # gate 2.1.0: "did it work?" pressed while the game runs outranks the running card
     from types import SimpleNamespace as _NS12
-    from core.ui import gamepage as _gp12, ctl_watch as _cw12
+
+    from core.ui import ctl_watch as _cw12, gamepage as _gp12
 
     _g12 = _NS12(name="G", install_dir=Path("C:/g12"))
     _k12 = _cw12.WatchControl._folder_key(_g12.install_dir)
@@ -29204,10 +29243,10 @@ section("2.1.0: the gitc-uplift route (#946)")
 try:
     import tempfile as _tf13
     import zipfile as _zf13
-    from core import autopilot as _ap13
+
+    from core import autopilot as _ap13, verdicts as _vd13
     from core.diagnose import routes as _rt13
     from core.diagnose.model import Report as _Rep13
-    from core import verdicts as _vd13
 
     # offered on every API it reaches, both bitnesses; never recommended
     _d13 = Path(_tf13.mkdtemp(prefix="upl13_"))
@@ -29515,11 +29554,11 @@ section(
 try:
     from core import (
         anticheat as _ac14,
-        wincrash as _wc14,
-        reshade_ini as _ri14,
         pe as _pe14,
+        reshade_ini as _ri14,
+        verdicts as _vd14,
+        wincrash as _wc14,
     )
-    from core import verdicts as _vd14
     from core.diagnose import body as _bd14, chain as _ch14
     from core.diagnose.model import Report as _Rep14
 

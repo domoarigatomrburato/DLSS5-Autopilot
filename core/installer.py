@@ -49,10 +49,10 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from . import (
-    emulators,
     anticheat,
     dlss,
     dxvk,
+    emulators,
     feedcfg,
     games,
     gpu,
@@ -75,9 +75,17 @@ from . import (
 # Imported by name as well: inside the Options class body the field
 # `dlss: str | None` shadows the module, so `dlss.FEEDER` would read the
 # field's default (None) instead of the module attribute.
-from .dlss import BRIDGE, FEEDER, NATIVE, OPTI, STANDALONE, UPLIFT, UPSTREAM
-from .dlss import RENODX as ROUTE_RENODX  # the route; RENODX below is a file name
-from .dlss import REMIX as ROUTE_REMIX
+from .dlss import (
+    BRIDGE,
+    FEEDER,
+    NATIVE,
+    OPTI,
+    REMIX as ROUTE_REMIX,
+    RENODX as ROUTE_RENODX,  # the route; RENODX below is a file name
+    STANDALONE,
+    UPLIFT,
+    UPSTREAM,
+)
 
 MANIFEST = "dlss5-autopilot.json"
 
@@ -696,7 +704,7 @@ def wants_dxvk(g: games.Game) -> str | None:
     return dxvk.wanted(g.exe) if api in dxvk.APIS else None
 
 
-def uses_dxvk(g: games.Game, opt: "Options") -> bool:
+def uses_dxvk(g: games.Game, opt: Options) -> bool:
     """Is this install going through DXVK? D3D11 or D3D9, on the ReShade
     routes only - OptiScaler is itself the dxgi.dll DXVK would need to be,
     and ShortFuse's renodx-dlss hooks D3D9 in-process. The standalone add-on
@@ -713,7 +721,7 @@ def uses_dxvk(g: games.Game, opt: "Options") -> bool:
     return bool(dxvk_api(g, opt))
 
 
-def dxvk_api(g: games.Game, opt: "Options") -> str:
+def dxvk_api(g: games.Game, opt: Options) -> str:
     """Which DirectX this install translates to Vulkan, or "" for none.
 
     Normally the game's API. The exception is a game whose API somebody has
@@ -741,7 +749,7 @@ def dxvk_api(g: games.Game, opt: "Options") -> str:
     return api if (opt.dxvk or api in ("DX9", "DX8")) else ""
 
 
-def via_dxvk(g: games.Game, opt: "Options") -> games.Game:
+def via_dxvk(g: games.Game, opt: Options) -> games.Game:
     """The game as the rest of the install sees it: a Vulkan game."""
     if not uses_dxvk(g, opt):
         return g
@@ -915,7 +923,7 @@ def _find_runtime(root: Path, name: str, folder: Path | None = None) -> Path | N
 
 
 def _nested_game_dlss(
-    root: Path, g, opt: "Options", x64: bool = True, ours=()
+    root: Path, g, opt: Options, x64: bool = True, ours=()
 ) -> Path | None:
     """The game's own nvngx_dlss.dll to replace, when it is not beside the exe.
 
@@ -1003,7 +1011,7 @@ def _same_path(a: Path, b: Path) -> bool:
         return os.path.normcase(str(a)) == os.path.normcase(str(b))
 
 
-def _opti_dlss_target(root: Path, g, opt: "Options", ours=()) -> Path | None:
+def _opti_dlss_target(root: Path, g, opt: Options, ours=()) -> Path | None:
     """The game's nvngx_dlss.dll to swap on the OptiScaler route.
 
     Nothing else on this route writes one, so the game's own beside the
@@ -1044,7 +1052,7 @@ def _preview_swap(write, pv, root: Path, have: Path, name: str) -> None:
 
 
 def _swap_nested_dlss(
-    have: Path, fam: list, opt: "Options", rep, root: Path, dl, log
+    have: Path, fam: list, opt: Options, rep, root: Path, dl, log
 ) -> None:
     """Replace the game's nested nvngx_dlss.dll, the way the RR swap does."""
     try:
@@ -1183,7 +1191,7 @@ def last_failure(root) -> str:
 def _roll_back(
     g,
     root: Path,
-    rep: "Report",
+    rep: Report,
     fresh: bool,
     log,
     keep_note: str = "",
@@ -1287,7 +1295,7 @@ NO_RECORD_HEAD = (
 RECORD_LOST_HEAD = "The install finished and its files are in place, but "
 
 
-def _no_record_text(rep: "Report") -> str:
+def _no_record_text(rep: Report) -> str:
     """What a failed install without a record left, and how to undo it by
     hand: every file it wrote (never a backup of the game's own), the game
     files it renamed aside, and the backups to rename back."""
@@ -1331,7 +1339,7 @@ def _no_record_text(rep: "Report") -> str:
     return " ".join(out)
 
 
-def _finish_record(recorded: bool, rep: "Report", log) -> None:
+def _finish_record(recorded: bool, rep: Report, log) -> None:
     """A successful install whose record could not be saved must not end in a
     plain 'Done': uninstall would find nothing (gate 2.0.7). The warning is
     what the autopilot and 'update all' read."""
@@ -1488,7 +1496,7 @@ def _place_family(
                 if i:
                     log(f"      the first source said: {first_err}")
                 raise
-    raise last if last else RuntimeError(f"{member}: nothing to install")
+    raise last or RuntimeError(f"{member}: nothing to install")
 
 
 def _place_entry(
@@ -1541,7 +1549,7 @@ def _place_entry(
         rep.written.append(str(dest))
 
 
-def _install_uplift(root: Path, rep: "Report", dl, log, begin) -> None:
+def _install_uplift(root: Path, rep: Report, dl, log, begin) -> None:
     """GITC-Uplift's add-ons, helper and shaders, each file checked against
     the release's SHA256SUMS.txt before it is used. A runtime of somebody
     else's beside the executable is moved aside (RTX 50 loads it first)."""
@@ -1656,7 +1664,7 @@ def _own_fg_refusal(root: Path, opt: Options) -> str:
     )
 
 
-def _place_own_fg(root: Path, opt: Options, rep: "Report", log, begin) -> None:
+def _place_own_fg(root: Path, opt: Options, rep: Report, log, begin) -> None:
     """The OptiScaler route's last files: the person's own frame generation
     files when they added some, and an earlier set taken out when not."""
     man = _previous_manifest(root) or {}
@@ -1985,7 +1993,7 @@ MFG_FSR_FG = (
 )
 
 
-def _mfg_warnings(g, opt: "Options", root: Path, written=()) -> list[str]:
+def _mfg_warnings(g, opt: Options, root: Path, written=()) -> list[str]:
     """The MFG package's warnings that can be known before it is unpacked.
 
     The FSR frame-generation one is not here: install() says it only once
@@ -2712,7 +2720,7 @@ def preview_lines(pv: Preview) -> list[str]:
 
 
 def _install_feeder_parts(
-    g, opt, root: Path, host: Path, x64: bool, rep: "Report", begin, dl, log
+    g, opt, root: Path, host: Path, x64: bool, rep: Report, begin, dl, log
 ) -> None:
     """Shader headers, the feeder add-on and the motion-vector provider.
 
@@ -2841,7 +2849,7 @@ def _install_feeder_parts(
         _install_vort(root, rep, dl, log, begin)
 
 
-def _install_vort(root: Path, rep: "Report", dl, log, begin) -> None:
+def _install_vort(root: Path, rep: Report, dl, log, begin) -> None:
     """VORT Motion beside the game: the .fx, its includes and its texture.
 
     A copy the person installed themselves is used as it is - a second
