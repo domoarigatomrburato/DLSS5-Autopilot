@@ -1,7 +1,7 @@
 #:property RestorePackagesWithLockFile=false
 // The root entry point: dotnet run gate.cs -- <fix|check|build>
-//   fix    format the solution.
-//   check  everything that must pass before a commit; changes nothing.
+//   fix    apply every autofix, then run every check; the one command before a commit.
+//   check  the same checks, read-only, with locked restore and a full-history secret scan; for CI.
 //   build  Release build of the solution.
 using System.ComponentModel;
 using System.Diagnostics;
@@ -44,25 +44,37 @@ internal static class Gate
         return 0;
     }
 
+    // Cheap checks that need no build come first, so they fail fast.
     private static Step[] FixSteps() =>
     [
+        new("typos, fix", () => Run("typos", "--write-changes")),
+        new("secrets, uncommitted", () => Run("gitleaks", "git", "--pre-commit", "--redact", "--no-banner")),
+        new("secrets, staged", () => Run("gitleaks", "git", "--pre-commit", "--staged", "--redact", "--no-banner")),
+        // gate.cs is not in the solution; its style is checked when it compiles.
+        new("format gate.cs", () => Run("dotnet", "format", "whitespace", "--folder", ".", "--include", "gate.cs")),
+        // Restores without locked mode, so a package change refreshes the lock files.
         new("format", () => Run("dotnet", "format", Solution)),
+        new("build, warnings are errors", () => Run("dotnet", "build", Solution, "--no-restore")),
+        new("tests, with coverage", RunTests),
+        new("coverage floor", CheckCoverageFloor),
     ];
 
     private static Step[] CheckSteps() =>
     [
-        new("restore, locked", () => Run("dotnet", "restore", Solution, "--locked-mode")),
-        new("build, warnings are errors", () => Run("dotnet", "build", Solution, "--no-restore")),
+        new("typos", () => Run("typos")),
+        new("secrets, full history", () => Run("gitleaks", "git", "--redact", "--no-banner")),
+        new("build, locked restore, warnings are errors", () => Run("dotnet", "build", Solution, "-p:RestoreLockedMode=true")),
+        new("format gate.cs, verify", () => Run("dotnet", "format", "whitespace", "--folder", ".", "--include", "gate.cs", "--verify-no-changes")),
+        // The build already fails on style and analyzer warnings; this catches what it cannot:
+        // a missing final newline, line endings and the order of usings.
         new("format, verify", () => Run("dotnet", "format", Solution, "--verify-no-changes", "--no-restore")),
         new("tests, with coverage", RunTests),
         new("coverage floor", CheckCoverageFloor),
-        new("typos", () => Run("typos")),
     ];
 
     private static Step[] BuildSteps() =>
     [
-        new("restore, locked", () => Run("dotnet", "restore", Solution, "--locked-mode")),
-        new("build, Release", () => Run("dotnet", "build", Solution, "--configuration", "Release", "--no-restore")),
+        new("build, locked restore, Release", () => Run("dotnet", "build", Solution, "--configuration", "Release", "-p:RestoreLockedMode=true")),
     ];
 
     private static bool Run(string fileName, params string[] arguments)

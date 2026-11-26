@@ -30,11 +30,13 @@ Run from the repository root:
 
 | Command | What it does | When |
 | --- | --- | --- |
-| `dotnet run gate.cs -- fix` | formats the solution (`dotnet format`) | after edits |
-| `dotnet run gate.cs -- check` | locked restore, build with warnings as errors, format verify, tests with the coverage floor, `typos`; changes nothing | before a commit |
+| `dotnet run gate.cs -- fix` | applies every autofix (`typos`, `dotnet format`, lock files), then runs every check: secrets in uncommitted and staged changes, build with warnings as errors, tests with the coverage floor | before every commit, and whenever you want to know the tree is clean |
+| `dotnet run gate.cs -- check` | the same checks without changing anything, with a locked restore and a secret scan of the whole history | in CI |
 | `dotnet run gate.cs -- build` | Release build | when a build is the point |
 
-Do not re-run `check` on a tree that has not changed since it passed.
+Use `fix`, not `check`, locally: it fixes what can be fixed instead of
+reporting it. Do not re-run it on a tree that has not changed since it passed.
+It needs `typos` and `gitleaks` on the PATH.
 
 The gate turns off .NET, test-platform and Avalonia build telemetry for its
 own runs. For builds outside it, set `DOTNET_CLI_TELEMETRY_OPTOUT`,
@@ -44,9 +46,12 @@ your shell.
 Everything blocks: warnings are errors, nullable is on, every analyzer is on
 (`AnalysisLevel` `latest-all`) and every rule left out is named in
 `.editorconfig` with its reason, complexity limits live in
-`CodeMetricsConfig.txt`, and the package lock files are enforced. After a
-package change, run `dotnet restore Autopilot.slnx --force-evaluate` and commit
-the lock files. Never lower a limit, a severity or the coverage floor to make
+`CodeMetricsConfig.txt`, and the package lock files are enforced (`fix`
+refreshes them after a package change; commit them). Production code takes its
+clock, delays and HTTP handler from the caller: `src/BannedSymbols.txt` fails
+the build on the APIs that bypass them. Packages come from nuget.org only
+(`nuget.config`). A false positive of the secret scan goes in
+`.gitleaksignore` by its fingerprint. Never lower a limit, a severity or the coverage floor to make
 a gate pass; the floor in `coverage-floor.txt` only rises.
 
 ## Tests

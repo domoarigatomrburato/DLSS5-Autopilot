@@ -1,0 +1,29 @@
+M:System.Net.Http.HttpClient.#ctor; Take the HttpMessageHandler from the caller, so tests pass a fake one
+M:System.Net.Http.HttpClientHandler.#ctor; Every request goes through the network client's one SocketsHttpHandler
+P:System.Net.Http.HttpClientHandler.ServerCertificateCustomValidationCallback; TLS is verified against the system store only
+P:System.Net.Security.SslClientAuthenticationOptions.RemoteCertificateValidationCallback; TLS is verified against the system store only
+M:System.Net.Security.SslStream.#ctor(System.IO.Stream,System.Boolean,System.Net.Security.RemoteCertificateValidationCallback); TLS is verified against the system store only
+M:System.Net.Security.SslStream.#ctor(System.IO.Stream,System.Boolean,System.Net.Security.RemoteCertificateValidationCallback,System.Net.Security.LocalCertificateSelectionCallback); TLS is verified against the system store only
+M:System.Net.Security.SslStream.#ctor(System.IO.Stream,System.Boolean,System.Net.Security.RemoteCertificateValidationCallback,System.Net.Security.LocalCertificateSelectionCallback,System.Net.Security.EncryptionPolicy); TLS is verified against the system store only
+P:System.DateTime.Now; Use the injected TimeProvider
+P:System.DateTime.UtcNow; Use the injected TimeProvider
+P:System.DateTime.Today; Use the injected TimeProvider
+P:System.DateTimeOffset.Now; Use the injected TimeProvider
+P:System.DateTimeOffset.UtcNow; Use the injected TimeProvider
+M:System.Threading.Tasks.Task.Delay(System.Int32); Use Task.Delay with the injected TimeProvider
+M:System.Threading.Tasks.Task.Delay(System.TimeSpan); Use Task.Delay with the injected TimeProvider
+M:System.Threading.Tasks.Task.Delay(System.Int32,System.Threading.CancellationToken); Use Task.Delay with the injected TimeProvider
+M:System.Threading.Tasks.Task.Delay(System.TimeSpan,System.Threading.CancellationToken); Use Task.Delay with the injected TimeProvider
+M:System.Threading.Tasks.Task.WaitAsync(System.TimeSpan); Use WaitAsync with the injected TimeProvider
+M:System.Threading.Tasks.Task.WaitAsync(System.TimeSpan,System.Threading.CancellationToken); Use WaitAsync with the injected TimeProvider
+M:System.Threading.Tasks.Task`1.WaitAsync(System.TimeSpan); Use WaitAsync with the injected TimeProvider
+M:System.Threading.Tasks.Task`1.WaitAsync(System.TimeSpan,System.Threading.CancellationToken); Use WaitAsync with the injected TimeProvider
+M:System.Threading.CancellationTokenSource.#ctor(System.Int32); Use the constructor that takes the injected TimeProvider
+M:System.Threading.CancellationTokenSource.#ctor(System.TimeSpan); Use the constructor that takes the injected TimeProvider
+M:System.Threading.Thread.Sleep(System.Int32); Wait asynchronously with the injected TimeProvider
+M:System.Threading.Thread.Sleep(System.TimeSpan); Wait asynchronously with the injected TimeProvider
+T:System.Threading.Timer; Use TimeProvider.CreateTimer
+T:System.Timers.Timer; Use TimeProvider.CreateTimer
+M:System.Threading.PeriodicTimer.#ctor(System.TimeSpan); Use the constructor that takes the injected TimeProvider
+M:System.Diagnostics.Stopwatch.StartNew; Use TimeProvider.GetTimestamp and GetElapsedTime
+M:System.Diagnostics.Stopwatch.GetTimestamp; Use TimeProvider.GetTimestamp
