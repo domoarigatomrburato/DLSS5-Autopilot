@@ -138,8 +138,8 @@ public sealed class TimeoutTests(TestContext testContext)
         using TestBed bed = new(testContext);
         bed.Server.AnswerBytes(Url, [1, 2, 3]);
 
-        StreamResult result = await bed.Stream(Url, options: new FileRequest { MaxBytes = 2L << 30 });
+        long size = await bed.Stream(Url, options: new FileRequest { MaxBytes = 2L << 30 });
 
-        Assert.AreEqual(3, result.Size);
+        Assert.AreEqual(3, size);
     }
 }

@@ -30,6 +30,10 @@ public sealed class FailureTests(TestContext testContext)
     [TestMethod]
     [DataRow(HttpRequestError.NameResolutionError, NetErrorKind.Dns)]
     [DataRow(HttpRequestError.ResponseEnded, NetErrorKind.Cut)]
+    [DataRow(HttpRequestError.InvalidResponse, NetErrorKind.BadResponse)]
+    [DataRow(HttpRequestError.ConfigurationLimitExceeded, NetErrorKind.BadResponse)]
+    [DataRow(HttpRequestError.ProxyTunnelError, NetErrorKind.BadResponse)]
+    [DataRow(HttpRequestError.UserAuthenticationError, NetErrorKind.BadResponse)]
     public async Task A_failure_is_named_by_its_http_error_code(HttpRequestError error, NetErrorKind kind)
     {
         NetException failure = await FailWith(new HttpRequestException(error, "failed"));
@@ -61,7 +65,7 @@ public sealed class FailureTests(TestContext testContext)
         NetException failure = await FailWith(RetryTests.Certificate(message));
 
         Assert.AreEqual(NetErrorKind.Certificate, failure.Kind);
-        Assert.AreEqual(problem, failure.Certificate);
+        Assert.AreEqual(new CertificateRefusedDetail(problem), failure.Detail);
     }
 
     [TestMethod]
@@ -89,5 +93,17 @@ public sealed class FailureTests(TestContext testContext)
         using TestBed bed = new(testContext, TestBed.SingleAttempt);
         bed.Server.Throw(Url, thrown);
         return await bed.GetTextFails(Url);
+    }
+
+    [TestMethod]
+    public async Task A_bad_response_from_something_in_between_is_not_retried()
+    {
+        using TestBed bed = new(testContext);
+        bed.Server.Throw(Url, new HttpRequestException(HttpRequestError.InvalidResponse, "The server returned an invalid or unrecognized response."));
+
+        NetException failure = await bed.GetTextFails(Url);
+
+        Assert.AreEqual(NetErrorKind.BadResponse, failure.Kind);
+        Assert.HasCount(1, bed.Server.Requests);
     }
 }

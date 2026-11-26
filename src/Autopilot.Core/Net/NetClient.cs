@@ -23,7 +23,7 @@ public sealed class NetClient : IDisposable
         _http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
         _options = options;
         _time = time;
-        _cache = new(cacheRoot);
+        _cache = new(cacheRoot, logger);
         _exchanges = new(_http, options, time);
         _retrier = new(options, time, logger);
     }
@@ -61,7 +61,7 @@ public sealed class NetClient : IDisposable
 
         if ((int)answer.StatusCode is >= 200 and <= 299)
         {
-            _cache.Write(url, new(url.AbsoluteUri, answer.FetchedAt, answer.Body));
+            await _cache.KeepAsync(url, new(url.AbsoluteUri, answer.FetchedAt, answer.Body), cancellationToken);
         }
 
         return answer;
@@ -72,7 +72,8 @@ public sealed class NetClient : IDisposable
     /// to start, or where a cut attempt stopped when the server resumes from there. The caller owns
     /// the file behind it; each stream is disposed at the end of its attempt.
     /// </summary>
-    public async Task<StreamResult> StreamToAsync(
+    /// <returns>The size of the finished download.</returns>
+    public async Task<long> StreamToAsync(
         Uri url,
         HostAllowlist hosts,
         Func<long, Stream> openDestination,
@@ -91,7 +92,7 @@ public sealed class NetClient : IDisposable
             attempt => _exchanges.StreamOnceAsync(url, hosts, openDestination, maxBytes, transfer, progress, attempt),
             cancellationToken);
         progress?.Report(new(size, size));
-        return new(size);
+        return size;
     }
 
     public void Dispose() => _http.Dispose();

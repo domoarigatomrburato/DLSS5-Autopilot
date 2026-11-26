@@ -2,14 +2,13 @@ namespace Autopilot.Core.Archives;
 
 /// <summary>
 /// Admits every member of one archive, selected or not: its name passes the Windows rules, no two
-/// paths are equal ignoring case, and the entry count and declared sizes stay within the limits.
+/// paths are equal ignoring case, no path is both a file and a folder, and the entry count and declared sizes stay within the limits.
 /// </summary>
 internal sealed class MemberCatalog(string archivePath, ArchiveLimits limits)
 {
     private readonly HashSet<string> _paths = [with(StringComparer.OrdinalIgnoreCase)];
+    private readonly FileTreeShape _shape = new();
     private int _entries;
-
-    public string ArchivePath => archivePath;
 
     /// <summary>The sizes every member declared, added up.</summary>
     public long DeclaredTotal { get; private set; }
@@ -39,6 +38,11 @@ internal sealed class MemberCatalog(string archivePath, ArchiveLimits limits)
         if (!_paths.Add(path))
         {
             throw ArchiveException.For(ArchiveFailure.DuplicateName, archivePath, $"holds '{path}' twice, ignoring case");
+        }
+
+        if (!(isDirectory ? _shape.AddFolder(path) : _shape.AddFile(path)))
+        {
+            throw ArchiveException.For(ArchiveFailure.DuplicateName, archivePath, $"holds '{path}' where a file and a folder meet, ignoring case");
         }
 
         DeclaredTotal += size;

@@ -1,11 +1,10 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Autopilot.Core.Net;
 
 /// <summary>API answers kept under <c>&lt;cache&gt;/api/&lt;key&gt;.json</c>, written atomically.</summary>
-internal sealed class ApiCache(string cacheRoot)
+internal sealed partial class ApiCache(string cacheRoot, ILogger logger)
 {
     private static readonly JsonSerializerOptions _json = new()
     {
@@ -20,27 +19,50 @@ internal sealed class ApiCache(string cacheRoot)
     {
         try
         {
-            await using FileStream file = File.OpenRead(PathFor(url));
+            // Another process may replace the file while it is read.
+            await using FileStream file = new(PathFor(url), FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.Asynchronous);
             CachedText? entry = await JsonSerializer.DeserializeAsync<CachedText>(file, _json, cancellationToken);
             return entry?.Url == url.AbsoluteUri ? entry : null;
         }
-        catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException or JsonException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
         {
             return null;
         }
     }
 
+    /// <summary>
+    /// Keeps an answer. A cache that cannot be written only costs the next request, so a failure
+    /// is logged and the answer stays good.
+    /// </summary>
+    public async Task KeepAsync(Uri url, CachedText entry, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await WriteAsync(url, entry, cancellationToken);
+        }
+        catch (Exception failure) when (failure is IOException or UnauthorizedAccessException)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                // The query can carry tokens, so only the host and path are logged.
+                LogNotKept(logger, url.Host, url.AbsolutePath, failure.GetType().Name);
+            }
+        }
+    }
+
     /// <summary>Writes to a temporary file in the same folder, flushes it to disk, then moves it into place.</summary>
-    public void Write(Uri url, CachedText entry)
+    private async Task WriteAsync(Uri url, CachedText entry, CancellationToken cancellationToken)
     {
         _ = Directory.CreateDirectory(_folder);
         string temporary = Path.Combine(_folder, Path.GetRandomFileName() + ".tmp");
         try
         {
-            using (FileStream file = new(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            await using (FileStream file = new(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
             {
-                JsonSerializer.Serialize(file, entry, _json);
-                file.Flush(flushToDisk: true);
+                await JsonSerializer.SerializeAsync(file, entry, _json, cancellationToken);
+                await file.FlushAsync(cancellationToken);
+                // There is no asynchronous fsync, so this blocks; it runs once per answer.
+                RandomAccess.FlushToDisk(file.SafeFileHandle);
             }
 
             File.Move(temporary, PathFor(url), overwrite: true);
@@ -52,11 +74,10 @@ internal sealed class ApiCache(string cacheRoot)
         }
     }
 
-    private string PathFor(Uri url)
-    {
-        string key = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(url.AbsoluteUri)))[..32];
-        return Path.Combine(_folder, key + ".json");
-    }
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The answer from {Host} for {Path} could not be kept in the cache ({Reason})")]
+    private static partial void LogNotKept(ILogger logger, string host, string path, string reason);
+
+    private string PathFor(Uri url) => Path.Combine(_folder, CacheKeys.Api(url) + ".json");
 }
 
 internal sealed record CachedText(string Url, DateTimeOffset FetchedAt, string Body);

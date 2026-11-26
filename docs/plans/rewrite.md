@@ -91,9 +91,10 @@ specified.
   - [x] test projects with the timeout default and coverage;
   - [x] a window, shown by a headless test on macOS;
   - [x] `AGENTS.md`.
-- [ ] **M1. Network and downloads** (spec: [net](../spec/net.md)): one HTTP
+- [x] **M1. Network and downloads** (spec: [net](../spec/net.md)): one HTTP
       path with retries, TLS, size limits, no downgrade, a download cache,
-      and safe archive extraction.
+      and safe archive extraction. The Windows Authenticode verifier behind
+      `ISignatureVerifier` lands with M5, its first user.
 - [ ] **M2. Reading games.** PE files: architecture, imports and version
       resources, which decide the graphics API. The game library: Steam,
       Epic, GOG, EA, Ubisoft, Battle.net, Rockstar, Xbox, Amazon, Heroic,

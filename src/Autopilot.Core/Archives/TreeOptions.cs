@@ -14,4 +14,11 @@ public sealed record TreeOptions
 
     /// <summary>Only these file names.</summary>
     public IReadOnlyCollection<string>? Names { get; init; }
+
+    /// <summary>Every field as text, case folded and collections sorted, so options that select the same members read the same.</summary>
+    internal string CanonicalKey() =>
+        string.Join('\n', StripTopFolder ? "strip" : "keep", SourceFolder?.ToUpperInvariant() ?? "", Sorted(Extensions), Sorted(Names));
+
+    private static string Sorted(IReadOnlyCollection<string>? values) =>
+        values is null ? "*" : string.Join('\0', values.Select(value => value.ToUpperInvariant()).Order(StringComparer.Ordinal));
 }

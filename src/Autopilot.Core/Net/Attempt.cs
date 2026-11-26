@@ -46,17 +46,30 @@ internal sealed class Exchange(HttpResponseMessage response, Uri url) : IDisposa
     public NetException StatusFailure(bool retryable, TimeSpan? retryAfter) =>
         new(NetErrorKind.HttpStatus, Host, $"{Host}: HTTP {(int)Response.StatusCode}")
         {
-            StatusCode = Response.StatusCode,
+            Detail = new HttpStatusDetail(Response.StatusCode),
             IsRetryable = retryable,
             RetryAfter = retryAfter,
         };
 
-    /// <summary>Where the body starts: the resume offset for a matching 206, 0 for any other success.</summary>
-    public long StartOffset(long done)
+    /// <summary>
+    /// Where the body starts: the resume offset for a matching 206, 0 for any other success. A
+    /// resume the server refuses (a 416, or a 206 from another offset) drops what was written, and
+    /// the next attempt starts over.
+    /// </summary>
+    public long StartOffset(Transfer transfer)
     {
+        long done = transfer.Done;
+        bool matching = Response.Content.Headers.ContentRange?.From == done;
+        if (done > 0 && (Response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable
+            || (Response.StatusCode == HttpStatusCode.PartialContent && !matching)))
+        {
+            transfer.Done = 0;
+            throw StatusFailure(retryable: true, retryAfter: null);
+        }
+
         if (Response.StatusCode == HttpStatusCode.PartialContent)
         {
-            return Response.Content.Headers.ContentRange?.From == done ? done : throw StatusFailure(retryable: false, retryAfter: null);
+            return matching ? done : throw StatusFailure(retryable: false, retryAfter: null);
         }
 
         return Response.IsSuccessStatusCode ? 0 : throw StatusFailure(retryable: false, retryAfter: null);

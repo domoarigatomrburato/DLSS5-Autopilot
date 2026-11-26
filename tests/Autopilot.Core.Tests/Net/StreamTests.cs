@@ -17,9 +17,9 @@ public sealed class StreamTests(TestContext testContext)
         PartFile part = new();
         ProgressLog progress = new();
 
-        StreamResult result = await bed.Stream(Url, part, progress: progress);
+        long size = await bed.Stream(Url, part, progress: progress);
 
-        Assert.AreEqual(10, result.Size);
+        Assert.AreEqual(10, size);
         CollectionAssert.AreEqual(_body, part.Content);
         Assert.AreEqual(new DownloadProgress(10, 10), progress.Reports[^1]);
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
@@ -45,11 +45,11 @@ public sealed class StreamTests(TestContext testContext)
         CutThenResume(bed.Server);
         PartFile part = new();
 
-        Task<StreamResult> pending = bed.Stream(Url, part);
+        Task<long> pending = bed.Stream(Url, part);
         bed.Advance(1);
-        StreamResult result = await pending;
+        long size = await pending;
 
-        Assert.AreEqual(10, result.Size);
+        Assert.AreEqual(10, size);
         CollectionAssert.AreEqual(_body, part.Content);
         CollectionAssert.AreEqual(new long[] { 0, 4 }, part.Opens);
     }
@@ -60,7 +60,7 @@ public sealed class StreamTests(TestContext testContext)
         using TestBed bed = new(testContext);
         CutThenResume(bed.Server);
 
-        Task<StreamResult> pending = bed.Stream(Url);
+        Task<long> pending = bed.Stream(Url);
         bed.Advance(1);
         await pending;
 
@@ -75,12 +75,30 @@ public sealed class StreamTests(TestContext testContext)
         bed.Server.AnswerBytes(Url, _body[..4], declaredLength: 10).AnswerBytes(Url, _body);
         PartFile part = new();
 
-        Task<StreamResult> pending = bed.Stream(Url, part);
+        Task<long> pending = bed.Stream(Url, part);
         bed.Advance(1);
         await pending;
 
         CollectionAssert.AreEqual(_body, part.Content);
         CollectionAssert.AreEqual(new long[] { 0, 0 }, part.Opens);
+    }
+
+    [TestMethod]
+    [DataRow(HttpStatusCode.RequestedRangeNotSatisfiable, "bytes */10")]
+    [DataRow(HttpStatusCode.PartialContent, "bytes 2-9/10")]
+    public async Task A_cut_download_starts_over_when_the_server_will_not_resume_from_its_offset(HttpStatusCode status, string range)
+    {
+        using TestBed bed = new(testContext);
+        CutThenRefuseToResume(bed.Server, status, range);
+        PartFile part = new();
+
+        Task<long> pending = bed.Stream(Url, part);
+        bed.Advance(1, 4);
+        long size = await pending;
+
+        Assert.AreEqual(10, size);
+        CollectionAssert.AreEqual(_body, part.Content);
+        Assert.IsNull(bed.Server.Requests[2].Range, "the third attempt asks for the whole file");
     }
 
     [TestMethod]
@@ -145,7 +163,7 @@ public sealed class StreamTests(TestContext testContext)
         NetException failure = await bed.StreamFails(Url, part);
 
         Assert.AreEqual(NetErrorKind.HttpStatus, failure.Kind);
-        Assert.AreEqual(HttpStatusCode.NotFound, failure.StatusCode);
+        Assert.AreEqual(new HttpStatusDetail(HttpStatusCode.NotFound), failure.Detail);
         Assert.IsEmpty(part.Opens);
         Assert.HasCount(1, bed.Server.Requests);
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
@@ -160,7 +178,7 @@ public sealed class StreamTests(TestContext testContext)
         NetException failure = await bed.StreamFails(Url);
 
         Assert.AreEqual(NetErrorKind.HttpStatus, failure.Kind);
-        Assert.AreEqual(HttpStatusCode.PartialContent, failure.StatusCode);
+        Assert.AreEqual(new HttpStatusDetail(HttpStatusCode.PartialContent), failure.Detail);
     }
 
     [TestMethod]
@@ -176,6 +194,12 @@ public sealed class StreamTests(TestContext testContext)
     }
 
     /// <summary>The first answer is cut after 4 of 10 bytes; the next resumes from there with a 206.</summary>
+    private static void CutThenRefuseToResume(FakeServer server, HttpStatusCode status, string range) =>
+        server
+            .AnswerBytes(Url, _body[..4], declaredLength: 10)
+            .AnswerBytes(Url, status == HttpStatusCode.PartialContent ? _body[2..] : [], status: status, headers: ("Content-Range", range))
+            .AnswerBytes(Url, _body);
+
     private static void CutThenResume(FakeServer server) =>
         server
             .AnswerBytes(Url, _body[..4], declaredLength: 10)

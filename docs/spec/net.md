@@ -296,7 +296,12 @@ them, on every host:
 | GitHub's `Retry-After`, `x-ratelimit-remaining` and `x-ratelimit-reset` on 403 and 429 answers | GitHub REST rate-limit docs |
 | `SocketsHttpHandler.ConnectTimeout` and a read-stall timeout built on the response stream cover the cases above | .NET docs |
 | On Windows: whether .NET's chain build triggers the Windows root auto-update (a root missing from the store is fetched on first use) | Windows PKI docs; a test on a clean Windows install |
-| The Windows errors for a full disk (112, 39) and the .NET exceptions that wrap them | Win32 error docs; a test on a full volume |
+| The Windows errors for a full disk (112, 39) and the .NET exceptions that wrap them, through `FileStream` writes and `Flush(true)` | Win32 error docs; a test on a full volume |
+| The disk-full text on Windows: drive names (`C:`), free space through `DriveInfo`, and a UNC or `\\?\` game folder named by its root with "free space unknown" | a full volume; a game on a network share |
+| The certificate reasons are read from the `AuthenticationException` message tokens (`RemoteCertificateNameMismatch`, `NotTimeValid`, `UntrustedRoot`, `PartialChain`), on an English and a non-English Windows | a test against servers with each fault (badssl.com) |
+| A firewall-blocked socket arrives as `HttpRequestException(ConnectionError)` over `SocketException(AccessDenied)`; a DNS failure as `NameResolutionError`; a TLS handshake cut by an antivirus as an inner `IOException` | a test with a blocking firewall rule, a bad name, an inspecting antivirus |
+| The cache lock sees the sharing violation (`0x80070020`) when another process holds it, and a cache read opened with `FileShare.ReadWrite \| FileShare.Delete` does not block another process replacing the answer | two processes on Windows |
+| Authenticode verification works on a file still named `.part`, before the move | the signer check on Windows |
 
 ## Fixtures
 

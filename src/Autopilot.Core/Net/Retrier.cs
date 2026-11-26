@@ -56,15 +56,9 @@ internal sealed partial class Retrier(NetOptions options, TimeProvider time, ILo
         {
             return await run(attempt);
         }
-        catch (OperationCanceledException cancelled) when (!cancellationToken.IsCancellationRequested && (overall.IsCancellationRequested || attempt.Stalled))
+        catch (OperationCanceledException cancelled) when (Translate(cancelled, attempt.Url.Host, attempt.Stalled, overall, cancellationToken) is { } translated)
         {
-            bool stalled = !overall.IsCancellationRequested;
-            string what = stalled ? $"no bytes for {options.StallTimeout}" : "over the overall time limit";
-            throw new NetException(NetErrorKind.Timeout, attempt.Url.Host, $"{attempt.Url.Host}: {what}", cancelled) { IsRetryable = stalled };
-        }
-        catch (OperationCanceledException cancelled) when (cancellationToken.IsCancellationRequested && cancelled.CancellationToken != cancellationToken)
-        {
-            throw new OperationCanceledException(cancelled.Message, cancelled, cancellationToken);
+            throw translated;
         }
         catch (HttpRequestException failure)
         {
@@ -78,14 +72,32 @@ internal sealed partial class Retrier(NetOptions options, TimeProvider time, ILo
         {
             await Task.Delay(wait, time, call);
         }
-        catch (OperationCanceledException cancelled) when (!cancellationToken.IsCancellationRequested && overall.IsCancellationRequested)
+        catch (OperationCanceledException cancelled) when (Translate(cancelled, url.Host, stalled: false, overall, cancellationToken) is { } translated)
         {
-            throw new NetException(NetErrorKind.Timeout, url.Host, $"{url.Host}: over the overall time limit", cancelled);
+            throw translated;
         }
-        catch (OperationCanceledException cancelled) when (cancellationToken.IsCancellationRequested && cancelled.CancellationToken != cancellationToken)
+    }
+
+    /// <summary>
+    /// What a cancellation stands for: the caller's own, carrying the caller's token; a timeout when
+    /// the overall limit or a stall ended it, worth another attempt only after a stall; or nothing
+    /// to change.
+    /// </summary>
+    private Exception? Translate(OperationCanceledException cancelled, string host, bool stalled, CancellationTokenSource overall, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
         {
-            throw new OperationCanceledException(cancelled.Message, cancelled, cancellationToken);
+            return cancelled.CancellationToken == cancellationToken ? null : new OperationCanceledException(cancelled.Message, cancelled, cancellationToken);
         }
+
+        if (overall.IsCancellationRequested)
+        {
+            return new NetException(NetErrorKind.Timeout, host, $"{host}: over the overall time limit", cancelled);
+        }
+
+        return stalled
+            ? new NetException(NetErrorKind.Timeout, host, $"{host}: no bytes for {options.StallTimeout}", cancelled) { IsRetryable = true }
+            : null;
     }
 
     // GitHub's asset redirects carry signed tokens in the query, so a URL is logged without it.

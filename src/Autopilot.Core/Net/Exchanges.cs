@@ -11,6 +11,9 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
 {
     private static readonly TimeSpan _longestRetryAfter = TimeSpan.FromSeconds(60);
 
+    // GitHub's guidance for a secondary rate limit that names no time.
+    private static readonly TimeSpan _apiRefusalWait = TimeSpan.FromSeconds(60);
+
     private readonly GitHubRateLimit _gitHub = new(time);
 
     public async Task<Exchange> SendAsync(Uri url, HostAllowlist hosts, long resumeFrom, Attempt attempt)
@@ -24,7 +27,7 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
             Uri? next;
             try
             {
-                _gitHub.Note(current, response);
+                ThrowIfApiRefused(current, response, _gitHub.Note(current, response));
                 next = RedirectTarget(response, current);
             }
             catch
@@ -64,7 +67,7 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
     {
         using Exchange exchange = await SendAsync(url, hosts, transfer.Done, attempt);
         ThrowIfRetryableStatus(exchange);
-        long offset = exchange.StartOffset(transfer.Done);
+        long offset = exchange.StartOffset(transfer);
         HttpContentHeaders headers = exchange.Response.Content.Headers;
         transfer.Total = headers.ContentRange?.Length ?? (offset + headers.ContentLength);
         Bodies.ThrowIfTooLarge(transfer.Total, maxBytes, exchange.Host);
@@ -73,8 +76,28 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
         return await Bodies.CopyAsync(exchange, destination, transfer, maxBytes, progress, attempt);
     }
 
+    /// <summary>A refusal for asking too often, until <paramref name="retryAt"/> when known.</summary>
+    public static NetException RateLimited(string host, DateTimeOffset? retryAt, HttpStatusCode? status)
+    {
+        string because = status is { } code ? $", HTTP {(int)code}" : "";
+        string until = retryAt is { } at ? $" until {at:O}" : "";
+        return new(NetErrorKind.RateLimited, host, $"{host}: rate limited{because}{until}")
+        {
+            Detail = new RateLimitedDetail(retryAt, status),
+        };
+    }
+
+    /// <summary>The wait a server asked for, in seconds or as a date.</summary>
+    private static TimeSpan? RetryAfter(HttpResponseMessage response, DateTimeOffset now) =>
+        response.Headers.RetryAfter switch
+        {
+            { Delta: { } delta } => delta,
+            { Date: { } date } => date > now ? date - now : TimeSpan.Zero,
+            _ => null,
+        };
+
     /// <summary>A 5xx or a 408 is a hiccup worth another attempt, unless the server asks for a long wait.</summary>
-    public void ThrowIfRetryableStatus(Exchange exchange)
+    private void ThrowIfRetryableStatus(Exchange exchange)
     {
         HttpStatusCode status = exchange.Response.StatusCode;
         if ((int)status < 500 && status != HttpStatusCode.RequestTimeout)
@@ -83,17 +106,30 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
         }
 
         DateTimeOffset now = time.GetUtcNow();
-        TimeSpan? retryAfter = GitHubRateLimit.RetryAfter(exchange.Response, now);
+        TimeSpan? retryAfter = RetryAfter(exchange.Response, now);
         if (retryAfter > _longestRetryAfter)
         {
-            throw new NetException(NetErrorKind.RateLimited, exchange.Host, $"{exchange.Host}: HTTP {(int)status}, retry after {retryAfter}")
-            {
-                RetryAt = now + retryAfter,
-                StatusCode = status,
-            };
+            throw RateLimited(exchange.Host, now + retryAfter, status);
         }
 
         throw exchange.StatusFailure(retryable: true, retryAfter);
+    }
+
+    /// <summary>
+    /// A 403 or 429 from the API is a rate limit: it holds the API back until the server's
+    /// <c>Retry-After</c>, else until the reset of an allowance that is used up, else for a minute.
+    /// </summary>
+    private void ThrowIfApiRefused(Uri url, HttpResponseMessage response, DateTimeOffset? exhaustedUntil)
+    {
+        if (!GitHubRateLimit.IsApi(url) || response.StatusCode is not (HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests))
+        {
+            return;
+        }
+
+        DateTimeOffset now = time.GetUtcNow();
+        DateTimeOffset retryAt = RetryAfter(response, now) is { } wait ? now + wait : exhaustedUntil ?? (now + _apiRefusalWait);
+        _gitHub.Block(retryAt);
+        throw RateLimited(GitHubRateLimit.ApiHost, retryAt, response.StatusCode);
     }
 
     private static Uri? RedirectTarget(HttpResponseMessage response, Uri current) =>
@@ -121,12 +157,11 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
             : next.Scheme != Uri.UriSchemeHttps ? RedirectProblem.Scheme
             : !hosts.Allows(next.Host) ? RedirectProblem.Host
             : null;
-        return problem is null
+        return problem is not { } refused
             ? next
-            : throw new NetException(NetErrorKind.RedirectRefused, next.Host, $"redirect hop {hop} to {next.Scheme}://{next.Host}{next.AbsolutePath} refused: {problem}")
+            : throw new NetException(NetErrorKind.RedirectRefused, next.Host, $"redirect hop {hop} to {next.Scheme}://{next.Host}{next.AbsolutePath} refused: {refused}")
             {
-                Redirect = problem,
-                Hop = hop,
+                Detail = new RedirectRefusedDetail(refused, hop),
             };
     }
 }

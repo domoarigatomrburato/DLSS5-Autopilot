@@ -28,6 +28,9 @@
   <data name="NetCut" xml:space="preserve">
     <value>The connection to {0} was cut off before the transfer finished. A VPN, a proxy, an antivirus that scans HTTPS or a filtering network keeps closing it: try another network, such as a phone hotspot, then try again.</value>
   </data>
+  <data name="NetBadResponse" xml:space="preserve">
+    <value>The answer that came back for {0} was not the server's: something between this PC and {0}, such as a proxy, a VPN or a filter, answered in its place. Turn it off or try another network, then try again.</value>
+  </data>
   <data name="NetCertificateNameMismatch" xml:space="preserve">
     <value>Something on this network answered for {0} with a certificate issued to another name, so the connection never reached {0}. The usual causes are a DNS or family filter, a router block page, a wifi login page or a VPN: try a phone hotspot or set this PC's DNS to 1.1.1.1, then try again.</value>
   </data>
@@ -69,5 +72,68 @@
   </data>
   <data name="NetHttpStatus" xml:space="preserve">
     <value>The server {0} answered HTTP {1}. Wait a few minutes and try again; anything already downloaded is kept.</value>
+  </data>
+  <!-- Downloads refused after the transfer: {0} is the host, {1} the file's first bytes, {2} the file name. -->
+  <data name="NetWrongContent" xml:space="preserve">
+    <value>The server {0} answered {2} with something that is not that kind of file (it starts with "{1}"), so nothing was kept. The file may have been cut short or replaced on the way: try again, or from another network if it keeps happening.</value>
+  </data>
+  <data name="NetWrongContentPage" xml:space="preserve">
+    <value>The server {0} answered {2} with a web page (it starts with "{1}"), so nothing was kept. That is usually a proxy, a DNS filter or an antivirus page standing in for the download: try again from another network, or allow this tool in the filter.</value>
+  </data>
+  <data name="NetVerificationFailedDigestMismatch" xml:space="preserve">
+    <value>The file {2} from {0} is not the file its publisher published: its checksum does not match, so it was deleted. Try again later, and report it if it keeps happening.</value>
+  </data>
+  <data name="NetVerificationFailedNotSigned" xml:space="preserve">
+    <value>The file {2} from {0} is not signed by its publisher, so it was deleted. Try again later, and report it if it keeps happening.</value>
+  </data>
+  <data name="NetVerificationFailedSumsUnavailable" xml:space="preserve">
+    <value>The checksum list for {2} could not be read from {0}, and without it the download cannot be checked, so it was not used. Try again in a few minutes or from another network.</value>
+  </data>
+  <data name="NetVerificationFailedNotInSums" xml:space="preserve">
+    <value>The checksum list on {0} does not list {2} exactly once, so the download cannot be checked and was not used. Try again later, and report it if it keeps happening.</value>
+  </data>
+  <!-- Disk full: drive names, free space ("1.5 GB free") and places are filled in. -->
+  <data name="DiskFullOn" xml:space="preserve">
+    <value>Out of disk space on {0} ({1}).</value>
+  </data>
+  <data name="DiskFree" xml:space="preserve">
+    <value>{0} free</value>
+  </data>
+  <data name="DiskFreeUnknown" xml:space="preserve">
+    <value>free space unknown</value>
+  </data>
+  <data name="DiskFullGamePlace" xml:space="preserve">
+    <value>beside the game</value>
+  </data>
+  <data name="DiskFullCachePlace" xml:space="preserve">
+    <value>in the tool's download cache</value>
+  </data>
+  <data name="DiskFullAnd" xml:space="preserve">
+    <value> and </value>
+  </data>
+  <data name="DiskFullPlace" xml:space="preserve">
+    <value>{0} ({1}, {2})</value>
+  </data>
+  <data name="DiskFullNeedsRoom" xml:space="preserve">
+    <value>The install needs room {0}: free some up, then install again.</value>
+  </data>
+  <data name="DiskFullFreeSome" xml:space="preserve">
+    <value>Free some up, then install again.</value>
+  </data>
+  <!-- Sizes: {0} is the number, whole for bytes and with one decimal at most otherwise. -->
+  <data name="SizeBytes" xml:space="preserve">
+    <value>{0} bytes</value>
+  </data>
+  <data name="SizeKilobytes" xml:space="preserve">
+    <value>{0:0.#} KB</value>
+  </data>
+  <data name="SizeMegabytes" xml:space="preserve">
+    <value>{0:0.#} MB</value>
+  </data>
+  <data name="SizeGigabytes" xml:space="preserve">
+    <value>{0:0.#} GB</value>
+  </data>
+  <data name="SizeTerabytes" xml:space="preserve">
+    <value>{0:0.#} TB</value>
   </data>
 </root>

@@ -11,11 +11,7 @@ public abstract class ArchiveTestBase(TestContext testContext)
     protected CancellationToken Ct => testContext.CancellationToken;
 
     [TestInitialize]
-    public void CreateWorkFolder()
-    {
-        Work = Path.Join(Path.GetTempPath(), "autopilot-tests", Guid.NewGuid().ToString("N"));
-        _ = Directory.CreateDirectory(Work);
-    }
+    public void CreateWorkFolder() => Work = Directory.CreateTempSubdirectory("autopilot-tests-").FullName;
 
     [TestCleanup]
     public void DeleteWorkFolder() => Directory.Delete(Work, recursive: true);
@@ -47,13 +43,6 @@ public abstract class ArchiveTestBase(TestContext testContext)
         _ = Directory.CreateDirectory(real);
         _ = Directory.CreateSymbolicLink(link, real);
         return link;
-    }
-
-    /// <summary>Writes a file, creating its folders.</summary>
-    protected static void Plant(string path, string text)
-    {
-        _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, text);
     }
 
     protected string In(params string[] parts) => Path.Join([Work, .. parts]);

@@ -26,7 +26,7 @@ public sealed class GitHubRateLimitTests(TestContext testContext)
 
         Assert.AreEqual(HttpStatusCode.OK, first.StatusCode);
         Assert.AreEqual(NetErrorKind.RateLimited, limited.Kind);
-        Assert.AreEqual(bed.Start.AddMinutes(40), limited.RetryAt);
+        Assert.AreEqual(bed.Start.AddMinutes(40), RetryAtOf(limited));
         Assert.AreEqual(0, bed.Server.RequestsTo(OtherApi));
         Assert.AreEqual("<html>", pages.Body, "only the API is held back");
     }
@@ -57,7 +57,7 @@ public sealed class GitHubRateLimitTests(TestContext testContext)
         NetException failure = await bed.GetTextFails(Api);
 
         Assert.AreEqual(NetErrorKind.RateLimited, failure.Kind);
-        Assert.AreEqual(bed.Start.AddSeconds(30), failure.RetryAt);
+        Assert.AreEqual(bed.Start.AddSeconds(30), RetryAtOf(failure));
         Assert.HasCount(1, bed.Server.Requests);
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
     }
@@ -70,7 +70,7 @@ public sealed class GitHubRateLimitTests(TestContext testContext)
 
         NetException failure = await bed.GetTextFails(Api);
 
-        Assert.AreEqual(bed.Start.AddMinutes(10), failure.RetryAt);
+        Assert.AreEqual(bed.Start.AddMinutes(10), RetryAtOf(failure));
     }
 
     [TestMethod]
@@ -82,7 +82,7 @@ public sealed class GitHubRateLimitTests(TestContext testContext)
         NetException failure = await bed.GetTextFails(Api);
 
         Assert.AreEqual(NetErrorKind.RateLimited, failure.Kind);
-        Assert.IsNull(failure.RetryAt);
+        Assert.AreEqual(bed.Start.AddSeconds(60), RetryAtOf(failure));
     }
 
     [TestMethod]
@@ -112,4 +112,36 @@ public sealed class GitHubRateLimitTests(TestContext testContext)
 
     private static string Epoch(TestBed bed, int minutes) =>
         bed.Start.AddMinutes(minutes).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+
+    private static DateTimeOffset? RetryAtOf(NetException failure) =>
+        Assert.IsInstanceOfType<RateLimitedDetail>(failure.Detail).RetryAt;
+
+    [TestMethod]
+    public async Task A_refusal_with_requests_left_waits_a_minute_rather_than_until_the_reset()
+    {
+        using TestBed bed = new(testContext);
+        bed.Server
+            .Answer(Api, HttpStatusCode.Forbidden, "{}", ("x-ratelimit-remaining", "12"), ("x-ratelimit-reset", Epoch(bed, minutes: 50)))
+            .Answer(OtherApi, HttpStatusCode.OK, "{}");
+
+        NetException failure = await bed.GetTextFails(Api);
+        bed.Advance(60);
+        await bed.GetText(OtherApi);
+
+        Assert.AreEqual(bed.Start.AddSeconds(60), RetryAtOf(failure));
+        Assert.AreEqual(1, bed.Server.RequestsTo(OtherApi));
+    }
+
+    [TestMethod]
+    public async Task A_refusal_holds_the_api_back_for_that_minute()
+    {
+        using TestBed bed = new(testContext);
+        bed.Server.Answer(Api, HttpStatusCode.TooManyRequests).Answer(OtherApi, HttpStatusCode.OK, "{}");
+
+        _ = await bed.GetTextFails(Api);
+        bed.Advance(59);
+        _ = await bed.GetTextFails(OtherApi);
+
+        Assert.AreEqual(0, bed.Server.RequestsTo(OtherApi));
+    }
 }

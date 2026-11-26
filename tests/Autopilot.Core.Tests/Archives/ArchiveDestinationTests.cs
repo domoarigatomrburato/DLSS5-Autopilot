@@ -38,7 +38,7 @@ public sealed class ArchiveDestinationTests(TestContext testContext) : ArchiveTe
     {
         string archive = Build(ArchiveFormat.TarGz, TestMember.Text("a/x.txt", "fresh"));
         string destination = In("out");
-        Plant(Path.Join(destination + ".part", "stale", "old.txt"), "old");
+        TestFiles.Plant(Path.Join(destination + ".part", "stale", "old.txt"), "old");
 
         IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct);
 

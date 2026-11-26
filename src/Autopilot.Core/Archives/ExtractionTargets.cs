@@ -55,6 +55,7 @@ internal sealed class TreeTarget(string archivePath, string destination, string 
 {
     private readonly string[] _source = options.SourceFolder is null ? [] : SafePath.Parts(options.SourceFolder);
     private readonly HashSet<string> _placed = [with(StringComparer.OrdinalIgnoreCase)];
+    private readonly FileTreeShape _shape = new();
     private readonly List<string> _written = [];
 
     /// <summary>The files written, in the caller's spelling of the destination.</summary>
@@ -72,6 +73,12 @@ internal sealed class TreeTarget(string archivePath, string destination, string 
         if (!_placed.Add(relative))
         {
             throw ArchiveException.For(ArchiveFailure.DuplicateName, archivePath, $"two members land on '{relative}'");
+        }
+
+        // Stripping and the source folder can bring a file and a folder together.
+        if (!_shape.AddFile(relative))
+        {
+            throw ArchiveException.For(ArchiveFailure.DuplicateName, archivePath, $"a file and a folder meet at '{relative}'");
         }
 
         _written.Add(SafePath.Join(destination, relative));

@@ -17,14 +17,17 @@ public enum NetErrorKind
     /// <summary>The connection dropped mid-transfer.</summary>
     Cut,
 
-    /// <summary>TLS refused the server's certificate; <see cref="NetException.Certificate"/> says why.</summary>
+    /// <summary>TLS refused the server's certificate; <see cref="CertificateRefusedDetail"/> says why.</summary>
     Certificate,
 
-    /// <summary>The server asked to wait; <see cref="NetException.RetryAt"/> says until when, when known.</summary>
+    /// <summary>The server asked to wait; <see cref="RateLimitedDetail"/> says until when, when known.</summary>
     RateLimited,
 
-    /// <summary>A redirect hop was refused; <see cref="NetException.Redirect"/> says why.</summary>
+    /// <summary>A redirect hop was refused; <see cref="RedirectRefusedDetail"/> says why.</summary>
     RedirectRefused,
+
+    /// <summary>Something between this PC and the host, such as a proxy, answered in a way that is not the server's.</summary>
+    BadResponse,
 
     /// <summary>The URL's host is not on the caller's list.</summary>
     HostNotAllowed,
@@ -35,8 +38,29 @@ public enum NetErrorKind
     /// <summary>The answer is larger than its limit.</summary>
     TooLarge,
 
-    /// <summary>The server's final answer was not a success; <see cref="NetException.StatusCode"/> holds it.</summary>
+    /// <summary>The server's final answer was not a success; <see cref="HttpStatusDetail"/> holds it.</summary>
     HttpStatus,
+
+    /// <summary>The file does not start the way its name says; <see cref="WrongContentDetail"/> shows how it starts.</summary>
+    WrongContent,
+
+    /// <summary>The file failed the caller's verification; <see cref="VerificationFailedDetail"/> says why.</summary>
+    VerificationFailed,
+}
+
+public enum VerificationProblem
+{
+    /// <summary>The file's SHA-256 is not the expected one.</summary>
+    DigestMismatch,
+
+    /// <summary>The file is not signed by the expected publisher.</summary>
+    NotSigned,
+
+    /// <summary>The sums file could not be read.</summary>
+    SumsUnavailable,
+
+    /// <summary>The sums file does not list the file's name exactly once.</summary>
+    NotInSums,
 }
 
 public enum CertificateProblem

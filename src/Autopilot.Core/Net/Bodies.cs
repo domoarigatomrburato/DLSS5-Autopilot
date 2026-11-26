@@ -45,14 +45,15 @@ internal static class Bodies
             : transfer.Done;
     }
 
-    /// <summary>A whole text body, decoded as UTF-8, refused when declared or found over the limit.</summary>
+    /// <summary>A whole text body, decoded as UTF-8 without its byte order mark, refused when declared or found over the limit.</summary>
     public static async Task<string> ReadTextAsync(Exchange exchange, long maxBytes, Attempt attempt)
     {
         long? declared = exchange.Response.Content.Headers.ContentLength;
         ThrowIfTooLarge(declared, maxBytes, exchange.Host);
         using MemoryStream body = new();
         _ = await CopyAsync(exchange, body, new() { Total = declared }, maxBytes, null, attempt);
-        return Encoding.UTF8.GetString(body.GetBuffer(), 0, (int)body.Length);
+        ReadOnlySpan<byte> bytes = body.GetBuffer().AsSpan(0, (int)body.Length);
+        return Encoding.UTF8.GetString(bytes.StartsWith(Encoding.UTF8.Preamble) ? bytes[Encoding.UTF8.Preamble.Length..] : bytes);
     }
 
     // Only a failed read is a network failure: a failed write (a full disk) is the caller's.

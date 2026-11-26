@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Autopilot.Core.Archives;
 
 /// <summary>
@@ -27,6 +29,10 @@ public sealed record ArchiveLimits
 
     /// <summary>The ratio is checked only once the expanded size is over this.</summary>
     public long RatioCheckedAbove { get; init => field = Lowered(value, DefaultRatioCheckedAbove); } = DefaultRatioCheckedAbove;
+
+    /// <summary>Every limit as text, so equal limits read the same.</summary>
+    internal string CanonicalKey() =>
+        string.Create(CultureInfo.InvariantCulture, $"{MaxEntries} {MaxTotalBytes} {MaxRatio} {RatioCheckedAbove}");
 
     private static T Lowered<T>(T value, T ceiling)
         where T : System.Numerics.INumber<T>

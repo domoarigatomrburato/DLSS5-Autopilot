@@ -10,7 +10,7 @@ namespace Autopilot.Core.Archives;
 /// </summary>
 internal static class TarGzSource
 {
-    public static async Task ExtractAsync(string archivePath, MemberCatalog catalog, IExtractionTarget target, CancellationToken ct)
+    public static async Task ExtractAsync(string archivePath, MemberCatalog catalog, IExtractionTarget target, BoundedCopy copy, CancellationToken ct)
     {
         await using FileStream file = File.OpenRead(archivePath);
         long compressed = file.Length;
@@ -30,7 +30,7 @@ internal static class TarGzSource
             catalog.CheckRatio(catalog.DeclaredTotal, compressed, "the archive");
             if (entry.EntryType is not TarEntryType.Directory && path is not null && target.Place(path) is { } destination)
             {
-                await BoundedCopy.WriteAsync(entry.DataStream ?? Stream.Null, destination, entry.Length, archivePath, path, ct);
+                await copy.WriteAsync(entry.DataStream ?? Stream.Null, destination, entry.Length, path, ct);
             }
         }
     }

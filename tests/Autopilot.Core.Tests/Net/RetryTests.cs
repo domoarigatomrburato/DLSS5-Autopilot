@@ -39,7 +39,7 @@ public sealed class RetryTests(TestContext testContext)
         NetException failure = await pending;
 
         Assert.AreEqual(NetErrorKind.HttpStatus, failure.Kind);
-        Assert.AreEqual(HttpStatusCode.BadGateway, failure.StatusCode);
+        Assert.AreEqual(new HttpStatusDetail(HttpStatusCode.BadGateway), failure.Detail);
         Assert.HasCount(3, bed.Server.Requests);
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
     }
@@ -95,7 +95,7 @@ public sealed class RetryTests(TestContext testContext)
         NetException failure = await bed.GetTextFails(Url);
 
         Assert.AreEqual(NetErrorKind.RateLimited, failure.Kind);
-        Assert.AreEqual(bed.Start.AddSeconds(120), failure.RetryAt);
+        Assert.AreEqual(bed.Start.AddSeconds(120), RetryAtOf(failure));
         Assert.HasCount(1, bed.Server.Requests);
     }
 
@@ -168,4 +168,7 @@ public sealed class RetryTests(TestContext testContext)
 
     internal static HttpRequestException Certificate(string reason) =>
         new(HttpRequestError.SecureConnectionError, "The SSL connection could not be established", new System.Security.Authentication.AuthenticationException(reason));
+
+    private static DateTimeOffset? RetryAtOf(NetException failure) =>
+        Assert.IsInstanceOfType<RateLimitedDetail>(failure.Detail).RetryAt;
 }

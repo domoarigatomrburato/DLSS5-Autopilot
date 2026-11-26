@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net;
 
 namespace Autopilot.Core.Net;
 
@@ -9,10 +8,12 @@ namespace Autopilot.Core.Net;
 /// </summary>
 internal sealed class GitHubRateLimit(TimeProvider time)
 {
-    private const string ApiHost = "api.github.com";
+    public const string ApiHost = "api.github.com";
 
     private readonly Lock _lock = new();
     private DateTimeOffset _blockedUntil = DateTimeOffset.MinValue;
+
+    public static bool IsApi(Uri url) => string.Equals(url.Host, ApiHost, StringComparison.OrdinalIgnoreCase);
 
     public void ThrowIfBlocked(Uri url)
     {
@@ -29,60 +30,30 @@ internal sealed class GitHubRateLimit(TimeProvider time)
 
         if (time.GetUtcNow() < until)
         {
-            throw Limited(until);
+            throw Exchanges.RateLimited(ApiHost, until, status: null);
         }
     }
 
-    /// <summary>Reads the allowance from an answer, and throws when the answer is itself a refusal.</summary>
-    public void Note(Uri url, HttpResponseMessage response)
+    /// <summary>Reads the allowance from an API answer, blocking the API when none is left.</summary>
+    /// <returns>The reset time, when the answer says no requests are left.</returns>
+    public DateTimeOffset? Note(Uri url, HttpResponseMessage response)
     {
         if (!IsApi(url))
         {
-            return;
+            return null;
         }
 
         DateTimeOffset? reset = Header(response, "x-ratelimit-reset") is { } epoch ? DateTimeOffset.FromUnixTimeSeconds(epoch) : null;
-        if (Header(response, "x-ratelimit-remaining") == 0 && reset is { } exhaustedUntil)
+        if (Header(response, "x-ratelimit-remaining") != 0 || reset is not { } exhaustedUntil)
         {
-            Block(exhaustedUntil);
+            return null;
         }
 
-        if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
-        {
-            DateTimeOffset? retryAt = RetryAfter(response, time.GetUtcNow()) is { } wait ? time.GetUtcNow() + wait : reset;
-            if (retryAt is { } until)
-            {
-                Block(until);
-            }
-
-            throw Limited(retryAt);
-        }
+        Block(exhaustedUntil);
+        return exhaustedUntil;
     }
 
-    /// <summary>The wait a server asked for, in seconds or as a date.</summary>
-    public static TimeSpan? RetryAfter(HttpResponseMessage response, DateTimeOffset now) =>
-        response.Headers.RetryAfter switch
-        {
-            { Delta: { } delta } => delta,
-            { Date: { } date } => date > now ? date - now : TimeSpan.Zero,
-            _ => null,
-        };
-
-    private static bool IsApi(Uri url) => string.Equals(url.Host, ApiHost, StringComparison.OrdinalIgnoreCase);
-
-    private static long? Header(HttpResponseMessage response, string name) =>
-        response.Headers.TryGetValues(name, out IEnumerable<string>? values)
-            && long.TryParse(values.FirstOrDefault(), NumberStyles.None, CultureInfo.InvariantCulture, out long value)
-            ? value
-            : null;
-
-    private static NetException Limited(DateTimeOffset? until) =>
-        new(NetErrorKind.RateLimited, ApiHost, until is { } at ? $"{ApiHost}: rate limited until {at:O}" : $"{ApiHost}: rate limited")
-        {
-            RetryAt = until,
-        };
-
-    private void Block(DateTimeOffset until)
+    public void Block(DateTimeOffset until)
     {
         lock (_lock)
         {
@@ -92,4 +63,10 @@ internal sealed class GitHubRateLimit(TimeProvider time)
             }
         }
     }
+
+    private static long? Header(HttpResponseMessage response, string name) =>
+        response.Headers.TryGetValues(name, out IEnumerable<string>? values)
+            && long.TryParse(values.FirstOrDefault(), NumberStyles.None, CultureInfo.InvariantCulture, out long value)
+            ? value
+            : null;
 }

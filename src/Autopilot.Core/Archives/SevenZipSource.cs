@@ -12,41 +12,41 @@ namespace Autopilot.Core.Archives;
 /// </summary>
 internal static class SevenZipSource
 {
-    public static async Task ExtractAsync(string archivePath, MemberCatalog catalog, IExtractionTarget target, CancellationToken ct)
+    public static async Task ExtractAsync(string archivePath, MemberCatalog catalog, IExtractionTarget target, BoundedCopy copy, CancellationToken ct)
     {
         await using FileStream file = File.OpenRead(archivePath);
         await using IAsyncArchive archive = await SevenZipArchive.OpenAsyncArchive(file, ReaderOptions.ForExternalStream, ct);
 
-        Dictionary<string, string> plan = [with(StringComparer.OrdinalIgnoreCase)];
+        // Keyed by the raw name, so the second pass finds a member without checking its name again.
+        Dictionary<string, (string Path, string Destination)> plan = [with(StringComparer.Ordinal)];
         await foreach (IArchiveEntry entry in archive.EntriesAsync.WithCancellation(ct))
         {
             if (catalog.Admit(entry.Key ?? "", entry.IsDirectory, entry.Size) is { } path
                 && !entry.IsDirectory
                 && target.Place(path) is { } destination)
             {
-                plan[path] = destination;
+                plan[entry.Key ?? ""] = (path, destination);
             }
         }
 
         catalog.CheckRatio(catalog.DeclaredTotal, await archive.TotalSizeAsync(), "the archive");
         if (plan.Count > 0)
         {
-            await WritePlannedAsync(archivePath, archive, plan, ct);
+            await WritePlannedAsync(archive, plan, copy, ct);
         }
     }
 
-    private static async Task WritePlannedAsync(string archivePath, IAsyncArchive archive, Dictionary<string, string> plan, CancellationToken ct)
+    private static async Task WritePlannedAsync(IAsyncArchive archive, Dictionary<string, (string Path, string Destination)> plan, BoundedCopy copy, CancellationToken ct)
     {
         await using IAsyncReader reader = await archive.ExtractAllEntriesAsync();
         int remaining = plan.Count;
         while (remaining > 0 && await reader.MoveToNextEntryAsync(ct))
         {
             IEntry entry = reader.Entry;
-            string path = string.Join('/', SafePath.Parts(entry.Key ?? ""));
-            if (!entry.IsDirectory && plan.TryGetValue(path, out string? destination))
+            if (!entry.IsDirectory && plan.TryGetValue(entry.Key ?? "", out (string Path, string Destination) planned))
             {
                 await using Stream data = await reader.OpenEntryStreamAsync(ct);
-                await BoundedCopy.WriteAsync(data, destination, entry.Size, archivePath, path, ct);
+                await copy.WriteAsync(data, planned.Destination, entry.Size, planned.Path, ct);
                 remaining--;
             }
         }

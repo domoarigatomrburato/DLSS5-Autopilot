@@ -5,7 +5,7 @@ namespace Autopilot.Core.Archives;
 /// <summary>Zip, read with System.IO.Compression: every header is checked before anything is written.</summary>
 internal static class ZipSource
 {
-    public static async Task ExtractAsync(string archivePath, MemberCatalog catalog, IExtractionTarget target, CancellationToken ct)
+    public static async Task ExtractAsync(string archivePath, MemberCatalog catalog, IExtractionTarget target, BoundedCopy copy, CancellationToken ct)
     {
         await using FileStream file = File.OpenRead(archivePath);
         await using ZipArchive zip = await ZipArchive.CreateAsync(file, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null, ct);
@@ -30,7 +30,7 @@ internal static class ZipSource
         foreach ((ZipArchiveEntry entry, string path, string destination) in plan)
         {
             await using Stream data = await entry.OpenAsync(ct);
-            await BoundedCopy.WriteAsync(data, destination, entry.Length, archivePath, path, ct);
+            await copy.WriteAsync(data, destination, entry.Length, path, ct);
         }
     }
 }

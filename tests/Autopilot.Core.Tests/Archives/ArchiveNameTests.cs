@@ -17,6 +17,27 @@ public sealed class ArchiveNameTests(TestContext testContext) : ArchiveTestBase(
         Formats.SelectMany(format => _namesEveryFormatCarries.Select(name => new object[] { format[0], name }))
             .Concat(_absoluteNames.SelectMany(name => new[] { new object[] { ArchiveFormat.Zip, name }, [ArchiveFormat.TarGz, name] }));
 
+    public static IEnumerable<object[]> FileAndFolderClashes =>
+        Formats.SelectMany(format => new[]
+        {
+            new object[] { format[0], "bin", "bin/x.dll" },
+            [format[0], "Bin/x.dll", "BIN"],
+        });
+
+    [TestMethod]
+    [DynamicData(nameof(FileAndFolderClashes))]
+    public async Task A_file_whose_path_is_also_a_folder_is_refused(ArchiveFormat format, string first, string second)
+    {
+        string archive = Build(format, new TestMember(first), new TestMember(second));
+        string destination = In("out");
+
+        ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct));
+
+        Assert.AreEqual(ArchiveFailure.DuplicateName, failure.Reason);
+        AssertNothingWritten(destination);
+    }
+
     [TestMethod]
     [DynamicData(nameof(UnsafeNames))]
     public async Task An_archive_with_one_unsafe_name_writes_nothing(ArchiveFormat format, string name)

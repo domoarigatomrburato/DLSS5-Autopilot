@@ -124,4 +124,17 @@ public sealed class ArchiveSelectionTests(TestContext testContext) : ArchiveTest
         Assert.AreEqual(ArchiveFailure.DuplicateName, failure.Reason);
         AssertNothingWritten(destination);
     }
+
+    [TestMethod]
+    public async Task A_file_and_a_folder_that_meet_only_after_flattening_are_refused()
+    {
+        string archive = Build(ArchiveFormat.Zip, TestMember.Text("a/bin", "a"), TestMember.Text("b/bin/x.dll", "b"));
+        string destination = In("out");
+
+        ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, new TreeOptions { StripTopFolder = true }, ct: Ct));
+
+        Assert.AreEqual(ArchiveFailure.DuplicateName, failure.Reason);
+        AssertNothingWritten(destination);
+    }
 }

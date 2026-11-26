@@ -2,6 +2,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Autopilot.Core.Net;
+using Microsoft.Extensions.Logging;
 
 namespace Autopilot.Core.Tests.Net;
 
@@ -140,9 +141,38 @@ public sealed class TextCacheTests(TestContext testContext)
         Assert.IsFalse(Directory.Exists(Path.Combine(bed.CacheRoot, "api")));
     }
 
+    [TestMethod]
+    public async Task An_answer_that_cannot_be_moved_into_place_leaves_no_temporary_file()
+    {
+        using TestBed bed = new(testContext);
+        bed.Server.Answer(Url, HttpStatusCode.OK, "fresh");
+        _ = Directory.CreateDirectory(CacheFile(bed));
+
+        TextAnswer answer = await bed.GetText(Url, _cached);
+
+        Assert.AreEqual("fresh", answer.Body);
+        Assert.IsEmpty(Directory.GetFiles(Path.Combine(bed.CacheRoot, "api")));
+    }
+
     private static string CacheFile(TestBed bed)
     {
         string key = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(new Uri(Url).AbsoluteUri)))[..32];
         return Path.Combine(bed.CacheRoot, "api", key + ".json");
+    }
+
+    [TestMethod]
+    public async Task An_answer_the_cache_cannot_keep_is_still_returned_and_the_failure_logged()
+    {
+        const string WithQuery = Url + "?token=secret";
+        using TestBed bed = new(testContext);
+        bed.Server.Answer(WithQuery, HttpStatusCode.OK, "fresh");
+        TestFiles.Plant(Path.Combine(bed.CacheRoot, "api"), "a file where the folder goes");
+
+        TextAnswer answer = await bed.GetText(WithQuery, _cached);
+
+        Assert.AreEqual("fresh", answer.Body);
+        Assert.AreEqual(LogLevel.Warning, bed.Log.LatestRecord.Level);
+        Assert.Contains("/repos/owner/repo/releases/latest", bed.Log.LatestRecord.Message);
+        Assert.DoesNotContain("secret", bed.Log.LatestRecord.Message);
     }
 }

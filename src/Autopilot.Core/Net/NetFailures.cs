@@ -47,7 +47,10 @@ internal static class NetFailures
         if (Find<AuthenticationException>(failure) is { } refused)
         {
             CertificateProblem problem = _certificateTokens.FirstOrDefault(t => refused.Message.Contains(t.Token, StringComparison.Ordinal)).Problem;
-            return new(NetErrorKind.Certificate, host, $"{host}: certificate refused, {problem} ({refused.Message})", failure) { Certificate = problem };
+            return new(NetErrorKind.Certificate, host, $"{host}: certificate refused, {problem} ({refused.Message})", failure)
+            {
+                Detail = new CertificateRefusedDetail(problem),
+            };
         }
 
         NetErrorKind kind = Classify(failure);
@@ -76,6 +79,12 @@ internal static class NetFailures
             return NetErrorKind.Cut;
         }
 
+        if (error is HttpRequestError.InvalidResponse or HttpRequestError.ConfigurationLimitExceeded
+            or HttpRequestError.ProxyTunnelError or HttpRequestError.UserAuthenticationError)
+        {
+            return NetErrorKind.BadResponse;
+        }
+
         return Find<SocketException>(failure) is { } socket && _bySocketCode.TryGetValue(socket.SocketErrorCode, out NetErrorKind kind)
             ? kind
             : FromText(failure);
@@ -83,7 +92,7 @@ internal static class NetFailures
 
     private static NetErrorKind FromText(Exception failure)
     {
-        string text = string.Join(" ", Chain(failure).Select(e => e.Message)).ToUpperInvariant();
+        string text = string.Join(" ", ExceptionChain.Of(failure).Select(e => e.Message)).ToUpperInvariant();
         foreach ((NetErrorKind kind, string[] keys) in _byText)
         {
             if (keys.Any(key => text.Contains(key.ToUpperInvariant(), StringComparison.Ordinal)))
@@ -96,13 +105,5 @@ internal static class NetFailures
     }
 
     private static T? Find<T>(Exception failure)
-        where T : Exception => Chain(failure).OfType<T>().FirstOrDefault();
-
-    private static IEnumerable<Exception> Chain(Exception failure)
-    {
-        for (Exception? current = failure; current is not null; current = current.InnerException)
-        {
-            yield return current;
-        }
-    }
+        where T : Exception => ExceptionChain.Of(failure).OfType<T>().FirstOrDefault();
 }

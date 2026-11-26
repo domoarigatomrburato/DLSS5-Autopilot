@@ -61,6 +61,8 @@ MSTest on Microsoft.Testing.Platform; run one project with
 
 - Tests describe what the tool does for the user, at a project's public seam,
   not how the code is arranged.
+- Coverage counts our own code: `coverage.config` leaves out sources
+  generated under `obj/`.
 - Every test has 5 seconds by default (`tests/testconfig.json`); raise it on
   one test with `[Timeout]` and the reason beside it.
 - Unit tests are offline: each test project routes `HttpClient` to a dead

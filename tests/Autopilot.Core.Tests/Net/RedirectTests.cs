@@ -45,8 +45,7 @@ public sealed class RedirectTests(TestContext testContext)
         NetException failure = await bed.GetTextFails("https://example.test/file");
 
         Assert.AreEqual(NetErrorKind.RedirectRefused, failure.Kind);
-        Assert.AreEqual(RedirectProblem.Scheme, failure.Redirect);
-        Assert.AreEqual(1, failure.Hop);
+        Assert.AreEqual(new RedirectRefusedDetail(RedirectProblem.Scheme, 1), failure.Detail);
         Assert.AreEqual(0, bed.Server.RequestsTo("http://example.test/file"));
         Assert.HasCount(1, bed.Server.Requests, "a refused redirect is never retried");
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
@@ -63,7 +62,7 @@ public sealed class RedirectTests(TestContext testContext)
         NetException failure = await bed.GetTextFails("https://example.test/file");
 
         Assert.AreEqual(NetErrorKind.RedirectRefused, failure.Kind);
-        Assert.AreEqual(RedirectProblem.Host, failure.Redirect);
+        Assert.AreEqual(RedirectProblem.Host, ProblemOf(failure));
         Assert.AreEqual("evil.test", failure.Host);
         Assert.AreEqual(0, bed.Server.RequestsTo("https://evil.test/file"));
     }
@@ -95,7 +94,7 @@ public sealed class RedirectTests(TestContext testContext)
         NetException failure = await bed.GetTextFails("https://example.test/ping");
 
         Assert.AreEqual(NetErrorKind.RedirectRefused, failure.Kind);
-        Assert.AreEqual(RedirectProblem.TooManyHops, failure.Redirect);
+        Assert.AreEqual(RedirectProblem.TooManyHops, ProblemOf(failure));
         Assert.HasCount(6, bed.Server.Requests);
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
     }
@@ -154,4 +153,7 @@ public sealed class RedirectTests(TestContext testContext)
 
         Assert.AreEqual("dlss5-autopilot/1.2.3", bed.Server.Requests[0].UserAgent);
     }
+
+    private static RedirectProblem ProblemOf(NetException failure) =>
+        Assert.IsInstanceOfType<RedirectRefusedDetail>(failure.Detail).Problem;
 }

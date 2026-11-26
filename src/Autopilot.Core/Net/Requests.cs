@@ -24,8 +24,5 @@ public sealed record FileRequest
 /// <summary>A text answer. A stale one came from the cache because the live request failed.</summary>
 public sealed record TextAnswer(HttpStatusCode StatusCode, string Body, DateTimeOffset FetchedAt, bool IsStale);
 
-/// <summary>A finished download.</summary>
-public sealed record StreamResult(long Size);
-
 /// <summary>Bytes received so far, and the total when the server said it.</summary>
 public readonly record struct DownloadProgress(long Done, long? Total);

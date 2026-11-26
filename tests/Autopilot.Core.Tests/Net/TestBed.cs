@@ -60,7 +60,7 @@ internal sealed class TestBed : IDisposable
     public Task<NetException> GetTextFails(string url, TextRequest? options = null, HostAllowlist? hosts = null) =>
         Assert.ThrowsAsync<NetException>(() => GetText(url, options, hosts));
 
-    public Task<StreamResult> Stream(string url, PartFile? part = null, FileRequest? options = null, IProgress<DownloadProgress>? progress = null) =>
+    public Task<long> Stream(string url, PartFile? part = null, FileRequest? options = null, IProgress<DownloadProgress>? progress = null) =>
         Client.StreamToAsync(new(url), Hosts, (part ?? new()).Open, options, progress, _cancellation);
 
     public Task<NetException> StreamFails(string url, PartFile? part = null, FileRequest? options = null) =>

@@ -55,17 +55,23 @@ public static class ArchiveExtractor
         ArchiveLimits? limits,
         CancellationToken ct)
     {
+        using BoundedCopy copy = new(archivePath);
         try
         {
             ct.ThrowIfCancellationRequested();
             MemberCatalog catalog = new(archivePath, limits ?? ArchiveLimits.Default);
-            Task reading = await ArchiveSignature.DetectAsync(archivePath, ct) switch
+            switch (await ArchiveSignature.DetectAsync(archivePath, ct))
             {
-                ArchiveFormat.Zip => ZipSource.ExtractAsync(archivePath, catalog, target, ct),
-                ArchiveFormat.TarGz => TarGzSource.ExtractAsync(archivePath, catalog, target, ct),
-                _ => SevenZipSource.ExtractAsync(archivePath, catalog, target, ct),
-            };
-            await reading;
+                case ArchiveFormat.Zip:
+                    await ZipSource.ExtractAsync(archivePath, catalog, target, copy, ct);
+                    break;
+                case ArchiveFormat.TarGz:
+                    await TarGzSource.ExtractAsync(archivePath, catalog, target, copy, ct);
+                    break;
+                default:
+                    await SevenZipSource.ExtractAsync(archivePath, catalog, target, copy, ct);
+                    break;
+            }
             target.Finish();
             part.Commit();
         }
