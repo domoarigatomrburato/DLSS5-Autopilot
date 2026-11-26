@@ -16,7 +16,8 @@ How it works, with no server anywhere:
   the session was measured - the work area it ran at, the milliseconds a frame
   spent on what grows with that area, and the frame rate. No paths, no user name,
   no machine id, and nothing at all leaves without the button being pressed.
-* A workflow in the repository adds those up into `docs/compatibility.json`.
+* A workflow in the repository adds those up into `compatibility.json` and
+  publishes it with GitHub Pages; nothing is committed.
 * Every tool downloads that file and reads it before an install.
 
 So the write side is a browser window the person can read and cancel, and
@@ -42,15 +43,13 @@ def route_name(route: str) -> str:
     except Exception:
         return str(route)
 
-# The aggregate the workflow publishes. raw.githubusercontent, not the API:
-# no rate limit worth speaking of, and it keeps working when the 60
-# anonymous API requests an hour are gone.
-FEED_URL = ("https://raw.githubusercontent.com/Kizzuwatnaa/DLSS5-Autopilot/"
-            "main/docs/compatibility.json")
+# The compatibility workflow builds a page people can search, one row per
+# card, driver and build (#304), and the aggregate beside it; GitHub Pages
+# serves both. Pages, not the API: no rate limit worth speaking of, and it
+# keeps working when the 60 anonymous API requests an hour are gone.
+PAGE_URL = "https://domoarigatomrburato.github.io/DLSS5-Autopilot/"
+FEED_URL = PAGE_URL + "compatibility.json"
 CACHE_NAME = "compatibility.json"
-# The same results as a page people can search, one row per card, driver and
-# build (#304). The compatibility workflow builds it and GitHub Pages serves it.
-PAGE_URL = "https://kizzuwatnaa.github.io/DLSS5-Autopilot/"
 FRESH_SECONDS = 6 * 3600
 # Below this many reports a line about "what worked for others" is noise
 # dressed as knowledge - two people are not a finding.

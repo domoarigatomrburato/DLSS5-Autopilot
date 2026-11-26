@@ -1,9 +1,10 @@
-"""Turn the shared results into docs/compatibility.json.
+"""Turn the shared results into compatibility.json, published with the page.
 
 Run by .github/workflows/compatibility.yml. It reads the machine-readable
 block the tool writes into each shared result (core/community.py owns the
 format and the parser, and this script imports it so the two can never
-drift apart), and writes one small aggregate:
+drift apart), and writes one small aggregate into PAGE_DIR, beside the
+searchable page; GitHub Pages serves both and nothing is committed:
 
     {"generated": "2026-09-09T11:00:00Z",
      "reports": 812,
@@ -28,6 +29,12 @@ from results that worked - a session that crashed measured a crash - and
 only the median, so one machine with a strange number cannot move the
 answer far.
 
+The results come from this repository (REPO) and, read-only, from the
+repository this one was forked from (UPSTREAM): results its users shared
+before the fork keep counting. Both feed the same aggregate, and a read
+that fails on either ends the run, so Pages keeps the previous file instead
+of publishing a list that lost one side.
+
 Counts only. No user names, no issue numbers, nothing that ties a row back
 to a person - the whole point of the file is that it can be published
 without anyone having agreed to be published.
@@ -49,19 +56,24 @@ sys.path.insert(0, str(ROOT))
 from core.community import parse            # noqa: E402  the one parser
 from core.community import counts           # noqa: E402  and what it cannot see
 
+# The repository this one was forked from, read as well as REPO.
+UPSTREAM = "Kizzuwatnaa/DLSS5-Autopilot"
+
 # Results written before 2.0.5 on a verdict that could not see the outcome
 # were filed as "failed" whatever the game did, and are left out as unknown
 # (community.counts). These people rewrote the issue's title to say it
 # worked while the block said failed; the person who played it outranks the
-# tool's reading of it, whichever verdict that was.
+# tool's reading of it, whichever verdict that was. Keyed by repository and
+# issue number: the numbers below are upstream's, and a result filed here
+# under the same number is somebody else's.
 SAID_IN_WORDS = {
-    414: "worked",      # "It Did Work." / "WORKED FINE" - Arkham Knight, renodx
-    388: "worked",      # "God of War -working" - bridge
-    307: "worked",      # "work, set to 100% only" - Venus Vacation PRISM, renodx
-    257: "worked",      # "It Did Work" - DragonSword, native
-    242: "worked",      # "did work but charges me to update" - No Man's Sky, bridge
-    222: "worked",      # "inZOI - worked perfectly" - optiscaler
-    437: "worked",      # "It appeared to work in game" - Red Dead Redemption 2, upstream
+    (UPSTREAM, 414): "worked",      # "It Did Work." / "WORKED FINE" - Arkham Knight, renodx
+    (UPSTREAM, 388): "worked",      # "God of War -working" - bridge
+    (UPSTREAM, 307): "worked",      # "work, set to 100% only" - Venus Vacation PRISM, renodx
+    (UPSTREAM, 257): "worked",      # "It Did Work" - DragonSword, native
+    (UPSTREAM, 242): "worked",      # "did work but charges me to update" - No Man's Sky, bridge
+    (UPSTREAM, 222): "worked",      # "inZOI - worked perfectly" - optiscaler
+    (UPSTREAM, 437): "worked",      # "It appeared to work in game" - Red Dead Redemption 2, upstream
 }
 
 
@@ -100,7 +112,6 @@ def number(value, low: float, high: float) -> float | None:
         return None
     return value
 
-OUT = ROOT / "docs" / "compatibility.json"
 API = "https://api.github.com/repos/{repo}/issues"
 # The published file is downloaded by every copy of the tool. Anybody can
 # open an issue, so the number of games in it is bounded here too.
@@ -128,7 +139,7 @@ def bump(table: dict, key: str, route: str, result: str) -> None:
 def issues(repo: str, token: str) -> list[dict]:
     out: list[dict] = []
     page = 1
-    while page <= 20:                        # 2000 issues is plenty of head room
+    while page <= 50:                        # 5000 issues is plenty of head room
         # No label filter: GitHub silently drops ?labels= from a
         # prefilled new-issue URL for anyone without triage rights on the
         # repository, so most results arrive unlabelled. parse() is the
@@ -151,7 +162,13 @@ def issues(repo: str, token: str) -> list[dict]:
 
 
 def main() -> int:
-    repo = os.environ.get("REPO") or "Kizzuwatnaa/DLSS5-Autopilot"
+    repo = os.environ.get("REPO")
+    page_dir = os.environ.get("PAGE_DIR")
+    if not repo or not page_dir:
+        print("REPO (owner/name) and PAGE_DIR (where the page and the "
+              "feed are written) are both required", file=sys.stderr)
+        return 2
+    repos = [repo] + ([UPSTREAM] if repo != UPSTREAM else [])
     token = os.environ.get("GH_TOKEN") or ""
     games: dict[str, dict] = {}
     by_class: dict[str, dict] = {}
@@ -161,11 +178,12 @@ def main() -> int:
     # kept apart by card, driver and build instead of summed per game (#304).
     configs: dict[tuple, dict] = {}
     seen = unseen = 0
-    for issue in issues(repo, token):
+    found = [(r, issue) for r in repos for issue in issues(r, token)]
+    for source, issue in found:
         rec = parse(issue.get("body") or "")
         if not rec:
             continue
-        said = SAID_IN_WORDS.get(issue.get("number"))
+        said = SAID_IN_WORDS.get((source, issue.get("number")))
         if said is not None:
             rec = dict(rec, result=said)
         elif not counts(rec, issue.get("body") or ""):
@@ -244,17 +262,13 @@ def main() -> int:
         "by_class": dict(sorted(by_class.items())),
         "by_driver": dict(sorted(by_driver.items())),
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, indent=1, sort_keys=True) + "\n",
-                   encoding="utf8")
-    page_dir = os.environ.get("PAGE_DIR")
-    if page_dir:
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
-        import compat_page
-        rows = [dict(zip(compat_page.KEYS, k), **v) for k, v in configs.items()]
-        out = compat_page.write(payload, rows, Path(page_dir))
-        print(f"{len(rows)} configurations -> {out}")
-    print(f"{seen} results across {len(games)} games -> {OUT}"
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import compat_page
+    rows = [dict(zip(compat_page.KEYS, k), **v) for k, v in configs.items()]
+    # Writes the page and compatibility.json beside it.
+    out = compat_page.write(payload, rows, Path(page_dir))
+    print(f"{len(rows)} configurations -> {out}")
+    print(f"{seen} results across {len(games)} games from {', '.join(repos)}"
           f" ({unseen} left out: the tool could not see their outcome)")
     return 0
 

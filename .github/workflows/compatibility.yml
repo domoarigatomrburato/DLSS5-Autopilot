@@ -1,4 +1,4 @@
-# Adds up every shared result into docs/compatibility.json, which the tool
+# Adds up every shared result into compatibility.json, which the tool
 # downloads before an install to say what other people found in this game.
 #
 # There is no server behind this and there never will be. A person presses
@@ -7,7 +7,9 @@
 # them - executable name, route, build, API, card architecture, driver, the
 # tool's version, and the outcome. This workflow reads those blocks off every
 # issue that carries one, labelled or not, and writes the totals into one
-# static file.
+# static file. The issues come from this repository and, read-only, from the
+# repository it was forked from, so results its users shared keep counting;
+# if either read fails the run fails and Pages keeps the previous list.
 #
 # Only the block is read. The prose around it is for people; if somebody
 # edits the JSON by hand into something that is not a record, `parse()`
@@ -21,10 +23,10 @@
 # whose body parses as a record are touched.
 #
 # The same run also writes the list as a page people can search, one row
-# per card, driver and build (#304), and publishes it with GitHub Pages
-# (Settings > Pages > Source: GitHub Actions). The page is built in the
-# runner and never committed; until Pages is switched on the publish step
-# fails on its own and the list is still rebuilt.
+# per card, driver and build (#304), and publishes both with GitHub Pages
+# (Settings > Pages > Source: GitHub Actions, which must be switched on:
+# the tool reads compatibility.json from the published site). Everything is
+# built in the runner; nothing is committed to any branch.
 name: compatibility
 
 on:
@@ -34,9 +36,8 @@ on:
     - cron: "17 4 * * *"        # a daily rebuild, so a deleted issue drops out
   workflow_dispatch:
 
-permissions:
-  contents: write
-  issues: write
+# The minimum for the workflow; each job below declares what it needs.
+permissions: {}
 
 jobs:
   # Its own job and its own concurrency group: the build below cancels a
@@ -45,6 +46,9 @@ jobs:
   file:
     if: github.event_name == 'issues' && github.event.action == 'opened'
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
     concurrency:
       group: file-${{ github.event.issue.number }}
     steps:
@@ -72,19 +76,22 @@ jobs:
           NUMBER: ${{ github.event.issue.number }}
         run: |
           gh label create result --repo "$REPO" --color 0E8A16 \
-            --description "a shared compatibility result, read into docs/compatibility.json" \
+            --description "a shared compatibility result, read into the compatibility list" \
             2>/dev/null || true
           gh issue edit "$NUMBER" --repo "$REPO" --add-label result || true
           gh issue close "$NUMBER" --repo "$REPO" --reason completed --comment \
-          "Thank you - this result goes into [the compatibility list](https://github.com/$REPO/blob/main/docs/compatibility.json). Once a game has five results, the tool tells anyone who picks that game in it which route worked most often and whether the one they picked did worse, before they install. Three results on the same route that worked and carried a measurement also tell them what those sessions ran at - the work area, the frame rate, and the milliseconds a frame spent on what grows with that area - the model on its own, or the model and the feed together on the feeder.
+          "Thank you - this result goes into [the compatibility list](https://${REPO%%/*}.github.io/${REPO#*/}/). Once a game has five results, the tool tells anyone who picks that game in it which route worked most often and whether the one they picked did worse, before they install. Three results on the same route that worked and carried a measurement also tell them what those sessions ran at - the work area, the frame rate, and the milliseconds a frame spent on what grows with that area - the model on its own, or the model and the feed together on the feeder.
 
           Closed because it is a record rather than a bug report, so the issue list keeps showing the things that still need someone. It still counts. If you want to add what you saw - a setting that changed it, a driver that fixed it - reply here."
 
   build:
     runs-on: ubuntu-latest
-    # Only the rebuild: two of them at once would race on the same commit,
-    # and the newest one has read every issue anyway. The `file` job above
-    # must never be cancelled, or a result it was about to close stays open.
+    permissions:
+      contents: read
+    # Only the rebuild: the newest one has read every issue anyway, so a run
+    # in progress is cancelled when the next result lands. The `file` job
+    # above must never be cancelled, or a result it was about to close
+    # stays open.
     concurrency:
       group: compatibility
       cancel-in-progress: true
@@ -103,44 +110,12 @@ jobs:
         with:
           path: _site
 
-      # main moves under a running build - a release push, or the bot's own
-      # commit from the run before - and a plain push was rejected ("fetch
-      # first"), failing the run (2026-09-30). On a rejection: take the new
-      # main, rebuild the file on top of it (it is generated, so never
-      # merged), and push again.
-      - name: Commit the file if it changed
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PAGE_DIR: _site
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3 4 5; do
-            if git diff --quiet -- docs/compatibility.json; then
-              echo "nothing changed"
-              exit 0
-            fi
-            git add docs/compatibility.json
-            git commit -q -m "compatibility: rebuild from the shared results"
-            if git push; then
-              exit 0
-            fi
-            echo "main moved - rebuilding on top of it (attempt $attempt)"
-            git fetch -q origin main
-            git reset -q --hard origin/main
-            python .github/scripts/compatibility.py
-            sleep $((attempt * 3))
-          done
-          echo "could not push after 5 attempts"
-          exit 1
-
   pages:
     needs: build
     runs-on: ubuntu-latest
-    # Pages is switched on by the repository owner, not by this file. Until
-    # then this job fails, and it must not turn every result's run red.
-    continue-on-error: true
+    # Pages is the feed the tool reads, so a failed publish must show: this
+    # job is not allowed to fail silently. (Pages is switched on in the
+    # repository settings, Source: GitHub Actions.)
     permissions:
       pages: write
       id-token: write
