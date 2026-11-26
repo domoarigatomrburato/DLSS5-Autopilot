@@ -175,6 +175,25 @@ complexity limits.
 
 Every fix here can change behaviour, so each one comes with a test.
 
+One module (or one tight group) per branch, fast-forwarded onto `main`:
+
+1. Read it and its callers; say in a paragraph what it does for the user.
+2. Tests first, at its public functions, offline: what the user gets, not
+   how the code gets there. The old `test_all.py` checks in git history
+   are hints, not a spec.
+3. Keep, repair or rewrite, and say why in the commit. Phase 5 and 6
+   items that live in the module land here, each with its test.
+4. The module and its tests leave fully clean under `check-files`
+   (format, lint, strict types, complexity). Callers it forces to change
+   are edited at the call sites only, and may not gain findings.
+5. Vulture and import-linter findings that belong to it are fixed.
+
+Order: the engine modules that phase 5 touches (`net`, `selfupdate`,
+`vulkan`, `components`, `community` and `pages`), then `installer` with
+phase 6, then `diagnose` with the report corpus, then the rest of the
+engine leaves first. `core/ui` last, repaired as cheaply as keeps it
+working: a change of UI stack may follow the clean-up.
+
 - [ ] Triage every module by what it does for the user: first its tests
       (the old checks in git history say what to look for), then keep,
       repair or rewrite behind them; kept and repaired modules get their

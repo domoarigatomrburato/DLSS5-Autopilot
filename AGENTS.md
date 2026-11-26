@@ -25,8 +25,9 @@ command goes through `uv run poe <task>`:
 
 - `fix`: ruff autofix and format. Run it first, before anything else.
 - `check-files <paths>`: format, lint and type check of the files you touched.
-  Needed before every commit while the tree is not clean: a commit must leave
-  the files it touches clean.
+  Needed before every commit while the tree is not clean: a commit leaves the
+  module it triages and its tests clean; other files it edits change only at
+  call sites and gain no findings (see the tracker's phase 4).
 - `check`: every read-only check over the whole tree (lockfile, format, lint,
   types, dead code, import layering). Run it for a whole-tree view; it fails
   until phase 4 lands.
