@@ -16,6 +16,7 @@ It only reads the process table and, once per start, one game's module
 list. It writes nothing into any game folder; the sighting goes where
 watch.remember always puts it.
 """
+
 from __future__ import annotations
 
 import os
@@ -25,9 +26,9 @@ from pathlib import Path
 
 from . import installer, log, watch
 
-POLL = 4.0          # seconds between process snapshots
-SETTLE = 8.0        # after a start, before the module list is read
-MIN_PLAY = 20.0     # a start shorter than this is a crash at launch or a launcher hop
+POLL = 4.0  # seconds between process snapshots
+SETTLE = 8.0  # after a start, before the module list is read
+MIN_PLAY = 20.0  # a start shorter than this is a crash at launch or a launcher hop
 
 
 class Lookout:
@@ -39,7 +40,7 @@ class Lookout:
         self._thread = None
         self._stop = threading.Event()
         self._tick_lock = threading.Lock()
-        self.running: dict[str, dict] = {}     # key -> {"since", "read", "exe"}
+        self.running: dict[str, dict] = {}  # key -> {"since", "read", "exe"}
 
     @staticmethod
     def _key(folder) -> str:
@@ -56,8 +57,12 @@ class Lookout:
                 man = installer._previous_manifest(root) or {}
                 if not man:
                     continue
-                want[self._key(root)] = {"folder": root, "ours": list(man.get("files") or []),
-                                         "exe": str(man.get("exe") or ""), "name": g.name}
+                want[self._key(root)] = {
+                    "folder": root,
+                    "ours": list(man.get("files") or []),
+                    "exe": str(man.get("exe") or ""),
+                    "name": g.name,
+                }
             except Exception:
                 continue
         with self._lock:
@@ -69,7 +74,11 @@ class Lookout:
             return len(self._folders)
 
     def start(self) -> None:
-        if self._thread is not None and self._thread.is_alive() and not self._stop.is_set():
+        if (
+            self._thread is not None
+            and self._thread.is_alive()
+            and not self._stop.is_set()
+        ):
             return
         # A fresh event per thread: switched off and on again within one poll,
         # the old thread was still alive, start() returned, and the old
@@ -77,8 +86,9 @@ class Lookout:
         # "watching" with nothing watching. The old one now ends on its own
         # event while the new one runs on this.
         self._stop = threading.Event()
-        self._thread = threading.Thread(target=self._run, args=(self._stop,), name="dlss5-lookout",
-                                        daemon=True)
+        self._thread = threading.Thread(
+            target=self._run, args=(self._stop,), name="dlss5-lookout", daemon=True
+        )
         self._thread.start()
 
     def stop(self) -> None:
@@ -86,7 +96,11 @@ class Lookout:
 
     @property
     def alive(self) -> bool:
-        return self._thread is not None and self._thread.is_alive() and not self._stop.is_set()
+        return (
+            self._thread is not None
+            and self._thread.is_alive()
+            and not self._stop.is_set()
+        )
 
     def _run(self, stop=None) -> None:
         stop = stop or self._stop
@@ -98,9 +112,12 @@ class Lookout:
                     if not stop.is_set():
                         self._tick()
             except Exception:
-                log.exception("the watcher")        # never takes the tool down
-            stop.wait(self.poll if not any(not r["read"] for r in self.running.values())
-                      else min(self.poll, 1.0))
+                log.exception("the watcher")  # never takes the tool down
+            stop.wait(
+                self.poll
+                if not any(not r["read"] for r in self.running.values())
+                else min(self.poll, 1.0)
+            )
 
     def _tick(self) -> None:
         with self._lock:
@@ -118,7 +135,12 @@ class Lookout:
             if up and state is None:
                 self.running[key] = {"since": now, "read": False, "exe": job["exe"]}
                 continue
-            if up and state is not None and not state["read"] and now - state["since"] >= self.settle:
+            if (
+                up
+                and state is not None
+                and not state["read"]
+                and now - state["since"] >= self.settle
+            ):
                 state["read"] = True
                 try:
                     found = watch.inspect(job["folder"], job["ours"], exe=job["exe"])

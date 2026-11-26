@@ -9,14 +9,20 @@ DXVK files in a report. Below evidence.py, which imports it.
 
 Part of core/diagnose; see __init__.py.
 """
+
 from __future__ import annotations
 from pathlib import Path
 
 from . import model
 
 
-__all__ = ["_addon_in", "_dxvk_files", "_layer_clash", "_layer_detail",
-           "_through_layer"]
+__all__ = [
+    "_addon_in",
+    "_dxvk_files",
+    "_layer_clash",
+    "_layer_detail",
+    "_through_layer",
+]
 
 
 def _through_layer(man: dict) -> bool:
@@ -26,8 +32,7 @@ def _through_layer(man: dict) -> bool:
 
 def _addon_in(names) -> bool:
     """An add-on in the process means ReShade DID load: not a layer problem."""
-    return any(str(n).lower().endswith((".addon32", ".addon64"))
-               for n in names or ())
+    return any(str(n).lower().endswith((".addon32", ".addon64")) for n in names or ())
 
 
 def _layer_clash(man: dict):
@@ -42,6 +47,7 @@ def _layer_clash(man: dict):
         return None
     try:
         from .. import vulkan as _vk
+
         return _vk.name_clash()
     except Exception:
         return None
@@ -70,17 +76,19 @@ def _layer_detail(loaded, missing, man: dict, tense: str) -> str:
     gone = ", ".join(sorted({Path(m).name for m in missing or ()}))
     if gone:
         out += f"Not in the process: {gone}. "
-    out += ("ReShade reaches this game as a Vulkan layer, and the layer "
-            "writes its log the moment it loads - so it is not reaching "
-            "the game. Its registration is per user and per architecture: "
-            "install again with this version to rewrite it, and start the "
-            "game once more. A game that runs as administrator does not "
-            "read the per-user registration at all: for that one, install "
-            "again with this tool run as administrator. If there is still "
-            "no log, another Vulkan "
-            "layer on this PC (an overlay, a capture tool, another ReShade "
-            "install) is the next thing to rule out - say so in an issue "
-            "with this report.")
+    out += (
+        "ReShade reaches this game as a Vulkan layer, and the layer "
+        "writes its log the moment it loads - so it is not reaching "
+        "the game. Its registration is per user and per architecture: "
+        "install again with this version to rewrite it, and start the "
+        "game once more. A game that runs as administrator does not "
+        "read the per-user registration at all: for that one, install "
+        "again with this tool run as administrator. If there is still "
+        "no log, another Vulkan "
+        "layer on this PC (an overlay, a capture tool, another ReShade "
+        "install) is the next thing to rule out - say so in an issue "
+        "with this report."
+    )
     return out
 
 
@@ -92,6 +100,7 @@ def _dxvk_files(man: dict) -> list[str]:
     if not man.get("dxvk"):
         return []
     from .. import dxvk as _dxvk
+
     # As recorded, subfolder included: a Source game takes DXVK in bin
     # (#224). Only the folders DXVK is put in - host64/dxgi.dll is the
     # 32-bit helper's ReShade, not DXVK.
@@ -101,7 +110,6 @@ def _dxvk_files(man: dict) -> list[str]:
             continue
         low = f.replace("\\", "/").lower()
         head, _, base = low.rpartition("/")
-        if base in _dxvk.ALL_FILES and head in _dxvk.TARGET_DIRS \
-                and low not in out:
+        if base in _dxvk.ALL_FILES and head in _dxvk.TARGET_DIRS and low not in out:
             out.append(low)
     return out

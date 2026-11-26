@@ -23,6 +23,7 @@ Not tried on this project's own rig (an RTX 40, which has frame generation
 of its own); SiTWulf ran the sm86 files on an RTX 3060 with this tool's
 OptiScaler install. Labelled experimental everywhere it shows.
 """
+
 from __future__ import annotations
 
 import shutil
@@ -48,16 +49,20 @@ class Recipe:
 
 RECIPES: dict[str, Recipe] = {
     "sm86": Recipe(
-        "sm86", "dlssg_for_sm86 (RTX 30 frame generation)",
+        "sm86",
+        "dlssg_for_sm86 (RTX 30 frame generation)",
         (("version.dll", "version.dll"), ("dlssg_sm86.ini", "dlssg_sm86.ini")),
         (b"dlssg_sm86", b"dlssg_for_sm86"),
-        tip="turn frame generation on in the game's own menu"),
+        tip="turn frame generation on in the game's own menu",
+    ),
     "enabler": Recipe(
-        "enabler", "DLSS Enabler (headless)",
+        "enabler",
+        "DLSS Enabler (headless)",
         (("version.dll", "dlss-enabler-headless.dll"),),
         (b"dlss-enabler", b"dlss enabler", b"dlssenabler"),
         names=("dlss-enabler-headless.dll",),
-        tip="the game has to ship DLSS frame generation of its own"),
+        tip="the game has to ship DLSS frame generation of its own",
+    ),
 }
 
 # dlssg_for_sm86's "alternatives\" folder: the same proxy under the names a
@@ -68,14 +73,19 @@ RECIPES: dict[str, Recipe] = {
 SM86_ALTERNATIVES = ("winmm.dll", "dxgi.dll", "d3d12.dll", "dbghelp.dll")
 for _alt in SM86_ALTERNATIVES:
     RECIPES["sm86-" + _alt[:-4]] = Recipe(
-        "sm86-" + _alt[:-4], f"dlssg_for_sm86 as {_alt} (RTX 30 frame generation)",
+        "sm86-" + _alt[:-4],
+        f"dlssg_for_sm86 as {_alt} (RTX 30 frame generation)",
         ((_alt, _alt), ("dlssg_sm86.ini", "dlssg_sm86.ini")),
-        RECIPES["sm86"].markers, tip=RECIPES["sm86"].tip)
+        RECIPES["sm86"].markers,
+        tip=RECIPES["sm86"].tip,
+    )
 del _alt
 
 STORE = "own-fg"
-UNTRIED = ("experimental - not run on this project's own card (an RTX 40); "
-           "please share the result")
+UNTRIED = (
+    "experimental - not run on this project's own card (an RTX 40); "
+    "please share the result"
+)
 _READ_MAX = 96 * 1024 * 1024
 
 
@@ -126,9 +136,12 @@ def _is_x64_dll(p: Path) -> bool:
             (off,) = struct.unpack_from("<I", head, 0x3C)
             f.seek(off)
             sig = f.read(24)
-        return len(sig) >= 24 and sig[:4] == b"PE\0\0" \
-            and struct.unpack_from("<H", sig, 4)[0] == 0x8664 \
-            and bool(struct.unpack_from("<H", sig, 22)[0] & 0x2000)   # IMAGE_FILE_DLL
+        return (
+            len(sig) >= 24
+            and sig[:4] == b"PE\0\0"
+            and struct.unpack_from("<H", sig, 4)[0] == 0x8664
+            and bool(struct.unpack_from("<H", sig, 22)[0] & 0x2000)
+        )  # IMAGE_FILE_DLL
     except (OSError, struct.error):
         return False
 
@@ -167,8 +180,10 @@ def identify(picked: list[Path]) -> tuple[str, dict[str, Path]]:
         if ini is not None and find("version.dll") is not None:
             dlls = [find("version.dll")]
         else:
-            raise OwnFgError("pick the .dll you downloaded (version.dll) - an .ini alone is not "
-                             "enough")
+            raise OwnFgError(
+                "pick the .dll you downloaded (version.dll) - an .ini alone is not "
+                "enough"
+            )
     dll = dlls[0]
     if not _is_x64_dll(dll):
         raise OwnFgError(f"{dll.name} is not a 64-bit Windows dll")
@@ -186,12 +201,14 @@ def identify(picked: list[Path]) -> tuple[str, dict[str, Path]]:
         # to (gate 2.0.7); dinput8.dll is REFramework's and the ASI loaders'.
         raise OwnFgError(
             f"{dll.name} is a dlssg_for_sm86 proxy this tool does not place - pick version.dll, "
-            f"or one of {', '.join(SM86_ALTERNATIVES)} from its alternatives folder")
+            f"or one of {', '.join(SM86_ALTERNATIVES)} from its alternatives folder"
+        )
     if not key:
         raise OwnFgError(
             f"{dll.name} is neither dlssg_for_sm86 (version.dll with dlssg_sm86.ini beside it) nor "
             f"DLSS Enabler (its version.dll, or dlss-enabler-headless.dll) - the two this tool "
-            f"knows how to place")
+            f"knows how to place"
+        )
     r = RECIPES[key]
     out: dict[str, Path] = {}
     for src, dst in r.files:
@@ -203,9 +220,11 @@ def identify(picked: list[Path]) -> tuple[str, dict[str, Path]]:
             # dlssg_for_sm86 keeps its alternatives\ proxies in a folder of
             # their own, without the ini, and one file dialog cannot pick from
             # two folders (gate 2.0.7).
-            raise OwnFgError(f"{src} was not beside {dll.name}. Copy it from the "
-                             f"{r.label.split(' (')[0].split(' as ')[0]} download into the "
-                             f"folder {dll.name} is in, then pick {dll.name} again")
+            raise OwnFgError(
+                f"{src} was not beside {dll.name}. Copy it from the "
+                f"{r.label.split(' (')[0].split(' as ')[0]} download into the "
+                f"folder {dll.name} is in, then pick {dll.name} again"
+            )
         out[dst] = p
     return key, out
 
@@ -277,8 +296,14 @@ def recorded(man: dict | None) -> tuple[str, list[str]]:
     return str(rec.get("recipe") or ""), files
 
 
-def refusal(root: Path, key: str, opti_proxy: str, man: dict | None, route_changes: bool,
-            is_optiscaler=None) -> str:
+def refusal(
+    root: Path,
+    key: str,
+    opti_proxy: str,
+    man: dict | None,
+    route_changes: bool,
+    is_optiscaler=None,
+) -> str:
     """Why an install with these files must not start, or "".
 
     Asked at the top of install(), before the previous route is taken out,
@@ -288,39 +313,54 @@ def refusal(root: Path, key: str, opti_proxy: str, man: dict | None, route_chang
         return f"'frame generation files' names {key!r}, which this build does not know"
     kept_key, kept = recorded(man)
     have = stored(key)
-    if not have and not (kept_key == key and not route_changes
-                         and all((root / n).is_file() for n in dests(key))):
-        return (f"The {r.label} files you added are no longer in the tool's folder "
-                f"({store_dir(key)}). Add them again with 'add your own...' beside 'frame generation "
-                f"files', or set it to none.")
-    ours = {str(f).replace("\\", "/").lower() for f in ((man or {}).get("files") or [])
-            if isinstance(f, str)}
+    if not have and not (
+        kept_key == key
+        and not route_changes
+        and all((root / n).is_file() for n in dests(key))
+    ):
+        return (
+            f"The {r.label} files you added are no longer in the tool's folder "
+            f"({store_dir(key)}). Add them again with 'add your own...' beside 'frame generation "
+            f"files', or set it to none."
+        )
+    ours = {
+        str(f).replace("\\", "/").lower()
+        for f in ((man or {}).get("files") or [])
+        if isinstance(f, str)
+    }
     for n in dests(key):
         if opti_proxy and n.lower() == opti_proxy.lower():
-            return (f"OptiScaler would load as {opti_proxy} here, the name "
-                    f"{r.label.split(' (')[0].split(' as ')[0]} "
-                    f"needs. Choose another name in 'loads as' and install again.")
+            return (
+                f"OptiScaler would load as {opti_proxy} here, the name "
+                f"{r.label.split(' (')[0].split(' as ')[0]} "
+                f"needs. Choose another name in 'loads as' and install again."
+            )
         p = root / n
         if not p.is_file():
             continue
         if n.lower() in {k.lower() for k in kept}:
-            continue                    # ours from last time
+            continue  # ours from last time
         if n.lower() in ours and route_changes:
-            continue                    # the previous route's uninstall takes it out
+            continue  # the previous route's uninstall takes it out
         if is_optiscaler is not None and is_optiscaler(p):
-            continue                    # OptiScaler moves its own other copies aside
+            continue  # OptiScaler moves its own other copies aside
         src = have.get(n)
         try:
             if src is not None and src.read_bytes() == p.read_bytes():
-                continue                # the same file, put there by hand
+                continue  # the same file, put there by hand
         except OSError:
             pass
-        what = "a file of this tool's from another option" if n.lower() in ours \
+        what = (
+            "a file of this tool's from another option"
+            if n.lower() in ours
             else "a file this tool did not put there (another mod's, or a copy placed by hand)"
-        return (f"{n} is already in the game folder and it is {what}, not the "
-                f"{r.label.split(' (')[0].split(' as ')[0]} "
-                f"file you added. Move it out of {root} and install again, or set 'frame generation "
-                f"files' to none.")
+        )
+        return (
+            f"{n} is already in the game folder and it is {what}, not the "
+            f"{r.label.split(' (')[0].split(' as ')[0]} "
+            f"file you added. Move it out of {root} and install again, or set 'frame generation "
+            f"files' to none."
+        )
     return ""
 
 
@@ -333,6 +373,7 @@ def remove_leftovers(root: Path, man: dict | None, keep: str, log=None) -> list[
     relative names removed (the caller drops them from `preinstalled`)."""
     log = log or (lambda *_: None)
     from .installer import BACKUP_SUFFIX
+
     _, names = recorded(man)
     want = {n.lower() for n in dests(keep)}
     gone: list[str] = []

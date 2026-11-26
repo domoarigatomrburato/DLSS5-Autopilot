@@ -6,6 +6,7 @@ window leaves an icon in the notification area and the answers arrive as
 Windows notifications. Off (the default), closing the window quits, as it
 always did.
 """
+
 from __future__ import annotations
 
 import os
@@ -13,12 +14,29 @@ import threading
 import time
 from pathlib import Path
 
-from .. import autopilot, community, diagnose, dlss, gpu, installer, log, prefs, verdicts
+from .. import (
+    autopilot,
+    community,
+    diagnose,
+    dlss,
+    gpu,
+    installer,
+    log,
+    prefs,
+    verdicts,
+)
 from ..lookout import Lookout
 from . import theme as T
 from . import win
-from .ctl_game import (CLOSING_FAULT_NOTE, crash_is_this_session, crashed_waiting, fault_in_this_folder,
-                       fault_while_closing, note_closing_fault, waiting_verdict)
+from .ctl_game import (
+    CLOSING_FAULT_NOTE,
+    crash_is_this_session,
+    crashed_waiting,
+    fault_in_this_folder,
+    fault_while_closing,
+    note_closing_fault,
+    waiting_verdict,
+)
 
 
 class WatchControl:
@@ -26,12 +44,15 @@ class WatchControl:
         self.lookout = Lookout(lambda ev: self.q.put(("look", ev)))
         self.tray = None
         self.hidden_to_tray = False
-        self.running: set = set()      # folders the watcher saw start and not yet close
+        self.running: set = set()  # folders the watcher saw start and not yet close
         self.running_since: dict = {}  # ...and when (a 'did it work?' after that outranks the card)
         plans = prefs.get("autopilot_plans")
         # a hand-edited entry that is not a plan is dropped, not raised on
-        self.plans: dict = ({k: v for k, v in plans.items() if isinstance(v, dict)}
-                            if isinstance(plans, dict) else {})
+        self.plans: dict = (
+            {k: v for k, v in plans.items() if isinstance(v, dict)}
+            if isinstance(plans, dict)
+            else {}
+        )
         self._try_token = None
 
     def watch_on(self) -> bool:
@@ -49,8 +70,11 @@ class WatchControl:
             return
         n = self.lookout.set_games(self.all_games)
         # a folder no longer watched never sends 'closed' either
-        watched = {self._folder_key(g.install_dir) for g in (self.all_games or [])
-                   if getattr(g, "installed", False)}
+        watched = {
+            self._folder_key(g.install_dir)
+            for g in (self.all_games or [])
+            if getattr(g, "installed", False)
+        }
         self.running.intersection_update(watched)
         for k in [k for k in self.running_since if k not in self.running]:
             self.running_since.pop(k, None)
@@ -71,14 +95,26 @@ class WatchControl:
         on, bg = self.watch_on(), bool(prefs.get("watch_background", False))
         n = self.lookout.count()
         items = [
-            (("\u2022 " if on else "  ") + f"watch installed games ({n}) while the tool is open",
-             lambda: (prefs.set_("watch_games", not on), self.watch_refresh())),
-            (("\u2022 " if bg else "  ") + "keep watching in the tray when the window is closed",
-             lambda: prefs.set_("watch_background", not bg)),
+            (
+                ("\u2022 " if on else "  ")
+                + f"watch installed games ({n}) while the tool is open",
+                lambda: (prefs.set_("watch_games", not on), self.watch_refresh()),
+            ),
+            (
+                ("\u2022 " if bg else "  ")
+                + "keep watching in the tray when the window is closed",
+                lambda: prefs.set_("watch_background", not bg),
+            ),
             None,
-            ("when a watched game closes, its logs are read and the answer shown", lambda: None, False),
+            (
+                "when a watched game closes, its logs are read and the answer shown",
+                lambda: None,
+                False,
+            ),
         ]
-        self._watch_menu = self.shell.rail_menu(items, "nav_watch", T.px(560), max_rows=8)
+        self._watch_menu = self.shell.rail_menu(
+            items, "nav_watch", T.px(560), max_rows=8
+        )
 
     # ------------------------------------------------------------ events
     def _game_at(self, folder):
@@ -95,11 +131,13 @@ class WatchControl:
         """What is rewriting this folder right now, or "". An install,
         uninstall or autopilot pass on this game, a DLSS update in the folder
         it sits in, or an "update all" (busy with no action of one game)."""
+
         def norm(p):
             try:
                 return os.path.normcase(os.path.abspath(str(p)))
             except Exception:
                 return ""
+
         key = norm(folder)
         if self.busy:
             g = self.game
@@ -134,7 +172,9 @@ class WatchControl:
         # and offered the very route being installed.
         job = self._job_on(folder)
         if job:
-            self.write(f"> {name} closed while {job} runs on it - that job gives the answer")
+            self.write(
+                f"> {name} closed while {job} runs on it - that job gives the answer"
+            )
             return
         # closed: read the logs back, off the Tk thread
         self.shell.status(f"{name} closed - reading its logs")
@@ -142,7 +182,9 @@ class WatchControl:
 
         def work():
             try:
-                rep = diagnose.analyse(Path(folder), installer.last_failure(Path(folder)))
+                rep = diagnose.analyse(
+                    Path(folder), installer.last_failure(Path(folder))
+                )
             except Exception:
                 log.exception("reading a watched game's logs")
                 return
@@ -155,8 +197,19 @@ class WatchControl:
                     crash, _said = diagnose.windows_crash(Path(folder), exe)
                 except Exception:
                     crash = None
-            self.q.put(("lookdiag", (folder, rep, self.offered_routes(g, rep, sm), crash,
-                                     self._card_measure(g, folder, rep))))
+            self.q.put(
+                (
+                    "lookdiag",
+                    (
+                        folder,
+                        rep,
+                        self.offered_routes(g, rep, sm),
+                        crash,
+                        self._card_measure(g, folder, rep),
+                    ),
+                )
+            )
+
         threading.Thread(target=work, daemon=True).start()
 
     @staticmethod
@@ -198,21 +251,40 @@ class WatchControl:
         which refutes "Not started since the install". Every "nothing of
         ours loaded" verdict has ran False, so asking for `ran` alone offered
         no route for the very kind that needs one."""
-        return bool(getattr(rep, "ran", False) or seen or not getattr(rep, "never_ran", False))
+        return bool(
+            getattr(rep, "ran", False) or seen or not getattr(rep, "never_ran", False)
+        )
 
     @staticmethod
     def offered_routes(g, rep, sm, seen: bool = True) -> list:
         """The routes this game is offered, in the order autopilot would
         try them - only worth the folder walk when the answer is one another
         route could change. Worker thread. `seen`: the watcher saw it run."""
-        if g is None or not WatchControl.ran(rep, seen) or not verdicts.route_failed(rep.verdict):
+        if (
+            g is None
+            or not WatchControl.ran(rep, seen)
+            or not verdicts.route_failed(rep.verdict)
+        ):
             return []
         try:
             shared = community.cached()
-            sup = dlss.detect(g.install_dir, g.folder, g.api, g.bitness or 0, sm, driver=gpu.driver_version(),
-                              shared=shared, exe=g.exe)
-            return autopilot.plan(sup.recommended, list(sup.options or []), shared or None, g,
-                                  klass=community.game_class(g.api, sup.native_dlss, sup.upscaler))
+            sup = dlss.detect(
+                g.install_dir,
+                g.folder,
+                g.api,
+                g.bitness or 0,
+                sm,
+                driver=gpu.driver_version(),
+                shared=shared,
+                exe=g.exe,
+            )
+            return autopilot.plan(
+                sup.recommended,
+                list(sup.options or []),
+                shared or None,
+                g,
+                klass=community.game_class(g.api, sup.native_dlss, sup.upscaler),
+            )
         except Exception:
             log.exception(f"routes for {g.name}")
             return []
@@ -227,10 +299,12 @@ class WatchControl:
         job = self._job_on(folder)
         if job:
             # a job started while the logs were being read
-            self.write(f"> {g.name} closed while {job} runs on it - that job gives the answer")
+            self.write(
+                f"> {g.name} closed while {job} runs on it - that job gives the answer"
+            )
             return
         if crash is not None and not crash_is_this_session(crash, g.install_dir):
-            crash = None                         # an earlier launch's fault
+            crash = None  # an earlier launch's fault
         closing = ""
         if crash is not None and fault_while_closing(g.install_dir, crash):
             # #289: shown - under the answer, and in the report - and not counted
@@ -241,15 +315,24 @@ class WatchControl:
         if crash is not None:
             # the game page's wording (crash_overrides), so the two answers agree
             if said.startswith("Working"):
-                said = "It ran, and then the game crashed - Windows recorded the fault" + (
-                    f" in {mod}." if mod else ".")
-            elif getattr(rep, "never_ran", False) and fault_in_this_folder(crash, g.install_dir):
-                said = ("It started, and nothing here recorded the session - Windows recorded the fault"
-                        + (f" in {mod}." if mod else "."))
+                said = (
+                    "It ran, and then the game crashed - Windows recorded the fault"
+                    + (f" in {mod}." if mod else ".")
+                )
+            elif getattr(rep, "never_ran", False) and fault_in_this_folder(
+                crash, g.install_dir
+            ):
+                said = (
+                    "It started, and nothing here recorded the session - Windows recorded the fault"
+                    + (f" in {mod}." if mod else ".")
+                )
             elif waiting_verdict(rep) and not getattr(rep, "never_ran", False):
                 said = crashed_waiting(mod)
-                rep.findings = [f for f in rep.findings
-                                if "play once and check again" not in f"{f.title} {f.detail}"]
+                rep.findings = [
+                    f
+                    for f in rep.findings
+                    if "play once and check again" not in f"{f.title} {f.detail}"
+                ]
         working = said.startswith("Working") and crash is None
         nxt, why = self.next_route(g, rep, offered)
         if said != str(rep.verdict):
@@ -260,11 +343,19 @@ class WatchControl:
             if getattr(rep, "never_ran", False):
                 rep.never_ran = False
                 rep.findings = diagnose.drop_never_ran(
-                    [f for f in rep.findings if not f.title.startswith("If you DID start it")
-                     and not f.title.startswith("The likeliest reason:")])
+                    [
+                        f
+                        for f in rep.findings
+                        if not f.title.startswith("If you DID start it")
+                        and not f.title.startswith("The likeliest reason:")
+                    ]
+                )
             rep.verdict = said
-            rep.add(diagnose.BAD, f"Windows recorded {getattr(crash, 'exe', 'the game')} faulting"
-                    + (f" in {mod}." if mod else "."))
+            rep.add(
+                diagnose.BAD,
+                f"Windows recorded {getattr(crash, 'exe', 'the game')} faulting"
+                + (f" in {mod}." if mod else "."),
+            )
         entry = {"ok": working, "said": said[:90], "fps": None}
         if nxt:
             # Kept with the answer, so "try <route>" outlives a restart. Every
@@ -277,9 +368,18 @@ class WatchControl:
             self._last_diag = rep
             self._last_crash = crash
             self._card_measured = measured if working else None
-            self.result = {"kind": "diagnosis", "ok": working, "ran": bool(rep.ran), "title": said,
-                           "at": time.time(),
-                           "findings": [(f.level, f.title) for f in rep.findings if f.level in ("bad", "warn")][:3]}
+            self.result = {
+                "kind": "diagnosis",
+                "ok": working,
+                "ran": bool(rep.ran),
+                "title": said,
+                "at": time.time(),
+                "findings": [
+                    (f.level, f.title)
+                    for f in rep.findings
+                    if f.level in ("bad", "warn")
+                ][:3],
+            }
         self.write("")
         self.write(f"=== {g.name} closed: {said} ===", "ok" if working else "warn")
         if closing:
@@ -287,16 +387,42 @@ class WatchControl:
             self.write(CLOSING_FAULT_NOTE)
         title = f"{g.name} closed"
         if crash is not None:
-            text = "it crashed" + (f" in {mod}" if mod else "") + (f" - {why}" if why else "")
+            text = (
+                "it crashed"
+                + (f" in {mod}" if mod else "")
+                + (f" - {why}" if why else "")
+            )
         else:
             text = "working" if working else (why or first_words(rep.verdict))
         actions = [("open", lambda g=g: self.open_game(g), not nxt)]
         if nxt:
-            actions.insert(0, (f"try {community.route_name(nxt)}", lambda g=g, nxt=nxt: self.try_next(g, nxt), True))
-        toast = dict(title=title, text=text, actions=actions, accent=T.OK if working else T.WARN,
-                     glyph="check" if working else "warn", timeout=15000)
+            actions.insert(
+                0,
+                (
+                    f"try {community.route_name(nxt)}",
+                    lambda g=g, nxt=nxt: self.try_next(g, nxt),
+                    True,
+                ),
+            )
+        toast = dict(
+            title=title,
+            text=text,
+            actions=actions,
+            accent=T.OK if working else T.WARN,
+            glyph="check" if working else "warn",
+            timeout=15000,
+        )
         if self.hidden_to_tray and self.tray is not None:
-            self.tray.notify(title, text + (f" - open the tool to try {community.route_name(nxt)}" if nxt else ""), warn=not working)
+            self.tray.notify(
+                title,
+                text
+                + (
+                    f" - open the tool to try {community.route_name(nxt)}"
+                    if nxt
+                    else ""
+                ),
+                warn=not working,
+            )
             # opening the window from the tray lands on this game with the same answer and offer
             self._pending_open = (g, toast)
         else:
@@ -322,7 +448,9 @@ class WatchControl:
             self.remember_plan(g, offered, [route] if route else [])
             plan = self.plans[str(g.install_dir)]
         elif route and route not in (plan.get("tried") or []):
-            self.remember_plan(g, plan.get("routes") or [], list(plan.get("tried") or []) + [route])
+            self.remember_plan(
+                g, plan.get("routes") or [], list(plan.get("tried") or []) + [route]
+            )
             plan = self.plans[str(g.install_dir)]
         tried = set(plan.get("tried") or []) | ({route} if route else set())
         left = [r for r in plan.get("routes") or [] if r not in tried]
@@ -330,7 +458,7 @@ class WatchControl:
             return "", ""
         return left[0], verdicts.why_next(rep.verdict, community.route_name(route))
 
-    TRY_WAIT = 10.0          # seconds "try <route>" waits for the game's page to be read
+    TRY_WAIT = 10.0  # seconds "try <route>" waits for the game's page to be read
 
     def try_next(self, g, route) -> None:
         """Open the game and continue its pass from `route`. Waits for the
@@ -338,14 +466,18 @@ class WatchControl:
         open: the first version polled forever, and a later visit to the game
         installed with no question asked."""
         if self.busy:
-            self.shell.status(f"busy with {getattr(self, 'action', '') or 'another job'} - "
-                              f"try {community.route_name(route)} when it ends")
+            self.shell.status(
+                f"busy with {getattr(self, 'action', '') or 'another job'} - "
+                f"try {community.route_name(route)} when it ends"
+            )
             return
         plan = self.plans.get(str(g.install_dir))
         plan = plan if isinstance(plan, dict) else {}
-        routes = [r for r in plan.get("routes") or [] if r not in set(plan.get("tried") or [])]
+        routes = [
+            r for r in plan.get("routes") or [] if r not in set(plan.get("tried") or [])
+        ]
         if route in routes:
-            routes = routes[routes.index(route):]
+            routes = routes[routes.index(route) :]
         self.open_game(g)
         token = object()
         self._try_token = token
@@ -353,24 +485,31 @@ class WatchControl:
 
         def go():
             if self._try_token is not token:
-                return                          # a newer "try" replaced this one
+                return  # a newer "try" replaced this one
             if self.game is not g:
-                self._try_token = None          # another game was opened: not this one's install
+                self._try_token = (
+                    None  # another game was opened: not this one's install
+                )
                 return
             if self.support is None:
                 if time.monotonic() < deadline:
                     self.root.after(200, go)
                     return
                 self._try_token = None
-                self.shell.status(f"{g.name} could not be read in time - press autopilot on its page "
-                                  f"to try {community.route_name(route)}")
+                self.shell.status(
+                    f"{g.name} could not be read in time - press autopilot on its page "
+                    f"to try {community.route_name(route)}"
+                )
                 return
             self._try_token = None
             if self.busy:
-                self.shell.status(f"busy with {getattr(self, 'action', '') or 'another job'} - "
-                                  f"try {community.route_name(route)} when it ends")
+                self.shell.status(
+                    f"busy with {getattr(self, 'action', '') or 'another job'} - "
+                    f"try {community.route_name(route)} when it ends"
+                )
                 return
             self.autopilot(routes=routes, ask=False)
+
         self.root.after(200, go)
 
     def remember_plan(self, g, routes, tried) -> None:
@@ -384,16 +523,27 @@ class WatchControl:
             self.shell.remember_window()
         except Exception:
             pass
-        if prefs.get("watch_background", False) and self.watch_on() and self.lookout.count():
+        if (
+            prefs.get("watch_background", False)
+            and self.watch_on()
+            and self.lookout.count()
+        ):
             from .tray import Tray
+
             if self.tray is None:
-                self.tray = Tray("DLSS 5 Autopilot - watching your games", str(win.ico_path()),
-                                 lambda ev: self.q.put(("tray", ev)))
+                self.tray = Tray(
+                    "DLSS 5 Autopilot - watching your games",
+                    str(win.ico_path()),
+                    lambda ev: self.q.put(("tray", ev)),
+                )
             if self.tray.show():
                 self.hidden_to_tray = True
                 self.root.withdraw()
-                self.tray.notify("still watching", f"{self.lookout.count()} installed games - the answer comes "
-                                                   f"here when one closes")
+                self.tray.notify(
+                    "still watching",
+                    f"{self.lookout.count()} installed games - the answer comes "
+                    f"here when one closes",
+                )
                 return
         self.quit()
 
@@ -427,4 +577,4 @@ class WatchControl:
 
 def first_words(text: str, n: int = 60) -> str:
     t = " ".join(str(text or "").split())
-    return t if len(t) <= n else t[:n - 1].rstrip() + "\u2026"
+    return t if len(t) <= n else t[: n - 1].rstrip() + "\u2026"

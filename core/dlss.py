@@ -65,6 +65,7 @@ directly and keeps its own Quality/Balanced/Performance modes.
 DirectX 10 is reached by the feeder alone (0.13.1 and later), through a
 private D3D11 relay device; nothing else hooks D3D10.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -73,21 +74,31 @@ import time
 
 from . import log, remix
 
-NATIVE, BRIDGE, FEEDER, OPTI, RENODX = "native", "bridge", "feeder", "optiscaler", "renodx"
+NATIVE, BRIDGE, FEEDER, OPTI, RENODX = (
+    "native",
+    "bridge",
+    "feeder",
+    "optiscaler",
+    "renodx",
+)
 UPSTREAM = "upstream"
 STANDALONE = "standalone"
 REMIX = "remix"
 UPLIFT = "uplift"
-ALL_ROUTES = (RENODX, NATIVE, UPSTREAM, OPTI, BRIDGE, FEEDER, STANDALONE,
-              REMIX, UPLIFT)
+ALL_ROUTES = (RENODX, NATIVE, UPSTREAM, OPTI, BRIDGE, FEEDER, STANDALONE, REMIX, UPLIFT)
 # Offered, never chosen for the person: not by auto, not by the shared
 # results' steer, not as the autopilot's next try.
 NEVER_AUTO = (UPLIFT,)
 
 # Streamline is NVIDIA's own plugin layer; if a game ships it, it ships DLSS.
 # These are never files this tool installs, so they are unambiguous.
-STREAMLINE = ("sl.interposer.dll", "sl.dlss.dll", "sl.common.dll",
-              "sl.dlss_g.dll", "sl.reflex.dll")
+STREAMLINE = (
+    "sl.interposer.dll",
+    "sl.dlss.dll",
+    "sl.common.dll",
+    "sl.dlss_g.dll",
+    "sl.reflex.dll",
+)
 # A game's own runtime, or one renamed by a user to disable it.
 OWN_RUNTIME = ("nvngx_dlss.dlsss", "nvngx_dlss.dll.bak", "_nvngx.dll")
 
@@ -96,21 +107,58 @@ OWN_RUNTIME = ("nvngx_dlss.dlsss", "nvngx_dlss.dll.bak", "_nvngx.dll")
 # (Kingdom Come 2) under Bin/Win64Shared, others under their own names. A
 # bounded walk finds them; the folders below never hold DLLs and can be
 # hundreds of thousands of files, so they are skipped outright.
-DLSS_FILES = ("nvngx_dlss.dll", "sl.interposer.dll", "sl.dlss.dll",
-              "nvngx_dlssg.dll", "nvngx_dlssd.dll")
-_SKIP_DIRS = {"content", "paks", "saved", "logs", "movies", "sounds", "music",
-              "videos", "localization", "shadercache", "derivedcache", "cache",
-              "textures", "maps", "levels", "audio", "data", "assets", "mods",
-              "screenshots", "steamapps", "redist", "_commonredist", "host64",
-              "reshade-shaders"}
+DLSS_FILES = (
+    "nvngx_dlss.dll",
+    "sl.interposer.dll",
+    "sl.dlss.dll",
+    "nvngx_dlssg.dll",
+    "nvngx_dlssd.dll",
+)
+_SKIP_DIRS = {
+    "content",
+    "paks",
+    "saved",
+    "logs",
+    "movies",
+    "sounds",
+    "music",
+    "videos",
+    "localization",
+    "shadercache",
+    "derivedcache",
+    "cache",
+    "textures",
+    "maps",
+    "levels",
+    "audio",
+    "data",
+    "assets",
+    "mods",
+    "screenshots",
+    "steamapps",
+    "redist",
+    "_commonredist",
+    "host64",
+    "reshade-shaders",
+}
 # ...but a content folder is skipped for its size, not because a runtime
 # cannot be under it: NBA 2K27 keeps Streamline in `data\streamline` (#119),
 # and "data" is as generic a folder name as there is. So a skipped folder is
 # still entered when one of its own children is named like a place runtimes
 # live. One scandir per skipped folder, against a walk that would otherwise
 # miss the game's DLSS entirely.
-_RUNTIME_HOMES = {"streamline", "dlss", "nvidia", "ngx", "nvngx",
-                  "binaries", "plugins", "win64", "x64", "bin"}
+_RUNTIME_HOMES = {
+    "streamline",
+    "dlss",
+    "nvidia",
+    "ngx",
+    "nvngx",
+    "binaries",
+    "plugins",
+    "win64",
+    "x64",
+    "bin",
+}
 _WALK_DEPTH = 9
 _WALK_DIRS = 6000
 _WALK_SECONDS = 6.0
@@ -121,10 +169,16 @@ _WALK_SECONDS = 6.0
 # place, so such a game can take the OPTI route with no DLSS of its own.
 # These are the runtime DLLs the SDKs ship under; a game that statically
 # links FSR shows none of them and cannot be told apart from one without.
-FSR_FILES = ("ffx_fsr2_api_x64.dll", "ffx_fsr2_api_dx12_x64.dll",
-             "ffx_fsr2_api_vk_x64.dll", "ffx_fsr3upscaler_x64.dll",
-             "ffx_fsr3_x64.dll", "amd_fidelityfx_dx12.dll",
-             "amd_fidelityfx_vk.dll", "ffx_backend_dx12_x64.dll")
+FSR_FILES = (
+    "ffx_fsr2_api_x64.dll",
+    "ffx_fsr2_api_dx12_x64.dll",
+    "ffx_fsr2_api_vk_x64.dll",
+    "ffx_fsr3upscaler_x64.dll",
+    "ffx_fsr3_x64.dll",
+    "amd_fidelityfx_dx12.dll",
+    "amd_fidelityfx_vk.dll",
+    "ffx_backend_dx12_x64.dll",
+)
 XESS_FILES = ("libxess.dll", "libxess_dx11.dll", "libxess_fg.dll")
 UPSCALER_FILES = FSR_FILES + XESS_FILES
 UPSCALER_NAMES = {"fsr": "AMD FSR 2/3", "xess": "Intel XeSS"}
@@ -165,8 +219,9 @@ def _walk_key(p) -> str:
         return str(p).lower()
 
 
-def walked(folder: Path, skip_dir: Path | None = None,
-           names: tuple[str, ...] = DLSS_FILES) -> list[str]:
+def walked(
+    folder: Path, skip_dir: Path | None = None, names: tuple[str, ...] = DLSS_FILES
+) -> list[str]:
     """find_dlss_files, remembered for as long as the program runs.
 
     `names` is part of the key: the walk stops after six matches, so a
@@ -174,8 +229,7 @@ def walked(folder: Path, skip_dir: Path | None = None,
     must not share an answer. Asking for one name can find a runtime that
     the five-name walk spent its budget before reaching.
     """
-    key = (_walk_key(folder), _walk_key(skip_dir) if skip_dir else "",
-           tuple(names))
+    key = (_walk_key(folder), _walk_key(skip_dir) if skip_dir else "", tuple(names))
     hit = _WALK_CACHE.get(key)
     if hit is None:
         hit = find_dlss_files(folder, skip_dir=skip_dir, names=names)
@@ -189,7 +243,7 @@ def walked(folder: Path, skip_dir: Path | None = None,
             reachable = False
         if reachable:
             _WALK_CACHE[key] = hit
-    return list(hit)          # never the cached list itself
+    return list(hit)  # never the cached list itself
 
 
 def _holds_runtime(d: Path) -> bool:
@@ -201,6 +255,7 @@ def _holds_runtime(d: Path) -> bool:
     with no DLSS at all. Looking one level in costs a single scandir.
     """
     import os as _os
+
     try:
         with _os.scandir(d) as it:
             for e in it:
@@ -211,9 +266,12 @@ def _holds_runtime(d: Path) -> bool:
     return False
 
 
-def find_dlss_files(folder: Path, skip_dir: Path | None = None,
-                    names: tuple[str, ...] = DLSS_FILES,
-                    extra_skip: tuple[str, ...] = ()) -> list[str]:
+def find_dlss_files(
+    folder: Path,
+    skip_dir: Path | None = None,
+    names: tuple[str, ...] = DLSS_FILES,
+    extra_skip: tuple[str, ...] = (),
+) -> list[str]:
     """Relative paths of the game's own DLSS files anywhere under `folder`.
 
     `skip_dir` is the folder this tool installs into: a runtime we put there
@@ -221,6 +279,7 @@ def find_dlss_files(folder: Path, skip_dir: Path | None = None,
     `names` lets the same bounded walk look for other runtimes (FSR, XeSS).
     """
     import os
+
     out: list[str] = []
     try:
         # Resolve the roots once. Resolving every directory (and skip_dir
@@ -240,8 +299,11 @@ def find_dlss_files(folder: Path, skip_dir: Path | None = None,
         # A depth limit and a match limit do not bound trees with thousands
         # of directories and no runtime DLLs. Check even in the skipped root.
         if seen > _WALK_DIRS or time.monotonic() >= deadline:
-            log.write(f"stopped looking for runtime DLLs under {folder} "
-                      f"after {seen - 1} folders - search budget reached", "warn")
+            log.write(
+                f"stopped looking for runtime DLLs under {folder} "
+                f"after {seen - 1} folders - search budget reached",
+                "warn",
+            )
             break
         rp = Path(root)
         depth = len(rp.parts) - base_depth
@@ -276,12 +338,13 @@ def find_dlss_files(folder: Path, skip_dir: Path | None = None,
 
 def find_upscaler_files(folder: Path, skip_dir: Path | None = None) -> list[str]:
     """Relative paths of the game's own FSR 2/3 and XeSS runtimes."""
-    return find_dlss_files(folder, skip_dir, names=UPSCALER_FILES,
-                           extra_skip=_UPSCALER_SKIP)
+    return find_dlss_files(
+        folder, skip_dir, names=UPSCALER_FILES, extra_skip=_UPSCALER_SKIP
+    )
 
 
 def upscaler_kind(evidence: list[str]) -> str:
-    """"fsr", "xess" or "" for a list of runtime files seen.
+    """ "fsr", "xess" or "" for a list of runtime files seen.
 
     A game shipping both gets "fsr": OptiScaler's FSR 2/3 input hooks are its
     oldest and most exercised, and the ini enables both anyway.
@@ -297,7 +360,7 @@ def upscaler_kind(evidence: list[str]) -> str:
 @dataclass
 class Support:
     native_dlss: bool = False
-    evidence: list[str] = None            # type: ignore[assignment]
+    evidence: list[str] = None  # type: ignore[assignment]
     recommended: str = FEEDER
     # Set by _driver_steer when the driver moved the recommendation off a
     # route that loads renodx-dlss5: the route it moved off. The library
@@ -308,14 +371,14 @@ class Support:
     # moved the recommendation: the route the tool's own rules picked.
     shared_from: str = ""
     reason: str = ""
-    options: list[str] = None             # type: ignore[assignment]
-    supported: bool = True                # False: no component reaches this API
+    options: list[str] = None  # type: ignore[assignment]
+    supported: bool = True  # False: no component reaches this API
     why_not: str = ""
     # "fsr" / "xess" / "": the upscaler the game ships when it has no DLSS.
     # OptiScaler can take those calls as its input and run DLSS instead; the
     # GUI passes this into fit() and Options.upscaler.
     upscaler: str = ""
-    upscaler_evidence: list[str] = None   # type: ignore[assignment]
+    upscaler_evidence: list[str] = None  # type: ignore[assignment]
     # Where DLSS comes from on the OPTI route, for the reason texts.
     dlss_source: str = ""
 
@@ -332,15 +395,23 @@ class Support:
 # says the nvngx runtimes beside them arrived with that install - whether it
 # was this tool, a half-removed one of ours, or a hand-made setup. No game
 # ever shipped any of these.
-DLSS5_MARKERS = ("dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed-helper.addon64", "dlss5-feed.cfg",
-                 "dlss5-bridge.addon64", "dlss5-bridge.cfg",
-                 "standalone-dlssnr.addon64", "renodx-dlss5.addon64",
-                 "nvngx_dlssnr.dll")
+DLSS5_MARKERS = (
+    "dlss5-feed.addon64",
+    "dlss5-feed.addon32",
+    "dlss5-feed-helper.addon64",
+    "dlss5-feed.cfg",
+    "dlss5-bridge.addon64",
+    "dlss5-bridge.cfg",
+    "standalone-dlssnr.addon64",
+    "renodx-dlss5.addon64",
+    "nvngx_dlssnr.dll",
+)
 
 
 def _dlss5_install_here(folder: Path) -> bool:
     """Does this folder plainly carry a DLSS 5 install, record or no record?"""
     from . import installer
+
     if (folder / installer.MANIFEST).is_file():
         return True
     for name in DLSS5_MARKERS:
@@ -363,12 +434,14 @@ def _ours(folder: Path, name: str) -> bool:
     the door a missing record leaves open.
     """
     from . import installer
+
     if (folder / (name + installer.BACKUP_SUFFIX)).is_file():
-        return True                       # we replaced the game's copy
+        return True  # we replaced the game's copy
     man = folder / installer.MANIFEST
     if man.is_file():
         try:
             import json
+
             data = json.loads(man.read_text(encoding="utf8"))
             return name in data.get("files", [])
         except Exception:
@@ -378,9 +451,16 @@ def _ours(folder: Path, name: str) -> bool:
     return name.lower().startswith("nvngx_") and _dlss5_install_here(folder)
 
 
-def detect(install_dir: Path, folder: Path, api: str, bitness: int,
-           sm: int | None = None, driver: str | None = None,
-           shared: dict | None = None, exe=None) -> Support:
+def detect(
+    install_dir: Path,
+    folder: Path,
+    api: str,
+    bitness: int,
+    sm: int | None = None,
+    driver: str | None = None,
+    shared: dict | None = None,
+    exe=None,
+) -> Support:
     """Work out what the game supports and which path to recommend.
 
     `sm` is the card's CUDA architecture when known (gpu.detect). On any RTX
@@ -399,29 +479,42 @@ def detect(install_dir: Path, folder: Path, api: str, bitness: int,
     s = _detect(install_dir, folder, api, bitness)
     if OPTI in s.options and s.recommended == NATIVE and (sm is None or sm >= 75):
         s.recommended = OPTI
-        s.reason = ("This game ships its own DLSS and renders with D3D12: "
-                    "OptiScaler runs the model with a model-resolution dial - "
-                    "75% costs about half of full size, and the frame itself "
-                    "stays full detail. The native route is the simpler, most "
-                    "proven alternative."
-                    + ("" if (sm or 120) >= 120 else
-                       " The author tested RTX 50 only; on your card it runs "
-                       "on the community runtime this tool installs."))
-    elif (OPTI in s.options and s.upscaler and not s.native_dlss
-          and api == "DX12" and sm is not None and sm >= 120):
+        s.reason = (
+            "This game ships its own DLSS and renders with D3D12: "
+            "OptiScaler runs the model with a model-resolution dial - "
+            "75% costs about half of full size, and the frame itself "
+            "stays full detail. The native route is the simpler, most "
+            "proven alternative."
+            + (
+                ""
+                if (sm or 120) >= 120
+                else " The author tested RTX 50 only; on your card it runs "
+                "on the community runtime this tool installs."
+            )
+        )
+    elif (
+        OPTI in s.options
+        and s.upscaler
+        and not s.native_dlss
+        and api == "DX12"
+        and sm is not None
+        and sm >= 120
+    ):
         # An FSR/XeSS game is a step further from what the author tested
         # (OptiScaler must hook the game's upscaler first), so only the cards
         # they actually used are steered off the feeder; the rest keep the
         # proven route and see OptiScaler as an option.
         s.recommended = OPTI
-        s.reason = (f"This game has no DLSS but ships {UPSCALER_NAMES[s.upscaler]} "
-                    f"({', '.join(s.upscaler_evidence[:3])}). OptiScaler takes "
-                    f"those calls as its input - once FSR/XeSS is switched on "
-                    f"in the game's own settings; with no such setting it has "
-                    f"nothing to hook - runs DLSS in their place and then "
-                    f"neural rendering, with the model-resolution dial. "
-                    f"Works in many games, not all - the feeder is the proven "
-                    f"fallback.")
+        s.reason = (
+            f"This game has no DLSS but ships {UPSCALER_NAMES[s.upscaler]} "
+            f"({', '.join(s.upscaler_evidence[:3])}). OptiScaler takes "
+            f"those calls as its input - once FSR/XeSS is switched on "
+            f"in the game's own settings; with no such setting it has "
+            f"nothing to hook - runs DLSS in their place and then "
+            f"neural rendering, with the model-resolution dial. "
+            f"Works in many games, not all - the feeder is the proven "
+            f"fallback."
+        )
     # The shared list is fetched from the web and cached: a malformed copy
     # must not cost the whole game page its routes (gate 2.0.6).
     try:
@@ -432,8 +525,9 @@ def detect(install_dir: Path, folder: Path, api: str, bitness: int,
     return s
 
 
-def _shared_steer(s: Support, api: str, sm: int | None, shared: dict | None,
-                  exe=None) -> None:
+def _shared_steer(
+    s: Support, api: str, sm: int | None, shared: dict | None, exe=None
+) -> None:
     """Move the recommendation when games like this one say so, clearly.
 
     `shared` is the compatibility list (community.cached()); None or {} and
@@ -447,24 +541,28 @@ def _shared_steer(s: Support, api: str, sm: int | None, shared: dict | None,
     if not shared or not s.options or s.recommended not in s.options:
         return
     if s.recommended == REMIX:
-        return          # a Remix game is never recommended anything else
+        return  # a Remix game is never recommended anything else
     from . import community
+
     if community.reports_for(shared, exe) >= community.MIN_REPORTS:
         return
     klass = community.game_class(api, s.native_dlss, s.upscaler)
-    pick, why = community.class_pick(shared, klass,
-                                     [o for o in s.options if o not in NEVER_AUTO],
-                                     s.recommended)
+    pick, why = community.class_pick(
+        shared, klass, [o for o in s.options if o not in NEVER_AUTO], s.recommended
+    )
     if not pick or not fit(pick, api, s.native_dlss, sm, upscaler=s.upscaler)[0]:
         return
     was = s.recommended
     s.recommended = pick
     s.shared_from = was
-    s.reason = (f"{why} Without those results the tool would pick {was}; "
-                f"it stays in the list.")
+    s.reason = (
+        f"{why} Without those results the tool would pick {was}; it stays in the list."
+    )
 
 
-def _driver_steer(s: Support, driver: str | None, folder=None, install_dir=None) -> None:
+def _driver_steer(
+    s: Support, driver: str | None, folder=None, install_dir=None
+) -> None:
     """On 616.64 and newer, off the routes that load renodx-dlss5.
 
     Every route in _RENODX_ROUTES reaches NVIDIA's runtime through the
@@ -484,6 +582,7 @@ def _driver_steer(s: Support, driver: str | None, folder=None, install_dir=None)
     route are recommended there, and OptiScaler does not load the add-on.
     """
     from . import gpu, sources
+
     if not driver or s.recommended not in _RENODX_ROUTES:
         return
     if STANDALONE not in s.options:
@@ -503,6 +602,7 @@ def _driver_steer(s: Support, driver: str | None, folder=None, install_dir=None)
     # that way (installer.uses_dxvk leaves it out). Steering MGS V there
     # named the one route that cannot work in that game.
     from . import dxvk as _dxvk
+
     for _name in _dxvk.NEEDS_DXVK:
         for _where in (folder, install_dir):
             if _where is not None and (_where / _name).is_file():
@@ -510,27 +610,30 @@ def _driver_steer(s: Support, driver: str | None, folder=None, install_dir=None)
     was = LABELS.get(s.recommended, s.recommended).split(" - ")[0]
     s.steered_from = s.recommended
     s.recommended = STANDALONE
-    s.reason = (f"Driver {driver} is one of the {sources.DRIVER_FAULT_MIN}+ "
-                f"builds that fault inside NVIDIA's own NGX runtime on every "
-                f"evaluate, and every route that loads the renodx-dlss5 "
-                f"add-on - {was} included - goes through the path that "
-                f"faults. The tool pins that add-on to "
-                f"{sources.DRIVER_FAULT_RENODX_PIN} on this driver, which "
-                f"gets most games through and not all. standalone-dlssnr does "
-                f"not load it at all, so it never takes that path: it brings "
-                f"its own feed and presents through a window of its own. At "
-                f"native resolution that needs nothing from you; to run below "
-                f"native there is an option for reduced-resolution "
-                f"fullscreen and borderless swap chains on its "
-                f"'Standalone DLSS-NR + SR' tab in the ReShade overlay "
-                f"(reported by the person who got it working, #173). It is the less tested of the two and the reports "
-                f"behind this are a handful, so if it does not suit the game, "
-                f"{was} is one dropdown away - and rolling the driver back to "
-                f"616.56 is the other answer.")
+    s.reason = (
+        f"Driver {driver} is one of the {sources.DRIVER_FAULT_MIN}+ "
+        f"builds that fault inside NVIDIA's own NGX runtime on every "
+        f"evaluate, and every route that loads the renodx-dlss5 "
+        f"add-on - {was} included - goes through the path that "
+        f"faults. The tool pins that add-on to "
+        f"{sources.DRIVER_FAULT_RENODX_PIN} on this driver, which "
+        f"gets most games through and not all. standalone-dlssnr does "
+        f"not load it at all, so it never takes that path: it brings "
+        f"its own feed and presents through a window of its own. At "
+        f"native resolution that needs nothing from you; to run below "
+        f"native there is an option for reduced-resolution "
+        f"fullscreen and borderless swap chains on its "
+        f"'Standalone DLSS-NR + SR' tab in the ReShade overlay "
+        f"(reported by the person who got it working, #173). It is the less tested of the two and the reports "
+        f"behind this are a handful, so if it does not suit the game, "
+        f"{was} is one dropdown away - and rolling the driver back to "
+        f"616.56 is the other answer."
+    )
 
 
-def fit(route: str, api: str, native_dlss: bool, sm: int | None,
-        upscaler: str = "") -> tuple[bool, str]:
+def fit(
+    route: str, api: str, native_dlss: bool, sm: int | None, upscaler: str = ""
+) -> tuple[bool, str]:
     """(usable on this machine, short note) for a route the game offers.
 
     The route list says what the GAME allows; this says what the CARD and
@@ -552,51 +655,69 @@ def fit(route: str, api: str, native_dlss: bool, sm: int | None,
             # diagnosis said so afterwards; it belongs here, before the
             # install, where the choice is still being made.
             kind = "FSR" if upscaler == "fsr" else "XeSS"
-            note = (f"the game's {kind} calls are redirected into DLSS, then "
-                    f"neural rendering - so {kind} has to be on in the game's "
-                    f"own settings, and if it has no such setting this route "
-                    f"has nothing to hook and the feeder route is the one to "
-                    f"use; " + note)
+            note = (
+                f"the game's {kind} calls are redirected into DLSS, then "
+                f"neural rendering - so {kind} has to be on in the game's "
+                f"own settings, and if it has no such setting this route "
+                f"has nothing to hook and the feeder route is the one to "
+                f"use; " + note
+            )
         if api == "DX11":
             # Added to, not replaced: a D3D11 game offered this route for its
             # FSR or XeSS still needs to hear that the upscaler has to be on.
-            note = ("on D3D11 the upscaler becomes FSR on D3D12"
-                    + ("; " + note if not native_dlss else ""))
+            note = "on D3D11 the upscaler becomes FSR on D3D12" + (
+                "; " + note if not native_dlss else ""
+            )
         if api == "Vulkan":
             # Said before the install now, not only in the diagnosis after
             # it. OptiScaler replaces the game's upscaler through NGX, a
             # Direct3D path; on Vulkan its overlay keeps asking for an
             # upscaler however the game is set (RDR2 twice, #66 and #70).
-            note = ("on Vulkan the model has had nothing to attach to in "
-                    "the reports received on this route - set the game to "
-                    "DirectX 12 if it offers the choice, or use the feeder "
-                    "route")
+            note = (
+                "on Vulkan the model has had nothing to attach to in "
+                "the reports received on this route - set the game to "
+                "DirectX 12 if it offers the choice, or use the feeder "
+                "route"
+            )
         if sm is not None and sm < 120:
             note += "; author tested RTX 50 only, works here on the community runtime"
         return True, note
     if route == REMIX:
-        return True, ("runs inside the Remix runtime, after DLSS - no "
-                      "ReShade, no add-on")
+        return True, (
+            "runs inside the Remix runtime, after DLSS - no ReShade, no add-on"
+        )
     if route == NATIVE:
         return True, "most proven for D3D12 games with DLSS"
     if route == UPSTREAM:
         if not native_dlss:
             return False, "the game must already use DLSS"
-        return True, ("runs the network before the game's DLSS, at render "
-                      "resolution - cheaper; tested on two games")
+        return True, (
+            "runs the network before the game's DLSS, at render "
+            "resolution - cheaper; tested on two games"
+        )
     if route == STANDALONE:
-        return True, ("own feed: DLAA at native resolution, DLSS SR below it, "
-                      "frame generation; experimental - presents through a "
-                      "window of its own")
+        return True, (
+            "own feed: DLAA at native resolution, DLSS SR below it, "
+            "frame generation; experimental - presents through a "
+            "window of its own"
+        )
     if route == UPLIFT:
-        return True, ("one add-on, every API, 32- and 64-bit; switched on "
-                      "in its own tab in ReShade")
+        return True, (
+            "one add-on, every API, 32- and 64-bit; switched on "
+            "in its own tab in ReShade"
+        )
     if route == RENODX:
-        return True, "unproven - reported not working in many games; try the others first"
+        return (
+            True,
+            "unproven - reported not working in many games; try the others first",
+        )
     if route == BRIDGE:
         if api == "Vulkan":
             return True, "mirrors the game's DLSS onto D3D12"
-        return True, "mirrors the game's DLSS onto D3D12 - maintained, every release tested on D3D11 and Vulkan"
+        return (
+            True,
+            "mirrors the game's DLSS onto D3D12 - maintained, every release tested on D3D11 and Vulkan",
+        )
     if route == FEEDER:
         if api in ("Vulkan", "OpenGL") or not native_dlss:
             return True, "always DLAA, shader motion vectors"
@@ -631,7 +752,8 @@ def _detect(install_dir: Path, folder: Path, api: str, bitness: int) -> Support:
         "INSIDE that runtime, after DLSS - no ReShade, no feeder, no add-on. "
         "The other routes are listed for completeness only: they all install "
         "a ReShade proxy DLL, and a ReShade proxy in a Remix game's folder "
-        "crashes it before it draws a frame.")
+        "crashes it before it draws a frame."
+    )
     return s
 
 
@@ -650,13 +772,13 @@ def _theirs(folder: Path, name: str) -> bool:
     even though the file on disk is now ours.
     """
     from . import installer
+
     if (folder / (name + installer.BACKUP_SUFFIX)).is_file():
         return True
     return not _ours(folder, name)
 
 
-def _detect_routes(install_dir: Path, folder: Path, api: str,
-                   bitness: int) -> Support:
+def _detect_routes(install_dir: Path, folder: Path, api: str, bitness: int) -> Support:
     s = Support()
 
     for d in {install_dir, folder}:
@@ -727,8 +849,10 @@ def _detect_routes(install_dir: Path, folder: Path, api: str,
     if s.native_dlss:
         s.dlss_source = "the game's own DLSS"
     elif s.upscaler:
-        s.dlss_source = (f"the game's {'FSR 2/3' if s.upscaler == 'fsr' else 'XeSS'} "
-                         f"calls, redirected into DLSS by OptiScaler")
+        s.dlss_source = (
+            f"the game's {'FSR 2/3' if s.upscaler == 'fsr' else 'XeSS'} "
+            f"calls, redirected into DLSS by OptiScaler"
+        )
 
     # --- pick a path ----------------------------------------------------
     if api == "DX10":
@@ -740,11 +864,13 @@ def _detect_routes(install_dir: Path, folder: Path, api: str,
         # Vulkan - none of them will ever see a D3D10 device.
         s.options = [FEEDER]
         s.recommended = FEEDER
-        s.reason = ("Direct3D 10: the feeder reaches it from build 0.13.1 "
-                    "on (it relays the frame through a private D3D11 device "
-                    "inside the game). Older feeder builds refuse D3D10, so "
-                    "the install checks the build it picked. GITC-Uplift "
-                    "reaches it too, as an add-on of its own.")
+        s.reason = (
+            "Direct3D 10: the feeder reaches it from build 0.13.1 "
+            "on (it relays the frame through a private D3D11 device "
+            "inside the game). Older feeder builds refuse D3D10, so "
+            "the install checks the build it picked. GITC-Uplift "
+            "reaches it too, as an add-on of its own."
+        )
         return s
 
     if bitness != 64:
@@ -753,17 +879,25 @@ def _detect_routes(install_dir: Path, folder: Path, api: str,
         # only way in - DX9 games get DXVK in front of it.
         s.options = [FEEDER]
         s.recommended = FEEDER
-        s.reason = ("32-bit games: most DLSS 5 add-ons are 64-bit only and a "
-                    "32-bit process cannot load them, so the feeder runs the "
-                    "network in its host64 helper process."
-                    + (" GITC-Uplift has a 32-bit add-on that hands the "
-                       "network to a 64-bit helper of its own."
-                       if uplift_fits(api, bitness) else "")
-                    + (" DirectX 9 is translated to Vulkan by DXVK first."
-                       if api == "DX9" else
-                       " DirectX 8 is translated to Vulkan by DXVK first "
-                       "(its d3d8.dll on its d3d9.dll)."
-                       if api == "DX8" else ""))
+        s.reason = (
+            "32-bit games: most DLSS 5 add-ons are 64-bit only and a "
+            "32-bit process cannot load them, so the feeder runs the "
+            "network in its host64 helper process."
+            + (
+                " GITC-Uplift has a 32-bit add-on that hands the "
+                "network to a 64-bit helper of its own."
+                if uplift_fits(api, bitness)
+                else ""
+            )
+            + (
+                " DirectX 9 is translated to Vulkan by DXVK first."
+                if api == "DX9"
+                else " DirectX 8 is translated to Vulkan by DXVK first "
+                "(its d3d8.dll on its d3d9.dll)."
+                if api == "DX8"
+                else ""
+            )
+        )
         return s
 
     if api == "DX9":
@@ -772,10 +906,12 @@ def _detect_routes(install_dir: Path, folder: Path, api: str,
         # backbuffer. The feeder's D3D9 support is the 32-bit DXVK path.
         s.options = [RENODX]
         s.recommended = RENODX
-        s.reason = ("64-bit DirectX 9: the renodx-dlss add-on hooks this "
-                    "directly (D3D9Ex, presentation backbuffer). No motion "
-                    "vectors on this path, so expect the result to be softer. "
-                    "GITC-Uplift reaches DirectX 9 too.")
+        s.reason = (
+            "64-bit DirectX 9: the renodx-dlss add-on hooks this "
+            "directly (D3D9Ex, presentation backbuffer). No motion "
+            "vectors on this path, so expect the result to be softer. "
+            "GITC-Uplift reaches DirectX 9 too."
+        )
         return s
 
     if api == "Vulkan":
@@ -785,18 +921,22 @@ def _detect_routes(install_dir: Path, folder: Path, api: str,
         if s.native_dlss:
             s.options = [BRIDGE, FEEDER]
             s.recommended = BRIDGE
-            s.reason = ("Vulkan game with its own DLSS: the bridge mirrors its "
-                        "DLSS contract onto a private D3D12 session, so the "
-                        "game's quality mode still applies. The feeder is the "
-                        "fallback - always DLAA, with shader motion vectors.")
+            s.reason = (
+                "Vulkan game with its own DLSS: the bridge mirrors its "
+                "DLSS contract onto a private D3D12 session, so the "
+                "game's quality mode still applies. The feeder is the "
+                "fallback - always DLAA, with shader motion vectors."
+            )
         else:
             s.options = [FEEDER, BRIDGE]
             s.recommended = FEEDER
-            s.reason = ("Vulkan without DLSS: the feeder builds a DLAA contract "
-                        "through its own Vulkan interop (no launcher needed "
-                        "since 0.5.2). The bridge can instead synthesise one "
-                        "from the driver's optical flow - fewer parts, less "
-                        "proven.")
+            s.reason = (
+                "Vulkan without DLSS: the feeder builds a DLAA contract "
+                "through its own Vulkan interop (no launcher needed "
+                "since 0.5.2). The bridge can instead synthesise one "
+                "from the driver's optical flow - fewer parts, less "
+                "proven."
+            )
         return s
 
     if api == "OpenGL":
@@ -804,9 +944,11 @@ def _detect_routes(install_dir: Path, folder: Path, api: str,
         # resources into GL through the memory-object extensions.
         s.options = [FEEDER]
         s.recommended = FEEDER
-        s.reason = ("OpenGL is only reachable through the feeder path, which "
-                    "shares a D3D12 device's textures into GL. The game must "
-                    "actually render on the NVIDIA card.")
+        s.reason = (
+            "OpenGL is only reachable through the feeder path, which "
+            "shares a D3D12 device's textures into GL. The game must "
+            "actually render on the NVIDIA card."
+        )
         return s
 
     # 64-bit D3D11 / D3D12 / unknown-but-DXGI from here on.
@@ -814,24 +956,27 @@ def _detect_routes(install_dir: Path, folder: Path, api: str,
         if api == "DX11":
             s.options = [BRIDGE, OPTI, FEEDER, STANDALONE, RENODX]
             s.recommended = BRIDGE
-            s.reason = ("This game has its own DLSS but renders with D3D11, "
-                        "which the add-on cannot hook directly. The bridge "
-                        "reproduces the contract on a private D3D12 session "
-                        "and the game's own quality mode still applies. "
-                        "OptiScaler works too but replaces DLSS with FSR on "
-                        "D3D11. The renodx-dlss add-on is reported working in "
-                        "few games.")
-        else:                              # DX12 or unknown -> assume DXGI/D3D12
-            s.options = [NATIVE, UPSTREAM, OPTI, BRIDGE, FEEDER, STANDALONE,
-                         RENODX]
+            s.reason = (
+                "This game has its own DLSS but renders with D3D11, "
+                "which the add-on cannot hook directly. The bridge "
+                "reproduces the contract on a private D3D12 session "
+                "and the game's own quality mode still applies. "
+                "OptiScaler works too but replaces DLSS with FSR on "
+                "D3D11. The renodx-dlss add-on is reported working in "
+                "few games."
+            )
+        else:  # DX12 or unknown -> assume DXGI/D3D12
+            s.options = [NATIVE, UPSTREAM, OPTI, BRIDGE, FEEDER, STANDALONE, RENODX]
             s.recommended = NATIVE
-            s.reason = ("This game ships its own DLSS and renders with D3D12, "
-                        "so the DLSS 5 add-on hooks it directly. No synthetic "
-                        "contract, and your in-game DLSS quality setting "
-                        "(Quality / Balanced / Performance) still applies. "
-                        "OptiScaler adds a model-resolution dial for more fps; "
-                        "neural-upstream runs the network before the game's "
-                        "DLSS instead, at render resolution, for much less.")
+            s.reason = (
+                "This game ships its own DLSS and renders with D3D12, "
+                "so the DLSS 5 add-on hooks it directly. No synthetic "
+                "contract, and your in-game DLSS quality setting "
+                "(Quality / Balanced / Performance) still applies. "
+                "OptiScaler adds a model-resolution dial for more fps; "
+                "neural-upstream runs the network before the game's "
+                "DLSS instead, at render resolution, for much less."
+            )
         return s
 
     # No DLSS of its own, D3D11/D3D12.
@@ -844,27 +989,31 @@ def _detect_routes(install_dir: Path, folder: Path, api: str,
         # proxy, which a Vulkan game never loads.
         s.options = [FEEDER, OPTI, BRIDGE, STANDALONE, RENODX]
         s.recommended = FEEDER
-        s.reason = (f"No DLSS in this game, but it ships "
-                    f"{UPSCALER_NAMES[s.upscaler]} "
-                    f"({', '.join(s.upscaler_evidence[:3])}). The feeder "
-                    f"builds a DLAA contract from ReShade's depth and shader "
-                    f"motion vectors - the most proven way. OptiScaler can "
-                    f"instead take the game's "
-                    f"{'FSR' if s.upscaler == 'fsr' else 'XeSS'} calls as its "
-                    f"input and run DLSS in their place, then neural "
-                    f"rendering - real upscaling, works in many games, not "
-                    f"all. The bridge and the renodx-dlss add-on are the "
-                    f"less proven alternatives.")
+        s.reason = (
+            f"No DLSS in this game, but it ships "
+            f"{UPSCALER_NAMES[s.upscaler]} "
+            f"({', '.join(s.upscaler_evidence[:3])}). The feeder "
+            f"builds a DLAA contract from ReShade's depth and shader "
+            f"motion vectors - the most proven way. OptiScaler can "
+            f"instead take the game's "
+            f"{'FSR' if s.upscaler == 'fsr' else 'XeSS'} calls as its "
+            f"input and run DLSS in their place, then neural "
+            f"rendering - real upscaling, works in many games, not "
+            f"all. The bridge and the renodx-dlss add-on are the "
+            f"less proven alternatives."
+        )
         return s
     s.options = [FEEDER, BRIDGE, STANDALONE, RENODX]
     s.recommended = FEEDER
-    s.reason = ("No DLSS in this game. The feeder builds a DLAA contract from "
-                "ReShade's depth and shader motion vectors - the most proven "
-                "way. The bridge can instead build one from the driver's "
-                "optical flow. standalone-dlssnr brings its own feed with "
-                "real DLSS upscaling and frame generation, but presents "
-                "through a window of its own - experimental. The renodx-dlss "
-                "add-on is the least proven of the four.")
+    s.reason = (
+        "No DLSS in this game. The feeder builds a DLAA contract from "
+        "ReShade's depth and shader motion vectors - the most proven "
+        "way. The bridge can instead build one from the driver's "
+        "optical flow. standalone-dlssnr brings its own feed with "
+        "real DLSS upscaling and frame generation, but presents "
+        "through a window of its own - experimental. The renodx-dlss "
+        "add-on is the least proven of the four."
+    )
     return s
 
 
@@ -884,90 +1033,114 @@ LABELS = {
 # needs, what it costs - in that order, and nothing a person choosing a
 # route does not need.
 BLURB = {
-    NATIVE: ("Krish's renodx-dlss5 add-on hooks the DLSS calls the game "
-             "already makes and adds the neural pass after them. Nothing "
-             "synthetic, no shaders; the game's own DLSS quality mode "
-             "still applies. 64-bit D3D12 games with DLSS."),
-    UPSTREAM: ("matiasLombo's neural-upstream add-on runs the network at "
-               "render resolution, BEFORE the game's DLSS upscales - the "
-               "same result on a smaller image, so it costs a fraction. "
-               "Does the neural pass itself, so no renodx add-on goes in "
-               "beside it. Configured from its own tab in ReShade. Its "
-               "author tested GTA V Enhanced and Bright Memory Infinite."),
-    OPTI: ("No ReShade. OptiScaler takes over the game's upscaler (DLSS, or "
-           "FSR 2/3 and XeSS redirected into DLSS) and runs the model over "
-           "its output. Its model-resolution dial is the biggest fps lever "
-           "there is: the cost falls with the square of it and the frame "
-           "keeps full detail. The author tested RTX 50; on RTX 20/30/40 "
-           "it runs on the community runtime this tool installs."),
-    BRIDGE: ("NIGos' dlss5-bridge mirrors the game's own DLSS contract onto "
-             "a private D3D12 session, so a D3D11 or Vulkan game keeps its "
-             "DLSS quality mode. Actively maintained; every release is "
-             "tested on both APIs."),
-    FEEDER: ("jlrouzies-fr's DLSS5-Feeder builds a DLAA contract out of "
-             "ReShade's depth buffer and shader-estimated motion vectors, "
-             "for games that have no DLSS at all. Always DLAA, never "
-             "upscaling. D3D10/11/12, Vulkan, OpenGL, 32-bit (through a "
-             "host64 helper) and DirectX 9 (through DXVK)."),
-    STANDALONE: ("kibblerz's standalone-dlssnr add-on does the whole "
-                 "pipeline itself: its own feed (VORT motion vectors, "
-                 "ReShade depth), the network, then DLAA at native "
-                 "resolution or real DLSS Super Resolution below it, and "
-                 "frame generation on top. Presents through a window of its "
-                 "own, which is the fragile part: a resolution or display "
-                 "mode change needs a restart. F10 compares. Experimental."),
-    RENODX: ("ShortFuse's renodx-dlss add-on hooks D3D9, D3D11 and D3D12 "
-             "presentation in-process - no bridge, no shaders. Reported "
-             "not working in many games; one of two routes for 64-bit "
-             "DirectX 9, otherwise try the recommended one first."),
-    REMIX: ("This game has an RTX Remix mod. Remix path traces the frame in "
-            "its own runtime (the '.trex' folder) and the neural pass runs "
-            "there, after DLSS, so the game's DLSS quality setting applies. "
-            "Nothing is injected into the game - no ReShade, no feeder, no "
-            "add-on; a ReShade proxy DLL in a Remix folder crashes the game "
-            "before it draws. The tool puts nvngx_dlssnr.dll into .trex and "
-            "switches the pass on in rtx.conf. If the runtime has no neural "
-            "pass (NVIDIA's own has none), 'swap the Remix runtime' puts in "
-            "a community build that does - experimental, it can undo fixes "
-            "the mod's own runtime carried."),
-    UPLIFT: ("ghostinthecamera's GITC-Uplift add-on runs the network itself, "
-             "on the finished frame (every game) or inside the game's own "
-             "DLSS where there is one. One add-on for Direct3D 9 to 12, "
-             "Vulkan and OpenGL, 32- and 64-bit: a 64-bit helper runs the "
-             "network for 32-bit games. Switched on in its own 'GITC Uplift' "
-             "tab in ReShade, where it also has resolution, look and pass "
-             "count. Single-player games only."),
+    NATIVE: (
+        "Krish's renodx-dlss5 add-on hooks the DLSS calls the game "
+        "already makes and adds the neural pass after them. Nothing "
+        "synthetic, no shaders; the game's own DLSS quality mode "
+        "still applies. 64-bit D3D12 games with DLSS."
+    ),
+    UPSTREAM: (
+        "matiasLombo's neural-upstream add-on runs the network at "
+        "render resolution, BEFORE the game's DLSS upscales - the "
+        "same result on a smaller image, so it costs a fraction. "
+        "Does the neural pass itself, so no renodx add-on goes in "
+        "beside it. Configured from its own tab in ReShade. Its "
+        "author tested GTA V Enhanced and Bright Memory Infinite."
+    ),
+    OPTI: (
+        "No ReShade. OptiScaler takes over the game's upscaler (DLSS, or "
+        "FSR 2/3 and XeSS redirected into DLSS) and runs the model over "
+        "its output. Its model-resolution dial is the biggest fps lever "
+        "there is: the cost falls with the square of it and the frame "
+        "keeps full detail. The author tested RTX 50; on RTX 20/30/40 "
+        "it runs on the community runtime this tool installs."
+    ),
+    BRIDGE: (
+        "NIGos' dlss5-bridge mirrors the game's own DLSS contract onto "
+        "a private D3D12 session, so a D3D11 or Vulkan game keeps its "
+        "DLSS quality mode. Actively maintained; every release is "
+        "tested on both APIs."
+    ),
+    FEEDER: (
+        "jlrouzies-fr's DLSS5-Feeder builds a DLAA contract out of "
+        "ReShade's depth buffer and shader-estimated motion vectors, "
+        "for games that have no DLSS at all. Always DLAA, never "
+        "upscaling. D3D10/11/12, Vulkan, OpenGL, 32-bit (through a "
+        "host64 helper) and DirectX 9 (through DXVK)."
+    ),
+    STANDALONE: (
+        "kibblerz's standalone-dlssnr add-on does the whole "
+        "pipeline itself: its own feed (VORT motion vectors, "
+        "ReShade depth), the network, then DLAA at native "
+        "resolution or real DLSS Super Resolution below it, and "
+        "frame generation on top. Presents through a window of its "
+        "own, which is the fragile part: a resolution or display "
+        "mode change needs a restart. F10 compares. Experimental."
+    ),
+    RENODX: (
+        "ShortFuse's renodx-dlss add-on hooks D3D9, D3D11 and D3D12 "
+        "presentation in-process - no bridge, no shaders. Reported "
+        "not working in many games; one of two routes for 64-bit "
+        "DirectX 9, otherwise try the recommended one first."
+    ),
+    REMIX: (
+        "This game has an RTX Remix mod. Remix path traces the frame in "
+        "its own runtime (the '.trex' folder) and the neural pass runs "
+        "there, after DLSS, so the game's DLSS quality setting applies. "
+        "Nothing is injected into the game - no ReShade, no feeder, no "
+        "add-on; a ReShade proxy DLL in a Remix folder crashes the game "
+        "before it draws. The tool puts nvngx_dlssnr.dll into .trex and "
+        "switches the pass on in rtx.conf. If the runtime has no neural "
+        "pass (NVIDIA's own has none), 'swap the Remix runtime' puts in "
+        "a community build that does - experimental, it can undo fixes "
+        "the mod's own runtime carried."
+    ),
+    UPLIFT: (
+        "ghostinthecamera's GITC-Uplift add-on runs the network itself, "
+        "on the finished frame (every game) or inside the game's own "
+        "DLSS where there is one. One add-on for Direct3D 9 to 12, "
+        "Vulkan and OpenGL, 32- and 64-bit: a 64-bit helper runs the "
+        "network for 32-bit games. Switched on in its own 'GITC Uplift' "
+        "tab in ReShade, where it also has resolution, look and pass "
+        "count. Single-player games only."
+    ),
 }
 
 # Per-executable facts the route texts cannot know. Found by people who did
 # the install by hand and wrote down why it failed; shown beside the
 # conflicts before INSTALL. Keys are lower-case executable names.
 QUIRKS: dict[str, str] = {
-    "quake3.exe": ("this Quake III executable loads opengl32.dll from "
-                   "System32 and never sees ReShade's copy beside it - use "
-                   "the ioquake3 build (ioquake3.org), which loads from its "
-                   "own folder"),
-    "openmw.exe": ("OpenGL: the renodx-dlss5 add-on is pinned to 4.60 here "
-                   "(4.70 stalls after four frames on GL) and motion vectors "
-                   "come from VORT - LumeniteFX reads none on OpenGL"),
+    "quake3.exe": (
+        "this Quake III executable loads opengl32.dll from "
+        "System32 and never sees ReShade's copy beside it - use "
+        "the ioquake3 build (ioquake3.org), which loads from its "
+        "own folder"
+    ),
+    "openmw.exe": (
+        "OpenGL: the renodx-dlss5 add-on is pinned to 4.60 here "
+        "(4.70 stalls after four frames on GL) and motion vectors "
+        "come from VORT - LumeniteFX reads none on OpenGL"
+    ),
     "mafia ii definitive edition.exe": (
         "Mafia II (Definitive Edition) closes itself when the renodx add-on "
         "hooks neural rendering at start: the install sets "
         "DirectNeuralRenderingHookStage=0, so start the game and switch "
-        "neural rendering on from the ReShade overlay"),
-    "forspoken.exe": ("Forspoken checks the signature of the dxgi.dll in its "
-                      "folder and closes on ReShade's. On a ReShade route "
-                      "set 'reshade loads as' to "
-                      "d3d12.dll; if it refuses that too, the optiscaler route "
-                      "with 'loads as' winmm.dll goes through a different file"),
+        "neural rendering on from the ReShade overlay"
+    ),
+    "forspoken.exe": (
+        "Forspoken checks the signature of the dxgi.dll in its "
+        "folder and closes on ReShade's. On a ReShade route "
+        "set 'reshade loads as' to "
+        "d3d12.dll; if it refuses that too, the optiscaler route "
+        "with 'loads as' winmm.dll goes through a different file"
+    ),
 }
 
 
 # Every route on this list ends up inside the driver's own NGX runtime -
 # the add-on asks the driver to evaluate the model. The Remix route does
 # not: its runtime carries the neural pass itself.
-_NGX_ROUTES = (NATIVE, BRIDGE, FEEDER, OPTI, RENODX, UPSTREAM, STANDALONE,
-               UPLIFT)
+_NGX_ROUTES = (NATIVE, BRIDGE, FEEDER, OPTI, RENODX, UPSTREAM, STANDALONE, UPLIFT)
 # ...and these are the ones that get a renodx-dlss5 add-on, so they are the
 # only ones the 4.55 pin says anything about. OptiScaler runs the model
 # through its own build, the upstream and standalone add-ons through theirs.
@@ -983,7 +1156,16 @@ def uplift_fits(api: str, bitness: int | None) -> bool:
     and OpenGL, 32- or 64-bit; not DirectX 8, and not a game whose
     architecture could not be read."""
     return bitness in (32, 64) and str(api or "").upper() in (
-        "DX9", "DX10", "DX11", "DX12", "VULKAN", "OPENGL", "UNKNOWN", "", "?")
+        "DX9",
+        "DX10",
+        "DX11",
+        "DX12",
+        "VULKAN",
+        "OPENGL",
+        "UNKNOWN",
+        "",
+        "?",
+    )
 
 
 def standalone_fits(api: str, bitness: int | None) -> bool:
@@ -996,11 +1178,17 @@ def standalone_fits(api: str, bitness: int | None) -> bool:
     offer standalone then either.
     """
     return bitness == 64 and str(api or "").upper() in (
-        "DX11", "DX12", "UNKNOWN", "", "?")
+        "DX11",
+        "DX12",
+        "UNKNOWN",
+        "",
+        "?",
+    )
 
 
-def driver_warning(route: str, driver: str | None,
-                   offered: list[str] | tuple[str, ...] | None = None) -> str | None:
+def driver_warning(
+    route: str, driver: str | None, offered: list[str] | tuple[str, ...] | None = None
+) -> str | None:
     """What to say about this driver BEFORE the install, or None.
 
     616.64 is behind 31 of the first 87 reports - by a distance the largest
@@ -1013,33 +1201,40 @@ def driver_warning(route: str, driver: str | None,
     if not driver or route not in _NGX_ROUTES:
         return None
     from . import gpu, sources
+
     # The other end of the range, and the one nobody was ever told about: a
     # driver from before DLSS 5 existed cannot create the feature at all.
     # DOOM on 475.14 got "the game has not been started since the install"
     # (#16) - true, and useless. 616.56 is the first driver documented to
     # carry the neural-rendering runtime.
     if gpu.driver_at_least(_DRIVER_KNOWN_GOOD, driver) is False:
-        return (f"driver {driver} is older than DLSS 5 itself. The "
-                f"neural-rendering runtime first appears in "
-                f"{_DRIVER_KNOWN_GOOD}: the install will finish and the model "
-                f"will not run. Update the driver before trying anything "
-                f"else here.")
+        return (
+            f"driver {driver} is older than DLSS 5 itself. The "
+            f"neural-rendering runtime first appears in "
+            f"{_DRIVER_KNOWN_GOOD}: the install will finish and the model "
+            f"will not run. Update the driver before trying anything "
+            f"else here."
+        )
     if not gpu.driver_at_least(sources.DRIVER_FAULT_MIN, driver):
         return None
 
-    tail = ("If this game crashes the moment neural rendering comes on, the "
-            "driver is the first thing to roll back - 616.56 is the newest "
-            "one with no reports of this fault.")
+    tail = (
+        "If this game crashes the moment neural rendering comes on, the "
+        "driver is the first thing to roll back - 616.56 is the newest "
+        "one with no reports of this fault."
+    )
     if route == RENODX:
         # This route installs ShortFuse's renodx-dlss, not renodx-dlss5, and
         # the 4.55 pin lives only in the other branch of the installer - so
         # the mitigation the other routes get does not apply here, and
         # saying it does would be a promise the tool cannot keep.
-        return (f"driver {driver}: this route loads ShortFuse's own add-on "
-                f"rather than renodx-dlss5, so the {sources.DRIVER_FAULT_RENODX_PIN} "
-                f"pin that works around the {sources.DRIVER_FAULT_MIN}+ fault "
-                f"elsewhere does not apply here, and nothing is known either "
-                f"way about this add-on on those drivers. " + tail)
+        return (
+            f"driver {driver}: this route loads ShortFuse's own add-on "
+            f"rather than renodx-dlss5, so the {sources.DRIVER_FAULT_RENODX_PIN} "
+            f"pin that works around the {sources.DRIVER_FAULT_MIN}+ fault "
+            f"elsewhere does not apply here, and nothing is known either "
+            f"way about this add-on on those drivers. " + tail
+        )
     if route in _RENODX_ROUTES:
         # The fault lives in renodx-dlss5's path through the driver. The
         # shared results showed a game fail three times on the feeder route
@@ -1054,37 +1249,45 @@ def driver_warning(route: str, driver: str | None,
         # Every route here loads renodx-dlss5, so every one of them has the
         # same way round; the evidence is one game on the feeder route.
         sa = (STANDALONE in offered) if offered is not None else route == FEEDER
-        other = ("The standalone route does not load renodx-dlss5 at all, and "
-                 "is worth trying before the driver. If that crashes too the "
-                 "moment neural rendering comes on, roll the driver back - "
-                 "616.56 is the newest one with no reports of this fault."
-                 if sa else tail)
-        return (f"driver {driver}: the 4.6/4.7 renodx-dlss5 builds fault "
-                f"inside the driver's NGX runtime on "
-                f"{sources.DRIVER_FAULT_MIN} and newer, on every evaluate - "
-                f"the tool pins {sources.DRIVER_FAULT_RENODX_PIN} here "
-                f"instead. That is a way round it, not a fix: some games "
-                f"fault on {sources.DRIVER_FAULT_RENODX_PIN} too. " + other)
+        other = (
+            "The standalone route does not load renodx-dlss5 at all, and "
+            "is worth trying before the driver. If that crashes too the "
+            "moment neural rendering comes on, roll the driver back - "
+            "616.56 is the newest one with no reports of this fault."
+            if sa
+            else tail
+        )
+        return (
+            f"driver {driver}: the 4.6/4.7 renodx-dlss5 builds fault "
+            f"inside the driver's NGX runtime on "
+            f"{sources.DRIVER_FAULT_MIN} and newer, on every evaluate - "
+            f"the tool pins {sources.DRIVER_FAULT_RENODX_PIN} here "
+            f"instead. That is a way round it, not a fix: some games "
+            f"fault on {sources.DRIVER_FAULT_RENODX_PIN} too. " + other
+        )
     if route == STANDALONE:
         # This route was being warned off with the renodx fault's record,
         # which is not its own: it does not load that add-on, and the one
         # game in the shared results that failed on feeder on 616.92 worked
         # here. It still runs NVIDIA's runtime on this driver, so the tail
         # stays - but the scare does not.
-        return (f"driver {driver}: the fault known on "
-                f"{sources.DRIVER_FAULT_MIN} and newer is reached through the "
-                f"renodx-dlss5 add-on, which this route does not load - so on "
-                f"these drivers this is the route to try when a route that "
-                f"loads it (native, bridge, feeder) faults. It still runs NVIDIA's runtime: if the game crashes "
-                f"the moment neural rendering comes on, roll the driver back "
-                f"to 616.56.")
-    return (f"driver {driver}: {sources.DRIVER_FAULT_MIN} and newer fault "
-            f"inside the driver's own NGX runtime in a good number of games, "
-            f"and {sources.DRIVER_FAULT_MIN} itself is named in more "
-            f"reports here than any other single cause. This route does not "
-            f"install the renodx add-on, "
-            f"so the pin that works around it elsewhere does not apply. "
-            + tail)
+        return (
+            f"driver {driver}: the fault known on "
+            f"{sources.DRIVER_FAULT_MIN} and newer is reached through the "
+            f"renodx-dlss5 add-on, which this route does not load - so on "
+            f"these drivers this is the route to try when a route that "
+            f"loads it (native, bridge, feeder) faults. It still runs NVIDIA's runtime: if the game crashes "
+            f"the moment neural rendering comes on, roll the driver back "
+            f"to 616.56."
+        )
+    return (
+        f"driver {driver}: {sources.DRIVER_FAULT_MIN} and newer fault "
+        f"inside the driver's own NGX runtime in a good number of games, "
+        f"and {sources.DRIVER_FAULT_MIN} itself is named in more "
+        f"reports here than any other single cause. This route does not "
+        f"install the renodx add-on, "
+        f"so the pin that works around it elsewhere does not apply. " + tail
+    )
 
 
 def quirks(exe, api: str = "") -> tuple[str, ...]:
@@ -1092,9 +1295,11 @@ def quirks(exe, api: str = "") -> tuple[str, ...]:
     name = getattr(exe, "name", exe or "") or ""
     out: list[str] = []
     if api == "OpenGL":
-        out.append("OpenGL: motion vectors come from VORT (LumeniteFX reads "
-                   "none here) and the renodx-dlss5 add-on is pinned to 4.60 - "
-                   "both applied at install, whatever the dropdowns say")
+        out.append(
+            "OpenGL: motion vectors come from VORT (LumeniteFX reads "
+            "none here) and the renodx-dlss5 add-on is pinned to 4.60 - "
+            "both applied at install, whatever the dropdowns say"
+        )
     hit = QUIRKS.get(str(name).lower())
     if hit and hit not in out:
         out.append(hit)
@@ -1114,88 +1319,107 @@ def quirks(exe, api: str = "") -> tuple[str, ...]:
 #   "note"   - what the route does. Read once, then in the way.
 CONFLICTS: dict[str, tuple[tuple[str, str], ...]] = {
     NATIVE: (
-        ("folder",
-             "not with OptiScaler or a frame-gen unlocker in the same folder "
-             "- two NGX hooks: flicker, greyed-out frame-gen or nothing"),
-        ("ingame",
-             "NVIDIA Smooth Motion off for this game"),
+        (
+            "folder",
+            "not with OptiScaler or a frame-gen unlocker in the same folder "
+            "- two NGX hooks: flicker, greyed-out frame-gen or nothing",
+        ),
+        ("ingame", "NVIDIA Smooth Motion off for this game"),
     ),
     UPSTREAM: (
-        ("folder",
-             "not with the renodx-dlss5 add-on, OptiScaler or another NGX "
-             "hook in the folder - installing removes ours, name theirs"),
-        ("ingame",
-             "with DLSS Frame Generation set its cadence to Quality in the "
-             "overlay, or expect stutter"),
-        ("note",
-             "does not upscale - the game's own DLSS still does"),
+        (
+            "folder",
+            "not with the renodx-dlss5 add-on, OptiScaler or another NGX "
+            "hook in the folder - installing removes ours, name theirs",
+        ),
+        (
+            "ingame",
+            "with DLSS Frame Generation set its cadence to Quality in the "
+            "overlay, or expect stutter",
+        ),
+        ("note", "does not upscale - the game's own DLSS still does"),
     ),
     OPTI: (
-        ("folder",
-             "no ReShade at all on this route; other RenoDX add-ons will not load"),
-        ("note",
-             "the game must already use DLSS, FSR 2/3 or XeSS"),
-        ("folder",
-             "not with a frame-gen unlocker or dlss-enabler in the folder"),
-        ("ingame",
-             "with 'frame generation' on (D3D12): the game's own frame "
-             "generation must be OFF"),
+        (
+            "folder",
+            "no ReShade at all on this route; other RenoDX add-ons will not load",
+        ),
+        ("note", "the game must already use DLSS, FSR 2/3 or XeSS"),
+        ("folder", "not with a frame-gen unlocker or dlss-enabler in the folder"),
+        (
+            "ingame",
+            "with 'frame generation' on (D3D12): the game's own frame "
+            "generation must be OFF",
+        ),
     ),
     BRIDGE: (
-        ("folder",
-             "not with the feeder or renodx-dlss add-on in the same folder "
-             "- both build a contract and the game dies before its swap chain"),
-        ("ingame",
-             "NVIDIA Smooth Motion off for this game"),
-        ("note",
-             "an older dlss5-dx11-bridge.addon64 is removed - the two conflict"),
+        (
+            "folder",
+            "not with the feeder or renodx-dlss add-on in the same folder "
+            "- both build a contract and the game dies before its swap chain",
+        ),
+        ("ingame", "NVIDIA Smooth Motion off for this game"),
+        ("note", "an older dlss5-dx11-bridge.addon64 is removed - the two conflict"),
     ),
     FEEDER: (
-        ("note",
-             "always DLAA; the game's own DLSS is ignored"),
-        ("ingame",
-             "NVIDIA Smooth Motion off"),
-        ("folder",
-             "not with the bridge or renodx-dlss add-on in the same folder"),
+        ("note", "always DLAA; the game's own DLSS is ignored"),
+        ("ingame", "NVIDIA Smooth Motion off"),
+        ("folder", "not with the bridge or renodx-dlss add-on in the same folder"),
     ),
     RENODX: (
-        ("folder",
-             "not with the renodx-dlss5 add-on, the feeder or the bridge in "
-             "the folder - they all hook NGX"),
-        ("note",
-             "reported not working in many games; nothing to tune if it does "
-             "nothing, switch route"),
+        (
+            "folder",
+            "not with the renodx-dlss5 add-on, the feeder or the bridge in "
+            "the folder - they all hook NGX",
+        ),
+        (
+            "note",
+            "reported not working in many games; nothing to tune if it does "
+            "nothing, switch route",
+        ),
     ),
     UPLIFT: (
-        ("ingame",
-             "open ReShade, go to the GITC Uplift tab and tick "
-             "Enable - it starts off"),
-        ("folder",
-             "no other neural add-on in the folder - it refuses to run "
-             "beside one"),
-        ("note",
-             "single-player games only"),
+        (
+            "ingame",
+            "open ReShade, go to the GITC Uplift tab and tick Enable - it starts off",
+        ),
+        (
+            "folder",
+            "no other neural add-on in the folder - it refuses to run beside one",
+        ),
+        ("note", "single-player games only"),
     ),
     STANDALONE: (
-        ("ingame",
-             "the game's own DLSS, frame generation and anti-aliasing "
-             "must be OFF - it brings its own"),
-        ("note",
-             "presents through its own topmost window; resolution or "
-             "display-mode changes need a restart"),
-        ("folder",
-             "not with the renodx add-on, OptiScaler or neural-upstream "
-             "in the folder"),
+        (
+            "ingame",
+            "the game's own DLSS, frame generation and anti-aliasing "
+            "must be OFF - it brings its own",
+        ),
+        (
+            "note",
+            "presents through its own topmost window; resolution or "
+            "display-mode changes need a restart",
+        ),
+        (
+            "folder",
+            "not with the renodx add-on, OptiScaler or neural-upstream in the folder",
+        ),
     ),
     REMIX: (
-        ("folder",
-             "no ReShade, no feeder, no add-ons in the folder - a ReShade "
-             "proxy DLL crashes a Remix game before it draws"),
-        ("note",
-             "the neural pass runs inside the Remix runtime, after DLSS, so "
-             "the game's own DLSS/RR settings still apply"),
-        ("ingame",
-             "toggle it in the Remix menu: Alt+X -> Developer Settings Menu "
-             "-> Post-Processing"),
+        (
+            "folder",
+            "no ReShade, no feeder, no add-ons in the folder - a ReShade "
+            "proxy DLL crashes a Remix game before it draws",
+        ),
+        (
+            "note",
+            "the neural pass runs inside the Remix runtime, after DLSS, so "
+            "the game's own DLSS/RR settings still apply",
+        ),
+        (
+            "ingame",
+            "toggle it in the Remix menu: Alt+X -> Developer Settings Menu "
+            "-> Post-Processing",
+        ),
     ),
 }

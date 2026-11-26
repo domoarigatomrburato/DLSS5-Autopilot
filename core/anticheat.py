@@ -20,6 +20,7 @@ one: "vanguard" inside some asset name told the owner of Rise of the Tomb
 Raider - a single-player game - that Riot Vanguard was installed (#187). And
 every warning names the file it rests on, so a wrong one can be checked.
 """
+
 from __future__ import annotations
 
 import re
@@ -80,7 +81,8 @@ MARKERS: tuple[tuple[str, str], ...] = (
 
 _PATTERNS = tuple(
     (re.compile(r"(?<![a-z0-9])" + re.escape(frag) + r"\d*(?![a-z0-9])"), product)
-    for frag, product in MARKERS)
+    for frag, product in MARKERS
+)
 
 
 def match(name: str) -> str | None:

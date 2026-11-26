@@ -3,19 +3,20 @@
 Every screen and dialog takes its look from here, so a colour changed once
 changes everywhere and no dialog drifts into a look of its own.
 """
+
 from __future__ import annotations
 
 import tkinter.font as tkfont
 
-BG = "#0a0b0d"          # window ground
-RAIL = "#0d0e11"        # the navigation rail
-SURF = "#14161a"        # fields, rows, panels
-SURF2 = "#1b1e23"       # buttons, menus, a raised surface
-LINE = "#23272d"        # hairlines, hover on SURF2
+BG = "#0a0b0d"  # window ground
+RAIL = "#0d0e11"  # the navigation rail
+SURF = "#14161a"  # fields, rows, panels
+SURF2 = "#1b1e23"  # buttons, menus, a raised surface
+LINE = "#23272d"  # hairlines, hover on SURF2
 TEXT = "#ece9e2"
 MUTED = "#8c929b"
 DIM = "#5a6069"
-AMBER = "#e6ac50"       # the tool's own accent; a game page uses the game's
+AMBER = "#e6ac50"  # the tool's own accent; a game page uses the game's
 OK = "#86d493"
 WARN = "#ec6f5f"
 LOG_BG = "#08090b"
@@ -25,18 +26,46 @@ ICON_FAMILIES = ("Segoe Fluent Icons", "Segoe MDL2 Assets", "Segoe UI Symbol")
 
 # Segoe MDL2 Assets / Fluent Icons code points (the same in both)
 GLYPH = {
-    "search": "\ue721", "scan": "\ue72c", "gear": "\ue713", "play": "\ue768",
-    "check": "\ue73e", "cross": "\ue711", "game": "\ue7fc", "video": "\ue714",
-    "remix": "\ue706", "help": "\ue897", "eye": "\ue7b3", "down": "\ue70d",
-    "up": "\ue70e", "back": "\ue72b", "folder": "\ue8b7", "trash": "\ue74d",
-    "compare": "\ue8a9", "people": "\ue716", "pilot": "\ue709",
-    "close": "\ue8bb", "add": "\ue710", "warn": "\ue7ba", "info": "\ue946",
-    "bug": "\uebe8", "copy": "\ue8c8", "download": "\ue896", "link": "\ue71b",
-    "hide": "\ued1a", "more": "\ue712", "refresh": "\ue72c", "save": "\ue74e",
-    "camera": "\ue722", "headset": "\ue95b", "screen": "\ue7f4", "file": "\ue8a5", "update": "\ue777", "chip": "\ue950",
+    "search": "\ue721",
+    "scan": "\ue72c",
+    "gear": "\ue713",
+    "play": "\ue768",
+    "check": "\ue73e",
+    "cross": "\ue711",
+    "game": "\ue7fc",
+    "video": "\ue714",
+    "remix": "\ue706",
+    "help": "\ue897",
+    "eye": "\ue7b3",
+    "down": "\ue70d",
+    "up": "\ue70e",
+    "back": "\ue72b",
+    "folder": "\ue8b7",
+    "trash": "\ue74d",
+    "compare": "\ue8a9",
+    "people": "\ue716",
+    "pilot": "\ue709",
+    "close": "\ue8bb",
+    "add": "\ue710",
+    "warn": "\ue7ba",
+    "info": "\ue946",
+    "bug": "\uebe8",
+    "copy": "\ue8c8",
+    "download": "\ue896",
+    "link": "\ue71b",
+    "hide": "\ued1a",
+    "more": "\ue712",
+    "refresh": "\ue72c",
+    "save": "\ue74e",
+    "camera": "\ue722",
+    "headset": "\ue95b",
+    "screen": "\ue7f4",
+    "file": "\ue8a5",
+    "update": "\ue777",
+    "chip": "\ue950",
 }
 
-SCALE = 1.0             # pixels per 96-DPI pixel, set once at start
+SCALE = 1.0  # pixels per 96-DPI pixel, set once at start
 
 
 def set_scale(dpi: float) -> None:
@@ -74,6 +103,7 @@ _measure: dict[tuple, tkfont.Font] = {}
 
 def width(text: str, font: tuple) -> int:
     import tkinter as _tk
+
     key = (font, id(_tk._default_root))
     f = _measure.get(key)
     if f is None:
@@ -90,8 +120,15 @@ def fit(text: str, font: tuple, room: int) -> str:
     return text.rstrip() + "\u2026"
 
 
-API_NAMES = {"DX8": "DirectX 8", "DX9": "DirectX 9", "DX10": "DirectX 10", "DX11": "DirectX 11",
-             "DX12": "DirectX 12", "OPENGL": "OpenGL", "VULKAN": "Vulkan"}
+API_NAMES = {
+    "DX8": "DirectX 8",
+    "DX9": "DirectX 9",
+    "DX10": "DirectX 10",
+    "DX11": "DirectX 11",
+    "DX12": "DirectX 12",
+    "OPENGL": "OpenGL",
+    "VULKAN": "Vulkan",
+}
 
 
 def api_name(api: str | None) -> str:

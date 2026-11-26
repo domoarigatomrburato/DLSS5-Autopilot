@@ -12,6 +12,7 @@ raises for a missing or unreadable file - a game without art simply gets the
 plain tile. Safe to call from a worker thread; Tk images must still be made
 on the Tk thread (`photo`).
 """
+
 from __future__ import annotations
 
 import colorsys
@@ -29,8 +30,12 @@ _UNIT_PIXEL = 2
 
 
 class _Start(ctypes.Structure):
-    _fields_ = [("ver", c_uint), ("cb", c_void_p), ("nothread", wintypes.BOOL),
-                ("nocodecs", wintypes.BOOL)]
+    _fields_ = [
+        ("ver", c_uint),
+        ("cb", c_void_p),
+        ("nothread", wintypes.BOOL),
+        ("nocodecs", wintypes.BOOL),
+    ]
 
 
 class _Rect(ctypes.Structure):
@@ -42,8 +47,14 @@ class _Point(ctypes.Structure):
 
 
 class _Data(ctypes.Structure):
-    _fields_ = [("w", c_uint), ("h", c_uint), ("stride", c_int), ("fmt", c_int),
-                ("scan0", c_void_p), ("res", ctypes.c_size_t)]
+    _fields_ = [
+        ("w", c_uint),
+        ("h", c_uint),
+        ("stride", c_int),
+        ("fmt", c_int),
+        ("scan0", c_void_p),
+        ("res", ctypes.c_size_t),
+    ]
 
 
 def _gdip():
@@ -54,7 +65,12 @@ def _gdip():
             try:
                 gp = ctypes.windll.gdiplus
                 tok = ctypes.c_size_t()
-                if gp.GdiplusStartup(byref(tok), byref(_Start(1, None, False, False)), None) != 0:
+                if (
+                    gp.GdiplusStartup(
+                        byref(tok), byref(_Start(1, None, False, False)), None
+                    )
+                    != 0
+                ):
                     raise OSError("GdiplusStartup failed")
                 _gp = gp
             except (OSError, AttributeError):
@@ -73,7 +89,10 @@ def _argb(c: str, a: int = 255) -> c_uint:
 
 def _load(gp, path):
     img = c_void_p()
-    if not path or gp.GdipLoadImageFromFile(ctypes.c_wchar_p(str(path)), byref(img)) != 0:
+    if (
+        not path
+        or gp.GdipLoadImageFromFile(ctypes.c_wchar_p(str(path)), byref(img)) != 0
+    ):
         return None, 0, 0
     w, h = c_uint(), c_uint()
     gp.GdipGetImageWidth(img, byref(w))
@@ -88,8 +107,8 @@ def _canvas(gp, w, h, fmt=RGB24):
     bmp, g = c_void_p(), c_void_p()
     gp.GdipCreateBitmapFromScan0(w, h, 0, fmt, None, byref(bmp))
     gp.GdipGetImageGraphicsContext(bmp, byref(g))
-    gp.GdipSetInterpolationMode(g, 7)        # high quality bicubic
-    gp.GdipSetPixelOffsetMode(g, 4)          # half pixel: no edge shift
+    gp.GdipSetInterpolationMode(g, 7)  # high quality bicubic
+    gp.GdipSetPixelOffsetMode(g, 4)  # half pixel: no edge shift
     return bmp, g
 
 
@@ -102,8 +121,14 @@ def _fill(gp, g, colour, alpha, x, y, w, h):
 
 def _gradient(gp, g, colour, p1, p2, a1, a2, rect):
     br = c_void_p()
-    gp.GdipCreateLineBrushI(byref(_Point(*p1)), byref(_Point(*p2)),
-                            _argb(colour, a1), _argb(colour, a2), _WRAP_TILE_FLIP, byref(br))
+    gp.GdipCreateLineBrushI(
+        byref(_Point(*p1)),
+        byref(_Point(*p2)),
+        _argb(colour, a1),
+        _argb(colour, a2),
+        _WRAP_TILE_FLIP,
+        byref(br),
+    )
     gp.GdipFillRectangleI(g, br, *rect)
     gp.GdipDeleteBrush(br)
 
@@ -115,9 +140,9 @@ def _rgb_out(gp, bmp, w, h) -> bytes:
     raw = ctypes.string_at(d.scan0, stride * h)
     gp.GdipBitmapUnlockBits(bmp, byref(d))
     if stride != w * 3:
-        raw = b"".join(raw[y * stride:y * stride + w * 3] for y in range(h))
+        raw = b"".join(raw[y * stride : y * stride + w * 3] for y in range(h))
     out = bytearray(raw)
-    out[0::3], out[2::3] = raw[2::3], raw[0::3]         # BGR -> RGB
+    out[0::3], out[2::3] = raw[2::3], raw[0::3]  # BGR -> RGB
     return bytes(out)
 
 
@@ -125,17 +150,52 @@ def _draw_fitted(gp, g, img, sw, sh, w, h, cover=True, focus_y=0.5):
     if cover:
         s = max(w / sw, h / sh)
         cw, ch = max(1, int(w / s)), max(1, int(h / s))
-        gp.GdipDrawImageRectRectI(g, img, 0, 0, w, h, (sw - cw) // 2,
-                                  int((sh - ch) * focus_y), cw, ch, _UNIT_PIXEL, None, None, None)
+        gp.GdipDrawImageRectRectI(
+            g,
+            img,
+            0,
+            0,
+            w,
+            h,
+            (sw - cw) // 2,
+            int((sh - ch) * focus_y),
+            cw,
+            ch,
+            _UNIT_PIXEL,
+            None,
+            None,
+            None,
+        )
     else:
         s = min(w / sw, h / sh)
         dw, dh = max(1, int(sw * s)), max(1, int(sh * s))
-        gp.GdipDrawImageRectRectI(g, img, (w - dw) // 2, (h - dh) // 2, dw, dh,
-                                  0, 0, sw, sh, _UNIT_PIXEL, None, None, None)
+        gp.GdipDrawImageRectRectI(
+            g,
+            img,
+            (w - dw) // 2,
+            (h - dh) // 2,
+            dw,
+            dh,
+            0,
+            0,
+            sw,
+            sh,
+            _UNIT_PIXEL,
+            None,
+            None,
+            None,
+        )
 
 
-def picture(path, w: int, h: int, bg: str = "#000000", cover: bool = True,
-            focus_y: float = 0.5, dim: int = 0) -> bytes | None:
+def picture(
+    path,
+    w: int,
+    h: int,
+    bg: str = "#000000",
+    cover: bool = True,
+    focus_y: float = 0.5,
+    dim: int = 0,
+) -> bytes | None:
     """`path` fitted into w x h: cropped to fill (cover) or letterboxed on bg."""
     gp = _gdip()
     if gp is None or w < 1 or h < 1:
@@ -174,9 +234,16 @@ def gradient(w: int, h: int, bg: str, colour: str, alpha_top: int) -> bytes | No
         gp.GdipDisposeImage(bmp)
 
 
-def backdrop(hero, blur, logo, w: int, h: int, bg: str,
-             logo_box: tuple[int, int, int, int] | None = None,
-             text_side: float = 0.62) -> tuple[bytes | None, int, bool]:
+def backdrop(
+    hero,
+    blur,
+    logo,
+    w: int,
+    h: int,
+    bg: str,
+    logo_box: tuple[int, int, int, int] | None = None,
+    text_side: float = 0.62,
+) -> tuple[bytes | None, int, bool]:
     """A sharp game page: (rgb, height of the art band, whether a logo was drawn).
 
     The hero (Steam's is 1920x620) is drawn across the width at its own aspect,
@@ -212,27 +279,50 @@ def backdrop(hero, blur, logo, w: int, h: int, bg: str,
             # first. Shrunk to a few pixels and scaled back up, it is a blur.
             sw_, sh_ = 32, max(1, 32 * bh // max(1, bw))
             small, gs_ = _canvas(gp, sw_, sh_)
-            gp.GdipDrawImageRectRectI(gs_, bimg, 0, 0, sw_, sh_, 0, 0, bw, bh, _UNIT_PIXEL, None, None, None)
+            gp.GdipDrawImageRectRectI(
+                gs_, bimg, 0, 0, sw_, sh_, 0, 0, bw, bh, _UNIT_PIXEL, None, None, None
+            )
             gp.GdipDeleteGraphics(gs_)
             gp.GdipDisposeImage(bimg)
             bimg, bw, bh = small, sw_, sh_
         if bimg:
-            gp.GdipDrawImageRectRectI(ga, bimg, -8, -8, w + 16, h + 16, 0, 0, bw, bh,
-                                      _UNIT_PIXEL, None, None, None)
+            gp.GdipDrawImageRectRectI(
+                ga,
+                bimg,
+                -8,
+                -8,
+                w + 16,
+                h + 16,
+                0,
+                0,
+                bw,
+                bh,
+                _UNIT_PIXEL,
+                None,
+                None,
+                None,
+            )
         _fill(gp, ga, bg, 205, 0, 0, w, h)
         gp.GdipDeleteGraphics(ga)
         ga = None
-        gp.GdipDrawImageRectRectI(g, amb, 0, 0, w, h, 0, 0, w, h, _UNIT_PIXEL, None, None, None)
+        gp.GdipDrawImageRectRectI(
+            g, amb, 0, 0, w, h, 0, 0, w, h, _UNIT_PIXEL, None, None, None
+        )
         if himg:
             # 2. the hero, sharp, at its own aspect
-            gp.GdipDrawImageRectRectI(g, himg, 0, 0, w, band, 0, hy, hw, hh,
-                                      _UNIT_PIXEL, None, None, None)
-            _gradient(gp, g, "#000000", (0, -1), (0, band // 3), 90, 0, (0, 0, w, band // 3))
+            gp.GdipDrawImageRectRectI(
+                g, himg, 0, 0, w, band, 0, hy, hw, hh, _UNIT_PIXEL, None, None, None
+            )
+            _gradient(
+                gp, g, "#000000", (0, -1), (0, band // 3), 90, 0, (0, 0, w, band // 3)
+            )
             # 3. its lower part melts into the ambient
             y0 = int(band * 0.42)
             fh = band - y0 + 2
             ov, go = _canvas(gp, w, fh, ARGB32)
-            gp.GdipDrawImageRectRectI(go, amb, 0, 0, w, fh, 0, y0, w, fh, _UNIT_PIXEL, None, None, None)
+            gp.GdipDrawImageRectRectI(
+                go, amb, 0, 0, w, fh, 0, y0, w, fh, _UNIT_PIXEL, None, None, None
+            )
             gp.GdipDeleteGraphics(go)
             d = _Data()
             gp.GdipBitmapLockBits(ov, byref(_Rect(0, 0, w, fh)), 3, ARGB32, byref(d))
@@ -241,10 +331,12 @@ def backdrop(hero, blur, logo, w: int, h: int, bg: str,
             for r in range(fh):
                 a = min(255, int(255 * ((r + 1) / fh) ** 1.25))
                 o = r * stride
-                raw[o + 3:o + w * 4:4] = bytes((a,)) * w
+                raw[o + 3 : o + w * 4 : 4] = bytes((a,)) * w
             ctypes.memmove(d.scan0, bytes(raw), len(raw))
             gp.GdipBitmapUnlockBits(ov, byref(d))
-            gp.GdipDrawImageRectRectI(g, ov, 0, y0, w, fh, 0, 0, w, fh, _UNIT_PIXEL, None, None, None)
+            gp.GdipDrawImageRectRectI(
+                g, ov, 0, y0, w, fh, 0, 0, w, fh, _UNIT_PIXEL, None, None, None
+            )
             gp.GdipDisposeImage(ov)
         # 4. the side the words sit on, the full height so there is no seam
         side = int(w * text_side)
@@ -255,15 +347,31 @@ def backdrop(hero, blur, logo, w: int, h: int, bg: str,
         #     bottom row darker than the window, a hard line under the words
         #     once settings made the page longer than the picture.
         tail = int(h * 0.3)
-        _gradient(gp, g, bg, (0, h - tail - 1), (0, h + 1), 0, 255, (0, h - tail, w, tail))
+        _gradient(
+            gp, g, bg, (0, h - tail - 1), (0, h + 1), 0, 255, (0, h - tail, w, tail)
+        )
         # 5. the logo, alpha kept
         drawn = False
         if limg and logo_box:
             bx, by, bwid, bht = logo_box
             s = min(bwid / lw, bht / lh)
             dw, dh = max(1, int(lw * s)), max(1, int(lh * s))
-            gp.GdipDrawImageRectRectI(g, limg, bx, by + bht - dh, dw, dh, 0, 0, lw, lh,
-                                      _UNIT_PIXEL, None, None, None)
+            gp.GdipDrawImageRectRectI(
+                g,
+                limg,
+                bx,
+                by + bht - dh,
+                dw,
+                dh,
+                0,
+                0,
+                lw,
+                lh,
+                _UNIT_PIXEL,
+                None,
+                None,
+                None,
+            )
             drawn = True
         gp.GdipDeleteGraphics(g)
         g = None
@@ -289,24 +397,61 @@ def exe_icon(exe, size: int, bg: str) -> bytes | None:
     except (OSError, AttributeError):
         return None
     hicon = c_void_p()
-    shell32.SHDefExtractIconW.argtypes = [wintypes.LPCWSTR, c_int, c_uint,
-                                          ctypes.POINTER(c_void_p), ctypes.POINTER(c_void_p), c_uint]
-    if shell32.SHDefExtractIconW(str(exe), 0, 0, byref(hicon), None, size) != 0 or not hicon.value:
+    shell32.SHDefExtractIconW.argtypes = [
+        wintypes.LPCWSTR,
+        c_int,
+        c_uint,
+        ctypes.POINTER(c_void_p),
+        ctypes.POINTER(c_void_p),
+        c_uint,
+    ]
+    if (
+        shell32.SHDefExtractIconW(str(exe), 0, 0, byref(hicon), None, size) != 0
+        or not hicon.value
+    ):
         return None
 
     class BMIH(ctypes.Structure):
-        _fields_ = [("size", c_uint), ("w", c_int), ("h", c_int), ("planes", ctypes.c_ushort),
-                    ("bits", ctypes.c_ushort), ("comp", c_uint), ("isize", c_uint),
-                    ("xppm", c_int), ("yppm", c_int), ("used", c_uint), ("imp", c_uint)]
+        _fields_ = [
+            ("size", c_uint),
+            ("w", c_int),
+            ("h", c_int),
+            ("planes", ctypes.c_ushort),
+            ("bits", ctypes.c_ushort),
+            ("comp", c_uint),
+            ("isize", c_uint),
+            ("xppm", c_int),
+            ("yppm", c_int),
+            ("used", c_uint),
+            ("imp", c_uint),
+        ]
+
     gdi32.CreateCompatibleDC.restype = c_void_p
     gdi32.CreateCompatibleDC.argtypes = [c_void_p]
     gdi32.CreateDIBSection.restype = c_void_p
-    gdi32.CreateDIBSection.argtypes = [c_void_p, c_void_p, c_uint, ctypes.POINTER(c_void_p), c_void_p, c_uint]
+    gdi32.CreateDIBSection.argtypes = [
+        c_void_p,
+        c_void_p,
+        c_uint,
+        ctypes.POINTER(c_void_p),
+        c_void_p,
+        c_uint,
+    ]
     gdi32.SelectObject.restype = c_void_p
     gdi32.SelectObject.argtypes = [c_void_p, c_void_p]
     gdi32.DeleteObject.argtypes = [c_void_p]
     gdi32.DeleteDC.argtypes = [c_void_p]
-    user32.DrawIconEx.argtypes = [c_void_p, c_int, c_int, c_void_p, c_int, c_int, c_uint, c_void_p, c_uint]
+    user32.DrawIconEx.argtypes = [
+        c_void_p,
+        c_int,
+        c_int,
+        c_void_p,
+        c_int,
+        c_int,
+        c_uint,
+        c_void_p,
+        c_uint,
+    ]
     user32.DestroyIcon.argtypes = [c_void_p]
     dc = gdi32.CreateCompatibleDC(None)
     bits = c_void_p()
@@ -347,7 +492,9 @@ def photo(tk, buf: bytes, w: int, h: int, master=None):
 
     `master` ties the image to the window that shows it; without it Tk uses
     the first root the process made, and a later window cannot see it."""
-    return tk.PhotoImage(master=master, data=b"P6 %d %d 255\n" % (w, h) + buf, format="PPM")
+    return tk.PhotoImage(
+        master=master, data=b"P6 %d %d 255\n" % (w, h) + buf, format="PPM"
+    )
 
 
 def accent(buf: bytes | None) -> str | None:

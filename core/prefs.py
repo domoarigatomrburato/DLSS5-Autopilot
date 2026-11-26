@@ -9,6 +9,7 @@ Search order:
     3. Downloads / Desktop (up to one subfolder deep)
     4. none found -> download from the rhi-repo mirror
 """
+
 from __future__ import annotations
 
 import json
@@ -18,7 +19,11 @@ import threading
 import time
 from pathlib import Path
 
-FILE = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "dlss5-autopilot" / "settings.json"
+FILE = (
+    Path(os.environ.get("LOCALAPPDATA", Path.home()))
+    / "dlss5-autopilot"
+    / "settings.json"
+)
 
 
 def app_dir() -> Path:
@@ -115,7 +120,9 @@ def set_(key: str, value) -> None:
             d, readable = _read()
             if not readable and str(FILE) not in _good:
                 try:
-                    FILE.with_name(FILE.name + ".unreadable").write_bytes(FILE.read_bytes())
+                    FILE.with_name(FILE.name + ".unreadable").write_bytes(
+                        FILE.read_bytes()
+                    )
                 except OSError:
                     pass
         d[key] = value
@@ -151,8 +158,10 @@ def is_renodx_sf(path: Path) -> bool:
         if not is_renodx(path):
             return False
         data = path.read_bytes()
-        return (b"renodx-dlss.addon64" in data
-                or "renodx-dlss.addon64".encode("utf-16-le") in data)
+        return (
+            b"renodx-dlss.addon64" in data
+            or "renodx-dlss.addon64".encode("utf-16-le") in data
+        )
     except OSError:
         return False
 
@@ -171,8 +180,11 @@ def _candidates() -> list[Path]:
     # 3) Downloads / Desktop, one subfolder deep - people usually leave the
     #    file inside a folder rather than loose on the Desktop.
     home = Path.home()
-    roots = [home / "Downloads", home / "Desktop",
-             Path(os.environ.get("USERPROFILE", home)) / "Downloads"]
+    roots = [
+        home / "Downloads",
+        home / "Desktop",
+        Path(os.environ.get("USERPROFILE", home)) / "Downloads",
+    ]
     for d in roots:
         if not d.is_dir():
             continue
@@ -221,6 +233,7 @@ def remember_renodx(path: Path | None) -> None:
 # --- Vulkan installs ----------------------------------------------------
 # The Vulkan layer is registered once for the whole user, not per game, so it
 # must only be removed when the LAST Vulkan game that needs it is uninstalled.
+
 
 def installs() -> list[str]:
     """Every folder this tool has set up (and not removed since)."""

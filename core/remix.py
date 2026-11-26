@@ -25,6 +25,7 @@ registers it by name). Verified on this machine: the GTA IV runtime's
 `.trex\d3d9.dll` contains "rtx.neuralUplift" and
 "rtx.neuralUplift.bypassCallerCheck" and no "rtx.neuralRendering".
 """
+
 from __future__ import annotations
 
 import os
@@ -49,11 +50,36 @@ PREFIX = {UPLIFT: "rtx.neuralUplift", NEURAL: "rtx.neuralRendering"}
 # Folders that never hold a .trex and can hold hundreds of thousands of
 # files. Same idea as dlss._SKIP_DIRS, kept separate so this module has no
 # import of its own to trip over (dlss imports this one).
-_SKIP_DIRS = {"content", "paks", "saved", "logs", "movies", "sounds", "music",
-              "videos", "localization", "shadercache", "derivedcache", "cache",
-              "textures", "maps", "levels", "audio", "data", "assets", "mods",
-              "screenshots", "steamapps", "redist", "_commonredist",
-              "rtx-remix", "rtx_comp", "common", "update", "pc"}
+_SKIP_DIRS = {
+    "content",
+    "paks",
+    "saved",
+    "logs",
+    "movies",
+    "sounds",
+    "music",
+    "videos",
+    "localization",
+    "shadercache",
+    "derivedcache",
+    "cache",
+    "textures",
+    "maps",
+    "levels",
+    "audio",
+    "data",
+    "assets",
+    "mods",
+    "screenshots",
+    "steamapps",
+    "redist",
+    "_commonredist",
+    "rtx-remix",
+    "rtx_comp",
+    "common",
+    "update",
+    "pc",
+}
 # Remix has to sit where the game loads d3d9.dll from, so `.trex` is beside
 # the executable (GTA IV) or one folder down (Portal RTX keeps it in bin\).
 # Three levels is generous for that, and the search must stay cheap: this
@@ -82,9 +108,11 @@ def find_runtime(folder: Path) -> Path | None:
                     for e in it:
                         # Unlike the DLSS walk a dot-folder is what we are
                         # after, but only the one we want.
-                        if (e.is_dir(follow_symlinks=False)
-                                and e.name.lower() not in _SKIP_DIRS
-                                and not e.name.startswith(".")):
+                        if (
+                            e.is_dir(follow_symlinks=False)
+                            and e.name.lower() not in _SKIP_DIRS
+                            and not e.name.startswith(".")
+                        ):
                             nxt.append(Path(e.path))
             except OSError:
                 continue
@@ -100,7 +128,7 @@ def is_remix_game(folder: Path) -> bool:
 
 
 def runtime_flavour(trex: Path) -> str:
-    """"uplift", "neural" or "" - which DLSS 5 fork this runtime is, if any.
+    """ "uplift", "neural" or "" - which DLSS 5 fork this runtime is, if any.
 
     Read out of the runtime binary rather than guessed. The file is 150-230 MB
     so it is scanned in chunks, with an overlap so a marker that straddles a
@@ -190,15 +218,15 @@ def set_option(conf: Path, key: str, value: str = "True") -> bool:
     for line in data.splitlines(keepends=True):
         if pat.match(line):
             if replaced:
-                continue                  # a duplicate of a key we just set
-            ending = line[len(line.rstrip(b"\r\n")):] or nl
+                continue  # a duplicate of a key we just set
+            ending = line[len(line.rstrip(b"\r\n")) :] or nl
             out.append(new + ending)
             replaced = True
         else:
             out.append(line)
     if not replaced:
         if out and not out[-1].endswith((b"\n", b"\r")):
-            out[-1] += nl                 # the no-trailing-newline case
+            out[-1] += nl  # the no-trailing-newline case
         out.append(new + nl)
     try:
         conf.parent.mkdir(parents=True, exist_ok=True)
@@ -265,54 +293,81 @@ INITIALISED = "[DLSS-NR] Snippet initialized"
 # "[DLSS-NR] Created the Neural Uplift feature (id 18, preset 0) at 1920x1080"
 CREATED_RE = re.compile(
     r"\[DLSS-NR\] Created the ([\w ]+) feature \(id (\d+), preset (\d+)\)"
-    r"(?: at (\S+))?")
+    r"(?: at (\S+))?"
+)
 
 # (phrase in the log, what to do about it). All four are the fork's wording.
 FAILURES = (
-    ("nvngx_dlssnr.dll could not be loaded",
-     "The runtime found nvngx_dlssnr.dll but Windows refused to load it - "
-     "usually a build for another card, or antivirus quarantine. Install "
-     "again; the tool picks a build that matches your card."),
-    ("nvngx_dlssnr.dll was not found",
-     "nvngx_dlssnr.dll has to sit INSIDE the .trex folder, beside the "
-     "runtime. Install again to put it back."),
-    ("nvngx_dlssnr.dll not found",
-     "nvngx_dlssnr.dll has to sit INSIDE the .trex folder, beside the "
-     "runtime. Install again to put it back."),
-    ("nvngx_dlssnr.dll does not export the Vulkan NGX entry points",
-     "That nvngx_dlssnr build has no Vulkan entry points, and Remix renders "
-     "on Vulkan. Install again and let the tool pick the build."),
-    ("snippet failed to load",
-     "The snippet did not initialise. Check nvngx_dlssnr.dll is in the .trex "
-     "folder and that your driver is 570 or newer."),
-    ("the caller check could not be bypassed",
-     "The snippet only answers a caller whose module path contains "
-     "'nvngx.dll'. remix_nvngx.dll must keep exactly that name in the .trex "
-     "folder - it is what satisfies the check."),
-    ("[DLSS-NR] Failed to create the Neural Uplift feature",
-     "NGX refused the feature. Almost always the nvngx_dlssnr build does not "
-     "match the card; install again and let the tool choose."),
+    (
+        "nvngx_dlssnr.dll could not be loaded",
+        "The runtime found nvngx_dlssnr.dll but Windows refused to load it - "
+        "usually a build for another card, or antivirus quarantine. Install "
+        "again; the tool picks a build that matches your card.",
+    ),
+    (
+        "nvngx_dlssnr.dll was not found",
+        "nvngx_dlssnr.dll has to sit INSIDE the .trex folder, beside the "
+        "runtime. Install again to put it back.",
+    ),
+    (
+        "nvngx_dlssnr.dll not found",
+        "nvngx_dlssnr.dll has to sit INSIDE the .trex folder, beside the "
+        "runtime. Install again to put it back.",
+    ),
+    (
+        "nvngx_dlssnr.dll does not export the Vulkan NGX entry points",
+        "That nvngx_dlssnr build has no Vulkan entry points, and Remix renders "
+        "on Vulkan. Install again and let the tool pick the build.",
+    ),
+    (
+        "snippet failed to load",
+        "The snippet did not initialise. Check nvngx_dlssnr.dll is in the .trex "
+        "folder and that your driver is 570 or newer.",
+    ),
+    (
+        "the caller check could not be bypassed",
+        "The snippet only answers a caller whose module path contains "
+        "'nvngx.dll'. remix_nvngx.dll must keep exactly that name in the .trex "
+        "folder - it is what satisfies the check.",
+    ),
+    (
+        "[DLSS-NR] Failed to create the Neural Uplift feature",
+        "NGX refused the feature. Almost always the nvngx_dlssnr build does not "
+        "match the card; install again and let the tool choose.",
+    ),
     # lunks/dxvk-remix-plus-dlssnr (the runtime the swap installs), read out
     # of its dlssnr-v1 d3d9.dll. Each is followed by NGX's reason.
-    ("NVIDIA DLSS-NR not available:",
-     "The runtime could not use nvngx_dlssnr.dll - the reason is on the same "
-     "line. It can be a file missing from the .trex folder or a build for "
-     "another card; install again, and if it repeats, press 'report a bug'."),
-    ("NVSDK_NGX_VULKAN_Init_Ext failed for DLSS-NR:",
-     "NGX would not start on Vulkan - the reason is on the same line. "
-     "Install again; if it repeats, press 'report a bug'."),
-    ("AllocateParameters failed for DLSS-NR:",
-     "NGX would not hand out its parameter block. Install again; if it "
-     "repeats, the nvngx_dlssnr build does not fit this runtime."),
-    ("Failed to create DLSS-NR feature:",
-     "NGX refused the feature. Almost always the nvngx_dlssnr build does not "
-     "match the card; install again and let the tool choose."),
-    ("NVSDK_NGX_VULKAN_EvaluateFeature failed for DLSS-NR:",
-     "The feature was created and failed on its first frames. The reason is "
-     "on the same line; if it repeats, press 'report a bug'."),
-    ("does not export the full NVSDK_NGX_VULKAN_* surface",
-     "That nvngx_dlssnr build has no Vulkan entry points, and Remix renders "
-     "on Vulkan. Install again and let the tool pick the build."),
+    (
+        "NVIDIA DLSS-NR not available:",
+        "The runtime could not use nvngx_dlssnr.dll - the reason is on the same "
+        "line. It can be a file missing from the .trex folder or a build for "
+        "another card; install again, and if it repeats, press 'report a bug'.",
+    ),
+    (
+        "NVSDK_NGX_VULKAN_Init_Ext failed for DLSS-NR:",
+        "NGX would not start on Vulkan - the reason is on the same line. "
+        "Install again; if it repeats, press 'report a bug'.",
+    ),
+    (
+        "AllocateParameters failed for DLSS-NR:",
+        "NGX would not hand out its parameter block. Install again; if it "
+        "repeats, the nvngx_dlssnr build does not fit this runtime.",
+    ),
+    (
+        "Failed to create DLSS-NR feature:",
+        "NGX refused the feature. Almost always the nvngx_dlssnr build does not "
+        "match the card; install again and let the tool choose.",
+    ),
+    (
+        "NVSDK_NGX_VULKAN_EvaluateFeature failed for DLSS-NR:",
+        "The feature was created and failed on its first frames. The reason is "
+        "on the same line; if it repeats, press 'report a bug'.",
+    ),
+    (
+        "does not export the full NVSDK_NGX_VULKAN_* surface",
+        "That nvngx_dlssnr build has no Vulkan entry points, and Remix renders "
+        "on Vulkan. Install again and let the tool pick the build.",
+    ),
 )
 
 # lunks' runtime: its own words for loaded / working / off / skipped. It has

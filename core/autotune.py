@@ -32,6 +32,7 @@ at startup (Config::Reload is called from load, and nothing watches the
 file), and the feeder reads its cfg the same way. Between sessions is what
 this can honestly do, and it is what it does.
 """
+
 from __future__ import annotations
 
 import re
@@ -68,18 +69,23 @@ MAX_SAMPLES = 8
 # was typed, and settings.json is read and written whole.
 MAX_GAMES = 60
 
-FEED_PERF = re.compile(r"(\d+) frames: feed CPU ([\d.,]+) ms/frame"
-                       r"[^\n]*?([\d.,]+) fps")
+FEED_PERF = re.compile(
+    r"(\d+) frames: feed CPU ([\d.,]+) ms/frame"
+    r"[^\n]*?([\d.,]+) fps"
+)
 # "cost: 7.41 ms total = 7.23 ms model", then wilsjo2's
 # "elapsed: 6.07 ms total, 5.91 ms model" (#168, #311) - the word and the
 # joiner are the fork's to change
-OPTI_COST = re.compile(r"DLSS-NR (?:cost|elapsed):\s*([\d.,]+) ms total"
-                       r"(?:\s*[=,]\s*([\d.,]+) ms model)?")
+OPTI_COST = re.compile(
+    r"DLSS-NR (?:cost|elapsed):\s*([\d.,]+) ms total"
+    r"(?:\s*[=,]\s*([\d.,]+) ms model)?"
+)
 
 
 @dataclass
 class Measured:
     """What one session actually cost."""
+
     route: str
     resolution: int
     fps: float | None = None
@@ -100,17 +106,18 @@ class Measured:
 @dataclass
 class Cost:
     """What the model costs at one work area, in this game, on this card."""
+
     resolution: int
     model_ms: float
     fps: float | None = None
-    played: bool = False         # this row is a session, not arithmetic
+    played: bool = False  # this row is a session, not arithmetic
 
 
 @dataclass
 class Suggestion:
     resolution: int
     lines: list[str] = field(default_factory=list)
-    exact: bool = False          # solved from two sessions, not stepped
+    exact: bool = False  # solved from two sessions, not stepped
 
 
 def _num(s: str) -> float | None:
@@ -136,8 +143,9 @@ def _median(xs: list[float]) -> float:
     return xs[n // 2] if n % 2 else (xs[n // 2 - 1] + xs[n // 2]) / 2
 
 
-def measure(text_feed: str, text_opti: str, route: str,
-            resolution: int) -> Measured | None:
+def measure(
+    text_feed: str, text_opti: str, route: str, resolution: int
+) -> Measured | None:
     """Read one session out of the logs already trimmed to its last run.
 
     The caller passes the text because the log readers, the session
@@ -145,26 +153,39 @@ def measure(text_feed: str, text_opti: str, route: str,
     there is no reason to have a second copy of them here.
     """
     if route == "optiscaler":
-        costs = [c for c in (_num(m.group(2) or m.group(1))
-                             for m in OPTI_COST.finditer(text_opti or ""))
-                 if c is not None]
+        costs = [
+            c
+            for c in (
+                _num(m.group(2) or m.group(1))
+                for m in OPTI_COST.finditer(text_opti or "")
+            )
+            if c is not None
+        ]
         if not costs:
             return None
-        return Measured(route=route, resolution=resolution,
-                        model_ms=_median(costs), frames=len(costs),
-                        source="the model's own cost lines")
+        return Measured(
+            route=route,
+            resolution=resolution,
+            model_ms=_median(costs),
+            frames=len(costs),
+            source="the model's own cost lines",
+        )
     m = None
     for m in FEED_PERF.finditer(text_feed or ""):
-        pass                    # the settled rate, not the loading screen
+        pass  # the settled rate, not the loading screen
     if not m:
         return None
     fps = _num(m.group(3))
     frames = _num(m.group(1))
     if fps is None or frames is None:
         return None
-    return Measured(route=route, resolution=resolution,
-                    fps=fps, frames=int(frames),
-                    source="the feed's frame-rate line")
+    return Measured(
+        route=route,
+        resolution=resolution,
+        fps=fps,
+        frames=int(frames),
+        source="the feed's frame-rate line",
+    )
 
 
 # A config written this long after the log stopped is a config written for
@@ -187,6 +208,7 @@ def written_after(install_dir, route: str, log_path) -> bool:
     played at - then published.
     """
     from pathlib import Path as _P
+
     try:
         cfg = _P(install_dir) / config_name(route)
         return cfg.stat().st_mtime > _P(log_path).stat().st_mtime + CONFIG_GRACE
@@ -201,21 +223,18 @@ def ran_at_exact(install_dir, route: str) -> int | None:
     - see ran_at() for why the difference matters now.
     """
     from pathlib import Path as _P
+
     d = _P(install_dir)
     try:
         if route == "optiscaler":
-            txt = (d / "OptiScaler.ini").read_text(encoding="utf8",
-                                                   errors="replace")
-            m = re.search(r"^\s*WorkingScale\s*=\s*([\d.,]+)", txt,
-                          re.M | re.I)
+            txt = (d / "OptiScaler.ini").read_text(encoding="utf8", errors="replace")
+            m = re.search(r"^\s*WorkingScale\s*=\s*([\d.,]+)", txt, re.M | re.I)
             v = _num(m.group(1)) if m else None
             if v is not None:
                 return _clamp(v * 100)
         else:
-            txt = (d / "dlss5-feed.cfg").read_text(encoding="utf8",
-                                                   errors="replace")
-            m = re.search(r"^\s*work_resolution\s*=\s*([\d.,]+)", txt,
-                          re.M | re.I)
+            txt = (d / "dlss5-feed.cfg").read_text(encoding="utf8", errors="replace")
+            m = re.search(r"^\s*work_resolution\s*=\s*([\d.,]+)", txt, re.M | re.I)
             v = _num(m.group(1)) if m else None
             if v is not None:
                 return _clamp(v)
@@ -245,8 +264,7 @@ def _key(install_dir) -> str:
 def history(install_dir) -> list[dict]:
     all_ = prefs.get(HISTORY_KEY) or {}
     rows = all_.get(_key(install_dir))
-    return [r for r in (rows if isinstance(rows, list) else [])
-            if isinstance(r, dict)]
+    return [r for r in (rows if isinstance(rows, list) else []) if isinstance(r, dict)]
 
 
 def remember(install_dir, m: Measured) -> None:
@@ -258,25 +276,40 @@ def remember(install_dir, m: Measured) -> None:
     same work area, and the two-point solve quietly lost a leg.
     """
     all_ = dict(prefs.get(HISTORY_KEY) or {})
-    rows = [r for r in (all_.get(_key(install_dir)) or [])
-            if isinstance(r, dict)
-            and not (r.get("resolution") == m.resolution
-                     and (r.get("route") or m.route) == m.route)]
-    rows.append({"resolution": m.resolution, "fps": m.fps,
-                 "model_ms": m.model_ms, "route": m.route,
-                 "at": int(time.time())})
+    rows = [
+        r
+        for r in (all_.get(_key(install_dir)) or [])
+        if isinstance(r, dict)
+        and not (
+            r.get("resolution") == m.resolution
+            and (r.get("route") or m.route) == m.route
+        )
+    ]
+    rows.append(
+        {
+            "resolution": m.resolution,
+            "fps": m.fps,
+            "model_ms": m.model_ms,
+            "route": m.route,
+            "at": int(time.time()),
+        }
+    )
     all_[_key(install_dir)] = rows[-MAX_SAMPLES:]
     if len(all_) > MAX_GAMES:
+
         def newest(item):
             # item[1] is whatever is in the file under that game's key.
             # Same file, same junk: settings.json is read back off a disk,
             # and a raise here happens inside the diagnosis.
-            seen = [int(r["at"])
-                    for r in (item[1] if isinstance(item[1], list) else [])
-                    if isinstance(r, dict)
-                    and isinstance(r.get("at"), (int, float))
-                    and not isinstance(r.get("at"), bool)]
+            seen = [
+                int(r["at"])
+                for r in (item[1] if isinstance(item[1], list) else [])
+                if isinstance(r, dict)
+                and isinstance(r.get("at"), (int, float))
+                and not isinstance(r.get("at"), bool)
+            ]
             return max(seen, default=0)
+
         all_ = dict(sorted(all_.items(), key=newest)[-MAX_GAMES:])
     prefs.set_(HISTORY_KEY, all_)
 
@@ -312,8 +345,9 @@ def _solve(points: list[tuple[int, float]]) -> tuple[float, float] | None:
     return base, k
 
 
-def split(rows: list[dict],
-          latest: Measured | None) -> tuple[float | None, float] | None:
+def split(
+    rows: list[dict], latest: Measured | None
+) -> tuple[float | None, float] | None:
     """(base ms, model ms at 100%) for this game, or None.
 
     `base` is the part of the frame the work area does not touch. It is
@@ -358,8 +392,7 @@ def _points(rows: list[dict], route: str = "") -> list[tuple[int, float]]:
     return sorted(out.items())
 
 
-def costs(rows: list[dict], latest: Measured | None,
-          areas=SHOWN_AREAS) -> list[Cost]:
+def costs(rows: list[dict], latest: Measured | None, areas=SHOWN_AREAS) -> list[Cost]:
     """What each work area costs, from the split. Empty when there is none."""
     got = split(rows, latest)
     if not got or latest is None:
@@ -368,9 +401,14 @@ def costs(rows: list[dict], latest: Measured | None,
     out = []
     for r in sorted({_clamp(x) for x in (*areas, latest.resolution)}):
         ms = k * (r / 100.0) ** 2
-        out.append(Cost(r, ms, (1000.0 / (base + ms)) if base else None,
-                        played=(bool(latest.resolution)
-                                and r == _clamp(latest.resolution))))
+        out.append(
+            Cost(
+                r,
+                ms,
+                (1000.0 / (base + ms)) if base else None,
+                played=(bool(latest.resolution) and r == _clamp(latest.resolution)),
+            )
+        )
     return out
 
 
@@ -402,16 +440,20 @@ def cost_lines(rows: list[dict], latest: Measured | None) -> list[str]:
             line += "   (this session)"
         out.append(line)
     if table[0].fps is None:
-        out.append("this route writes down what the model cost but not "
-                   "your frame rate, so there is no fps here - only the "
-                   "cost of the dial itself.")
+        out.append(
+            "this route writes down what the model cost but not "
+            "your frame rate, so there is no fps here - only the "
+            "cost of the dial itself."
+        )
     if not getattr(latest, "from_config", True):
         # The row marked "(this session)" is the slider's number, not the
         # add-on's. Said here, because the table otherwise reads as a
         # measurement of a setting nobody confirmed.
-        out.append("the work area above is the slider's: the add-on's own "
-                   "config could not be read, so which setting this session "
-                   "ran at is not certain.")
+        out.append(
+            "the work area above is the slider's: the add-on's own "
+            "config could not be read, so which setting this session "
+            "ran at is not certain."
+        )
     return out
 
 
@@ -451,8 +493,13 @@ def shared(rows: list[dict], latest: Measured | None) -> dict:
     return out if len(out) > 1 else {}
 
 
-def suggest(rows: list[dict], target_fps: float, current: int,
-            route: str, latest: Measured | None = None) -> Suggestion | None:
+def suggest(
+    rows: list[dict],
+    target_fps: float,
+    current: int,
+    route: str,
+    latest: Measured | None = None,
+) -> Suggestion | None:
     """The resolution to run next, and why - or None with nothing to say."""
     if not target_fps or not latest:
         return None
@@ -472,27 +519,36 @@ def suggest(rows: list[dict], target_fps: float, current: int,
                 # suggestion stays where it is, too: offering "set it to
                 # 25%" under a sentence saying the dial is not the problem
                 # is the tool arguing with itself.
-                return Suggestion(current, [
-                    f"{now_fps:.0f} fps at {latest.resolution}%. Even at the "
-                    f"smallest work area this game does not reach "
-                    f"{target_fps:.0f} fps here - about "
-                    f"{1000.0 / base:.0f} fps with everything the work area "
-                    f"drives taken out - so the work area is not what is "
-                    f"holding it back.",
-                ])
+                return Suggestion(
+                    current,
+                    [
+                        f"{now_fps:.0f} fps at {latest.resolution}%. Even at the "
+                        f"smallest work area this game does not reach "
+                        f"{target_fps:.0f} fps here - about "
+                        f"{1000.0 / base:.0f} fps with everything the work area "
+                        f"drives taken out - so the work area is not what is "
+                        f"holding it back.",
+                    ],
+                )
             want = _clamp(100.0 * (head / k) ** 0.5)
-            return Suggestion(want, [
-                f"{now_fps:.0f} fps at {latest.resolution}% "
-                f"({latest.frames} frames, from {latest.source}).",
-                f"Two sessions at different work areas are enough to split "
-                f"the frame: {base:.1f} ms the work area does not touch, "
-                f"{k:.1f} ms that grows with it - the model and the feed "
-                f"together - at full size.",
-                (f"{want}% should land on {target_fps:.0f} fps."
-                 if want != current else
-                 f"{current}% is already the right setting for "
-                 f"{target_fps:.0f} fps."),
-            ], exact=True)
+            return Suggestion(
+                want,
+                [
+                    f"{now_fps:.0f} fps at {latest.resolution}% "
+                    f"({latest.frames} frames, from {latest.source}).",
+                    f"Two sessions at different work areas are enough to split "
+                    f"the frame: {base:.1f} ms the work area does not touch, "
+                    f"{k:.1f} ms that grows with it - the model and the feed "
+                    f"together - at full size.",
+                    (
+                        f"{want}% should land on {target_fps:.0f} fps."
+                        if want != current
+                        else f"{current}% is already the right setting for "
+                        f"{target_fps:.0f} fps."
+                    ),
+                ],
+                exact=True,
+            )
         # Not solvable: either one session, or two that cannot be told
         # apart (too close together, or disagreeing about the physics).
         # Saying "first measurement" in the second case is false, and the
@@ -505,22 +561,32 @@ def suggest(rows: list[dict], target_fps: float, current: int,
             want = _clamp(current + FIRST_STEP)
             why = f"comfortably above {target_fps:.0f}"
         else:
-            return Suggestion(current, [
-                f"{now_fps:.0f} fps at {current}% - that is your target. "
-                f"Nothing to change."])
+            return Suggestion(
+                current,
+                [
+                    f"{now_fps:.0f} fps at {current}% - that is your target. "
+                    f"Nothing to change."
+                ],
+            )
         seen = len(_points(rows, latest.route))
-        return Suggestion(want, [
-            f"{now_fps:.0f} fps at {latest.resolution}% "
-            f"({latest.frames} frames), {why}.",
-            (f"One session is not enough to work the setting out, so this is "
-             f"a step rather than a calculation: try {want}%. A second "
-             f"session at a different work area is what the arithmetic "
-             f"needs." if seen <= 1 else
-             f"The sessions recorded for this game are too alike to split "
-             f"the frame "
-             f"between the model and everything else, so this is a step "
-             f"rather than a calculation: try {want}%."),
-        ])
+        return Suggestion(
+            want,
+            [
+                f"{now_fps:.0f} fps at {latest.resolution}% "
+                f"({latest.frames} frames), {why}.",
+                (
+                    f"One session is not enough to work the setting out, so this is "
+                    f"a step rather than a calculation: try {want}%. A second "
+                    f"session at a different work area is what the arithmetic "
+                    f"needs."
+                    if seen <= 1
+                    else f"The sessions recorded for this game are too alike to split "
+                    f"the frame "
+                    f"between the model and everything else, so this is a step "
+                    f"rather than a calculation: try {want}%."
+                ),
+            ],
+        )
 
     if latest.model_ms:
         # No frame rate in this route's log - only what the model itself
@@ -531,21 +597,27 @@ def suggest(rows: list[dict], target_fps: float, current: int,
         lines = [
             f"The model cost {latest.model_ms:.1f} ms a frame at "
             f"{latest.resolution}% "
-            + (f"({latest.frames} frames measured)." if latest.frames != 1
-               else "(one frame measured - play a little longer for a "
-                    "steadier number)."),
+            + (
+                f"({latest.frames} frames measured)."
+                if latest.frames != 1
+                else "(one frame measured - play a little longer for a "
+                "steadier number)."
+            ),
             f"At {target_fps:.0f} fps a frame is {target_ms:.1f} ms, so the "
             f"model was taking {share:.0f}% of it.",
         ]
         if want == current:
-            lines.append(f"{current}% keeps it near a quarter of the frame, "
-                         f"which is the rule of thumb here - nothing to "
-                         f"change.")
+            lines.append(
+                f"{current}% keeps it near a quarter of the frame, "
+                f"which is the rule of thumb here - nothing to "
+                f"change."
+            )
         else:
             lines.append(
                 f"{want}% brings it to about {budget:.1f} ms, a quarter of "
                 f"the frame. This route logs the model's cost but not your "
                 f"frame rate, so that share is a rule of thumb, not a "
-                f"measurement of the fps you will get.")
+                f"measurement of the fps you will get."
+            )
         return Suggestion(want, lines)
     return None

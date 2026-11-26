@@ -6,6 +6,7 @@ game; this page is everything else it can do. Every listing (cameras,
 screens) and every download or render runs on a worker - the 1.9 window
 listed screens on the Tk thread.
 """
+
 from __future__ import annotations
 
 import threading
@@ -18,7 +19,7 @@ from .. import log, sources, video
 
 class VideoControl:
     def _video_init(self) -> None:
-        self.video_busy = ""          # "", "preparing", "downloading", "rendering"
+        self.video_busy = ""  # "", "preparing", "downloading", "rendering"
         self.video_progress: tuple | None = None
         self._vprog_job = None
         self.cameras: list[str] | None = None
@@ -40,12 +41,19 @@ class VideoControl:
         known = video.known()
         folder = known.install_dir if known else video.default_dir()
         if not known:
-            if not self.shell.ask("set up the player",
-                                  f"The video player ({video.PLAYER}, portable) goes into:\n\n{folder}\n\n"
-                                  f"Nothing is written anywhere else.", "use this folder", "choose another"):
+            if not self.shell.ask(
+                "set up the player",
+                f"The video player ({video.PLAYER}, portable) goes into:\n\n{folder}\n\n"
+                f"Nothing is written anywhere else.",
+                "use this folder",
+                "choose another",
+            ):
                 from tkinter import filedialog
-                d = filedialog.askdirectory(title="folder for the video player (a new, empty one is fine)",
-                                            parent=self.root)
+
+                d = filedialog.askdirectory(
+                    title="folder for the video player (a new, empty one is fine)",
+                    parent=self.root,
+                )
                 if not d:
                     return
                 folder = Path(d)
@@ -56,14 +64,18 @@ class VideoControl:
 
         def work():
             try:
-                g = video.prepare(folder, on_prog=lambda p, m: self.q.put(("vprog", (p, m))),
-                                  on_log=lambda t: self.q.put(("log", t)))
+                g = video.prepare(
+                    folder,
+                    on_prog=lambda p, m: self.q.put(("vprog", (p, m))),
+                    on_log=lambda t: self.q.put(("log", t)),
+                )
                 self.q.put(("video_ready", g))
             except (sources.RateLimited, sources.Unavailable) as e:
                 self.q.put(("vfail", str(e)))
             except Exception:
                 log.exception("setting up the video player")
                 self.q.put(("vfail", traceback.format_exc()))
+
         threading.Thread(target=work, daemon=True).start()
         self.refresh("video", soft=True)
 
@@ -84,6 +96,7 @@ class VideoControl:
             except Exception:
                 pass
             self.refresh("video", soft=True)
+
         try:
             self._vprog_job = self.root.after(100, paint)
         except Exception:
@@ -94,7 +107,9 @@ class VideoControl:
         self.video_busy, self.video_progress = "", None
         text = str(text)
         self.write(text, "err")
-        self.shell.error("video", text.strip().splitlines()[-1] if text.strip() else "it stopped")
+        self.shell.error(
+            "video", text.strip().splitlines()[-1] if text.strip() else "it stopped"
+        )
         if "Traceback" in text:
             self.offer_crash_report()
         self.refresh("video")
@@ -132,8 +147,11 @@ class VideoControl:
             return
         self.video_url = u
         if not g.installed:
-            self.write("!! dlss 5 is not installed into the player yet - install it first; the link still plays, "
-                       "but plain", "warn")
+            self.write(
+                "!! dlss 5 is not installed into the player yet - install it first; the link still plays, "
+                "but plain",
+                "warn",
+            )
         try:
             video.play_url(g.install_dir, u)
             self.write(f"> playing {u[:90]}", "ok")
@@ -146,9 +164,15 @@ class VideoControl:
         if not g:
             return
         from tkinter import filedialog
-        f = filedialog.askopenfilename(title="video to play through DLSS 5", parent=self.root,
-                                       filetypes=[("video", "*.mp4 *.mkv *.mov *.webm *.avi *.m4v *.ts *.wmv"),
-                                                  ("all files", "*.*")])
+
+        f = filedialog.askopenfilename(
+            title="video to play through DLSS 5",
+            parent=self.root,
+            filetypes=[
+                ("video", "*.mp4 *.mkv *.mov *.webm *.avi *.m4v *.ts *.wmv"),
+                ("all files", "*.*"),
+            ],
+        )
         if not f:
             return
         try:
@@ -175,17 +199,30 @@ class VideoControl:
         def work():
             try:
                 if not video.has_ffmpeg(folder):
-                    self.q.put(("log", "      fetching ffmpeg once (170 MB) - youtube serves video and audio "
-                                       "apart, it joins them"))
-                    video.ensure_ffmpeg(folder, on_prog=lambda p, m: self.q.put(("vprog", (p, m))),
-                                        on_log=lambda t: self.q.put(("log", t)))
-                f_ = video.download(folder, u, full_quality=full,
-                                    on_prog=lambda p, m: self.q.put(("vprog", (p, m))),
-                                    on_log=lambda t: self.q.put(("log", t)))
+                    self.q.put(
+                        (
+                            "log",
+                            "      fetching ffmpeg once (170 MB) - youtube serves video and audio "
+                            "apart, it joins them",
+                        )
+                    )
+                    video.ensure_ffmpeg(
+                        folder,
+                        on_prog=lambda p, m: self.q.put(("vprog", (p, m))),
+                        on_log=lambda t: self.q.put(("log", t)),
+                    )
+                f_ = video.download(
+                    folder,
+                    u,
+                    full_quality=full,
+                    on_prog=lambda p, m: self.q.put(("vprog", (p, m))),
+                    on_log=lambda t: self.q.put(("log", t)),
+                )
                 self.q.put(("vdone", ("downloaded", f_)))
             except Exception as e:
                 log.exception("downloading a video")
                 self.q.put(("vfail", str(e)))
+
         threading.Thread(target=work, daemon=True).start()
         self.refresh("video", soft=True)
 
@@ -194,30 +231,47 @@ class VideoControl:
         if not g or self.video_busy:
             return
         if not g.installed:
-            self.shell.info("render", "Install first - the render uses the DLSS runtimes the install puts beside "
-                                      "the player.")
+            self.shell.info(
+                "render",
+                "Install first - the render uses the DLSS runtimes the install puts beside "
+                "the player.",
+            )
             return
         from tkinter import filedialog
-        f = filedialog.askopenfilename(title="video to render through DLSS 5", parent=self.root,
-                                       filetypes=[("video", "*.mp4 *.mkv *.mov *.webm *.avi *.m4v *.ts"),
-                                                  ("all files", "*.*")])
+
+        f = filedialog.askopenfilename(
+            title="video to render through DLSS 5",
+            parent=self.root,
+            filetypes=[
+                ("video", "*.mp4 *.mkv *.mov *.webm *.avi *.m4v *.ts"),
+                ("all files", "*.*"),
+            ],
+        )
         if not f:
             return
         folder, scale, style = g.install_dir, self.video_scale, self.video_style
         self.video_busy, self.video_progress = "rendering", (0, "starting")
         self.write("")
         self.write(f"=== render: {Path(f).name} ===", "head")
-        self.write("> this runs the model on every frame; a minute of 1080p takes a minute or two on an RTX 4060 Ti.")
+        self.write(
+            "> this runs the model on every frame; a minute of 1080p takes a minute or two on an RTX 4060 Ti."
+        )
 
         def work():
             try:
-                out = video.process(folder, Path(f), scale=scale, style=style,
-                                    on_prog=lambda p, m: self.q.put(("vprog", (p, m))),
-                                    on_log=lambda t: self.q.put(("log", t)))
+                out = video.process(
+                    folder,
+                    Path(f),
+                    scale=scale,
+                    style=style,
+                    on_prog=lambda p, m: self.q.put(("vprog", (p, m))),
+                    on_log=lambda t: self.q.put(("log", t)),
+                )
                 self.q.put(("vdone", ("rendered", out)))
             except Exception as e:
                 log.exception("rendering a video")
                 self.q.put(("vfail", str(e)))
+
         threading.Thread(target=work, daemon=True).start()
         self.refresh("video", soft=True)
 
@@ -237,17 +291,23 @@ class VideoControl:
 
     def video_folder(self, which: str) -> None:
         import webbrowser
+
         g = self._need_player()
         if not g:
             return
-        d = g.install_dir / (video.DOWNLOADS if which == "downloads" else video.PROCESSED)
+        d = g.install_dir / (
+            video.DOWNLOADS if which == "downloads" else video.PROCESSED
+        )
         d.mkdir(exist_ok=True)
         webbrowser.open(str(d))
 
     def video_toggle(self) -> None:
         if not video.toggle_nr():
-            self.shell.info("neural rendering", "The player is not running - open it and start a video first. F6 "
-                                                "inside the player does the same thing.")
+            self.shell.info(
+                "neural rendering",
+                "The player is not running - open it and start a video first. F6 "
+                "inside the player does the same thing.",
+            )
 
     # ------------------------------------------------------------ capture
     def list_sources(self) -> None:
@@ -266,6 +326,7 @@ class VideoControl:
             except Exception:
                 scr = []
             self.q.put(("sources", (cams, scr)))
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_sources(self, payload) -> None:
@@ -283,24 +344,33 @@ class VideoControl:
             return
         target = self.camera if kind == "webcam" else self.screen
         if not target:
-            self.shell.info(kind, "Nothing to capture was found." if kind == "screen" else
-                            "No camera was found - ffmpeg must be in tools/; one download fetches it.")
+            self.shell.info(
+                kind,
+                "Nothing to capture was found."
+                if kind == "screen"
+                else "No camera was found - ffmpeg must be in tools/; one download fetches it.",
+            )
             return
         folder, t0 = g.install_dir, time.time()
         self.write(f"> '{target}': starting the capture...")
 
         def work():
             try:
-                (video.start_webcam if kind == "webcam" else video.start_screen)(folder, target)
+                (video.start_webcam if kind == "webcam" else video.start_screen)(
+                    folder, target
+                )
                 self.q.put(("captured", (target, t0)))
             except Exception as e:
                 self.q.put(("capfail", str(e)))
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_captured(self, payload) -> None:
         target, t0 = payload
         self.capturing = target
-        self.write(f"> '{target}' started - checking in 10 s whether the feed is processing it...")
+        self.write(
+            f"> '{target}' started - checking in 10 s whether the feed is processing it..."
+        )
         g = video.known()
         if g is None:
             return
@@ -312,13 +382,21 @@ class VideoControl:
             if sent:
                 self.write(f"> capture: {sent} frames sent to the player so far")
             if frames >= 3:
-                self.write(f"> '{target}' through DLSS 5: yes - {frames} frames processed so far"
-                           + (", motion alive" if mv else "") + ". F6 toggles it.", "ok")
+                self.write(
+                    f"> '{target}' through DLSS 5: yes - {frames} frames processed so far"
+                    + (", motion alive" if mv else "")
+                    + ". F6 toggles it.",
+                    "ok",
+                )
                 self.shell.status(f"'{target}' through DLSS 5: yes")
             else:
-                self.write("!! the feed has not processed any frames yet. if the player shows the picture, give it "
-                           "a few seconds; if it shows nothing, another app may hold the camera, or the window is "
-                           "minimised.", "warn")
+                self.write(
+                    "!! the feed has not processed any frames yet. if the player shows the picture, give it "
+                    "a few seconds; if it shows nothing, another app may hold the camera, or the window is "
+                    "minimised.",
+                    "warn",
+                )
+
         self.root.after(10000, verify)
         self.refresh("video", soft=True)
 

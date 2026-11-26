@@ -8,6 +8,7 @@ like this. The user gets a notice and a button that opens the release page.
 The check is a single request, runs in the background, and failing is not an
 error: no internet simply means no notice.
 """
+
 from __future__ import annotations
 
 import re

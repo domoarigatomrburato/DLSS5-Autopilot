@@ -26,6 +26,7 @@ the same on any machine - the driver comes from each report's own header
 rather than from the card in this PC, and the standalone add-on's log is
 read from the report instead of from this machine's AppData.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -40,8 +41,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE))
 
-import replay_report                       # noqa: E402
-from core import diagnose                  # noqa: E402
+import replay_report  # noqa: E402
+from core import diagnose  # noqa: E402
 
 REPORTS = HERE / "reports"
 BASELINE = HERE / "verdict_baseline.json"
@@ -80,8 +81,9 @@ def _answer(path: Path) -> dict:
     # wrote ever loaded" - unreproducible, because the reason was on the
     # disk and the replay put it back (#43, #194).
     state = replay_report.folder_state(text)
-    d = replay_report.build(route, api, exe, logs, bitness, state=state,
-                            extra_manifest=_finished(text))
+    d = replay_report.build(
+        route, api, exe, logs, bitness, state=state, extra_manifest=_finished(text)
+    )
     try:
         # What the diagnosis asks the MACHINE for - the standalone log's
         # path, the Vulkan layer registry, the driver version - comes out of
@@ -128,8 +130,9 @@ def reproduction(new: dict) -> tuple[int, int, list[str]]:
     same, total, off = 0, 0, []
     for p in sorted(REPORTS.glob("*.txt")):
         n = p.stem.lstrip("0") or p.stem
-        said = printed_verdict(p.read_text(encoding="utf8", errors="replace")
-                               .replace("\r\n", "\n"))
+        said = printed_verdict(
+            p.read_text(encoding="utf8", errors="replace").replace("\r\n", "\n")
+        )
         if not said or n not in new:
             continue
         total += 1
@@ -149,7 +152,7 @@ def answers(only: str = "") -> dict:
             continue
         try:
             out[n] = _answer(p)
-        except Exception as e:                     # a crash IS the finding
+        except Exception as e:  # a crash IS the finding
             out[n] = {"error": f"{type(e).__name__}: {e}"}
     return out
 
@@ -158,8 +161,9 @@ def _printed_for(n: str) -> str:
     """The verdict report `n` says the tool printed, or ""."""
     for p in (REPORTS / f"{n}.txt", REPORTS / f"{n.zfill(3)}.txt"):
         if p.is_file():
-            return printed_verdict(p.read_text(encoding="utf8", errors="replace")
-                                   .replace("\r\n", "\n"))
+            return printed_verdict(
+                p.read_text(encoding="utf8", errors="replace").replace("\r\n", "\n")
+            )
     return ""
 
 
@@ -179,8 +183,10 @@ def _diff(old: dict, new: dict) -> list[str]:
             said = _printed_for(n)
             if said and said != b.get("verdict"):
                 lines.append(f"       !! the machine printed: {said}")
-                lines.append("          a rule changed since, or the report does "
-                             "not carry what decided it")
+                lines.append(
+                    "          a rule changed since, or the report does "
+                    "not carry what decided it"
+                )
             continue
         if b is None:
             lines.append(f"  GONE #{n}")
@@ -208,9 +214,12 @@ def main() -> int:
     ap.add_argument("--save", action="store_true")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--only", default="")
-    ap.add_argument("--reproduce", action="store_true",
-                    help="compare the replay against the verdict each report "
-                         "says the tool printed on the reporter's machine")
+    ap.add_argument(
+        "--reproduce",
+        action="store_true",
+        help="compare the replay against the verdict each report "
+        "says the tool printed on the reporter's machine",
+    )
     a = ap.parse_args()
 
     if not REPORTS.is_dir() or not any(REPORTS.glob("*.txt")):
@@ -221,10 +230,14 @@ def main() -> int:
     if a.reproduce:
         same, total, off = reproduction(new)
         print("=" * 78)
-        print(f"REPLAY vs THE MACHINE: {same} of {total} report(s) that carry "
-              f"a printed verdict come back the same")
-        print(f"(the floor is {REPRODUCTION_FLOOR}: this may rise, and a "
-              f"fall means the replay drifted from the tool)")
+        print(
+            f"REPLAY vs THE MACHINE: {same} of {total} report(s) that carry "
+            f"a printed verdict come back the same"
+        )
+        print(
+            f"(the floor is {REPRODUCTION_FLOOR}: this may rise, and a "
+            f"fall means the replay drifted from the tool)"
+        )
         print("=" * 78)
         for ln in off:
             print(ln)
@@ -240,8 +253,9 @@ def main() -> int:
         return 0
 
     if a.save:
-        BASELINE.write_text(json.dumps(new, indent=1, sort_keys=True) + "\n",
-                            encoding="utf8")
+        BASELINE.write_text(
+            json.dumps(new, indent=1, sort_keys=True) + "\n", encoding="utf8"
+        )
         print(f"recorded {len(new)} answers in {BASELINE.name}")
         return 0
 
@@ -259,14 +273,18 @@ def main() -> int:
     if not lines:
         print("  nothing moved: every report still gets the answer it got.")
         return 1 if crashed else 0
-    print(f"  {len([x for x in lines if x.startswith('  #')])} report(s) answer "
-          f"differently than they did:")
+    print(
+        f"  {len([x for x in lines if x.startswith('  #')])} report(s) answer "
+        f"differently than they did:"
+    )
     print()
     for ln in lines:
         print(ln)
     print()
-    print("If every one of those was meant, record them: "
-          "python _tools\\verdict_check.py --save")
+    print(
+        "If every one of those was meant, record them: "
+        "python _tools\\verdict_check.py --save"
+    )
     return 1
 
 

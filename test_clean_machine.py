@@ -5,6 +5,7 @@ The point is to measure completeness rather than assume it.
 
 Does not touch the real cache; uses a temporary one.
 """
+
 import shutil
 import sys
 import tempfile
@@ -17,9 +18,11 @@ except Exception:
     pass
 
 from core import games, installer, net, pe, prefs, reshade_ini, feedcfg, gpu
+
 # Installs here run for real and this machine may have two GPUs: Windows'
 # graphics preference goes to a dict, never the machine's own HKCU.
 from core import gpupref as _gpupref  # noqa: E402
+
 _gpupref.backend = _gpupref.Memory()
 # ...and runs as a one-GPU machine, whatever this one has: a check that
 # needs two GPUs says so itself.
@@ -27,8 +30,8 @@ _gpupref.other_gpu = lambda: ""
 
 # --- simulate a clean machine --------------------------------
 TMP_CACHE = Path(tempfile.mkdtemp(prefix="sifir_cache_"))
-net.CACHE = TMP_CACHE                       # empty cache
-prefs.find_renodx = lambda: (None, [])      # no local renodx
+net.CACHE = TMP_CACHE  # empty cache
+prefs.find_renodx = lambda: (None, [])  # no local renodx
 print(f"temp cache      : {TMP_CACHE}")
 print("local renodx    : none (a fresh machine will not have one)")
 print()
@@ -45,7 +48,10 @@ def build(src: Path, name: str, nested: bool) -> Path:
 
 
 def check(label: str, cond: bool, detail: str = "") -> bool:
-    print(f"   {'OK  ' if cond else 'MISSING'}  {label}" + (f"   {detail}" if detail else ""))
+    print(
+        f"   {'OK  ' if cond else 'MISSING'}  {label}"
+        + (f"   {detail}" if detail else "")
+    )
     return cond
 
 
@@ -79,17 +85,28 @@ def run(label: str, src: Path, exename: str, nested: bool) -> bool:
     #    the game's architecture can load.
     if proxy == installer.VULKAN_LAYER:
         from core import dxvk, vulkan
-        good &= check("DXVK d3d9.dll beside the game",
-                      (idir / "d3d9.dll").is_file() and dxvk.is_dxvk(idir / "d3d9.dll"))
-        good &= check("DXVK bitness matches the game",
-                      pe.exe_bitness(idir / "d3d9.dll") == g.bitness)
-        good &= check(f"ReShade {g.bitness}-bit Vulkan layer registered",
-                      vulkan.registered_for(x64) is not None)
+
+        good &= check(
+            "DXVK d3d9.dll beside the game",
+            (idir / "d3d9.dll").is_file() and dxvk.is_dxvk(idir / "d3d9.dll"),
+        )
+        good &= check(
+            "DXVK bitness matches the game",
+            pe.exe_bitness(idir / "d3d9.dll") == g.bitness,
+        )
+        good &= check(
+            f"ReShade {g.bitness}-bit Vulkan layer registered",
+            vulkan.registered_for(x64) is not None,
+        )
     else:
-        good &= check("ReShade proxy", (idir / proxy).is_file() and
-                      installer._is_reshade(idir / proxy), proxy)
-        good &= check("proxy bitness matches the game",
-                      pe.exe_bitness(idir / proxy) == g.bitness)
+        good &= check(
+            "ReShade proxy",
+            (idir / proxy).is_file() and installer._is_reshade(idir / proxy),
+            proxy,
+        )
+        good &= check(
+            "proxy bitness matches the game", pe.exe_bitness(idir / proxy) == g.bitness
+        )
 
     # 2) shader basliklari
     sh = idir / installer.SHADERS
@@ -103,15 +120,22 @@ def run(label: str, src: Path, exename: str, nested: bool) -> bool:
 
     # 4) LumeniteFX
     good &= check("lumenite_Kernel.fx", (sh / "lumenite_Kernel.fx").is_file())
-    good &= check("lumenite include", (sh / "include" / "lumenite_Helpers.fxh").is_file())
-    good &= check("bluenoise texture",
-                  (idir / installer.TEXTURES / "lumenite_bluenoise256.png").is_file())
+    good &= check(
+        "lumenite include", (sh / "include" / "lumenite_Helpers.fxh").is_file()
+    )
+    good &= check(
+        "bluenoise texture",
+        (idir / installer.TEXTURES / "lumenite_bluenoise256.png").is_file(),
+    )
 
     # 5) DLSS parcalari + GPU uyumu
     for f in (installer.RENODX, installer.DLSSNR, installer.DLSS):
         p = dl_dir / f
-        good &= check(f"{f}", p.is_file(),
-                      f"{p.stat().st_size/1048576:.0f} MB" if p.is_file() else "")
+        good &= check(
+            f"{f}",
+            p.is_file(),
+            f"{p.stat().st_size / 1048576:.0f} MB" if p.is_file() else "",
+        )
         if p.is_file():
             good &= check(f"  {f} 64-bit", pe.exe_bitness(p) == 64)
     _, sm = gpu.detect()
@@ -121,29 +145,41 @@ def run(label: str, src: Path, exename: str, nested: bool) -> bool:
     # 6) 32-bit / DX9 ek parcalari
     if not x64:
         h = idir / installer.HOST_DIR
-        good &= check("host64/dlss5-feed-host64.exe", (h / installer.FEEDER_HOST).is_file())
-        good &= check("host64/dxgi.dll 64-bit",
-                      (h / "dxgi.dll").is_file() and pe.exe_bitness(h / "dxgi.dll") == 64)
+        good &= check(
+            "host64/dlss5-feed-host64.exe", (h / installer.FEEDER_HOST).is_file()
+        )
+        good &= check(
+            "host64/dxgi.dll 64-bit",
+            (h / "dxgi.dll").is_file() and pe.exe_bitness(h / "dxgi.dll") == 64,
+        )
         good &= check("host64/ReShade.ini", (h / "ReShade.ini").is_file())
     if g.api == "DX9":
         # dgVoodoo2 is gone since 1.6.0 - DirectX 9 is DXVK now, always.
         good &= check("d3d9.dll (DXVK)", (idir / "d3d9.dll").is_file())
         good &= check("d3d9.dll 32-bit", pe.exe_bitness(idir / "d3d9.dll") == 32)
-        good &= check("no dgVoodoo left behind",
-                      not (idir / "dgVoodoo.conf").is_file()
-                      and not (idir / "dgVoodooCpl.exe").is_file())
+        good &= check(
+            "no dgVoodoo left behind",
+            not (idir / "dgVoodoo.conf").is_file()
+            and not (idir / "dgVoodooCpl.exe").is_file(),
+        )
 
     # 7) ayar dosyalari
     ini = reshade_ini.Ini.load(idir / "ReShade.ini")
     pre = reshade_ini.Ini.load(idir / "ReShadePreset.ini")
-    good &= check("ReShade.ini DLSS5_MV_PROVIDER=3",
-                  ini.get("GENERAL", "PreprocessorDefinitions") == "DLSS5_MV_PROVIDER=3")
-    good &= check("ReShade.ini AddonPath",
-                  ini.get("ADDON", "AddonPath") == chr(92).join([".", ""]))
+    good &= check(
+        "ReShade.ini DLSS5_MV_PROVIDER=3",
+        ini.get("GENERAL", "PreprocessorDefinitions") == "DLSS5_MV_PROVIDER=3",
+    )
+    good &= check(
+        "ReShade.ini AddonPath",
+        ini.get("ADDON", "AddonPath") == chr(92).join([".", ""]),
+    )
     techs = reshade_ini.split_list(pre.get("", "Techniques") or "")
-    good &= check("technique order (provider ON TOP)",
-                  techs == ["Lumenite_Kernel@lumenite_Kernel.fx",
-                            "DLSS5_Feed@DLSS5_Feed.fx"], str(techs))
+    good &= check(
+        "technique order (provider ON TOP)",
+        techs == ["Lumenite_Kernel@lumenite_Kernel.fx", "DLSS5_Feed@DLSS5_Feed.fx"],
+        str(techs),
+    )
     cfg = feedcfg.read(idir / feedcfg.NAME)
     good &= check("dlss5-feed.cfg", bool(cfg), f"{len(cfg)} keys")
     good &= check("  mode=2 (full DLSS)", cfg.get("mode") == "2")
@@ -154,8 +190,9 @@ def run(label: str, src: Path, exename: str, nested: bool) -> bool:
     # and listed this temp folder as a Vulkan game; deleting the folder
     # alone left both behind, and test_all then saw our layer as active.
     removed = installer.uninstall(g, on_log=lambda t: None)
-    good &= check("uninstall took its files back out", len(removed) > 0,
-                  f"{len(removed)} items")
+    good &= check(
+        "uninstall took its files back out", len(removed) > 0, f"{len(removed)} items"
+    )
     shutil.rmtree(root, ignore_errors=True)
     print(f"\n  RESULT: {'COMPLETE' if good else 'SOMETHING MISSING'}\n")
     return good
@@ -181,12 +218,20 @@ if __name__ == "__main__":
     print("-" * 76)
     print("NVIDIA's published runtimes")
     from core import sources, installer as _inst
+
     nv = sources.nvidia_dlss()
     if not nv:
-        results.append(("NVIDIA runtimes", check(
-            "NVIDIA's release tag could be read", False,
-            "the redirect did not answer - the mirror is still there, but "
-            "the publisher's builds would be missing from every dropdown")))
+        results.append(
+            (
+                "NVIDIA runtimes",
+                check(
+                    "NVIDIA's release tag could be read",
+                    False,
+                    "the redirect did not answer - the mirror is still there, but "
+                    "the publisher's builds would be missing from every dropdown",
+                ),
+            )
+        )
     else:
         print(f"  tag: {nv['dlss'][0]['tag']}")
         for fam in ("dlss", "dlssd", "dlssg"):
@@ -197,12 +242,21 @@ if __name__ == "__main__":
                 ok, why = _inst._is_win64_dll(got)
             except Exception as ex:
                 ok, why = False, str(ex)
-            results.append((f"NVIDIA {fam}", check(
-                f"{e['raw']} downloads and is a 64-bit Windows DLL", ok,
-                f"{got.stat().st_size:,} bytes" if ok and got else why)))
+            results.append(
+                (
+                    f"NVIDIA {fam}",
+                    check(
+                        f"{e['raw']} downloads and is a 64-bit Windows DLL",
+                        ok,
+                        f"{got.stat().st_size:,} bytes" if ok and got else why,
+                    ),
+                )
+            )
 
     print("=" * 76)
-    print(f"total downloaded: {net.cache_size()/1048576:.0f} MB  (from an empty cache)")
+    print(
+        f"total downloaded: {net.cache_size() / 1048576:.0f} MB  (from an empty cache)"
+    )
     for name, ok in results:
         print(f"   {'PASSED' if ok else 'FAILED'}  {name}")
     shutil.rmtree(TMP_CACHE, ignore_errors=True)

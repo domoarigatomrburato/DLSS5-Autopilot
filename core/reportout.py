@@ -10,6 +10,7 @@ available afterwards.
 
 Nothing is sent. The browser shows the text and the person submits it.
 """
+
 from __future__ import annotations
 
 import re
@@ -20,16 +21,16 @@ from pathlib import Path
 
 from . import log
 
-MAX_LOG = 4 << 20            # the end of any one log that goes into the zip
+MAX_LOG = 4 << 20  # the end of any one log that goes into the zip
 
 
 @dataclass
 class Delivery:
-    cut: bool                # the link carries only the start of the report
-    opened: bool             # the browser was started
-    clip_ok: bool            # the whole report is on the clipboard (read back)
-    saved: Path | None       # the whole report as a file, or None
-    text: str                # the one line the person reads
+    cut: bool  # the link carries only the start of the report
+    opened: bool  # the browser was started
+    clip_ok: bool  # the whole report is on the clipboard (read back)
+    saved: Path | None  # the whole report as a file, or None
+    text: str  # the one line the person reads
 
 
 def reports_dir() -> Path:
@@ -68,6 +69,7 @@ def save_zip(body: str, install_dir, name: str = "") -> Path | None:
     """The report and the logs it was read from, in one zip on this PC.
     Goes nowhere until the person attaches it. None when it cannot be made."""
     from . import diagnose
+
     try:
         d = reports_dir()
         d.mkdir(parents=True, exist_ok=True)
@@ -108,21 +110,30 @@ def line_for(cut: bool, opened: bool, clip_ok: bool, saved: Path | None) -> str:
     """The one line that says what happened. Only what is true: a paste is
     asked for only when the clipboard really holds the report."""
     if opened and not cut:
-        return "the report is open on github with everything in it - read it, then submit"
+        return (
+            "the report is open on github with everything in it - read it, then submit"
+        )
     if opened and cut:
         if clip_ok:
-            return ("report open on github with its start - the whole report is on your "
-                    "clipboard: click the box, Ctrl+A, Ctrl+V")
-        return ("github has only the start of the report and the clipboard did not take it - "
-                "use 'save zip' and attach it to the issue")
+            return (
+                "report open on github with its start - the whole report is on your "
+                "clipboard: click the box, Ctrl+A, Ctrl+V"
+            )
+        return (
+            "github has only the start of the report and the clipboard did not take it - "
+            "use 'save zip' and attach it to the issue"
+        )
     if clip_ok:
         return "no browser opened - the report is on your clipboard, paste it into a new issue on github"
-    return ("no browser opened and the clipboard did not take it - use 'save zip' "
-            "and attach it to a new issue on github")
+    return (
+        "no browser opened and the clipboard did not take it - use 'save zip' "
+        "and attach it to a new issue on github"
+    )
 
 
-def deliver(body: str, url: str, cut: bool, clip, opener, name: str = "",
-            link=None) -> Delivery:
+def deliver(
+    body: str, url: str, cut: bool, clip, opener, name: str = "", link=None
+) -> Delivery:
     """Save, copy, open - in that order - and say which of them worked.
 
     `clip(text) -> bool` puts the text on the clipboard and reports whether
@@ -144,5 +155,10 @@ def deliver(body: str, url: str, cut: bool, clip, opener, name: str = "",
         opened = bool(opener(url))
     except Exception:
         opened = False
-    return Delivery(cut=cut, opened=opened, clip_ok=clip_ok, saved=saved,
-                    text=line_for(cut, opened, clip_ok, saved))
+    return Delivery(
+        cut=cut,
+        opened=opened,
+        clip_ok=clip_ok,
+        saved=saved,
+        text=line_for(cut, opened, clip_ok, saved),
+    )

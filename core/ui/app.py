@@ -5,6 +5,7 @@ Every long job runs on a worker thread and answers through `self.q` as
 so a message with no handler is a bug the log names instead of a silent
 drop. Nothing in this file walks a folder on the Tk thread.
 """
+
 from __future__ import annotations
 
 import queue
@@ -35,13 +36,28 @@ REPO_URL = f"https://github.com/{update.REPO}"
 # of these that raises still ends the job; any other handler that raises (a
 # progress line, a cover landing) runs while the job's worker is still
 # writing, and clearing `busy` there let a second install start beside it.
-JOB_ENDS = frozenset(("installed", "fail", "autopilot", "autofail", "removed", "preview",
-                      "components", "diagnosed", "diagfail", "updated_all", "dlssdone",
-                      "updfail", "swap"))
+JOB_ENDS = frozenset(
+    (
+        "installed",
+        "fail",
+        "autopilot",
+        "autofail",
+        "removed",
+        "preview",
+        "components",
+        "diagnosed",
+        "diagfail",
+        "updated_all",
+        "dlssdone",
+        "updfail",
+        "swap",
+    )
+)
 
 
-MACHINE_CLEANED = ("removed: our ReShade Vulkan layer from the all-users "
-                   "list (no Vulkan install left)")
+MACHINE_CLEANED = (
+    "removed: our ReShade Vulkan layer from the all-users list (no Vulkan install left)"
+)
 
 
 def _machine_cleanup() -> bool:
@@ -50,6 +66,7 @@ def _machine_cleanup() -> bool:
     True when it did. Never a reason the window does not open."""
     try:
         from .. import vulkan
+
         if vulkan.cleanup_machine(prefs.vulkan_games_or_none()):
             log.write(MACHINE_CLEANED)
             return True
@@ -93,7 +110,7 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
         if cleaned:
             try:
                 self.shell.status(MACHINE_CLEANED)
-                self.write(MACHINE_CLEANED, "ok")     # the status line moves on
+                self.write(MACHINE_CLEANED, "ok")  # the status line moves on
             except Exception:
                 pass
         self.watch_refresh()
@@ -113,6 +130,7 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
                     log.write(f"removed the previous build: {p}")
             except Exception:
                 log.exception("removing the previous build")
+
         threading.Thread(target=work, daemon=True).start()
 
     # ------------------------------------------------------------ start
@@ -156,7 +174,9 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
                     log.exception(f"handling '{kind}'", e)
                     if kind in JOB_ENDS:
                         self.busy = False
-                    self.write(f"!! internal error - see the log file ({log.path()})", "err")
+                    self.write(
+                        f"!! internal error - see the log file ({log.path()})", "err"
+                    )
                     self.offer_crash_report()
         except queue.Empty:
             pass
@@ -197,6 +217,7 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
 
     def video_launch(self) -> None:
         from .. import video
+
         g = self.game
         if g is None:
             return
@@ -213,7 +234,10 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
         except Exception:
             card = "graphics card not read"
         return [
-            ("how it works", lambda: webbrowser.open(f"{REPO_URL}#which-route-a-game-gets")),
+            (
+                "how it works",
+                lambda: webbrowser.open(f"{REPO_URL}#which-route-a-game-gets"),
+            ),
             ("compatibility list", lambda: webbrowser.open(community.PAGE_URL)),
             ("report a bug", lambda: self.report_bug("bug")),
             ("suggest a feature", self.suggest),
@@ -224,13 +248,16 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
         ]
 
     def shortcuts(self) -> None:
-        self.shell.info("keyboard", "arrows      move through the games\n"
-                                    "enter       open the game\n"
-                                    "esc         close what is open, then go back\n"
-                                    "backspace   go back\n"
-                                    "ctrl+f      search (or just start typing)\n"
-                                    "shift+f10   a game's menu (or the menu key)\n"
-                                    "ctrl+h      games")
+        self.shell.info(
+            "keyboard",
+            "arrows      move through the games\n"
+            "enter       open the game\n"
+            "esc         close what is open, then go back\n"
+            "backspace   go back\n"
+            "ctrl+f      search (or just start typing)\n"
+            "shift+f10   a game's menu (or the menu key)\n"
+            "ctrl+h      games",
+        )
 
     def report_bug(self, kind: str = "bug") -> None:
         """A pre-filled issue with the machine details in it. Nothing is sent:
@@ -239,13 +266,20 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
         Works with no game picked - the 1.9 window read the picked game's
         install folder outside any guard and raised from the help menu."""
         from .. import diagnose, installer, reportout, reportui
+
         try:
             name, sm = gpu.detect()
         except Exception:
             name, sm = "unknown", None
         drv = gpu.driver_version() or "?"
-        g = self.game if self.shell.page is not None and self.shell.page.name == "game" else None
-        title = {"crash": "crash: ", "notwork": "not working: "}.get(kind, "bug: ") + (g.name if g else "")
+        g = (
+            self.game
+            if self.shell.page is not None and self.shell.page.name == "game"
+            else None
+        )
+        title = {"crash": "crash: ", "notwork": "not working: "}.get(kind, "bug: ") + (
+            g.name if g else ""
+        )
         install_dir = g.install_dir if g is not None else None
         asked = True
         try:
@@ -271,20 +305,40 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
             except Exception:
                 last_error = None
         body = diagnose.issue_body(
-            update.VERSION, name, sm, drv, g, route,
-            (getattr(self._last_diag, "answered_from", None) or self._last_diag) if g is not None else None,
-            log.tail(60, 6000), log.path(), install_dir, last_error=last_error,
-            session_error=log.last_error(), answers=answers,
-            crash=self._last_crash if g is not None else None)
+            update.VERSION,
+            name,
+            sm,
+            drv,
+            g,
+            route,
+            (getattr(self._last_diag, "answered_from", None) or self._last_diag)
+            if g is not None
+            else None,
+            log.tail(60, 6000),
+            log.path(),
+            install_dir,
+            last_error=last_error,
+            session_error=log.last_error(),
+            answers=answers,
+            crash=self._last_crash if g is not None else None,
+        )
         App._reprint_answered(self, g, route, answers)
         try:
             url, cut = diagnose.issue_url(REPO_URL, title, body)
         except Exception:
             url, cut = f"{REPO_URL}/issues/new", True
-        done = reportout.deliver(body, url, cut, lambda s: App._to_clipboard(self, s), webbrowser.open,
-                                 g.name if g is not None else "",
-                                 link=lambda ok: diagnose.issue_url(REPO_URL, title, body, pasted=ok))
-        App._report_banner(self, done.text, body, install_dir, g.name if g is not None else "")
+        done = reportout.deliver(
+            body,
+            url,
+            cut,
+            lambda s: App._to_clipboard(self, s),
+            webbrowser.open,
+            g.name if g is not None else "",
+            link=lambda ok: diagnose.issue_url(REPO_URL, title, body, pasted=ok),
+        )
+        App._report_banner(
+            self, done.text, body, install_dir, g.name if g is not None else ""
+        )
 
     def _to_clipboard(self, text: str) -> bool:
         """Put the text on the clipboard and read it back: "it is on your
@@ -299,29 +353,46 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
             return False
         return got.replace("\r\n", "\n") == text.replace("\r\n", "\n")
 
-    def _report_banner(self, text: str, body: str, install_dir, name: str, extra=()) -> None:
+    def _report_banner(
+        self, text: str, body: str, install_dir, name: str, extra=()
+    ) -> None:
         """What happened to the report, in one line, with the two things that
         can still be done: copy it again, or save it with its logs as a zip."""
         from .. import reportout
 
         def copy() -> None:
-            self.shell.status("the report is on your clipboard" if App._to_clipboard(self, body)
-                              else "the clipboard did not take the report - use 'save zip'")
+            self.shell.status(
+                "the report is on your clipboard"
+                if App._to_clipboard(self, body)
+                else "the clipboard did not take the report - use 'save zip'"
+            )
 
         def zipit() -> None:
             p = reportout.save_zip(body, install_dir, name)
             if p is None:
-                self.shell.status("the zip could not be written - 'copy report' still works")
+                self.shell.status(
+                    "the zip could not be written - 'copy report' still works"
+                )
                 return
-            App._report_banner(self, f"saved {p.name} - attach it to the issue", body, install_dir, name,
-                               extra=[("show it", lambda: App._show_file(p), True)])
+            App._report_banner(
+                self,
+                f"saved {p.name} - attach it to the issue",
+                body,
+                install_dir,
+                name,
+                extra=[("show it", lambda: App._show_file(p), True)],
+            )
 
-        actions = list(extra) + [("copy report", copy, False), ("save zip", zipit, False)]
+        actions = list(extra) + [
+            ("copy report", copy, False),
+            ("save zip", zipit, False),
+        ]
         self.shell.banner("report", text, actions=actions, colour=T.AMBER)
 
     @staticmethod
     def _show_file(p) -> None:
         import subprocess
+
         try:
             subprocess.Popen(["explorer", "/select,", str(p)])
         except OSError:
@@ -335,6 +406,7 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
         Left there, the window kept the old verdict and the game's card kept
         saying it worked - one answer in the report, another on screen."""
         from .. import diagnose
+
         shown = self._last_diag
         # Always from the logs' own reading: a second report in the same
         # session that says "it started and ran" puts it back (gate 2.0.5).
@@ -343,14 +415,20 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
             return
         try:
             import copy
+
             d = Path(g.install_dir)
-            presence = diagnose._presence(d, diagnose._manifest(d), route,
-                                          getattr(g, "folder", None))
-            new = diagnose.answered(copy.deepcopy(rep), str(answers.get("started") or ""),
-                                    presence, str(getattr(g, "kind", "") or "game"),
-                                    diagnose.event_line(getattr(self, "_last_crash", None)),
-                                    diagnose.refused_reason(d),
-                                    diagnose.anticheat_named(d, getattr(g, "folder", None)))
+            presence = diagnose._presence(
+                d, diagnose._manifest(d), route, getattr(g, "folder", None)
+            )
+            new = diagnose.answered(
+                copy.deepcopy(rep),
+                str(answers.get("started") or ""),
+                presence,
+                str(getattr(g, "kind", "") or "game"),
+                diagnose.event_line(getattr(self, "_last_crash", None)),
+                diagnose.refused_reason(d),
+                diagnose.anticheat_named(d, getattr(g, "folder", None)),
+            )
         except Exception:
             return
         if new.verdict == shown.verdict:
@@ -364,17 +442,35 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
         for f_ in new.findings:
             if f_ in rep.findings:
                 continue
-            mark = {"ok": "[ok]  ", "warn": "[!!]  ", "bad": "[fail]", "info": "[--]  "}[f_.level]
-            self.write(f"{mark} {f_.title}", {"ok": "ok", "warn": "warn", "bad": "err"}.get(f_.level, ""))
+            mark = {
+                "ok": "[ok]  ",
+                "warn": "[!!]  ",
+                "bad": "[fail]",
+                "info": "[--]  ",
+            }[f_.level]
+            self.write(
+                f"{mark} {f_.title}",
+                {"ok": "ok", "warn": "warn", "bad": "err"}.get(f_.level, ""),
+            )
             if f_.detail:
                 self.write(f"        {f_.detail}")
         # The panel above the log is the third place the verdict is printed
         # (gate 2.0.5: it kept a green "Working." over the correction).
-        if isinstance(getattr(self, "result", None), dict) and self.result.get("kind") == "diagnosis":
+        if (
+            isinstance(getattr(self, "result", None), dict)
+            and self.result.get("kind") == "diagnosis"
+        ):
             working = new.verdict.startswith("Working")
-            self.result = dict(self.result, ok=working, title=new.verdict,
-                               findings=[(f.level, f.title) for f in new.findings
-                                         if f.level in ("bad", "warn")][:3])
+            self.result = dict(
+                self.result,
+                ok=working,
+                title=new.verdict,
+                findings=[
+                    (f.level, f.title)
+                    for f in new.findings
+                    if f.level in ("bad", "warn")
+                ][:3],
+            )
         try:
             self._record_verdict(new, self._measured)
             self.refresh("game", soft=True)
@@ -383,21 +479,29 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
 
     def suggest(self) -> None:
         from urllib.parse import quote
+
         try:
             name, sm = gpu.detect()
         except Exception:
             name, sm = "unknown", None
-        body = ("**What would you like it to do**\n\n\n**Why / which game**\n\n\n---\n"
-                f"- version: {update.VERSION}\n- gpu: {name} (sm_{sm})\n")
-        webbrowser.open(f"{REPO_URL}/issues/new?labels=enhancement&title={quote('idea: ')}&body={quote(body)}")
+        body = (
+            "**What would you like it to do**\n\n\n**Why / which game**\n\n\n---\n"
+            f"- version: {update.VERSION}\n- gpu: {name} (sm_{sm})\n"
+        )
+        webbrowser.open(
+            f"{REPO_URL}/issues/new?labels=enhancement&title={quote('idea: ')}&body={quote(body)}"
+        )
 
     def offer_crash_report(self) -> None:
         if self._crash_shown:
             return
         self._crash_shown = True
-        self.shell.banner("crash", "something went wrong - the details are in the log file",
-                          actions=[("report it", lambda: self.report_bug("crash"), True)],
-                          colour=T.WARN)
+        self.shell.banner(
+            "crash",
+            "something went wrong - the details are in the log file",
+            actions=[("report it", lambda: self.report_bug("crash"), True)],
+            colour=T.WARN,
+        )
 
     # ------------------------------------------------------------ update
     def check_update(self) -> None:
@@ -415,21 +519,28 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
                 self.q.put(("update_ready", (latest, selfupdate.fetch())))
             except Exception as e:
                 log.write(f"auto-update download failed: {e}", "warn")
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_update(self, payload) -> None:
         latest, url = payload
         self.update_url = url
         downloading = selfupdate.running_exe() and prefs.get("auto_update", True)
-        self.shell.banner("update", f"version {latest} is out (you are on {update.VERSION})"
-                          + (" - downloading..." if downloading else ""),
-                          actions=[("update now", self.do_update, True)])
+        self.shell.banner(
+            "update",
+            f"version {latest} is out (you are on {update.VERSION})"
+            + (" - downloading..." if downloading else ""),
+            actions=[("update now", self.do_update, True)],
+        )
 
     def _on_update_ready(self, payload) -> None:
         latest, exe = payload
         self.update_ready = exe
-        self.shell.banner("update", f"version {latest} downloaded and verified",
-                          actions=[("restart into it", self.do_update, True)])
+        self.shell.banner(
+            "update",
+            f"version {latest} downloaded and verified",
+            actions=[("restart into it", self.do_update, True)],
+        )
 
     def do_update(self) -> None:
         if self.busy:
@@ -444,22 +555,29 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
         if selfupdate.running_exe() is None:
             webbrowser.open(self.update_url or update.RELEASES_PAGE)
             return
-        if not self.shell.ask("update and restart?",
-                              "The new version is downloaded and the tool restarts into it. "
-                              "The current build is kept beside it as .old.exe for the new one's first run, so you "
-                              "can go back; it is removed when the new version starts a second time.",
-                              "update", "not now"):
+        if not self.shell.ask(
+            "update and restart?",
+            "The new version is downloaded and the tool restarts into it. "
+            "The current build is kept beside it as .old.exe for the new one's first run, so you "
+            "can go back; it is removed when the new version starts a second time.",
+            "update",
+            "not now",
+        ):
             return
         self.busy = True
         self.shell.banner("update", "downloading the update...")
 
         def work():
             try:
-                exe = selfupdate.fetch(progress=lambda d, t: self.q.put(
-                    ("scan", f"update - {d / 1048576:.1f} MB")))
+                exe = selfupdate.fetch(
+                    progress=lambda d, t: self.q.put(
+                        ("scan", f"update - {d / 1048576:.1f} MB")
+                    )
+                )
                 self.q.put(("swap", exe))
             except Exception as e:
                 self.q.put(("updfail", str(e)))
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_swap(self, exe) -> None:
@@ -481,18 +599,26 @@ class App(LibraryControl, GameControl, VideoControl, WatchControl, DlssControl):
             self.busy = False
             self.update_ready = None
             self.shell.busy("")
-            self.shell.banner("update", f"update failed: {e}",
-                              actions=[("try again", self.do_update, True)], colour=T.WARN)
+            self.shell.banner(
+                "update",
+                f"update failed: {e}",
+                actions=[("try again", self.do_update, True)],
+                colour=T.WARN,
+            )
 
     def _on_updfail(self, text: str) -> None:
         self.busy = False
         self.shell.busy("")
-        self.shell.banner("update", f"update failed: {text}",
-                          actions=[("try again", self.do_update, True)], colour=T.WARN)
+        self.shell.banner(
+            "update",
+            f"update failed: {text}",
+            actions=[("try again", self.do_update, True)],
+            colour=T.WARN,
+        )
 
 
 MUTEX_NAME = "Local\\DLSS5AutopilotWindow"
-_mutex = None          # held for the life of the process; Windows frees it on exit
+_mutex = None  # held for the life of the process; Windows frees it on exit
 
 
 def _win32():
@@ -500,6 +626,7 @@ def _win32():
     the checks replace."""
     import ctypes
     from ctypes import wintypes as w
+
     k = ctypes.WinDLL("kernel32", use_last_error=True)
     u = ctypes.WinDLL("user32", use_last_error=True)
     k.CreateMutexW.restype = w.HANDLE
@@ -527,14 +654,15 @@ def already_open(win32=None) -> bool:
         handle = k.CreateMutexW(None, False, MUTEX_NAME)
         if not handle:
             return False
-        if last_error() != 183:               # ERROR_ALREADY_EXISTS
+        if last_error() != 183:  # ERROR_ALREADY_EXISTS
             _mutex = handle
             return False
         from .tray import WM_LBUTTONUP, WM_TRAY
+
         main = u.FindWindowW("TkTopLevel", TITLE)
         if main and u.IsWindowVisible(main):
             if u.IsIconic(main):
-                u.ShowWindow(main, 9)            # SW_RESTORE
+                u.ShowWindow(main, 9)  # SW_RESTORE
             u.SetForegroundWindow(main)
             return True
         # hidden in the tray: the message a click on its icon sends
@@ -569,6 +697,7 @@ def run() -> int:
     root.mainloop()
     try:
         from .. import video as _video
+
         _video.stop_webcam()
     except Exception:
         pass

@@ -21,6 +21,7 @@ fetched and the swap replaces the folder as well as the .exe. This updater
 has to know both BEFORE such a release exists: the copy already on
 someone's PC is the one that will install it.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -36,7 +37,7 @@ from pathlib import Path
 
 from . import net, update
 
-MIN_BYTES = 4 * 1024 * 1024          # a real one-file build is ~11 MB
+MIN_BYTES = 4 * 1024 * 1024  # a real one-file build is ~11 MB
 # PyInstaller's one-folder layout keeps the runtime beside the .exe here.
 INTERNAL = "_internal"
 
@@ -61,8 +62,11 @@ def _is_win64_pe(p: Path) -> bool:
             (off,) = struct.unpack_from("<I", head, 0x3C)
             f.seek(off)
             sig = f.read(6)
-            return len(sig) == 6 and sig[:4] == b"PE\0\0" and \
-                struct.unpack_from("<H", sig, 4)[0] == 0x8664
+            return (
+                len(sig) == 6
+                and sig[:4] == b"PE\0\0"
+                and struct.unpack_from("<H", sig, 4)[0] == 0x8664
+            )
     except OSError:
         return False
 
@@ -104,24 +108,42 @@ def _prune_old_staging(max_age: float = 24 * 3600) -> None:
 def _fetch(workdir: Path, progress=None) -> Path:
     rel = net.json_get(update.API)
     assets = rel.get("assets", [])
-    zip_url = next((a["browser_download_url"] for a in assets
-                    if a["name"].lower().endswith(".zip")), None)
-    exe_url = next((a["browser_download_url"] for a in assets
-                    if a["name"].lower().endswith(".exe")), None)
-    sums_url = next((a["browser_download_url"] for a in assets
-                     if a["name"] == "SHA256SUMS.txt"), None)
+    zip_url = next(
+        (
+            a["browser_download_url"]
+            for a in assets
+            if a["name"].lower().endswith(".zip")
+        ),
+        None,
+    )
+    exe_url = next(
+        (
+            a["browser_download_url"]
+            for a in assets
+            if a["name"].lower().endswith(".exe")
+        ),
+        None,
+    )
+    sums_url = next(
+        (a["browser_download_url"] for a in assets if a["name"] == "SHA256SUMS.txt"),
+        None,
+    )
     tag = (rel.get("tag_name") or "new").lstrip("vV")
 
     if zip_url:
         z = net.download(zip_url, f"update-{tag}.zip", progress=progress)
         with zipfile.ZipFile(z) as arc:
-            member = next((n for n in arc.namelist()
-                           if n.lower().endswith(".exe")), None)
+            member = next(
+                (n for n in arc.namelist() if n.lower().endswith(".exe")), None
+            )
             if not member:
                 raise UpdateError("The release archive contains no executable.")
             base = member.rsplit("/", 1)[0] + "/" if "/" in member else ""
-            folder = [n for n in arc.namelist()
-                      if n.startswith(base + INTERNAL + "/") and not n.endswith("/")]
+            folder = [
+                n
+                for n in arc.namelist()
+                if n.startswith(base + INTERNAL + "/") and not n.endswith("/")
+            ]
             if folder:
                 # One-folder build: the .exe and everything under _internal,
                 # kept together - the .exe alone cannot start.
@@ -131,7 +153,7 @@ def _fetch(workdir: Path, progress=None) -> Path:
                     # outside the temporary folder, and it happens before the
                     # build checks below can reject the download (#79).
                     try:
-                        dest = net.inside(workdir, n[len(base):])
+                        dest = net.inside(workdir, n[len(base) :])
                     except net.OutsideError as e:
                         raise UpdateError(
                             f"The release archive contains a path that writes "
@@ -156,14 +178,18 @@ def _fetch(workdir: Path, progress=None) -> Path:
     # bootloader plus the app, a couple of MB. Judge the whole download.
     got = out.stat().st_size
     if (out.parent / INTERNAL).is_dir():
-        got += sum(p.stat().st_size for p in (out.parent / INTERNAL).rglob("*")
-                   if p.is_file())
+        got += sum(
+            p.stat().st_size for p in (out.parent / INTERNAL).rglob("*") if p.is_file()
+        )
     if got < MIN_BYTES:
-        raise UpdateError(f"The downloaded build is only {got} "
-                          f"bytes - refusing to install it.")
+        raise UpdateError(
+            f"The downloaded build is only {got} bytes - refusing to install it."
+        )
     if not _is_win64_pe(out):
-        raise UpdateError("The downloaded file is not a 64-bit Windows "
-                          "executable - refusing to install it.")
+        raise UpdateError(
+            "The downloaded file is not a 64-bit Windows "
+            "executable - refusing to install it."
+        )
     # The release workflow publishes SHA256SUMS.txt next to the build. When
     # it is there, the executable must match it: a swapped or corrupted
     # download is refused rather than started. When it is missing (an older
@@ -172,17 +198,23 @@ def _fetch(workdir: Path, progress=None) -> Path:
         try:
             sums = net.fetch_text(sums_url).decode("utf8", "replace")
         except Exception as e:
-            raise UpdateError(f"Could not read SHA256SUMS.txt for the release "
-                              f"({e}) - refusing to install an unverified build.") from e
+            raise UpdateError(
+                f"Could not read SHA256SUMS.txt for the release "
+                f"({e}) - refusing to install an unverified build."
+            ) from e
         want = _expected_hash(sums, "dlss5-autopilot.exe")
         if not want:
-            raise UpdateError("SHA256SUMS.txt does not list dlss5-autopilot.exe "
-                              "- refusing to install an unverified build.")
+            raise UpdateError(
+                "SHA256SUMS.txt does not list dlss5-autopilot.exe "
+                "- refusing to install an unverified build."
+            )
         have = _sha256(out)
         if have != want:
-            raise UpdateError(f"The downloaded build does not match the hash "
-                              f"GitHub published ({have[:12]}... vs "
-                              f"{want[:12]}...) - refusing to install it.")
+            raise UpdateError(
+                f"The downloaded build does not match the hash "
+                f"GitHub published ({have[:12]}... vs "
+                f"{want[:12]}...) - refusing to install it."
+            )
     return out
 
 
@@ -242,20 +274,20 @@ def swap_script(current: Path, new_exe: Path) -> str:
             f'if exist "{old_int}" rmdir /s /q "{old_int}" >nul 2>&1',
             f'if exist "{cur_int}" move /y "{cur_int}" "{old_int}" >nul 2>&1',
             f'xcopy "{new_int}" "{cur_int}\\" /E /I /Q /Y /H >nul 2>&1',
-            f'if errorlevel 1 goto rollback',
+            f"if errorlevel 1 goto rollback",
             f'if not exist "{cur_int}\\*" goto rollback',
             'copy /y "%SOURCE%" "%TARGET%" >nul 2>&1',
-            'if errorlevel 1 goto rollback',
+            "if errorlevel 1 goto rollback",
             f'rmdir /s /q "{new_int}" >nul 2>&1',
             'del /q "%SOURCE%" >nul 2>&1',
-            'goto done',
-            ':rollback',
+            "goto done",
+            ":rollback",
             f'if exist "{cur_int}" rmdir /s /q "{cur_int}" >nul 2>&1',
             f'if exist "{old_int}" move /y "{old_int}" "{cur_int}" >nul 2>&1',
             'if exist "%TARGET%" del /q "%TARGET%" >nul 2>&1',
             'move /y "%BACKUP%" "%TARGET%" >nul 2>&1',
-            'echo The update could not be applied; the previous build was restored.',
-            ':done',
+            "echo The update could not be applied; the previous build was restored.",
+            ":done",
         ]
     else:
         lines += [
@@ -289,8 +321,7 @@ def clean_env() -> dict[str, str]:
     - every self-update relaunch died (#136). PYINSTALLER_RESET_ENVIRONMENT
     is PyInstaller's own switch for "start as a new top-level instance".
     """
-    env = {k: v for k, v in os.environ.items()
-           if not k.upper().startswith("_PYI_")}
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith("_PYI_")}
     env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
     return env
 
@@ -318,6 +349,7 @@ def settle(version: str = "") -> list[Path]:
     good, and people read the leftover as a failed update.
     """
     from . import prefs
+
     current = running_exe()
     if current is None:
         return []
@@ -332,7 +364,7 @@ def settle(version: str = "") -> list[Path]:
             old.unlink()
             removed.append(old)
     except OSError:
-        pass            # running, or held by a scanner: the next start tries again
+        pass  # running, or held by a scanner: the next start tries again
     try:
         # Only once the .exe is gone: an old build somebody went back to and
         # is running right now needs its folder.
@@ -348,20 +380,26 @@ def apply_and_restart(new_exe: Path) -> None:
     """Hand the swap to a helper batch file and quit so it can run."""
     current = running_exe()
     if current is None:
-        raise UpdateError("Running from source, not a built executable - "
-                          "nothing to replace.")
+        raise UpdateError(
+            "Running from source, not a built executable - nothing to replace."
+        )
     if not Path(new_exe).is_file():
         # Staged more than a day ago and cleared since by another copy of
         # the tool (_prune_old_staging): say so, rather than restart into the
         # old build without a word.
-        raise UpdateError("The downloaded update is no longer there - press "
-                          "update again to fetch it.")
+        raise UpdateError(
+            "The downloaded update is no longer there - press update again to fetch it."
+        )
 
     bat = Path(tempfile.gettempdir()) / "dlss5-autopilot-update.bat"
     bat.write_text(swap_script(current, new_exe), encoding="utf8")
 
-    creation = 0x00000008 | 0x08000000        # DETACHED_PROCESS | NO_WINDOW
-    subprocess.Popen(["cmd", "/c", str(bat)], creationflags=creation,
-                     close_fds=True, cwd=str(Path(tempfile.gettempdir())),
-                     env=clean_env())
+    creation = 0x00000008 | 0x08000000  # DETACHED_PROCESS | NO_WINDOW
+    subprocess.Popen(
+        ["cmd", "/c", str(bat)],
+        creationflags=creation,
+        close_fds=True,
+        cwd=str(Path(tempfile.gettempdir())),
+        env=clean_env(),
+    )
     os._exit(0)

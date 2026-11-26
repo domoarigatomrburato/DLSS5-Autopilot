@@ -8,6 +8,7 @@ This tool never contacts a private server. It stays within these hosts:
                                  REFramework-nightly)
     codeload.github.com         (LumeniteFX, vort_Shaders)
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -26,40 +27,55 @@ UA = {"User-Agent": "dlss5-autopilot/1.3.1 (+local install helper)"}
 RESHADE_HOME = "https://reshade.me"
 RESHADE_SETUP_RE = re.compile(r"/downloads/ReShade_Setup_([\d.]+)_Addon\.exe")
 
-RESHADE_HEADERS_BASE = "https://raw.githubusercontent.com/crosire/reshade-shaders/slim/Shaders/"
+RESHADE_HEADERS_BASE = (
+    "https://raw.githubusercontent.com/crosire/reshade-shaders/slim/Shaders/"
+)
 RESHADE_HEADERS = ("ReShade.fxh", "ReShadeUI.fxh", "DrawText.fxh")
 
 FEEDER_REPO = "jlrouzies-fr/DLSS5-Feeder"
 FEEDER_API = "https://api.github.com/repos/jlrouzies-fr/DLSS5-Feeder/releases/latest"
 # The feeder's author ships test builds as pre-releases; /latest never lists
 # them. Newer add-on builds (renodx-dlss5 4.6+) are only supported by those.
-FEEDER_LIST_API = "https://api.github.com/repos/jlrouzies-fr/DLSS5-Feeder/releases?per_page=15"
-LUMENITE_ZIP = "https://codeload.github.com/umar-afzaal/LumeniteFX/zip/refs/heads/mainline"
+FEEDER_LIST_API = (
+    "https://api.github.com/repos/jlrouzies-fr/DLSS5-Feeder/releases?per_page=15"
+)
+LUMENITE_ZIP = (
+    "https://codeload.github.com/umar-afzaal/LumeniteFX/zip/refs/heads/mainline"
+)
 RHI_REPO = "RankFTW/rhi-repo"
 RHI_API = "https://api.github.com/repos/RankFTW/rhi-repo/releases?per_page=100"
 BRIDGE_API = "https://api.github.com/repos/NIGos/dlss5-bridge/releases/latest"
-UPSTREAM_API = "https://api.github.com/repos/matiasLombo/neural-upstream/releases/latest"
+UPSTREAM_API = (
+    "https://api.github.com/repos/matiasLombo/neural-upstream/releases/latest"
+)
 # ghostinthecamera/GITC-Uplift (#946, vetted 2026-11-02): one zip a release,
 # GITC-Uplift-<version>.zip, with SHA256SUMS.txt beside it. The release list,
 # not /latest: a release without the zip is skipped, not taken on trust.
-UPLIFT_API = ("https://api.github.com/repos/ghostinthecamera/GITC-Uplift/"
-              "releases?per_page=10")
+UPLIFT_API = (
+    "https://api.github.com/repos/ghostinthecamera/GITC-Uplift/releases?per_page=10"
+)
 UPLIFT_ZIP_RE = re.compile(r"^GITC-Uplift-v?(\d[\w.\-]*)\.zip$", re.I)
 UPLIFT_SUMS = "SHA256SUMS.txt"
 # What the zip carries and the tool places: the Addons folder beside the
 # executable, the shaders in ReShade's shader folder.
-UPLIFT_ADDONS = ("gitc-uplift.addon64", "gitc-uplift.addon32",
-                 "gitc-uplift-helper64.exe")
+UPLIFT_ADDONS = (
+    "gitc-uplift.addon64",
+    "gitc-uplift.addon32",
+    "gitc-uplift-helper64.exe",
+)
 UPLIFT_SHADERS = ("Uplift.fx", "UpliftMask.fx")
 # The file name is load-bearing: the NGX snippet only creates the feature
 # for a caller whose module path contains "nvngx.dll".
 UPSTREAM_ASSET = "nvngx.dll.addon64"
 # GitHub's plain redirect to the newest asset. Not an API call, so it still
 # works when the 60-an-hour allowance is spent and nothing is cached yet.
-UPSTREAM_LATEST = ("https://github.com/matiasLombo/neural-upstream/releases/"
-                   "latest/download/" + UPSTREAM_ASSET)
-STANDALONE_API = ("https://api.github.com/repos/kibblerz/DLSS5-Reshade-AIO/"
-                  "releases/latest")
+UPSTREAM_LATEST = (
+    "https://github.com/matiasLombo/neural-upstream/releases/"
+    "latest/download/" + UPSTREAM_ASSET
+)
+STANDALONE_API = (
+    "https://api.github.com/repos/kibblerz/DLSS5-Reshade-AIO/releases/latest"
+)
 # kibblerz's standalone add-on ships three loose assets. The plain nvngx.dll
 # is its caller-identity bridge: without it beside the add-on nothing
 # initialises ("required private runtime dependency missing" in its log).
@@ -74,8 +90,9 @@ STANDALONE_REPO = "kibblerz/DLSS5-Reshade-AIO"
 # v2.1.0 - v2.2.0: "DLSS5-ReShade-AIO-v2.2.0-64-bit.zip". Only used when the
 # API cannot be reached and the asset list has to be guessed from the tag.
 STANDALONE_ZIP_NAME = "DLSS5-ReShade-AIO-{tag}-64-bit.zip"
-STANDALONE_LATEST = ("https://github.com/kibblerz/DLSS5-Reshade-AIO/releases/"
-                     "latest/download/")
+STANDALONE_LATEST = (
+    "https://github.com/kibblerz/DLSS5-Reshade-AIO/releases/latest/download/"
+)
 # Vortigern's VORT shaders (MIT). vort_Motion.fx is the optical-flow provider
 # the standalone add-on schedules for real motion vectors; without it the
 # add-on runs on zero-motion guides. The whole-repo zip, as with LumeniteFX:
@@ -88,21 +105,25 @@ VORT_ZIP_NAME = "vort_Shaders-main.zip"
 # built in, as a drop-in for any Remix game's .trex folder. NVIDIA's own
 # runtime has no neural pass at all, so a game whose mod ships the stock
 # runtime needs this before the route can do anything.
-REMIX_RUNTIME_API = ("https://api.github.com/repos/lunks/"
-                     "dxvk-remix-plus-dlssnr/releases/latest")
+REMIX_RUNTIME_API = (
+    "https://api.github.com/repos/lunks/dxvk-remix-plus-dlssnr/releases/latest"
+)
 # d3d9.dll is the runtime itself; remix_nvngx.dll is the caller-identity
 # bridge, and its name is load-bearing (the snippet checks the caller's
 # module path for "nvngx.dll").
 REMIX_RUNTIME_ASSETS = ("d3d9.dll", "remix_nvngx.dll")
-REMIX_RUNTIME_LATEST = ("https://github.com/lunks/dxvk-remix-plus-dlssnr/"
-                        "releases/latest/download/")
+REMIX_RUNTIME_LATEST = (
+    "https://github.com/lunks/dxvk-remix-plus-dlssnr/releases/latest/download/"
+)
 # 7-Zip's one-file console build, fetched only when neither 7-Zip nor
 # Windows' tar.exe can open a .7z (#87, #93: tar.exe is built without LZMA
 # on some Windows builds). Pinned by version and hash: it is unsigned, and
 # it runs. 7-zip.org's own link always serves the newest build, whose hash
 # would stop matching at the next release, so only the versioned one is used.
-SEVEN_ZR = (("https://github.com/ip7z/7zip/releases/download/26.03/7zr.exe",),
-            "ad4c82fadcbdf93c03b4fc440f300509c7d60c5c2f4d183e35d9d70d6957037d")
+SEVEN_ZR = (
+    ("https://github.com/ip7z/7zip/releases/download/26.03/7zr.exe",),
+    "ad4c82fadcbdf93c03b4fc440f300509c7d60c5c2f4d183e35d9d70d6957037d",
+)
 
 # None = take the newest build from the mirror. On the feeder route the pick
 # is narrowed by renodx_for_feeder(), which pins only feeder builds below
@@ -174,10 +195,10 @@ def latest_tag(repo: str) -> str | None:
     """
     url = f"https://github.com/{repo}/releases/latest"
     try:
-        from . import net           # net imports this module
+        from . import net  # net imports this module
+
         req = urllib.request.Request(url, headers=UA, method="HEAD")
-        with urllib.request.urlopen(req, timeout=30,
-                                    context=net.ssl_context()) as r:
+        with urllib.request.urlopen(req, timeout=30, context=net.ssl_context()) as r:
             final = r.geturl()
     except Exception:
         return None
@@ -189,9 +210,9 @@ def _url_exists(url: str) -> bool:
     """Does this download answer? One HEAD, no body, never raises."""
     try:
         from . import net
+
         req = urllib.request.Request(url, headers=UA, method="HEAD")
-        with urllib.request.urlopen(req, timeout=30,
-                                    context=net.ssl_context()) as r:
+        with urllib.request.urlopen(req, timeout=30, context=net.ssl_context()) as r:
             return 200 <= getattr(r, "status", 200) < 400
     except Exception:
         return False
@@ -216,9 +237,11 @@ def _page(url: str, timeout: int = 30) -> str:
     """One HTML page, or "" - a fallback never raises on its way to failing."""
     try:
         from . import net
+
         req = urllib.request.Request(url, headers=UA)
-        with urllib.request.urlopen(req, timeout=timeout,
-                                    context=net.ssl_context()) as r:
+        with urllib.request.urlopen(
+            req, timeout=timeout, context=net.ssl_context()
+        ) as r:
             return r.read().decode("utf8", "replace")
     except Exception:
         return ""
@@ -258,8 +281,7 @@ def release_tags_html(repo: str, pages: int = 1) -> list[tuple[str, bool]]:
         # Anchored to this repo. A release body is rendered on that page too,
         # and a link in it to some other project's release would otherwise
         # come back as a tag of this one.
-        for tag in re.findall(r'/%s/releases/tag/([^"?#]+)"' % re.escape(repo),
-                              html):
+        for tag in re.findall(r'/%s/releases/tag/([^"?#]+)"' % re.escape(repo), html):
             tag = urllib.parse.unquote(tag)
             if tag in seen:
                 continue
@@ -280,8 +302,7 @@ def release_assets_html(repo: str, tag: str) -> dict[str, str]:
     """
     html = _page(EXPANDED_ASSETS.format(repo=repo, tag=tag))
     out: dict[str, str] = {}
-    for href in re.findall(r'"(/%s/releases/download/[^"]+)"' % re.escape(repo),
-                           html):
+    for href in re.findall(r'"(/%s/releases/download/[^"]+)"' % re.escape(repo), html):
         name = urllib.parse.unquote(href.rsplit("/", 1)[-1])
         out.setdefault(name, "https://github.com" + href)
     return out
@@ -290,7 +311,8 @@ def release_assets_html(repo: str, tag: str) -> dict[str, str]:
 # api.github.com/repos/<owner>/<repo>/releases[/latest | /tags/<tag> | ?...]
 _RELEASE_URL = re.compile(
     r"^https://api\.github\.com/repos/([^/]+/[^/]+)/releases"
-    r"(?:/(latest)|/tags/([^/?#]+))?(?:\?|$)")
+    r"(?:/(latest)|/tags/([^/?#]+))?(?:\?|$)"
+)
 # How many releases the list form fills in when it has to be built by hand.
 # Each one costs a page of its own, and every caller of the list form is
 # looking for the newest release of a particular shape - a handful is
@@ -318,11 +340,15 @@ def release_json_html(url: str):
     def one(t: str) -> dict:
         assets = release_assets_html(repo, t)
         low = t.lower()
-        return {"tag_name": t, "draft": False,
-                "prerelease": any(w in low for w in _PRE_WORDS),
-                "assets": [{"name": n, "browser_download_url": u,
-                            "size": 0, "download_count": 0}
-                           for n, u in assets.items()]}
+        return {
+            "tag_name": t,
+            "draft": False,
+            "prerelease": any(w in low for w in _PRE_WORDS),
+            "assets": [
+                {"name": n, "browser_download_url": u, "size": 0, "download_count": 0}
+                for n, u in assets.items()
+            ],
+        }
 
     if tag:
         got = one(tag)
@@ -352,9 +378,11 @@ def _get(url: str, timeout: int = 60, attempts: int = 3) -> bytes:
     last: Exception | None = None
     for attempt in range(attempts):
         try:
-            from . import net           # net imports this module
-            with urllib.request.urlopen(req, timeout=timeout,
-                                        context=net.ssl_context()) as r:
+            from . import net  # net imports this module
+
+            with urllib.request.urlopen(
+                req, timeout=timeout, context=net.ssl_context()
+            ) as r:
                 return r.read()
         except urllib.error.HTTPError as e:
             if e.code in (403, 429) and "api.github.com" in url:
@@ -375,14 +403,20 @@ def _get(url: str, timeout: int = 60, attempts: int = 3) -> bytes:
                     f"connection and not this tool - it was asked "
                     f"{attempts} times. Wait a few minutes and try again; "
                     f"anything already downloaded is cached and will not be "
-                    f"fetched twice.") from e
+                    f"fetched twice."
+                ) from e
             raise
-        except (urllib.error.URLError, TimeoutError, OSError,
-                http.client.HTTPException) as e:
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            OSError,
+            http.client.HTTPException,
+        ) as e:
             # HTTPException: the body dropped after the headers (IncompleteRead)
             last = e
             if attempt == attempts - 1:
                 from . import net
+
                 if net.untrusted(url.split("/")[2], e):
                     raise net.untrusted(url.split("/")[2], e) from e
                 # The same answers net.download gives (#434, #438): this is
@@ -398,8 +432,9 @@ def _get(url: str, timeout: int = 60, attempts: int = 3) -> bytes:
 # GitHub allows 60 anonymous API calls an hour per address. That is easy to
 # exhaust, and being unable to install anything because of it is unacceptable -
 # so every API answer is kept on disk and reused when the live call fails.
-_API_CACHE = Path(os.environ.get("LOCALAPPDATA", Path.home())) \
-    / "dlss5-autopilot" / "api-cache"
+_API_CACHE = (
+    Path(os.environ.get("LOCALAPPDATA", Path.home())) / "dlss5-autopilot" / "api-cache"
+)
 _API_FRESH_SECONDS = 6 * 3600
 
 # Set by _json when it had to fall back to a stale copy, so the installer can
@@ -408,10 +443,12 @@ last_fallback: str | None = None
 # ...and by the resolvers that drop to GitHub's "latest" redirect when the
 # API cannot be reached. Silent there until the gate asked what the install
 # log says when the newest build is not the one being installed.
-_LATEST_REDIRECT = ("GitHub's API could not be reached; this component came "
-                    "from its project's 'latest release' redirect, so the "
-                    "exact version is whatever that redirect points at, and "
-                    "it may be a test build.")
+_LATEST_REDIRECT = (
+    "GitHub's API could not be reached; this component came "
+    "from its project's 'latest release' redirect, so the "
+    "exact version is whatever that redirect points at, and "
+    "it may be a test build."
+)
 
 
 def _cache_path(url: str) -> Path:
@@ -464,9 +501,11 @@ def _json(url: str):
             # Nothing cached to fall back to: report why the LIVE call failed,
             # not the missing cache file - that would be a misleading error.
             raise original from None
-        last_fallback = (f"GitHub could not be reached (rate limit or no "
-                         f"connection); using the version list cached "
-                         f"{age_h}h ago.")
+        last_fallback = (
+            f"GitHub could not be reached (rate limit or no "
+            f"connection); using the version list cached "
+            f"{age_h}h ago."
+        )
         return data
 
 
@@ -486,8 +525,10 @@ def json_or_html(url: str):
         data = release_json_html(url)
         if data is None:
             raise
-        last_fallback = ("GitHub's API could not be reached; this release "
-                         "was read from github.com's release pages instead.")
+        last_fallback = (
+            "GitHub's API could not be reached; this release "
+            "was read from github.com's release pages instead."
+        )
         return data
 
 
@@ -528,7 +569,7 @@ def resolve_reshade() -> tuple[str, str]:
         time.sleep(0.5 * (attempt + 1))
     try:
         tags = _json(RESHADE_TAGS_API)
-        for t in (tags if isinstance(tags, list) else []):
+        for t in tags if isinstance(tags, list) else []:
             name = str(t.get("name", ""))
             if re.fullmatch(r"v\d+(\.\d+)+", name):
                 return name[1:], _reshade_url(name[1:])
@@ -537,15 +578,19 @@ def resolve_reshade() -> tuple[str, str]:
         errors.append(f"GitHub tags: {e}")
     try:
         from . import net
-        cached = sorted(net.cache_dir().glob("ReShade_Setup_*_Addon.exe"),
-                        key=lambda p: [int(x) for x in p.name.split("_")[2].split(".")])
+
+        cached = sorted(
+            net.cache_dir().glob("ReShade_Setup_*_Addon.exe"),
+            key=lambda p: [int(x) for x in p.name.split("_")[2].split(".")],
+        )
         if cached:
             ver = cached[-1].name.split("_")[2]
             return ver, _reshade_url(ver)
     except Exception as e:
         errors.append(f"cache: {e}")
-    raise RuntimeError("Could not find the ReShade add-on installer: "
-                       + "; ".join(errors))
+    raise RuntimeError(
+        "Could not find the ReShade add-on installer: " + "; ".join(errors)
+    )
 
 
 def feeder_releases() -> list[tuple[str, bool]]:
@@ -565,11 +610,16 @@ def feeder_releases() -> list[tuple[str, bool]]:
     # _is_prerelease, not the flag alone: the dropdown and "newest release"
     # have to call the same builds test builds, or the list says "release"
     # beside a tag the install below it steps over.
-    return [(r.get("tag_name", "?"), _is_prerelease(r))
-            for r in rels if not r.get("draft") and r.get("tag_name")]
+    return [
+        (r.get("tag_name", "?"), _is_prerelease(r))
+        for r in rels
+        if not r.get("draft") and r.get("tag_name")
+    ]
 
 
-def resolve_feeder(prerelease: bool = False, tag: str = "") -> tuple[str, dict[str, str]]:
+def resolve_feeder(
+    prerelease: bool = False, tag: str = ""
+) -> tuple[str, dict[str, str]]:
     """DLSS5-Feeder release: (tag, {filename: download_url}).
 
     `tag` pins one exact release. Otherwise `prerelease=True` takes the newest
@@ -582,13 +632,23 @@ def resolve_feeder(prerelease: bool = False, tag: str = "") -> tuple[str, dict[s
     try:
         if tag:
             rels = _json(FEEDER_LIST_API)
-            rel = next((r for r in (rels if isinstance(rels, list) else [])
-                        if r.get("tag_name") == tag), None)
+            rel = next(
+                (
+                    r
+                    for r in (rels if isinstance(rels, list) else [])
+                    if r.get("tag_name") == tag
+                ),
+                None,
+            )
             if rel is None:
                 raise _NoSuchTag(tag)
         elif prerelease:
             rels = _json(FEEDER_LIST_API)
-            rels = [r for r in rels if not r.get("draft")] if isinstance(rels, list) else []
+            rels = (
+                [r for r in rels if not r.get("draft")]
+                if isinstance(rels, list)
+                else []
+            )
             rel = rels[0] if rels else _json(FEEDER_API)
         else:
             # "Newest release" has to mean the same build on both paths, and
@@ -602,7 +662,11 @@ def resolve_feeder(prerelease: bool = False, tag: str = "") -> tuple[str, dict[s
             # A test build is named as one; the flag is upstream's to set and
             # they do not. Betas stay one entry away: "newest pre-release".
             rels = _json(FEEDER_LIST_API)
-            rels = [r for r in rels if not r.get("draft")] if isinstance(rels, list) else []
+            rels = (
+                [r for r in rels if not r.get("draft")]
+                if isinstance(rels, list)
+                else []
+            )
             rel = next((r for r in rels if not _is_prerelease(r)), None)
             if rel is None:
                 # Nothing but test builds in the newest 15, which upstream
@@ -615,15 +679,19 @@ def resolve_feeder(prerelease: bool = False, tag: str = "") -> tuple[str, dict[s
                 except Exception:
                     want, assets = "", {}
                 if assets:
-                    last_fallback = ("The newest releases on GitHub's API "
-                                     "were all test builds; the feeder "
-                                     "release was read from github.com's "
-                                     "release pages instead.")
+                    last_fallback = (
+                        "The newest releases on GitHub's API "
+                        "were all test builds; the feeder "
+                        "release was read from github.com's "
+                        "release pages instead."
+                    )
                     return want, assets
                 rel = _json(FEEDER_API)
     except _NoSuchTag:
-        raise RuntimeError(f"DLSS5-Feeder release {tag} is not on GitHub's "
-                           f"release list (the newest 15 are checked).") from None
+        raise RuntimeError(
+            f"DLSS5-Feeder release {tag} is not on GitHub's "
+            f"release list (the newest 15 are checked)."
+        ) from None
     except Exception:
         # The API is the only host that fails on its own - rate limited, or
         # answered by a filter (#175). github.com lists the same releases and
@@ -631,9 +699,11 @@ def resolve_feeder(prerelease: bool = False, tag: str = "") -> tuple[str, dict[s
         want, assets = _feeder_html(prerelease, tag)
         if not assets:
             raise
-        last_fallback = ("GitHub's API could not be reached; the feeder "
-                         "release was read from github.com's release pages "
-                         "instead.")
+        last_fallback = (
+            "GitHub's API could not be reached; the feeder "
+            "release was read from github.com's release pages "
+            "instead."
+        )
         return want, assets
     assets = {a["name"]: a["browser_download_url"] for a in rel.get("assets", [])}
     got = rel.get("tag_name", "?")
@@ -642,9 +712,11 @@ def resolve_feeder(prerelease: bool = False, tag: str = "") -> tuple[str, dict[s
         # a test build. Installing one is better than installing nothing,
         # and saying so is better than letting the settings claim this is
         # the release line.
-        last_fallback = (f"Every recent DLSS5-Feeder release is a test "
-                         f"build; {got} was installed. Pick an exact "
-                         f"version under 'feeder build' to change that.")
+        last_fallback = (
+            f"Every recent DLSS5-Feeder release is a test "
+            f"build; {got} was installed. Pick an exact "
+            f"version under 'feeder build' to change that."
+        )
     return got, assets
 
 
@@ -742,24 +814,39 @@ def resolve_uplift() -> tuple[str, str, str]:
     errors: list[str] = []
     try:
         rels = _json(UPLIFT_API)
-        rels = [r for r in (rels if isinstance(rels, list) else [])
-                if isinstance(r, dict) and not r.get("draft") and not r.get("prerelease")]
+        rels = [
+            r
+            for r in (rels if isinstance(rels, list) else [])
+            if isinstance(r, dict) and not r.get("draft") and not r.get("prerelease")
+        ]
         rels.sort(key=lambda r: r.get("published_at") or "", reverse=True)
         for r in rels:
-            assets = {str(a.get("name", "")): a.get("browser_download_url", "")
-                      for a in r.get("assets") or [] if isinstance(a, dict)}
+            assets = {
+                str(a.get("name", "")): a.get("browser_download_url", "")
+                for a in r.get("assets") or []
+                if isinstance(a, dict)
+            }
             zips = [n for n in assets if UPLIFT_ZIP_RE.match(n) and assets[n]]
             if zips:
-                return (str(r.get("tag_name") or "?"), assets[zips[0]],
-                        assets.get(UPLIFT_SUMS, "") or "")
+                return (
+                    str(r.get("tag_name") or "?"),
+                    assets[zips[0]],
+                    assets.get(UPLIFT_SUMS, "") or "",
+                )
         errors.append("no release carries a GITC-Uplift-<version>.zip")
     except Exception as e:
         errors.append(f"GitHub: {e}")
     try:
         from . import net
-        cached = sorted((p for p in net.cache_dir().glob("GITC-Uplift-*.zip")
-                         if UPLIFT_ZIP_RE.match(p.name)),
-                        key=lambda p: p.stat().st_mtime)
+
+        cached = sorted(
+            (
+                p
+                for p in net.cache_dir().glob("GITC-Uplift-*.zip")
+                if UPLIFT_ZIP_RE.match(p.name)
+            ),
+            key=lambda p: p.stat().st_mtime,
+        )
         if cached:
             m = UPLIFT_ZIP_RE.match(cached[-1].name)
             return "v" + m.group(1), cached[-1].as_uri(), ""
@@ -772,8 +859,11 @@ def uplift_sum(sums_text: str, name: str) -> str:
     """The SHA-256 SHA256SUMS.txt gives for `name`, or ""."""
     for line in (sums_text or "").splitlines():
         parts = line.strip().split()
-        if len(parts) >= 2 and parts[-1].lstrip("*").rsplit("/", 1)[-1] == name \
-                and re.fullmatch(r"[0-9a-fA-F]{64}", parts[0]):
+        if (
+            len(parts) >= 2
+            and parts[-1].lstrip("*").rsplit("/", 1)[-1] == name
+            and re.fullmatch(r"[0-9a-fA-F]{64}", parts[0])
+        ):
             return parts[0].lower()
     return ""
 
@@ -798,8 +888,10 @@ def resolve_standalone() -> tuple[str, dict[str, str]]:
         # redirect rather than the API.
         tag = latest_tag(STANDALONE_REPO)
         if tag:
-            guess = (f"https://github.com/{STANDALONE_REPO}/releases/download/"
-                     f"{tag}/{STANDALONE_ZIP_NAME.format(tag=tag)}")
+            guess = (
+                f"https://github.com/{STANDALONE_REPO}/releases/download/"
+                f"{tag}/{STANDALONE_ZIP_NAME.format(tag=tag)}"
+            )
             # The archive's name is a guess - the publisher has renamed
             # things before, which is the whole reason this branch exists.
             # Ask before committing the install to it; a 404 here still has
@@ -814,13 +906,16 @@ def resolve_standalone() -> tuple[str, dict[str, str]]:
     assets = {a["name"]: a["browser_download_url"] for a in rel.get("assets", [])}
     missing = [n for n in STANDALONE_ASSETS if n not in assets]
     if missing:
-        zip64 = next((u for n, u in assets.items()
-                      if n.lower().endswith("-64-bit.zip")), None)
+        zip64 = next(
+            (u for n, u in assets.items() if n.lower().endswith("-64-bit.zip")), None
+        )
         if zip64:
             urls[STANDALONE_ZIP] = zip64
             return rel.get("tag_name", "?"), urls
-        raise RuntimeError("The DLSS5-Reshade-AIO release is missing "
-                           f"{', '.join(missing)} and has no 64-bit archive.")
+        raise RuntimeError(
+            "The DLSS5-Reshade-AIO release is missing "
+            f"{', '.join(missing)} and has no 64-bit archive."
+        )
     for name in STANDALONE_ASSETS:
         urls[name] = assets[name]
     return rel.get("tag_name", "?"), urls
@@ -838,19 +933,19 @@ def resolve_remix_runtime() -> tuple[str, dict[str, str]]:
         rel = _json(REMIX_RUNTIME_API)
     except Exception:
         last_fallback = _LATEST_REDIRECT
-        return "latest", {n: REMIX_RUNTIME_LATEST + n
-                          for n in REMIX_RUNTIME_ASSETS}
+        return "latest", {n: REMIX_RUNTIME_LATEST + n for n in REMIX_RUNTIME_ASSETS}
     assets = {a["name"]: a["browser_download_url"] for a in rel.get("assets", [])}
     missing = [n for n in REMIX_RUNTIME_ASSETS if n not in assets]
     if missing:
-        raise RuntimeError("The dxvk-remix-plus-dlssnr release is missing "
-                           f"{', '.join(missing)}.")
+        raise RuntimeError(
+            f"The dxvk-remix-plus-dlssnr release is missing {', '.join(missing)}."
+        )
     return rel.get("tag_name", "?"), {n: assets[n] for n in REMIX_RUNTIME_ASSETS}
 
 
 def _ver_key(tag: str, prefix: str) -> tuple:
     """'dlss-310.8.0' -> (310, 8, 0), a sortable key."""
-    raw = tag[len(prefix):].lstrip("-")
+    raw = tag[len(prefix) :].lstrip("-")
     nums = re.findall(r"\d+", raw)
     return tuple(int(n) for n in nums) if nums else (0,)
 
@@ -859,11 +954,13 @@ _CATALOG_CACHE: dict[str, list[dict]] | None = None
 
 # Longest prefix first: "dlssnr-310.8.0" and "dlssg-310.9.1" both start with
 # "dlss", so the bare "dlss-" family has to be the last thing tried.
-RHI_FAMILIES = (("renodx-dlss5", "renodx"),
-                ("renodx-dlss-SF", "renodx_sf"),
-                ("dlssnr", "dlssnr"),
-                ("dlssg", "dlssg"),
-                ("dlss-", "dlss"))
+RHI_FAMILIES = (
+    ("renodx-dlss5", "renodx"),
+    ("renodx-dlss-SF", "renodx_sf"),
+    ("dlssnr", "dlssnr"),
+    ("dlssg", "dlssg"),
+    ("dlss-", "dlss"),
+)
 # How many builds per family the API-free walk collects. The dropdowns show
 # more when the API answers; this is enough to install with and to step back
 # one build when the newest breaks a game.
@@ -873,8 +970,9 @@ RHI_HTML_PER_FAMILY = 3
 # newest, so "pinned to 4.55" would quietly install 5.2.1 - the build that
 # faults on every evaluate on the very drivers the pin exists for. They are
 # kept whatever the cap says.
-RHI_HTML_REQUIRED = {"renodx": (FEEDER_RENODX_PIN, OPENGL_RENODX_PIN,
-                                DRIVER_FAULT_RENODX_PIN)}
+RHI_HTML_REQUIRED = {
+    "renodx": (FEEDER_RENODX_PIN, OPENGL_RENODX_PIN, DRIVER_FAULT_RENODX_PIN)
+}
 
 
 def _rhi_html_catalog() -> dict[str, list[dict]]:
@@ -889,37 +987,45 @@ def _rhi_html_catalog() -> dict[str, list[dict]]:
         tags = release_tags_html(RHI_REPO, pages=1) if page == 1 else None
         if tags is None:
             html = _page(RELEASES_PAGE.format(repo=RHI_REPO, page=page))
-            tags = [(urllib.parse.unquote(t), False)
-                    for t in dict.fromkeys(
-                        re.findall(r'/%s/releases/tag/([^"?#]+)"'
-                                   % re.escape(RHI_REPO), html))]
+            tags = [
+                (urllib.parse.unquote(t), False)
+                for t in dict.fromkeys(
+                    re.findall(
+                        r'/%s/releases/tag/([^"?#]+)"' % re.escape(RHI_REPO), html
+                    )
+                )
+            ]
         if not tags:
             break
         for tag, _pre in tags:
-            fam = next((f for pre, f in RHI_FAMILIES if tag.startswith(pre)),
-                       None)
+            fam = next((f for pre, f in RHI_FAMILIES if tag.startswith(pre)), None)
             if fam is None:
                 continue
             prefix = next(pre for pre, f in RHI_FAMILIES if f == fam)
-            label = tag[len(prefix):].lstrip("-") or tag
-            if (len(fams.get(fam, [])) >= RHI_HTML_PER_FAMILY
-                    and label not in RHI_HTML_REQUIRED.get(fam, ())):
+            label = tag[len(prefix) :].lstrip("-") or tag
+            if len(
+                fams.get(fam, [])
+            ) >= RHI_HTML_PER_FAMILY and label not in RHI_HTML_REQUIRED.get(fam, ()):
                 continue
             assets = release_assets_html(RHI_REPO, tag)
-            url = next((u for n, u in assets.items()
-                        if n.lower().endswith(".zip")), None)
+            url = next(
+                (u for n, u in assets.items() if n.lower().endswith(".zip")), None
+            )
             if not url:
                 continue
-            fams.setdefault(fam, []).append({
-                "tag": tag,
-                "label": label,
-                "url": url,
-                "size": 0,
-                "key": _ver_key(tag, prefix.rstrip("-")),
-            })
+            fams.setdefault(fam, []).append(
+                {
+                    "tag": tag,
+                    "label": label,
+                    "url": url,
+                    "size": 0,
+                    "key": _ver_key(tag, prefix.rstrip("-")),
+                }
+            )
         have = {e["label"] for e in fams.get("renodx", [])}
-        if (all(fams.get(f) for _p, f in RHI_FAMILIES)
-                and all(v in have for v in RHI_HTML_REQUIRED["renodx"])):
+        if all(fams.get(f) for _p, f in RHI_FAMILIES) and all(
+            v in have for v in RHI_HTML_REQUIRED["renodx"]
+        ):
             break
     for entries in fams.values():
         entries.sort(key=lambda d: d["key"], reverse=True)
@@ -953,14 +1059,15 @@ def rhi_catalog(force: bool = False) -> dict[str, list[dict]]:
         # guard has to run AFTER them or it rejects a catalog they complete.
         for fam, entries in nvidia_dlss().items():
             fams[fam] = entries + fams.get(fam, [])
-        if (not fams.get("renodx") or not fams.get("dlssnr")
-                or not fams.get("dlss")):
+        if not fams.get("renodx") or not fams.get("dlssnr") or not fams.get("dlss"):
             raise
-        last_fallback = ("GitHub's API could not be reached; the build list "
-                         "was read from github.com's release pages instead. "
-                         "It is shorter than usual; if a build the tool "
-                         "pins is missing from it, the install says so "
-                         "before it writes anything.")
+        last_fallback = (
+            "GitHub's API could not be reached; the build list "
+            "was read from github.com's release pages instead. "
+            "It is shorter than usual; if a build the tool "
+            "pins is missing from it, the install says so "
+            "before it writes anything."
+        )
         # Deliberately NOT cached: this list is the short one, and the next
         # install in the same session should ask the API again rather than
         # inherit it silently.
@@ -974,13 +1081,15 @@ def rhi_catalog(force: bool = False) -> dict[str, list[dict]]:
             for a in r.get("assets", []):
                 if not a["name"].endswith(".zip"):
                     continue
-                fams.setdefault(fam, []).append({
-                    "tag": tag,
-                    "label": tag[len(prefix):].lstrip("-") or tag,
-                    "url": a["browser_download_url"],
-                    "size": a.get("size", 0),
-                    "key": _ver_key(tag, prefix.rstrip("-")),
-                })
+                fams.setdefault(fam, []).append(
+                    {
+                        "tag": tag,
+                        "label": tag[len(prefix) :].lstrip("-") or tag,
+                        "url": a["browser_download_url"],
+                        "size": a.get("size", 0),
+                        "key": _ver_key(tag, prefix.rstrip("-")),
+                    }
+                )
             break
     for fam in fams.values():
         fam.sort(key=lambda d: d["key"], reverse=True)
@@ -1001,9 +1110,11 @@ def rhi_catalog(force: bool = False) -> dict[str, list[dict]]:
 # carries super resolution, ray reconstruction and frame generation only.
 NVIDIA_DLSS_REPO = "NVIDIA/DLSS"
 NVIDIA_DLSS_DIR = "lib/Windows_x86_64/rel"
-NVIDIA_DLSS_FILES = (("dlss", "nvngx_dlss.dll"),
-                     ("dlssd", "nvngx_dlssd.dll"),
-                     ("dlssg", "nvngx_dlssg.dll"))
+NVIDIA_DLSS_FILES = (
+    ("dlss", "nvngx_dlss.dll"),
+    ("dlssd", "nvngx_dlssd.dll"),
+    ("dlssg", "nvngx_dlssg.dll"),
+)
 _NVIDIA_CACHE: dict[str, list[dict]] | None = None
 
 
@@ -1028,16 +1139,20 @@ def nvidia_dlss() -> dict[str, list[dict]]:
     # claiming to be each file's own version.
     label = f"{tag.lstrip('vV')} (NVIDIA SDK)"
     for fam, name in NVIDIA_DLSS_FILES:
-        out[fam] = [{
-            "tag": tag,
-            "label": label,
-            "url": (f"https://raw.githubusercontent.com/{NVIDIA_DLSS_REPO}/"
-                    f"{tag}/{NVIDIA_DLSS_DIR}/{name}"),
-            "size": 0,
-            # Not an archive: the file IS the download.
-            "raw": name,
-            "key": _ver_key(tag, ""),
-        }]
+        out[fam] = [
+            {
+                "tag": tag,
+                "label": label,
+                "url": (
+                    f"https://raw.githubusercontent.com/{NVIDIA_DLSS_REPO}/"
+                    f"{tag}/{NVIDIA_DLSS_DIR}/{name}"
+                ),
+                "size": 0,
+                # Not an archive: the file IS the download.
+                "raw": name,
+                "key": _ver_key(tag, ""),
+            }
+        ]
     _NVIDIA_CACHE = out
     return out
 
@@ -1051,7 +1166,8 @@ def pick(entries: list[dict], want: str | None) -> dict:
     if not entries:
         raise Unavailable(
             "The build list came back empty - GitHub could not be reached "
-            "and nothing is cached yet. Try again in a few minutes.")
+            "and nothing is cached yet. Try again in a few minutes."
+        )
     if want:
         for e in entries:
             if e["label"] == want or e["tag"] == want:

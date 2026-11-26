@@ -9,6 +9,7 @@ Order of closing, everywhere: an open menu or panel (the kit's layers), then
 the log drawer, then the page's own back. Esc walks that order one step per
 press; the rail and the back arrow jump over it.
 """
+
 from __future__ import annotations
 
 import re
@@ -26,8 +27,9 @@ TITLE = "DLSS 5 Autopilot"
 
 class Page:
     """Base for a page: `draw` from state, `back` for Esc/Backspace."""
+
     name = ""
-    rail = 0                       # which rail item lights up
+    rail = 0  # which rail item lights up
 
     def __init__(self, shell: "Shell"):
         self.shell = shell
@@ -72,7 +74,9 @@ def _restore(root: tk.Tk, sw: int, sh: int) -> bool:
     except (KeyError, TypeError, ValueError, OverflowError, tk.TclError):
         return bool(was.get("zoomed", True))
     if 200 <= w <= vw and 200 <= h <= vh:
-        reachable = vx <= x + w - 120 and x + 120 <= vx + vw and vy <= y and y + 40 <= vy + vh
+        reachable = (
+            vx <= x + w - 120 and x + 120 <= vx + vw and vy <= y and y + 40 <= vy + vh
+        )
         root.geometry(f"{w}x{h}+{x}+{y}" if reachable else f"{w}x{h}")
     return bool(was.get("zoomed", False))
 
@@ -104,7 +108,9 @@ class Shell:
         win.set_icons(root)
         root.after(0, lambda: win.dark_titlebar(root))
         sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
-        root.geometry(f"{min(T.px(1400), int(sw * 0.95))}x{min(T.px(900), int(sh * 0.9))}")
+        root.geometry(
+            f"{min(T.px(1400), int(sw * 0.95))}x{min(T.px(900), int(sh * 0.9))}"
+        )
         root.minsize(min(T.px(900), int(sw * 0.6)), min(T.px(620), int(sh * 0.5)))
         try:
             if _restore(root, sw, sh):
@@ -122,8 +128,10 @@ class Shell:
         self.bottom_c = tk.Canvas(right, height=T.px(34), bg=T.BG, highlightthickness=0)
         self.bottom_c.pack(side="bottom", fill="x")
         self.drawer = tk.Frame(right, bg=T.LOG_BG, height=1)
-        self.drawer.pack_propagate(False)          # packed only while open
-        self.content = tk.Canvas(right, bg=T.BG, highlightthickness=0, yscrollincrement=1)
+        self.drawer.pack_propagate(False)  # packed only while open
+        self.content = tk.Canvas(
+            right, bg=T.BG, highlightthickness=0, yscrollincrement=1
+        )
         self.content.pack(side="top", fill="both", expand=True)
 
         self.kit = Kit(self.content, self.motion)
@@ -142,11 +150,11 @@ class Shell:
         self.status_text = "ready"
         self.busy_text = ""
         self.banners: dict[str, dict] = {}
-        self.watching = None          # (on, label) from the controller
+        self.watching = None  # (on, label) from the controller
         self.on_watch = None
-        self.on_help = None           # list of (label, cmd) for the help menu
+        self.on_help = None  # list of (label, cmd) for the help menu
         self.log_open = False
-        self.dialog: "Dialog | None" = None      # the question on screen, if any
+        self.dialog: "Dialog | None" = None  # the question on screen, if any
 
         self._build_log()
         self.content.bind("<Configure>", self._configured)
@@ -159,13 +167,19 @@ class Shell:
         # front with it. Bound once, here: a dialog that bound its own had to
         # take them off again, and unbinding one handler takes all of them
         # with it on the Python the release is built with.
-        root.bind("<Configure>", lambda _e: self.dialog and self.dialog._place(), add="+")
+        root.bind(
+            "<Configure>", lambda _e: self.dialog and self.dialog._place(), add="+"
+        )
         root.bind("<FocusIn>", lambda _e: self.dialog and self.dialog._front(), add="+")
         # The window closing is an answer to whatever it was asking. Without
         # it the question's wait has no writer left: quitting from the tray
         # with one up left python.exe spinning on a dead interpreter for
         # ever, and every later launch then met the "already open" guard.
-        root.bind("<Destroy>", lambda e: self._answer_dialog() if e.widget is root else None, add="+")
+        root.bind(
+            "<Destroy>",
+            lambda e: self._answer_dialog() if e.widget is root else None,
+            add="+",
+        )
         root.bind("<Control-h>", lambda e: None if self._in_text(e) else self.home())
         root.bind("<KeyPress>", self._key, add="+")
 
@@ -198,8 +212,11 @@ class Shell:
         hidden = self.rail_hidden()
         while self.history:
             name = self.history.pop()
-            if name in self.pages and name not in hidden \
-                    and (self.page is None or name != self.page.name):
+            if (
+                name in self.pages
+                and name not in hidden
+                and (self.page is None or name != self.page.name)
+            ):
                 self.show(name, remember=False)
                 return
         if self.page is None or self.page.name != "library":
@@ -237,7 +254,7 @@ class Shell:
 
     def _raise_layers(self) -> None:
         c = self.content
-        c.tag_raise("toast")                 # one sliding out is no layer any more
+        c.tag_raise("toast")  # one sliding out is no layer any more
         for layer in list(self.kit.layers):
             c.tag_raise(layer.tag)
         c.tag_raise("kit_tip")
@@ -258,11 +275,13 @@ class Shell:
     def _wheel(self, e):
         w = e.widget
         if isinstance(w, tk.Text):
-            return None                      # the log scrolls itself
+            return None  # the log scrolls itself
         top = self.kit.top()
         if top is not None and hasattr(top, "wheel") and top.wheel(e):
             return "break"
-        inside = w is self.content or (isinstance(w, tk.Misc) and str(w).startswith(str(self.content)))
+        inside = w is self.content or (
+            isinstance(w, tk.Misc) and str(w).startswith(str(self.content))
+        )
         if not inside:
             return None
         view = self.content.winfo_height()
@@ -285,12 +304,16 @@ class Shell:
             if int(want - now):
                 self.content.yview_scroll(int(want - now), "units")
             self._thumb()
+
         self.motion.run("scroll", 160, glide)
         return "break"
 
     def scrolling(self) -> bool:
         """The wheel moved the page in the last moment."""
-        return self.motion.busy("scroll") or time.monotonic() - getattr(self, "_wheel_at", 0.0) < 0.25
+        return (
+            self.motion.busy("scroll")
+            or time.monotonic() - getattr(self, "_wheel_at", 0.0) < 0.25
+        )
 
     def scroll_to(self, y: float) -> None:
         view = self.content.winfo_height()
@@ -307,8 +330,15 @@ class Shell:
         h = max(T.px(30), view * view / self.content_h)
         y = top + (view - h) * (top / (self.content_h - view))
         x = c.winfo_width() - T.px(5)
-        c.create_rectangle(x, y + T.px(2), x + T.px(3), y + h - T.px(2), fill=T.LINE,
-                           outline="", tags="thumb")
+        c.create_rectangle(
+            x,
+            y + T.px(2),
+            x + T.px(3),
+            y + h - T.px(2),
+            fill=T.LINE,
+            outline="",
+            tags="thumb",
+        )
 
     # ============================================================ keys
     def _answer_dialog(self) -> bool:
@@ -333,7 +363,7 @@ class Shell:
             self.kit.pop()
             return "break"
         if isinstance(e.widget, tk.Entry):
-            return None                      # the field clears itself first
+            return None  # the field clears itself first
         self.kit._hide_tip()
         if self.kit.top() is not None:
             self.kit.pop()
@@ -356,9 +386,13 @@ class Shell:
 
     # ============================================================ rail
     # A page's `rail` is its index here: "dlss" sits after the games it is about.
-    RAIL_ITEMS = (("library", "game", "games"), ("dlss", "chip", "dlss"),
-                  ("video", "video", "video"), ("remix", "remix", "remix"),
-                  ("vr", "headset", "vr"))
+    RAIL_ITEMS = (
+        ("library", "game", "games"),
+        ("dlss", "chip", "dlss"),
+        ("video", "video", "video"),
+        ("remix", "remix", "remix"),
+        ("vr", "headset", "vr"),
+    )
     # The pages a person can take off the rail (#293). Games and dlss stay:
     # one is home, the other is where every game's DLSS files are.
     HIDEABLE = ("video", "remix", "vr")
@@ -385,10 +419,18 @@ class Shell:
 
     def _rail_item_menu(self, page: str) -> None:
         self.kit.close_all()
-        self.rail_menu([(f"hide {page} from the sidebar",
-                         lambda: self.set_rail_hidden(page, True)),
-                        ("games > view > sidebar pages brings it back", lambda: None, False)],
-                       f"nav_{page}", T.px(440), max_rows=2)
+        self.rail_menu(
+            [
+                (
+                    f"hide {page} from the sidebar",
+                    lambda: self.set_rail_hidden(page, True),
+                ),
+                ("games > view > sidebar pages brings it back", lambda: None, False),
+            ],
+            f"nav_{page}",
+            T.px(440),
+            max_rows=2,
+        )
 
     # The rail's shapes, roomiest first; draw_rail takes the first one that
     # fits the window's height. One fixed layout needed 580 px at 100%, so
@@ -404,7 +446,7 @@ class Shell:
         ((False, True, 30, 80, 42, 19, 19, 15, 0, 0), (62, 24, 18, 18, 18, 0, 0)),
         ((False, False, 0, 26, 42, 19, 19, 15, 0, 0), (62, 24, 18, 18, 18, 0, 0)),
     )
-    RAIL_GAP = 6                     # between the last page and watch
+    RAIL_GAP = 6  # between the last page and watch
 
     @classmethod
     def rail_shape(cls, h: int, n: int):
@@ -427,7 +469,7 @@ class Shell:
         self.content.delete("rail_hint")
         rw = T.px(84)
         h = c.winfo_height()
-        if h <= 1:                   # not laid out yet; <Configure> draws it again
+        if h <= 1:  # not laid out yet; <Configure> draws it again
             h = T.px(600)
         c.create_line(rw - 1, 0, rw - 1, h, fill=T.LINE)
         active = self.RAIL_ITEMS[self.page.rail if self.page is not None else 0][0]
@@ -437,13 +479,16 @@ class Shell:
         labels, logo, logo_y, first, step, up, down, gsize, gdy, ldy = top
         more = []
         if fits < len(shown):
-            shown, more = shown[:fits - 1], shown[fits - 1:]
+            shown, more = shown[: fits - 1], shown[fits - 1 :]
         if logo:
             try:
                 img = getattr(self, "_logo", None)
                 if img is None:
                     from . import imaging
-                    buf = imaging.picture(win.ico_path(), T.px(36), T.px(36), bg=T.RAIL, cover=False)
+
+                    buf = imaging.picture(
+                        win.ico_path(), T.px(36), T.px(36), bg=T.RAIL, cover=False
+                    )
                     if buf:
                         img = self._logo = imaging.photo(tk, buf, T.px(36), T.px(36), c)
                 if img is not None:
@@ -454,46 +499,105 @@ class Shell:
                 pass
         items = [(p, g, lb, self._rail_nav(p)) for p, g, lb in shown]
         if more:
-            items.append(("more", "more", "more", lambda more=more: self._rail_more(more)))
+            items.append(
+                ("more", "more", "more", lambda more=more: self._rail_more(more))
+            )
         for i, (page, glyph, label, go) in enumerate(items):
             y = T.px(first + i * step)
             on = page == active or (page == "more" and active in [m[0] for m in more])
             tag = f"nav_{page}"
             col = T.TEXT if on else T.DIM
-            c.create_rectangle(T.px(4), y - T.px(up), rw - T.px(4), y + T.px(down), fill=T.RAIL,
-                               outline="", tags=tag)
+            c.create_rectangle(
+                T.px(4),
+                y - T.px(up),
+                rw - T.px(4),
+                y + T.px(down),
+                fill=T.RAIL,
+                outline="",
+                tags=tag,
+            )
             if on:
-                c.create_rectangle(0, y - T.px(up - 2), T.px(3), y + T.px(down - 2),
-                                   fill=T.AMBER, outline="")
+                c.create_rectangle(
+                    0,
+                    y - T.px(up - 2),
+                    T.px(3),
+                    y + T.px(down - 2),
+                    fill=T.AMBER,
+                    outline="",
+                )
             parts = [k.glyph(rw / 2, y + T.px(gdy), glyph, col, gsize, tags=tag)]
             if labels:
-                parts.append(k.text(rw / 2, y + T.px(ldy), label, col, 8, anchor="center", tags=tag))
-            self._rail_hover(tag, parts, None if on else (T.MUTED, T.DIM), None if labels else label)
+                parts.append(
+                    k.text(
+                        rw / 2, y + T.px(ldy), label, col, 8, anchor="center", tags=tag
+                    )
+                )
+            self._rail_hover(
+                tag, parts, None if on else (T.MUTED, T.DIM), None if labels else label
+            )
             k.on_click(tag, go)
             if page in self.HIDEABLE:
-                k._bind(tag, "<Button-3>", lambda _e, page=page: self._rail_item_menu(page),
-                        role="menu")
+                k._bind(
+                    tag,
+                    "<Button-3>",
+                    lambda _e, page=page: self._rail_item_menu(page),
+                    role="menu",
+                )
         # watcher and help at the bottom
         w_off, h_off, bup, wdown, hdown, bldy, bgdy = bottom
         on, label = self.watching or (False, "watch off")
         y = h - T.px(w_off)
-        c.create_rectangle(T.px(4), y - T.px(bup), rw - T.px(4), y + T.px(wdown), fill=T.RAIL,
-                           outline="", tags="nav_watch")
+        c.create_rectangle(
+            T.px(4),
+            y - T.px(bup),
+            rw - T.px(4),
+            y + T.px(wdown),
+            fill=T.RAIL,
+            outline="",
+            tags="nav_watch",
+        )
         col = T.OK if on else T.DIM
         parts = [k.glyph(rw / 2, y + T.px(bgdy), "eye", col, 14, tags="nav_watch")]
         if labels:
-            parts.append(k.text(rw / 2, y + T.px(bldy), label, col, 7, anchor="center",
-                                tags="nav_watch"))
+            parts.append(
+                k.text(
+                    rw / 2,
+                    y + T.px(bldy),
+                    label,
+                    col,
+                    7,
+                    anchor="center",
+                    tags="nav_watch",
+                )
+            )
         self._rail_hover("nav_watch", parts, None, None if labels else label)
         k.on_click("nav_watch", lambda: self.on_watch and self.on_watch())
         y = h - T.px(h_off)
-        c.create_rectangle(T.px(4), y - T.px(bup), rw - T.px(4), y + T.px(hdown), fill=T.RAIL,
-                           outline="", tags="nav_help")
+        c.create_rectangle(
+            T.px(4),
+            y - T.px(bup),
+            rw - T.px(4),
+            y + T.px(hdown),
+            fill=T.RAIL,
+            outline="",
+            tags="nav_help",
+        )
         parts = [k.glyph(rw / 2, y + T.px(bgdy), "help", T.DIM, 13, tags="nav_help")]
         if labels:
-            parts.append(k.text(rw / 2, y + T.px(bldy), "help", T.DIM, 7, anchor="center",
-                                tags="nav_help"))
-        self._rail_hover("nav_help", parts, (T.MUTED, T.DIM), None if labels else "help")
+            parts.append(
+                k.text(
+                    rw / 2,
+                    y + T.px(bldy),
+                    "help",
+                    T.DIM,
+                    7,
+                    anchor="center",
+                    tags="nav_help",
+                )
+            )
+        self._rail_hover(
+            "nav_help", parts, (T.MUTED, T.DIM), None if labels else "help"
+        )
         k.on_click("nav_help", self.open_help)
         k.prune()
 
@@ -514,6 +618,7 @@ class Shell:
                 for x in parts:
                     c.itemconfigure(x, fill=colours[1])
             self.content.delete("rail_hint")
+
         self.rail_kit.hover(tag, enter, leave)
 
     def _rail_hint(self, tag: str, text: str) -> None:
@@ -524,19 +629,37 @@ class Shell:
             return
         y = r.winfo_rooty() + (box[1] + box[3]) / 2 - c.winfo_rooty() + c.canvasy(0)
         pad = T.px(8)
-        t = c.create_text(c.canvasx(0) + T.px(8) + pad, y, text=text, font=T.mono(9),
-                          fill=T.TEXT, anchor="w", tags="rail_hint")
+        t = c.create_text(
+            c.canvasx(0) + T.px(8) + pad,
+            y,
+            text=text,
+            font=T.mono(9),
+            fill=T.TEXT,
+            anchor="w",
+            tags="rail_hint",
+        )
         x1, y1, x2, y2 = c.bbox(t)
-        b = c.create_rectangle(x1 - pad, y1 - T.px(4), x2 + pad, y2 + T.px(4), fill=T.SURF2,
-                               outline=T.LINE, tags="rail_hint")
+        b = c.create_rectangle(
+            x1 - pad,
+            y1 - T.px(4),
+            x2 + pad,
+            y2 + T.px(4),
+            fill=T.SURF2,
+            outline=T.LINE,
+            tags="rail_hint",
+        )
         c.tag_lower(b, t)
         c.tag_raise("rail_hint")
 
     def _rail_more(self, pages) -> None:
         """The pages a very short rail had no room for, as a menu beside it."""
         self.kit.close_all()
-        self.rail_menu([(label, self._rail_nav(p)) for p, _g, label in pages],
-                       "nav_more", T.px(260), max_rows=len(pages))
+        self.rail_menu(
+            [(label, self._rail_nav(p)) for p, _g, label in pages],
+            "nav_more",
+            T.px(260),
+            max_rows=len(pages),
+        )
 
     def _rail_nav(self, page):
         def go():
@@ -545,11 +668,16 @@ class Shell:
                 self.home()
             elif page in self.pages:
                 self.show(page)
+
         return go
 
     def open_help(self) -> None:
         top = self.kit.top()
-        if top is not None and top.tag.startswith("menu") and getattr(self, "_help_menu", None) is top:
+        if (
+            top is not None
+            and top.tag.startswith("menu")
+            and getattr(self, "_help_menu", None) is top
+        ):
             self.kit.pop()
             return
         items = list(self.on_help() if callable(self.on_help) else [])
@@ -565,6 +693,7 @@ class Shell:
         below, open upwards" rule fire as well, and the help menu came up half
         a screen away from the click."""
         from .kit import Menu
+
         c, r = self.content, self.rail_c
         box = r.bbox(rail_tag) or (0, 0, 0, r.winfo_height())
         # the item's bottom, in the content canvas' own coordinates
@@ -573,8 +702,17 @@ class Shell:
         h = rows * T.px(34) + T.px(8)
         vy1, vy2 = c.canvasy(0), c.canvasy(c.winfo_height())
         y = max(vy1 + T.px(8), min(item_bottom, vy2 - T.px(8)) - h - 1)
-        Menu(self.kit, c.canvasx(0) + T.px(8), y, items, opener=None, width=width,
-             current=None, accent=T.AMBER, max_rows=max_rows)
+        Menu(
+            self.kit,
+            c.canvasx(0) + T.px(8),
+            y,
+            items,
+            opener=None,
+            width=width,
+            current=None,
+            accent=T.AMBER,
+            max_rows=max_rows,
+        )
         return self.kit.top()
 
     # ============================================================ bottom / status
@@ -597,23 +735,51 @@ class Shell:
         col = T.AMBER if self.busy_text else T.DIM
         k.text(T.px(44), h / 2, T.fit(text, T.mono(9), w - T.px(200)), col, 9)
         label = "log"
-        tag, wid = k.link(w - T.px(44), h / 2, label, lambda: self.toggle_log(),
-                          glyph="up" if not self.log_open else "down", colour=T.DIM,
-                          hot=T.TEXT, anchor="e")
-        k.prune()          # redrawn on every status line: its old link's handlers go
+        tag, wid = k.link(
+            w - T.px(44),
+            h / 2,
+            label,
+            lambda: self.toggle_log(),
+            glyph="up" if not self.log_open else "down",
+            colour=T.DIM,
+            hot=T.TEXT,
+            anchor="e",
+        )
+        k.prune()  # redrawn on every status line: its old link's handlers go
 
     # ============================================================ log drawer
     def _build_log(self) -> None:
         d = self.drawer
-        head = tk.Canvas(d, height=T.px(34), bg=T.LOG_BG, highlightthickness=0, cursor="sb_v_double_arrow")
+        head = tk.Canvas(
+            d,
+            height=T.px(34),
+            bg=T.LOG_BG,
+            highlightthickness=0,
+            cursor="sb_v_double_arrow",
+        )
         head.pack(side="top", fill="x")
         self.log_head = head
         self.log_head_kit = Kit(head, self.motion)
-        self.log_text = tk.Text(d, bg=T.LOG_BG, fg=T.MUTED, insertbackground=T.MUTED,
-                                font=T.mono(9), borderwidth=0, wrap="word", spacing1=2,
-                                highlightthickness=0, padx=T.px(40), pady=T.px(4))
+        self.log_text = tk.Text(
+            d,
+            bg=T.LOG_BG,
+            fg=T.MUTED,
+            insertbackground=T.MUTED,
+            font=T.mono(9),
+            borderwidth=0,
+            wrap="word",
+            spacing1=2,
+            highlightthickness=0,
+            padx=T.px(40),
+            pady=T.px(4),
+        )
         self.log_text.pack(side="top", fill="both", expand=True)
-        for tag, colour in (("ok", T.OK), ("err", T.WARN), ("warn", T.AMBER), ("head", T.TEXT)):
+        for tag, colour in (
+            ("ok", T.OK),
+            ("err", T.WARN),
+            ("warn", T.AMBER),
+            ("head", T.TEXT),
+        ):
             self.log_text.tag_configure(tag, foreground=colour)
         self.log_text.config(state="disabled")
         self.log_popped: tk.Text | None = None
@@ -634,14 +800,23 @@ class Shell:
         w = c.winfo_width()
         y = T.px(17)
         c.create_line(0, 0, w, 0, fill=T.LINE)
-        c.create_rectangle(w / 2 - T.px(20), T.px(5), w / 2 + T.px(20), T.px(7), fill=T.LINE, outline="")
+        c.create_rectangle(
+            w / 2 - T.px(20),
+            T.px(5),
+            w / 2 + T.px(20),
+            T.px(7),
+            fill=T.LINE,
+            outline="",
+        )
         k.text(T.px(40), y, "what the tool is doing", T.DIM, 9)
         x = w - T.px(40)
-        for label, glyph, cmd in (("close", "down", lambda: self.toggle_log(False)),
-                                  ("pop out", "link", self.pop_log),
-                                  ("open file", "folder", self.open_log_file),
-                                  ("copy", "copy", self.copy_log),
-                                  ("clear", "trash", self.clear_log)):
+        for label, glyph, cmd in (
+            ("close", "down", lambda: self.toggle_log(False)),
+            ("pop out", "link", self.pop_log),
+            ("open file", "folder", self.open_log_file),
+            ("copy", "copy", self.copy_log),
+            ("clear", "trash", self.clear_log),
+        ):
             tag, wid = k.link(x, y, label, cmd, glyph=glyph, colour=T.DIM, anchor="e")
             x -= wid + T.px(28)
         k.prune()
@@ -671,6 +846,7 @@ class Shell:
         def done():
             if not self.log_open:
                 self.drawer.pack_forget()
+
         self.motion.run("drawer", 220, step, done)
         if want:
             self.log_text.see("end")
@@ -691,7 +867,9 @@ class Shell:
     def _drag_end(self, _e):
         if hasattr(self, "_drag_y"):
             total = max(1, self.root.winfo_height())
-            self._set_share(round(int(self.drawer.cget("height")) / total, 3), save=True)
+            self._set_share(
+                round(int(self.drawer.cget("height")) / total, 3), save=True
+            )
             del self._drag_y
 
     def _set_share(self, v: float, save: bool) -> None:
@@ -731,6 +909,7 @@ class Shell:
 
     def open_log_file(self) -> None:
         import subprocess
+
         try:
             p = log.path()
             if not p.is_file():
@@ -753,10 +932,25 @@ class Shell:
         w.configure(bg=T.LOG_BG)
         w.geometry(f"{T.px(900)}x{T.px(600)}")
         win.dark_titlebar(w)
-        t = tk.Text(w, bg=T.LOG_BG, fg=T.MUTED, font=T.mono(9), borderwidth=0, wrap="word",
-                    spacing1=2, highlightthickness=0, padx=T.px(16), pady=T.px(10))
+        t = tk.Text(
+            w,
+            bg=T.LOG_BG,
+            fg=T.MUTED,
+            font=T.mono(9),
+            borderwidth=0,
+            wrap="word",
+            spacing1=2,
+            highlightthickness=0,
+            padx=T.px(16),
+            pady=T.px(10),
+        )
         t.pack(fill="both", expand=True)
-        for tag, colour in (("ok", T.OK), ("err", T.WARN), ("warn", T.AMBER), ("head", T.TEXT)):
+        for tag, colour in (
+            ("ok", T.OK),
+            ("err", T.WARN),
+            ("warn", T.AMBER),
+            ("head", T.TEXT),
+        ):
             t.tag_configure(tag, foreground=colour)
         t.insert("1.0", self.log_text.get("1.0", "end-1c"))
         for tag in ("ok", "err", "warn", "head"):
@@ -769,6 +963,7 @@ class Shell:
         def closed():
             self.log_popped = None
             w.destroy()
+
         w.protocol("WM_DELETE_WINDOW", closed)
         self._logwin, self.log_popped = w, t
 
@@ -795,19 +990,42 @@ class Shell:
             c.create_rectangle(0, y, T.px(3), y + row, fill=b["colour"], outline="")
             k.text(T.px(44), y + row / 2, b["text"], T.TEXT, 9)
             x = w - T.px(44)
-            tag, wid = k.link(x, y + row / 2, "", lambda key=key: self.unbanner(key),
-                              glyph="close", colour=T.DIM, anchor="e")
+            tag, wid = k.link(
+                x,
+                y + row / 2,
+                "",
+                lambda key=key: self.unbanner(key),
+                glyph="close",
+                colour=T.DIM,
+                anchor="e",
+            )
             x -= wid + T.px(20)
             for label, cmd, primary in reversed(b["actions"]):
                 bw = T.width(label, T.mono(9, True)) + T.px(28)
-                k.button(x - bw, y + T.px(8), bw, label, cmd, kind="primary" if primary else "secondary",
-                         accent=b["colour"], h=row - T.px(16), size=9)
+                k.button(
+                    x - bw,
+                    y + T.px(8),
+                    bw,
+                    label,
+                    cmd,
+                    kind="primary" if primary else "secondary",
+                    accent=b["colour"],
+                    h=row - T.px(16),
+                    size=9,
+                )
                 x -= bw + T.px(10)
         k.prune()
 
     # ============================================================ toast
-    def toast(self, title: str, text: str = "", actions=(), accent=T.AMBER, timeout=9000,
-              glyph="info") -> None:
+    def toast(
+        self,
+        title: str,
+        text: str = "",
+        actions=(),
+        accent=T.AMBER,
+        timeout=9000,
+        glyph="info",
+    ) -> None:
         """A card in the corner. Its items carry "toast" and their own
         toast<n>, never "page": a page redraw deleted it (the watcher's answer
         is shown and then the game page refreshes) and left its layer
@@ -831,18 +1049,49 @@ class Shell:
         c.create_rectangle(x, y, x + w, y + h, fill=T.SURF2, outline=T.LINE, tags=tags)
         c.create_rectangle(x, y, x + T.px(3), y + h, fill=accent, outline="", tags=tags)
         k.glyph(x + T.px(22), y + T.px(26), glyph, accent, 11, anchor="w", tags=tags)
-        k.text(x + T.px(46), y + T.px(26), T.fit(title, T.mono(10, True), w - T.px(90)), T.TEXT, 10, True, tags=tags)
-        k.link(x + w - T.px(16), y + T.px(24), "", lambda: self._toast_out(tag), glyph="close",
-               colour=T.DIM, anchor="e", tags=tags)
+        k.text(
+            x + T.px(46),
+            y + T.px(26),
+            T.fit(title, T.mono(10, True), w - T.px(90)),
+            T.TEXT,
+            10,
+            True,
+            tags=tags,
+        )
+        k.link(
+            x + w - T.px(16),
+            y + T.px(24),
+            "",
+            lambda: self._toast_out(tag),
+            glyph="close",
+            colour=T.DIM,
+            anchor="e",
+            tags=tags,
+        )
         if text:
-            k.text(x + T.px(22), y + T.px(54), T.fit(text, T.mono(9), w - T.px(40)), T.MUTED, 9, tags=tags)
+            k.text(
+                x + T.px(22),
+                y + T.px(54),
+                T.fit(text, T.mono(9), w - T.px(40)),
+                T.MUTED,
+                9,
+                tags=tags,
+            )
         bx = x + T.px(22)
         for label, cmd, primary in actions:
             bw = T.width(label, T.mono(10, True)) + T.px(32)
-            k.button(bx, y + h - T.px(44), bw, label,
-                     (lambda cmd=cmd: (self._toast_out(tag), cmd())),
-                     kind="primary" if primary else "secondary", accent=accent, h=T.px(32),
-                     tags=tags, size=10)
+            k.button(
+                bx,
+                y + h - T.px(44),
+                bw,
+                label,
+                (lambda cmd=cmd: (self._toast_out(tag), cmd())),
+                kind="primary" if primary else "secondary",
+                accent=accent,
+                h=T.px(32),
+                tags=tags,
+                size=10,
+            )
             bx += bw + T.px(10)
         k.push(Layer(tag, lambda animate: self._toast_close(tag, animate)))
         c.move(tag, w + T.px(60), 0)
@@ -852,6 +1101,7 @@ class Shell:
             want = int((w + T.px(60)) * kk)
             c.move(tag, -(want - moved[0]), 0)
             moved[0] = want
+
         self.motion.run(tag, 320, step)
         if getattr(self, "_toast_job", None):
             self.root.after_cancel(self._toast_job)
@@ -878,11 +1128,19 @@ class Shell:
             want = int(T.px(460) * k)
             c.move(tag, want - moved[0], 0)
             moved[0] = want
+
         self.motion.run(tag, 240, step, done=lambda: c.delete(tag))
 
     # ============================================================ dialogs
-    def ask(self, title: str, text: str, ok: str = "ok", cancel: str | None = "cancel",
-            danger: bool = False, accent: str = T.AMBER) -> bool:
+    def ask(
+        self,
+        title: str,
+        text: str,
+        ok: str = "ok",
+        cancel: str | None = "cancel",
+        danger: bool = False,
+        accent: str = T.AMBER,
+    ) -> bool:
         """A modal question inside the window's look. Blocks until answered."""
         return bool(Dialog(self, title, text, ok, cancel, danger, accent).run())
 
@@ -893,13 +1151,17 @@ class Shell:
         Dialog(self, title, text, "ok", None, False, T.WARN, glyph="warn").run()
 
     def ask_text(self, title: str, prompt: str, initial: str = "") -> str | None:
-        return Dialog(self, title, prompt, "save", "cancel", False, T.AMBER, entry=initial).run()
+        return Dialog(
+            self, title, prompt, "save", "cancel", False, T.AMBER, entry=initial
+        ).run()
 
 
 class Dialog:
     """A dark card over a dimmed window. Enter = ok, Esc or a click outside = cancel."""
 
-    def __init__(self, shell, title, text, ok, cancel, danger, accent, glyph=None, entry=None):
+    def __init__(
+        self, shell, title, text, ok, cancel, danger, accent, glyph=None, entry=None
+    ):
         self.shell, self.root = shell, shell.root
         self.title, self.text, self.ok, self.cancel = title, text, ok, cancel
         self.danger, self.accent, self.glyph, self.entry = danger, accent, glyph, entry
@@ -922,7 +1184,10 @@ class Dialog:
         rx, ry = root.winfo_rootx(), root.winfo_rooty()
         rw, rh = root.winfo_width(), root.winfo_height()
         if rx < -1000 or ry < -1000 or rw < 100 or rh < 100:
-            rw, rh = min(T.px(900), root.winfo_screenwidth()), min(T.px(600), root.winfo_screenheight())
+            rw, rh = (
+                min(T.px(900), root.winfo_screenwidth()),
+                min(T.px(600), root.winfo_screenheight()),
+            )
             rx = (root.winfo_screenwidth() - rw) // 2
             ry = (root.winfo_screenheight() - rh) // 2
         scrim = tk.Toplevel(root)
@@ -933,8 +1198,8 @@ class Dialog:
         # bare overrideredirect window went behind the moment anything else
         # was clicked, and the grab then swallowed every click (#263)
         try:
-            scrim.transient(root)          # owned by the window: always over it,
-        except tk.TclError:                # and away with it when it is minimised
+            scrim.transient(root)  # owned by the window: always over it,
+        except tk.TclError:  # and away with it when it is minimised
             pass
         try:
             scrim.attributes("-alpha", 0.55)
@@ -946,10 +1211,18 @@ class Dialog:
         probe = tk.Canvas(root)
 
         def tall(width):
-            tid = probe.create_text(0, 0, text=self.text, font=f, width=width - T.px(64), anchor="nw")
+            tid = probe.create_text(
+                0, 0, text=self.text, font=f, width=width - T.px(64), anchor="nw"
+            )
             x1, y1, x2, y2 = probe.bbox(tid) or (0, 0, 0, 0)
             probe.delete(tid)
-            return T.px(74) + (y2 - y1) + T.px(90) + (T.px(52) if self.entry is not None else 0)
+            return (
+                T.px(74)
+                + (y2 - y1)
+                + T.px(90)
+                + (T.px(52) if self.entry is not None else 0)
+            )
+
         h = tall(w)
         # #302: the card was cut to 85% of the WINDOW and a long text lost its
         # end in a small one. The card is its own window: it grows wider first,
@@ -984,24 +1257,56 @@ class Dialog:
             k.glyph(x, T.px(38), self.glyph, self.accent, 13, anchor="w")
             x += T.px(28)
         k.text(x, T.px(38), self.title, T.TEXT, 12, True)
-        c.create_text(T.px(32), T.px(66), text=self.text, font=f, fill=T.MUTED, anchor="nw",
-                      width=w - T.px(64))
+        c.create_text(
+            T.px(32),
+            T.px(66),
+            text=self.text,
+            font=f,
+            fill=T.MUTED,
+            anchor="nw",
+            width=w - T.px(64),
+        )
         field = None
         if self.entry is not None:
-            field = k.field(T.px(32), h - T.px(122), w - T.px(64), "", glyph=None, value=self.entry,
-                            on_enter=lambda: self._finish(field.get().strip() or None))
-            card.after(50, lambda: (field.entry.focus_set(), field.entry.select_range(0, "end")))
+            field = k.field(
+                T.px(32),
+                h - T.px(122),
+                w - T.px(64),
+                "",
+                glyph=None,
+                value=self.entry,
+                on_enter=lambda: self._finish(field.get().strip() or None),
+            )
+            card.after(
+                50,
+                lambda: (field.entry.focus_set(), field.entry.select_range(0, "end")),
+            )
         bx = w - T.px(32)
         by = h - T.px(62)
         ok_w = T.width(self.ok, T.mono(11, True)) + T.px(44)
         bx -= ok_w
-        k.button(bx, by, ok_w, self.ok, lambda: self._finish(
-            (field.get().strip() or None) if field is not None else True),
-                 kind="danger" if self.danger else "primary", accent=self.accent, h=T.px(40))
+        k.button(
+            bx,
+            by,
+            ok_w,
+            self.ok,
+            lambda: self._finish(
+                (field.get().strip() or None) if field is not None else True
+            ),
+            kind="danger" if self.danger else "primary",
+            accent=self.accent,
+            h=T.px(40),
+        )
         if self.cancel:
             cw = T.width(self.cancel, T.mono(11)) + T.px(44)
-            k.button(bx - cw - T.px(12), by, cw, self.cancel, lambda: self._finish(
-                None if field is not None else False), h=T.px(40))
+            k.button(
+                bx - cw - T.px(12),
+                by,
+                cw,
+                self.cancel,
+                lambda: self._finish(None if field is not None else False),
+                h=T.px(40),
+            )
         self.scrim, self.card, self.field = scrim, card, field
         # mastered on the card, not on whatever tkinter thinks the default
         # root is: with a second Tk interpreter in the process the variable
@@ -1042,7 +1347,10 @@ class Dialog:
         self._first = root.after(1, self._front)
         # a question asked while another is open (a worker's failure landing
         # in the pump) goes on top of it, and the one underneath comes back
-        under, self.shell.dialog = self.shell.dialog, self    # what a test answers, and what is open
+        under, self.shell.dialog = (
+            self.shell.dialog,
+            self,
+        )  # what a test answers, and what is open
         try:
             card.wait_variable(self.done)
         finally:
@@ -1075,9 +1383,14 @@ class Dialog:
             return
         try:
             r = self.root
-            rx, ry, rw, rh = r.winfo_rootx(), r.winfo_rooty(), r.winfo_width(), r.winfo_height()
+            rx, ry, rw, rh = (
+                r.winfo_rootx(),
+                r.winfo_rooty(),
+                r.winfo_width(),
+                r.winfo_height(),
+            )
             if rx < -1000 or ry < -1000:
-                return                        # the window is away; leave it where it is
+                return  # the window is away; leave it where it is
             self.scrim.geometry(f"{rw}x{rh}+{rx}+{ry}")
             cw, ch = self.card.winfo_width(), self.card.winfo_height()
             cx, cy = self._pos(rx, ry, rw, rh, cw, ch)
@@ -1094,8 +1407,10 @@ class Dialog:
         vx, vy = r.winfo_vrootx(), r.winfo_vrooty()
         vw = max(r.winfo_screenwidth(), r.winfo_vrootwidth())
         vh = max(r.winfo_screenheight(), r.winfo_vrootheight())
-        return (max(vx, min(rx + (rw - w) // 2, vx + vw - w)),
-                max(vy, min(ry + (rh - h) // 2, vy + vh - h)))
+        return (
+            max(vx, min(rx + (rw - w) // 2, vx + vw - w)),
+            max(vy, min(ry + (rh - h) // 2, vy + vh - h)),
+        )
 
     def _finish(self, value):
         if self.done.get():

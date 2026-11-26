@@ -11,6 +11,7 @@ would bind the value and stop seeing the patch.
 
 Part of core/diagnose; see __init__.py.
 """
+
 from __future__ import annotations
 import itertools
 import json
@@ -23,27 +24,83 @@ from pathlib import Path
 
 
 __all__ = [
-    "UPLIFT_ADDON_NAME", "BAD", "BRIDGE_LOG", "FEED_LOG", "FEED_SHADERS", "Finding",
-    "_BRIDGE_ATTACHED", "_BRIDGE_CALLED", "_BRIDGE_CREATE_FAILED", "_BRIDGE_CRASH",
-    "_BRIDGE_FAILED", "_BRIDGE_FAULTED",
+    "UPLIFT_ADDON_NAME",
+    "BAD",
+    "BRIDGE_LOG",
+    "FEED_LOG",
+    "FEED_SHADERS",
+    "Finding",
+    "_BRIDGE_ATTACHED",
+    "_BRIDGE_CALLED",
+    "_BRIDGE_CREATE_FAILED",
+    "_BRIDGE_CRASH",
+    "_BRIDGE_FAILED",
+    "_BRIDGE_FAULTED",
     "_BRIDGE_FRAME",
-    "_BRIDGE_REGISTERED", "_BRIDGE_STATS", "_BRIDGE_STOPS",
-    "HOST_LOG", "INFO", "LEGACY_MANIFESTS", "MANIFEST",
-    "NATIVE_ADDON_NAME", "OK", "OPTI_LOG", "PROVIDER_FX",
-    "RESHADE_LOG", "RR_RUNTIME", "Report", "STANDALONE_ADDON_NAME",
-    "STANDALONE_LOG", "STANDALONE_PANEL", "UPSTREAM_ADDON_NAME", "UPSTREAM_PANEL",
-    "NEVER_RAN_SAID", "drop_never_ran",
-    "VULKAN_LAYER", "WARN", "_BACKUP_SUFFIX", "_COMPILER_FIX",
-    "_CORE_NAMES", "_CRASH_CAUSES", "_DEPTH_HINT", "_DISPATCH_MS",
-    "_FEED_GOT_RUNTIME", "_FEED_SESSION", "_HOOK_ADDRESSES", "_INPUT_NEVER",
-    "_INPUT_SEEN", "_INSTALL_FRAMES", "_NGX_IN_STACK", "_OURS_IN_STACK",
-    "_SHARED_MODULES", "_install_modules",
-    "_OUR_MARKS", "_RAN_CONTAINERS", "_RAN_ENTRIES", "_RAN_LOOK",
-    "_RAN_MARGIN", "_RAN_NOT_A_NAME", "_RAN_NOT_EVIDENCE", "_RAN_PARENTS",
-    "_RAN_PER_DIR", "_RAN_SECONDS", "_RAN_SKIP", "_RAN_SKIP_PART", "_RAN_SKIP_SUFFIX",
-    "_RESHADE_ALSO", "_RESHADE_DECIDES", "_RESHADE_FIRM", "_RESHADE_GOT_GOING", "_RESHADE_KEEP",
-    "_RESHADE_SESSION", "_RESHADE_STARTED", "_SCAN_NOISE", "_STANDALONE_NO_RUNTIME",
-    "_STANDALONE_SESSION", "_layer_state", "_user_data_roots"
+    "_BRIDGE_REGISTERED",
+    "_BRIDGE_STATS",
+    "_BRIDGE_STOPS",
+    "HOST_LOG",
+    "INFO",
+    "LEGACY_MANIFESTS",
+    "MANIFEST",
+    "NATIVE_ADDON_NAME",
+    "OK",
+    "OPTI_LOG",
+    "PROVIDER_FX",
+    "RESHADE_LOG",
+    "RR_RUNTIME",
+    "Report",
+    "STANDALONE_ADDON_NAME",
+    "STANDALONE_LOG",
+    "STANDALONE_PANEL",
+    "UPSTREAM_ADDON_NAME",
+    "UPSTREAM_PANEL",
+    "NEVER_RAN_SAID",
+    "drop_never_ran",
+    "VULKAN_LAYER",
+    "WARN",
+    "_BACKUP_SUFFIX",
+    "_COMPILER_FIX",
+    "_CORE_NAMES",
+    "_CRASH_CAUSES",
+    "_DEPTH_HINT",
+    "_DISPATCH_MS",
+    "_FEED_GOT_RUNTIME",
+    "_FEED_SESSION",
+    "_HOOK_ADDRESSES",
+    "_INPUT_NEVER",
+    "_INPUT_SEEN",
+    "_INSTALL_FRAMES",
+    "_NGX_IN_STACK",
+    "_OURS_IN_STACK",
+    "_SHARED_MODULES",
+    "_install_modules",
+    "_OUR_MARKS",
+    "_RAN_CONTAINERS",
+    "_RAN_ENTRIES",
+    "_RAN_LOOK",
+    "_RAN_MARGIN",
+    "_RAN_NOT_A_NAME",
+    "_RAN_NOT_EVIDENCE",
+    "_RAN_PARENTS",
+    "_RAN_PER_DIR",
+    "_RAN_SECONDS",
+    "_RAN_SKIP",
+    "_RAN_SKIP_PART",
+    "_RAN_SKIP_SUFFIX",
+    "_RESHADE_ALSO",
+    "_RESHADE_DECIDES",
+    "_RESHADE_FIRM",
+    "_RESHADE_GOT_GOING",
+    "_RESHADE_KEEP",
+    "_RESHADE_SESSION",
+    "_RESHADE_STARTED",
+    "_SCAN_NOISE",
+    "_STANDALONE_NO_RUNTIME",
+    "_STANDALONE_SESSION",
+    "_layer_state",
+    "_user_data_roots",
 ]
 
 FEED_LOG = "dlss5-feed.log"
@@ -62,7 +119,8 @@ RESHADE_LOG = "ReShade.log"
 # read with a comma as well: a C++ add-on's locale is not ours (#69).
 BRIDGE_LOG = "dlss5-bridge.log"
 _BRIDGE_ATTACHED = re.compile(
-    r"^(\d\d:\d\d:\d\d\.\d{3})\s+dlss5-bridge (\S+) \(built [^)\n]*\) attached\.", re.M)
+    r"^(\d\d:\d\d:\d\d\.\d{3})\s+dlss5-bridge (\S+) \(built [^)\n]*\) attached\.", re.M
+)
 # "[bridge] frame %llu delivered (%ux%u)" at frame 1 and every 1800, the
 # synthetic path's D3D12 and Vulkan spellings, CountDelivered's
 # "[bridge] %ld frames delivered so far." every 600 (the running count), and
@@ -70,50 +128,63 @@ _BRIDGE_ATTACHED = re.compile(
 # writes no "delivered" line of its own (gate 2.0.7).
 _BRIDGE_FRAME = re.compile(
     r"\[(?:bridge|synth)\] (?:(?:D3D12 |Vulkan )?frame (\d+) delivered"
-    r"|(\d+) frames delivered so far\.)|\[vkmirror\] frame (\d+) recorded")
+    r"|(\d+) frames delivered so far\.)|\[vkmirror\] frame (\d+) recorded"
+)
 # The game called DLSS in this launch: a feature was built or refused, an
 # evaluate failed, or the unload summary counted evaluates. "Turn DLSS on"
 # is the wrong answer to a log with any of these (gate 2.0.7).
 _BRIDGE_CALLED = re.compile(
     r"\[bridge\] (?:evaluate failed with result|CreateFeature failed with result"
-    r"|feature ready)|EvaluateFeature calls: [1-9]|\[vkmirror\] frame \d+ recorded")
+    r"|feature ready)|EvaluateFeature calls: [1-9]|\[vkmirror\] frame \d+ recorded"
+)
 # NGX's answer when it would not build the game's feature; the bridge goes on
 # without a "stopped:" line (bridge.inc CreateFeature).
 _BRIDGE_CREATE_FAILED = re.compile(
-    r"\[bridge\] CreateFeature failed with result (0x[0-9A-Fa-f]{8}), (\S+)")
+    r"\[bridge\] CreateFeature failed with result (0x[0-9A-Fa-f]{8}), (\S+)"
+)
 # "[bridge] %.0f frames: bridge CPU %.2f ms/frame | frame interval %.2f ms (%.1f fps)"
 _BRIDGE_STATS = re.compile(
     r"\[bridge\] (\d+) frames: bridge CPU [\d.,]+ ms/frame \| frame interval "
-    r"[\d.,]+ ms \(([\d.,]+) fps\)")
+    r"[\d.,]+ ms \(([\d.,]+) fps\)"
+)
 # The lines after which the bridge delivers nothing more, and the reason
 # each gives. "stopped: %s. The game renders normally" is BridgeDisable's
 # own line - every way the bridge turns itself off goes through it.
 _BRIDGE_STOPS = (
     re.compile(r"stopped: (.+?)\. The game renders normally"),
     re.compile(r"\[bridge\] (evaluate raised exception 0x[0-9A-Fa-f]{8}) -- disabling"),
-    re.compile(r"\[synth\] (the D3D12 evaluate raised exception 0x[0-9A-Fa-f]{8}) "
-               r"after \d+ delivered frames"),
-    re.compile(r"\[synth\] (?:optical flow: )?(the (?:driver's optical flow engine"
-               r"|session on the private D3D11 device) has stopped)"),
+    re.compile(
+        r"\[synth\] (the D3D12 evaluate raised exception 0x[0-9A-Fa-f]{8}) "
+        r"after \d+ delivered frames"
+    ),
+    re.compile(
+        r"\[synth\] (?:optical flow: )?(the (?:driver's optical flow engine"
+        r"|session on the private D3D11 device) has stopped)"
+    ),
     # VkmRefuse: the Vulkan mirror stands down for the rest of the session
     # and forwards the game's own DLSS; it never goes through BridgeDisable.
     re.compile(r"\[vkmirror\] (.+?)\. The game's own DLSS was forwarded"),
 )
 # A fault that stops nothing on its own: three in a row turn the bridge off,
 # and that is said with the "stopped:" line above.
-_BRIDGE_FAILED = re.compile(r"\[bridge\] evaluate failed with result (0x[0-9A-Fa-f]{8}), (\S+)")
+_BRIDGE_FAILED = re.compile(
+    r"\[bridge\] evaluate failed with result (0x[0-9A-Fa-f]{8}), (\S+)"
+)
 # "[bridge]   it faulted in %ls" / "[synth]   it faulted in %ls": the module
 # that owned the faulting address, logged just before the stop it caused.
 _BRIDGE_FAULTED = re.compile(r"\[(?:bridge|synth)\]\s+it faulted in ([^\r\n]+)")
 # The crash handler's block, written in the launch it happened in. The next
 # launch reprints it without this marker, under "The previous run crashed".
-_BRIDGE_CRASH = re.compile(r"### CRASH RECORDED ###[^\n]*\n(?:[^\n]*\n){0,3}?"
-                           r"[^\n]*exception (0x[0-9A-Fa-f]{8})[^\n]*\n"
-                           r"(?:[^\n]*\bin: ([^\n]+))?")
+_BRIDGE_CRASH = re.compile(
+    r"### CRASH RECORDED ###[^\n]*\n(?:[^\n]*\n){0,3}?"
+    r"[^\n]*exception (0x[0-9A-Fa-f]{8})[^\n]*\n"
+    r"(?:[^\n]*\bin: ([^\n]+))?"
+)
 # ReShade's own line for the bridge add-on, which ties the bridge's log to
 # ReShade's session: the bridge writes "attached." just after it registers.
 _BRIDGE_REGISTERED = re.compile(
-    r"^(\d\d:\d\d:\d\d[:.]\d{3})[^\n]*Registered add-on \"DLSS 5 Bridge", re.M)
+    r"^(\d\d:\d\d:\d\d[:.]\d{3})[^\n]*Registered add-on \"DLSS 5 Bridge", re.M
+)
 
 
 MANIFEST = "dlss5-autopilot.json"
@@ -141,8 +212,12 @@ UPLIFT_ADDON_NAME = "GITC Uplift"
 STANDALONE_PANEL = "'Standalone DLSS-NR + SR' add-on tab"
 
 
-STANDALONE_LOG = (Path(os.environ.get("LOCALAPPDATA") or Path.home())
-                  / "RHI" / "Logs" / "standalone-dlssnr.log")
+STANDALONE_LOG = (
+    Path(os.environ.get("LOCALAPPDATA") or Path.home())
+    / "RHI"
+    / "Logs"
+    / "standalone-dlssnr.log"
+)
 
 
 _STANDALONE_SESSION = " attached; requested profile="
@@ -164,7 +239,8 @@ _DEPTH_HINT = (
     "there. Borderless, display scaling and an in-game render scale below "
     "100% are the usual reason the buffer stops matching. If one is selected "
     "and the depth is still flat, tick 'Copy depth buffer before clear "
-    "operations' on the same tab - Mass Effect Legendary Edition needs it.")
+    "operations' on the same tab - Mass Effect Legendary Edition needs it."
+)
 
 
 _COMPILER_FIX = (
@@ -172,7 +248,8 @@ _COMPILER_FIX = (
     "5.1, so the neural pass never compiles - frames still flow, nothing "
     "changes on screen. Rename that file to d3dcompiler_47.dll.dlss5-off so "
     "Windows uses the System32 copy; the tool's next install does this by "
-    "itself.")
+    "itself."
+)
 
 
 @dataclass
@@ -200,10 +277,14 @@ NEVER_RAN_SAID = (
 
 def drop_never_ran(findings) -> list:
     """The findings that survive proof that the game ran."""
-    return [f for f in findings
-            if not any(s in f"{getattr(f, 'title', '')} "
-                         f"{getattr(f, 'detail', '')}"
-                       for s in NEVER_RAN_SAID)]
+    return [
+        f
+        for f in findings
+        if not any(
+            s in f"{getattr(f, 'title', '')} {getattr(f, 'detail', '')}"
+            for s in NEVER_RAN_SAID
+        )
+    ]
 
 
 @dataclass
@@ -235,40 +316,75 @@ _FEED_SESSION = re.compile(r"^[\d:.]+\s+dlss5-feed\S*\s[^\n]*attached[.;]", re.M
 
 _FEED_GOT_RUNTIME = re.compile(
     r"effect runtime|runtime \w+ initialis|effects:|technique|building:"
-    r"|feature ready|session ready|frame \d+", re.I)
+    r"|feature ready|session ready|frame \d+",
+    re.I,
+)
 
 
-_OURS_IN_STACK = ("dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed-helper.addon64",
-                  "dlss5-feed-host64.exe", "dlss5-feed-host32.exe",
-                  "renodx-dlss5.addon64", "renodx-dlss.addon64",
-                  "dlss5-bridge.addon64", "dlss5-dx11-bridge.addon64",
-                  "nvngx.dll.addon64", "standalone-dlssnr.addon64",
-                  "gitc-uplift.addon64", "gitc-uplift.addon32",
-                  "gitc-uplift-helper64.exe")
+_OURS_IN_STACK = (
+    "dlss5-feed.addon64",
+    "dlss5-feed.addon32",
+    "dlss5-feed-helper.addon64",
+    "dlss5-feed-host64.exe",
+    "dlss5-feed-host32.exe",
+    "renodx-dlss5.addon64",
+    "renodx-dlss.addon64",
+    "dlss5-bridge.addon64",
+    "dlss5-dx11-bridge.addon64",
+    "nvngx.dll.addon64",
+    "standalone-dlssnr.addon64",
+    "gitc-uplift.addon64",
+    "gitc-uplift.addon32",
+    "gitc-uplift-helper64.exe",
+)
 
 
-_NGX_IN_STACK = ("nvngx_dlssnr.dll", "_nvngx.dll", "nvngx.dll",
-                 "nvngx_dlss.dll", "D3D12Core.dll")
+_NGX_IN_STACK = (
+    "nvngx_dlssnr.dll",
+    "_nvngx.dll",
+    "nvngx.dll",
+    "nvngx_dlss.dll",
+    "D3D12Core.dll",
+)
 
 
 LEGACY_MANIFESTS = ("dlss5kur-kurulum.json", "dlss5-installer.json")
 
 
-_OUR_MARKS = ("dlss5-feed.addon64", "dlss5-feed.addon32",
-              "dlss5-bridge.addon64", "renodx-dlss5.addon64",
-              "dlss5-feed.log", "OptiScaler.ini", "nvngx_dlssnr.dll")
+_OUR_MARKS = (
+    "dlss5-feed.addon64",
+    "dlss5-feed.addon32",
+    "dlss5-bridge.addon64",
+    "renodx-dlss5.addon64",
+    "dlss5-feed.log",
+    "OptiScaler.ini",
+    "nvngx_dlssnr.dll",
+)
 
 
 # A fallback only. As the answer this hand list rotted: net.py and mfg.py
 # were never in it, so a download dying below the installer's frames was
 # no crash (the report keeps only a 900-character tail).
-_INSTALL_FRAMES = ("installer.py", "optiscaler.py", "remix.py", "dxvk.py",
-                   "vulkan.py", "openxr.py", "feedcfg.py", "reshade_ini.py",
-                   "emulators.py", "refw.py", "reengine.py", "net.py",
-                   "sources.py", "mfg.py")
+_INSTALL_FRAMES = (
+    "installer.py",
+    "optiscaler.py",
+    "remix.py",
+    "dxvk.py",
+    "vulkan.py",
+    "openxr.py",
+    "feedcfg.py",
+    "reshade_ini.py",
+    "emulators.py",
+    "refw.py",
+    "reengine.py",
+    "net.py",
+    "sources.py",
+    "mfg.py",
+)
 # Reached by the install, and by the window and the scan as well.
-_SHARED_MODULES = frozenset({"games", "gpu", "pe", "update", "log", "prefs",
-                             "autotune", "dlss", "anticheat"})
+_SHARED_MODULES = frozenset(
+    {"games", "gpu", "pe", "update", "log", "prefs", "autotune", "dlss", "anticheat"}
+)
 _install_graph: list = []
 
 
@@ -279,6 +395,7 @@ def _install_modules() -> frozenset:
     if _install_graph:
         return _install_graph[0]
     import dis, importlib, types  # noqa: E401
+
     pkg = __name__.split(".")[0]
     seen: set = set()
     stack = ["installer"]
@@ -293,16 +410,19 @@ def _install_modules() -> frozenset:
         except Exception:
             continue
         seen.add(n)
-        found = {v.__name__.split(".")[1] for v in list(vars(mod).values())
-                 if isinstance(v, types.ModuleType)
-                 and v.__name__.startswith(pkg + ".")}
+        found = {
+            v.__name__.split(".")[1]
+            for v in list(vars(mod).values())
+            if isinstance(v, types.ModuleType) and v.__name__.startswith(pkg + ".")
+        }
         while codes:
             co, consts = codes.pop(), []
             for ins in dis.get_instructions(co):
                 if ins.opname == "LOAD_CONST":
                     consts.append(ins.argval)
-                elif ins.opname == "IMPORT_NAME" and len(consts) >= 2 \
-                        and consts[-2] == 1:      # a "from ." import
+                elif (
+                    ins.opname == "IMPORT_NAME" and len(consts) >= 2 and consts[-2] == 1
+                ):  # a "from ." import
                     if ins.argval:
                         found.add(str(ins.argval).split(".")[0])
                     elif isinstance(consts[-1], tuple):
@@ -358,9 +478,15 @@ _CORE_NAMES = ("nvngx_dlssnr.dll",)
 OPTI_LOG = "OptiScaler.log"
 
 
-_INPUT_SEEN = ("context created", "hk_ffxFsr2", "hk_ffxFsr3",
-               "hk_ffxCreateContext", "hk_xess", "XeSS Version:",
-               "libxess.dll found")
+_INPUT_SEEN = (
+    "context created",
+    "hk_ffxFsr2",
+    "hk_ffxFsr3",
+    "hk_ffxCreateContext",
+    "hk_xess",
+    "XeSS Version:",
+    "libxess.dll found",
+)
 
 
 _INPUT_NEVER = ("libxess.dll not found!", "disabling FSR2 hooks!")
@@ -373,17 +499,32 @@ def _layer_state(man: dict) -> tuple[bool, bool]:
     """(any ReShade layer active, one this game's architecture can load)."""
     try:
         from .. import vulkan
-    except ImportError:                       # not Windows
+    except ImportError:  # not Windows
         return True, True
     x64 = man.get("bitness") != 32
-    return (vulkan.existing_registration() is not None,
-            vulkan.registered_for(x64) is not None)
+    return (
+        vulkan.existing_registration() is not None,
+        vulkan.registered_for(x64) is not None,
+    )
 
 
-_RAN_LOOK = ("", "Saved/Logs", "Saved/SaveGames", "Saved/Config/WindowsClient",
-             "Saved/Config/Windows", "Saved", "Logs", "logs", "Config",
-             "config", "SavedGames", "profiles", "Profiles", "UserData",
-             "savegames")
+_RAN_LOOK = (
+    "",
+    "Saved/Logs",
+    "Saved/SaveGames",
+    "Saved/Config/WindowsClient",
+    "Saved/Config/Windows",
+    "Saved",
+    "Logs",
+    "logs",
+    "Config",
+    "config",
+    "SavedGames",
+    "profiles",
+    "Profiles",
+    "UserData",
+    "savegames",
+)
 
 
 _RAN_PARENTS = 3
@@ -398,12 +539,20 @@ _RAN_PER_DIR = 400
 _RAN_SECONDS = 1.0
 
 
-_RAN_SKIP = {"reshade.log", "dlss5-feed.log", "optiscaler.log",
-             "standalone-dlssnr.log", "dlss5-autopilot.json",
-             "dlss5-feed-host64.log", "reshade.ini", "reshadepreset.ini",
-             "dlss5-feed.cfg", "dlss5-feed-crash.dmp",
-             # the dlss page's record: written by the tool, not the game
-             "dlss5-dlss-update.json"}
+_RAN_SKIP = {
+    "reshade.log",
+    "dlss5-feed.log",
+    "optiscaler.log",
+    "standalone-dlssnr.log",
+    "dlss5-autopilot.json",
+    "dlss5-feed-host64.log",
+    "reshade.ini",
+    "reshadepreset.ini",
+    "dlss5-feed.cfg",
+    "dlss5-feed-crash.dmp",
+    # the dlss page's record: written by the tool, not the game
+    "dlss5-dlss-update.json",
+}
 
 
 _RAN_SKIP_SUFFIX = (".dlss5-autopilot-backup", ".tmp")
@@ -417,26 +566,65 @@ _RAN_SKIP_SUFFIX = (".dlss5-autopilot-backup", ".tmp")
 _RAN_SKIP_PART = (".dlss5-dlss-",)
 
 
-_RAN_NOT_EVIDENCE = (".dll", ".addon64", ".addon32", ".fx", ".fxh", ".asi",
-                     ".json", ".7z", ".zip", ".pdb",
-                     # An executable's timestamp moves when the store
-                     # updates the game, which is not a session: Crimson
-                     # Desert answered with its own .exe on this machine.
-                     ".exe")
+_RAN_NOT_EVIDENCE = (
+    ".dll",
+    ".addon64",
+    ".addon32",
+    ".fx",
+    ".fxh",
+    ".asi",
+    ".json",
+    ".7z",
+    ".zip",
+    ".pdb",
+    # An executable's timestamp moves when the store
+    # updates the game, which is not a session: Crimson
+    # Desert answered with its own .exe on this machine.
+    ".exe",
+)
 
 
 _RAN_MARGIN = 60.0
 
 
-_RAN_CONTAINERS = ("binaries", "win64", "win32", "wingdk", "winarm64", "bin",
-                   "bin64", "x64", "x86", "retail", "shipping", "game")
+_RAN_CONTAINERS = (
+    "binaries",
+    "win64",
+    "win32",
+    "wingdk",
+    "winarm64",
+    "bin",
+    "bin64",
+    "x64",
+    "x86",
+    "retail",
+    "shipping",
+    "game",
+)
 
 
 _RAN_NOT_A_NAME = _RAN_CONTAINERS + (
-    "common", "steamapps", "steamlibrary", "steam", "epic games", "gog galaxy",
-    "gog games", "ubisoft", "ubisoft game launcher", "origin games", "ea games",
-    "ea", "battle.net", "riot games", "amazon games", "xboxgames",
-    "program files", "program files (x86)", "games", "program data")
+    "common",
+    "steamapps",
+    "steamlibrary",
+    "steam",
+    "epic games",
+    "gog galaxy",
+    "gog games",
+    "ubisoft",
+    "ubisoft game launcher",
+    "origin games",
+    "ea games",
+    "ea",
+    "battle.net",
+    "riot games",
+    "amazon games",
+    "xboxgames",
+    "program files",
+    "program files (x86)",
+    "games",
+    "program data",
+)
 
 
 def _user_data_roots() -> list[Path]:
@@ -458,15 +646,31 @@ def _user_data_roots() -> list[Path]:
     return roots
 
 
-_RESHADE_KEEP = ("WARN", "ERROR", "Registered add-on", "CreateSwapChain",
-                 "Direct3DCreate9", "Exiting", "EvaluateFeature",
-                 # GITC-Uplift's two INFO lines its reader decides on
-                 "registered (ReShade API", "NR ran on the game's frame")
+_RESHADE_KEEP = (
+    "WARN",
+    "ERROR",
+    "Registered add-on",
+    "CreateSwapChain",
+    "Direct3DCreate9",
+    "Exiting",
+    "EvaluateFeature",
+    # GITC-Uplift's two INFO lines its reader decides on
+    "registered (ReShade API",
+    "NR ran on the game's frame",
+)
 
 
-_RESHADE_GOT_GOING = ("registered add-on", "redirecting", "initialized runtime",
-                      "swap chain", "swapchain", "compiled", "exiting",
-                      "effect", "created")
+_RESHADE_GOT_GOING = (
+    "registered add-on",
+    "redirecting",
+    "initialized runtime",
+    "swap chain",
+    "swapchain",
+    "compiled",
+    "exiting",
+    "effect",
+    "created",
+)
 
 
 _RESHADE_STARTED = "initializing crosire"
@@ -479,15 +683,22 @@ _RESHADE_ALSO = ("Registered add-on",)
 
 
 # The two lines that tell a Direct3D 9 device from a DXGI swap chain.
-_RESHADE_DECIDES = ("Direct3DCreate9", "CreateSwapChain",
-                    "registered (ReShade API", "NR ran on the game's frame")
+_RESHADE_DECIDES = (
+    "Direct3DCreate9",
+    "CreateSwapChain",
+    "registered (ReShade API",
+    "NR ran on the game's frame",
+)
 
 
 _HOOK_ADDRESSES = re.compile(r" with 0x[0-9A-Fa-f]+ => 0x[0-9A-Fa-f]+")
 
 
-PROVIDER_FX = {2: "vort_Motion.fx", 3: "lumenite_Kernel.fx",
-               4: "lumenite_QuantMotion.fx"}
+PROVIDER_FX = {
+    2: "vort_Motion.fx",
+    3: "lumenite_Kernel.fx",
+    4: "lumenite_QuantMotion.fx",
+}
 
 
 RR_RUNTIME = "nvngx_dlssd.dll"
@@ -500,4 +711,5 @@ _SCAN_NOISE = re.compile(
     r"scan \S+: \d+ found|is not readable yet|an earlier install is recorded "
     r"in|the store names|could not read |no executable under|inspected .+ in "
     r"[\d.]+s|checked .+ in [\d.]+s|scan: .+ is the same executable|stopped "
-    r"looking for")
+    r"looking for"
+)

@@ -13,6 +13,7 @@ It stays out of the way:
   - a failure to write is ignored - logging must never be the thing that
     breaks the tool.
 """
+
 from __future__ import annotations
 
 import os
@@ -27,8 +28,8 @@ FILE = DIR / "autopilot.log"
 MAX_BYTES = 1 << 20
 
 _lock = threading.Lock()
-_crashed = False          # has anything gone wrong this run?
-_last_error = ""          # the most recent traceback, for a bug report
+_crashed = False  # has anything gone wrong this run?
+_last_error = ""  # the most recent traceback, for a bug report
 
 
 def path() -> Path:
@@ -63,9 +64,10 @@ def write(text: str, level: str = "info") -> None:
             # happens right after a rollover still has context above it.
             try:
                 if FILE.stat().st_size > MAX_BYTES:
-                    tail = FILE.read_bytes()[-(MAX_BYTES // 2):]
-                    FILE.write_bytes(b"[earlier entries trimmed]\n" +
-                                     tail.split(b"\n", 1)[-1])
+                    tail = FILE.read_bytes()[-(MAX_BYTES // 2) :]
+                    FILE.write_bytes(
+                        b"[earlier entries trimmed]\n" + tail.split(b"\n", 1)[-1]
+                    )
             except OSError:
                 pass
             stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -82,8 +84,7 @@ def exception(where: str, exc: BaseException | None = None) -> None:
     if exc is None:
         tb = traceback.format_exc()
     else:
-        tb = "".join(traceback.format_exception(type(exc), exc,
-                                                exc.__traceback__))
+        tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     _last_error = f"{where}\n{tb.rstrip()}"
     write(_last_error, "ERROR")
 
@@ -94,14 +95,18 @@ def start(version: str) -> None:
     write(f"DLSS 5 Autopilot {version} starting")
     try:
         import platform
+
         write(f"  windows : {platform.platform()}")
-        write(f"  python  : {sys.version.split()[0]}"
-              f"  frozen={getattr(sys, 'frozen', False)}")
+        write(
+            f"  python  : {sys.version.split()[0]}"
+            f"  frozen={getattr(sys, 'frozen', False)}"
+        )
         write(f"  exe     : {sys.executable}")
     except Exception:
         pass
     try:
         from . import gpu
+
         name, sm = gpu.detect()
         write(f"  gpu     : {name}  sm_{sm}")
     except Exception as e:
@@ -124,8 +129,7 @@ def install_handlers(root=None) -> None:
     sys.excepthook = hook
 
     def thread_hook(args):
-        exception(f"unhandled exception on thread {args.thread_name}",
-                  args.exc_value)
+        exception(f"unhandled exception on thread {args.thread_name}", args.exc_value)
 
     try:
         threading.excepthook = thread_hook
@@ -133,8 +137,10 @@ def install_handlers(root=None) -> None:
         pass
 
     if root is not None:
+
         def tk_hook(_self, exc_type, exc, tb):
             exception("exception in a tkinter callback", exc)
+
         try:
             type(root).report_callback_exception = tk_hook
         except Exception:

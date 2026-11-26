@@ -11,6 +11,7 @@ outside the top one closes it and goes no further; a click on navigation
 the control that opened a layer closes it again on a second click. The
 owner found the first version of this without that rule within a minute.
 """
+
 from __future__ import annotations
 
 import tkinter as tk
@@ -95,7 +96,7 @@ class Kit:
         now = set(c.find_withtag(tag))
         rec = self._binds.get(tag)
         if rec is not None and rec["items"] and not (rec["items"] & now):
-            self._forget(tag)            # drawn again: the old handlers go
+            self._forget(tag)  # drawn again: the old handlers go
             rec = None
         if rec is None:
             rec = self._binds[tag] = {"items": set(), "ids": []}
@@ -143,7 +144,14 @@ class Kit:
             if focus is not None and focus is old.entry:
                 # typing in the box when the page redrew: the box drawn in
                 # its place takes the focus, not a hidden copy of it
-                new = next((f for f in self._widgets.values() if f.placeholder == old.placeholder), None)
+                new = next(
+                    (
+                        f
+                        for f in self._widgets.values()
+                        if f.placeholder == old.placeholder
+                    ),
+                    None,
+                )
                 try:
                     if new is not None:
                         new.entry.focus_set()
@@ -163,7 +171,9 @@ class Kit:
         open: left on the stack it swallowed the next click anywhere and gave
         Esc an invisible thing to close."""
         if any(not self.c.find_withtag(layer.tag) for layer in self.layers):
-            self.layers[:] = [layer for layer in self.layers if self.c.find_withtag(layer.tag)]
+            self.layers[:] = [
+                layer for layer in self.layers if self.c.find_withtag(layer.tag)
+            ]
 
     def top(self) -> Layer | None:
         self._drop_dead()
@@ -225,20 +235,25 @@ class Kit:
             if self.on_background:
                 self.on_background()
             return
-        hit = self.c.find_overlapping(self.c.canvasx(e.x), self.c.canvasy(e.y),
-                                      self.c.canvasx(e.x), self.c.canvasy(e.y))
+        hit = self.c.find_overlapping(
+            self.c.canvasx(e.x),
+            self.c.canvasy(e.y),
+            self.c.canvasx(e.x),
+            self.c.canvasy(e.y),
+        )
         if any(top.tag in self.c.gettags(i) for i in hit):
             return
         self.pop()
 
     def on_click(self, tag: str, cmd, nav: bool = False) -> None:
         """A click on `tag` runs cmd - after closing whatever is open above it."""
+
         def click(_e):
             self._handled = True
             top = self.top()
             if top is not None:
                 mine = self._layer_of(tag)
-                if top.opener == tag:          # second click on the opener
+                if top.opener == tag:  # second click on the opener
                     self.pop()
                     return
                 if mine is not top:
@@ -250,6 +265,7 @@ class Kit:
             # Windows the dialog did not show until the next click ("set up
             # the player" did nothing, then a click on empty space opened it).
             self.when_up(cmd, tag)
+
         self._bind(tag, "<Button-1>", click, role="click")
 
     def when_up(self, cmd, tag: str = "") -> None:
@@ -310,6 +326,7 @@ class Kit:
             self.c.configure(cursor="")
             if leave:
                 leave()
+
         self._bind(tag, "<Enter>", on_enter)
         self._bind(tag, "<Leave>", on_leave)
 
@@ -331,8 +348,16 @@ class Kit:
         f = T.mono(9)
         room = T.px(360)
         pad = T.px(10)
-        t = self.c.create_text(0, 0, text=text, font=f, fill=T.TEXT, anchor="nw",
-                               width=room, tags="kit_tip")
+        t = self.c.create_text(
+            0,
+            0,
+            text=text,
+            font=f,
+            fill=T.TEXT,
+            anchor="nw",
+            width=room,
+            tags="kit_tip",
+        )
         x1, y1, x2, y2 = self.c.bbox(t)
         w, h = x2 - x1 + 2 * pad, y2 - y1 + 2 * pad
         vx2 = self.c.canvasx(self.c.winfo_width())
@@ -340,8 +365,9 @@ class Kit:
         tx = min(x + T.px(14), vx2 - w - T.px(8))
         ty = y + T.px(22) if y + T.px(22) + h < vy2 else y - h - T.px(10)
         self.c.coords(t, tx + pad, ty + pad)
-        r = self.c.create_rectangle(tx, ty, tx + w, ty + h, fill=T.SURF2, outline=T.LINE,
-                                    tags="kit_tip")
+        r = self.c.create_rectangle(
+            tx, ty, tx + w, ty + h, fill=T.SURF2, outline=T.LINE, tags="kit_tip"
+        )
         self.c.tag_lower(r, t)
         self.c.tag_raise("kit_tip")
 
@@ -352,18 +378,56 @@ class Kit:
         self.c.delete("kit_tip")
 
     # ------------------------------------------------------------ text
-    def text(self, x, y, s, colour=T.TEXT, size=10, bold=False, anchor="w",
-             tags=(), width=None):
+    def text(
+        self,
+        x,
+        y,
+        s,
+        colour=T.TEXT,
+        size=10,
+        bold=False,
+        anchor="w",
+        tags=(),
+        width=None,
+    ):
         kw = {"width": width} if width else {}
-        return self.c.create_text(x, y, text=s, fill=colour, font=T.mono(size, bold),
-                                  anchor=anchor, tags=tags, **kw)
+        return self.c.create_text(
+            x,
+            y,
+            text=s,
+            fill=colour,
+            font=T.mono(size, bold),
+            anchor=anchor,
+            tags=tags,
+            **kw,
+        )
 
     def glyph(self, x, y, name, colour=T.TEXT, size=12, anchor="center", tags=()):
-        return self.c.create_text(x, y, text=T.GLYPH.get(name, name), fill=colour,
-                                  font=T.icons(size), anchor=anchor, tags=tags)
+        return self.c.create_text(
+            x,
+            y,
+            text=T.GLYPH.get(name, name),
+            fill=colour,
+            font=T.icons(size),
+            anchor=anchor,
+            tags=tags,
+        )
 
-    def link(self, x, y, label, cmd, glyph=None, colour=T.MUTED, hot=T.TEXT, size=9,
-             tags=(), anchor="w", nav=False, tip=""):
+    def link(
+        self,
+        x,
+        y,
+        label,
+        cmd,
+        glyph=None,
+        colour=T.MUTED,
+        hot=T.TEXT,
+        size=9,
+        tags=(),
+        anchor="w",
+        nav=False,
+        tip="",
+    ):
         """Words that do something: an icon, a label, hover brightens them."""
         tag = self.uid("link")
         self.registry[tag] = ("link", label)
@@ -375,61 +439,182 @@ class Kit:
             x0 = x - wid
         items = []
         if glyph:
-            items.append(self.glyph(x0, y, glyph, colour, size + 2, anchor="w", tags=all_tags))
+            items.append(
+                self.glyph(x0, y, glyph, colour, size + 2, anchor="w", tags=all_tags)
+            )
             x0 += T.px(22)
-        items.append(self.c.create_text(x0, y, text=label, fill=colour, font=f, anchor="w",
-                                        tags=all_tags))
+        items.append(
+            self.c.create_text(
+                x0, y, text=label, fill=colour, font=f, anchor="w", tags=all_tags
+            )
+        )
         # a hit area that covers the gap between icon and word
-        hit = self.c.create_rectangle(x0 - (T.px(22) if glyph else 0) - T.px(6), y - T.px(13),
-                                      x0 + T.width(label, f) + T.px(6), y + T.px(13),
-                                      fill="", outline="", tags=all_tags)
+        hit = self.c.create_rectangle(
+            x0 - (T.px(22) if glyph else 0) - T.px(6),
+            y - T.px(13),
+            x0 + T.width(label, f) + T.px(6),
+            y + T.px(13),
+            fill="",
+            outline="",
+            tags=all_tags,
+        )
         self.c.tag_lower(hit, items[0])
-        self.hover(tag, lambda: [self.c.itemconfigure(i, fill=hot) for i in items],
-                   lambda: [self.c.itemconfigure(i, fill=colour) for i in items])
+        self.hover(
+            tag,
+            lambda: [self.c.itemconfigure(i, fill=hot) for i in items],
+            lambda: [self.c.itemconfigure(i, fill=colour) for i in items],
+        )
         self.on_click(tag, cmd, nav=nav)
         self.tip(tag, tip)
         return tag, wid
 
     # ------------------------------------------------------------ buttons
-    def button(self, x, y, w, label, cmd=None, glyph=None, kind="secondary",
-               accent=T.AMBER, h=None, tags=(), enabled=True, tip="", size=11):
+    def button(
+        self,
+        x,
+        y,
+        w,
+        label,
+        cmd=None,
+        glyph=None,
+        kind="secondary",
+        accent=T.AMBER,
+        h=None,
+        tags=(),
+        enabled=True,
+        tip="",
+        size=11,
+    ):
         """kind: primary (filled accent), secondary (raised), ghost, danger."""
-        return Button(self, x, y, w, label, cmd, glyph, kind, accent, h or T.px(46),
-                      tags, enabled, tip, size)
+        return Button(
+            self,
+            x,
+            y,
+            w,
+            label,
+            cmd,
+            glyph,
+            kind,
+            accent,
+            h or T.px(46),
+            tags,
+            enabled,
+            tip,
+            size,
+        )
 
     # ------------------------------------------------------------ inputs
-    def dropdown(self, x, y, w, value, options, on_pick, label=None, tags=(),
-                 enabled=True, changed=False, accent=T.AMBER, tip="", auto_hint=""):
-        return Dropdown(self, x, y, w, value, options, on_pick, label, tags, enabled,
-                        changed, accent, tip, auto_hint)
+    def dropdown(
+        self,
+        x,
+        y,
+        w,
+        value,
+        options,
+        on_pick,
+        label=None,
+        tags=(),
+        enabled=True,
+        changed=False,
+        accent=T.AMBER,
+        tip="",
+        auto_hint="",
+    ):
+        return Dropdown(
+            self,
+            x,
+            y,
+            w,
+            value,
+            options,
+            on_pick,
+            label,
+            tags,
+            enabled,
+            changed,
+            accent,
+            tip,
+            auto_hint,
+        )
 
-    def toggle(self, x, y, label, value, on_change, tags=(), enabled=True,
-               accent=T.AMBER, tip="", width=None):
-        return Toggle(self, x, y, label, value, on_change, tags, enabled, accent, tip, width)
+    def toggle(
+        self,
+        x,
+        y,
+        label,
+        value,
+        on_change,
+        tags=(),
+        enabled=True,
+        accent=T.AMBER,
+        tip="",
+        width=None,
+    ):
+        return Toggle(
+            self, x, y, label, value, on_change, tags, enabled, accent, tip, width
+        )
 
-    def slider(self, x, y, w, value, lo, hi, step, on_change, tags=(), enabled=True,
-               accent=T.AMBER, fmt="{}%"):
-        return Slider(self, x, y, w, value, lo, hi, step, on_change, tags, enabled, accent, fmt)
+    def slider(
+        self,
+        x,
+        y,
+        w,
+        value,
+        lo,
+        hi,
+        step,
+        on_change,
+        tags=(),
+        enabled=True,
+        accent=T.AMBER,
+        fmt="{}%",
+    ):
+        return Slider(
+            self, x, y, w, value, lo, hi, step, on_change, tags, enabled, accent, fmt
+        )
 
-    def field(self, x, y, w, placeholder, on_change=None, on_enter=None, glyph="search",
-              tags=(), value="", down=None):
+    def field(
+        self,
+        x,
+        y,
+        w,
+        placeholder,
+        on_change=None,
+        on_enter=None,
+        glyph="search",
+        tags=(),
+        value="",
+        down=None,
+    ):
         """down: the Down arrow runs on_enter too. None means only in a search
         box, where Down goes from the box into the results; in the
         save-profile dialog it saved the profile."""
         if down is None:
             down = glyph == "search"
-        return Field(self, x, y, w, placeholder, on_change, on_enter, glyph, tags, value, down)
+        return Field(
+            self, x, y, w, placeholder, on_change, on_enter, glyph, tags, value, down
+        )
 
     # ------------------------------------------------------------ menus
-    def menu(self, x, y, items, opener=None, width=None, current=None, accent=T.AMBER,
-             max_rows=10):
+    def menu(
+        self,
+        x,
+        y,
+        items,
+        opener=None,
+        width=None,
+        current=None,
+        accent=T.AMBER,
+        max_rows=10,
+    ):
         """A popup list. items: (label, cmd) or (label, cmd, enabled) or None (rule)."""
         return Menu(self, x, y, items, opener, width, current, accent, max_rows)
 
 
 class Button:
-    def __init__(self, kit, x, y, w, label, cmd, glyph, kind, accent, h, tags, enabled,
-                 tip, size):
+    def __init__(
+        self, kit, x, y, w, label, cmd, glyph, kind, accent, h, tags, enabled, tip, size
+    ):
         self.kit, self.c = kit, kit.c
         self.tag = kit.uid("btn")
         kit.registry[self.tag] = ("button", label or glyph or "")
@@ -439,22 +624,37 @@ class Button:
         self.progress = None
         tags = (self.tag,) + tuple(tags)
         self.box = self.c.create_rectangle(x, y, x + w, y + h, outline="", tags=tags)
-        self.bar = self.c.create_rectangle(x, y + h - T.px(3), x, y + h, outline="",
-                                           fill="", tags=tags)
+        self.bar = self.c.create_rectangle(
+            x, y + h - T.px(3), x, y + h, outline="", fill="", tags=tags
+        )
         f = T.mono(size, kind in ("primary", "danger"))
         self.icon = None
         if glyph and label:
             tw = T.width(label, f) + T.px(26)
             left = x + max(T.px(18), (w - tw) / 2)
-            self.icon = self.c.create_text(left, y + h / 2, text=T.GLYPH.get(glyph, glyph),
-                                           font=T.icons(size + 1), anchor="w", tags=tags)
-            self.label = self.c.create_text(left + T.px(26), y + h / 2, text=label, font=f,
-                                            anchor="w", tags=tags)
+            self.icon = self.c.create_text(
+                left,
+                y + h / 2,
+                text=T.GLYPH.get(glyph, glyph),
+                font=T.icons(size + 1),
+                anchor="w",
+                tags=tags,
+            )
+            self.label = self.c.create_text(
+                left + T.px(26), y + h / 2, text=label, font=f, anchor="w", tags=tags
+            )
         elif glyph:
-            self.label = self.c.create_text(x + w / 2, y + h / 2, text=T.GLYPH.get(glyph, glyph),
-                                            font=T.icons(size + 2), tags=tags)
+            self.label = self.c.create_text(
+                x + w / 2,
+                y + h / 2,
+                text=T.GLYPH.get(glyph, glyph),
+                font=T.icons(size + 2),
+                tags=tags,
+            )
         else:
-            self.label = self.c.create_text(x + w / 2, y + h / 2, text=label, font=f, tags=tags)
+            self.label = self.c.create_text(
+                x + w / 2, y + h / 2, text=label, font=f, tags=tags
+            )
         self._paint(False)
         kit.hover(self.tag, lambda: self._paint(True), lambda: self._paint(False))
         kit.on_click(self.tag, self._click)
@@ -503,12 +703,19 @@ class Button:
         if progress != -1:
             self.progress = progress
             if progress is None:
-                self.c.coords(self.bar, self.x, self.y + self.h - T.px(3), self.x, self.y + self.h)
+                self.c.coords(
+                    self.bar, self.x, self.y + self.h - T.px(3), self.x, self.y + self.h
+                )
                 self.c.itemconfigure(self.bar, fill="")
             else:
                 p = max(0.0, min(1.0, progress))
-                self.c.coords(self.bar, self.x, self.y + self.h - T.px(3),
-                              self.x + self.w * p, self.y + self.h)
+                self.c.coords(
+                    self.bar,
+                    self.x,
+                    self.y + self.h - T.px(3),
+                    self.x + self.w * p,
+                    self.y + self.h,
+                )
                 ink = ink_on(self.accent) if self.kind == "primary" else self.accent
                 self.c.itemconfigure(self.bar, fill=mix(self.accent, ink, 0.5))
 
@@ -521,8 +728,23 @@ class Dropdown:
     without choosing anything.
     """
 
-    def __init__(self, kit, x, y, w, value, options, on_pick, label, tags, enabled,
-                 changed, accent, tip, auto_hint):
+    def __init__(
+        self,
+        kit,
+        x,
+        y,
+        w,
+        value,
+        options,
+        on_pick,
+        label,
+        tags,
+        enabled,
+        changed,
+        accent,
+        tip,
+        auto_hint,
+    ):
         self.kit, self.c = kit, kit.c
         self.tag = kit.uid("dd")
         kit.registry[self.tag] = ("dropdown", label or "")
@@ -537,19 +759,39 @@ class Dropdown:
             top = y + T.px(16)
         self.h = T.px(38)
         self.top = top
-        self.box = self.c.create_rectangle(x, top, x + w, top + self.h, fill=T.SURF,
-                                           outline="", tags=tags)
-        self.edge = self.c.create_rectangle(x, top, x + T.px(3), top + self.h, outline="",
-                                            fill="", tags=tags)
-        self.lbl = self.c.create_text(x + T.px(14), top + self.h / 2, anchor="w",
-                                      font=T.mono(10), tags=tags)
-        self.hint = self.c.create_text(x + w - T.px(30), top + self.h / 2, anchor="e",
-                                       font=T.mono(8), fill=T.DIM, tags=tags)
-        self.arrow = self.c.create_text(x + w - T.px(12), top + self.h / 2, anchor="e",
-                                        text=T.GLYPH["down"], font=T.icons(8), fill=T.DIM, tags=tags)
+        self.box = self.c.create_rectangle(
+            x, top, x + w, top + self.h, fill=T.SURF, outline="", tags=tags
+        )
+        self.edge = self.c.create_rectangle(
+            x, top, x + T.px(3), top + self.h, outline="", fill="", tags=tags
+        )
+        self.lbl = self.c.create_text(
+            x + T.px(14), top + self.h / 2, anchor="w", font=T.mono(10), tags=tags
+        )
+        self.hint = self.c.create_text(
+            x + w - T.px(30),
+            top + self.h / 2,
+            anchor="e",
+            font=T.mono(8),
+            fill=T.DIM,
+            tags=tags,
+        )
+        self.arrow = self.c.create_text(
+            x + w - T.px(12),
+            top + self.h / 2,
+            anchor="e",
+            text=T.GLYPH["down"],
+            font=T.icons(8),
+            fill=T.DIM,
+            tags=tags,
+        )
         self._render()
-        kit.hover(self.tag, lambda: self._hot(True), lambda: self._hot(False),
-                  cursor="hand2" if enabled else "")
+        kit.hover(
+            self.tag,
+            lambda: self._hot(True),
+            lambda: self._hot(False),
+            cursor="hand2" if enabled else "",
+        )
         kit.on_click(self.tag, self.open)
         kit.tip(self.tag, tip)
         self.bottom = top + self.h
@@ -563,14 +805,18 @@ class Dropdown:
     def _render(self):
         # "auto" is the value "auto", or an empty value on a control that
         # says what auto resolves to - "" means a real choice elsewhere.
-        auto = self.value == "auto" or (self.value in ("", None) and bool(self.auto_hint))
+        auto = self.value == "auto" or (
+            self.value in ("", None) and bool(self.auto_hint)
+        )
         text = self.auto_hint if auto and self.auto_hint else self._label_of(self.value)
         room = self.w - T.px(14) - T.px(30)
         f = T.mono(10, self.changed)
         col = T.DIM if not self.enabled else (self.accent if self.changed else T.TEXT)
         self.c.itemconfigure(self.lbl, text=T.fit(text, f, room), font=f, fill=col)
         self.c.itemconfigure(self.hint, text="")
-        self.c.itemconfigure(self.edge, fill=self.accent if self.changed and self.enabled else "")
+        self.c.itemconfigure(
+            self.edge, fill=self.accent if self.changed and self.enabled else ""
+        )
         self.c.itemconfigure(self.arrow, fill=T.DIM if self.enabled else T.SURF2)
 
     def _hot(self, on):
@@ -581,9 +827,18 @@ class Dropdown:
         if not self.enabled:
             return
         items = [(lab, (lambda v=v: self.pick(v))) for v, lab in self.options]
-        cur = next((i for i, (v, _l) in enumerate(self.options) if v == self.value), None)
-        self.kit.menu(self.x, self.bottom + T.px(2), items, opener=self.tag, width=self.w,
-                      current=cur, accent=self.accent)
+        cur = next(
+            (i for i, (v, _l) in enumerate(self.options) if v == self.value), None
+        )
+        self.kit.menu(
+            self.x,
+            self.bottom + T.px(2),
+            items,
+            opener=self.tag,
+            width=self.w,
+            current=cur,
+            accent=self.accent,
+        )
 
     def pick(self, value):
         self.value = value
@@ -606,39 +861,72 @@ class Dropdown:
 
 
 class Toggle:
-    def __init__(self, kit, x, y, label, value, on_change, tags, enabled, accent, tip, width):
+    def __init__(
+        self, kit, x, y, label, value, on_change, tags, enabled, accent, tip, width
+    ):
         self.kit, self.c = kit, kit.c
         self.tag = kit.uid("tg")
         kit.registry[self.tag] = ("toggle", label)
-        self.value, self.enabled, self.accent, self.on_change = bool(value), enabled, accent, on_change
+        self.value, self.enabled, self.accent, self.on_change = (
+            bool(value),
+            enabled,
+            accent,
+            on_change,
+        )
         tags = (self.tag,) + tuple(tags)
         s = T.px(18)
-        self.box = self.c.create_rectangle(x, y - s / 2, x + s, y + s / 2, outline=T.LINE,
-                                           width=max(1, T.px(1)), tags=tags)
-        self.mark = self.c.create_text(x + s / 2, y, text=T.GLYPH["check"], font=T.icons(9),
-                                       tags=tags)
+        self.box = self.c.create_rectangle(
+            x,
+            y - s / 2,
+            x + s,
+            y + s / 2,
+            outline=T.LINE,
+            width=max(1, T.px(1)),
+            tags=tags,
+        )
+        self.mark = self.c.create_text(
+            x + s / 2, y, text=T.GLYPH["check"], font=T.icons(9), tags=tags
+        )
         f = T.mono(10)
         wrap = (width - s - T.px(12)) if width else None
         kw = {"width": wrap} if wrap else {}
-        self.lbl = self.c.create_text(x + s + T.px(12), y, text=label, anchor="w", font=f,
-                                      tags=tags, **kw)
+        self.lbl = self.c.create_text(
+            x + s + T.px(12), y, text=label, anchor="w", font=f, tags=tags, **kw
+        )
         x1, y1, x2, y2 = self.c.bbox(self.lbl)
-        self.hit = self.c.create_rectangle(x - T.px(4), min(y1, y - s / 2) - T.px(4), x2 + T.px(6),
-                                           max(y2, y + s / 2) + T.px(4), fill="", outline="", tags=tags)
+        self.hit = self.c.create_rectangle(
+            x - T.px(4),
+            min(y1, y - s / 2) - T.px(4),
+            x2 + T.px(6),
+            max(y2, y + s / 2) + T.px(4),
+            fill="",
+            outline="",
+            tags=tags,
+        )
         self.bottom = max(y2, y + s / 2)
         self._render()
-        kit.hover(self.tag, lambda: self._hot(True), lambda: self._hot(False),
-                  cursor="hand2" if enabled else "")
+        kit.hover(
+            self.tag,
+            lambda: self._hot(True),
+            lambda: self._hot(False),
+            cursor="hand2" if enabled else "",
+        )
         kit.on_click(self.tag, self.flip)
         kit.tip(self.tag, tip)
 
     def _render(self):
         on, en = self.value, self.enabled
-        self.c.itemconfigure(self.box, fill=(self.accent if on else T.SURF) if en else T.SURF,
-                             outline=self.accent if on and en else T.LINE)
-        self.c.itemconfigure(self.mark, fill=ink_on(self.accent) if on and en else
-                             (T.DIM if on else ""))
-        self.c.itemconfigure(self.lbl, fill=(T.TEXT if on else T.MUTED) if en else T.DIM)
+        self.c.itemconfigure(
+            self.box,
+            fill=(self.accent if on else T.SURF) if en else T.SURF,
+            outline=self.accent if on and en else T.LINE,
+        )
+        self.c.itemconfigure(
+            self.mark, fill=ink_on(self.accent) if on and en else (T.DIM if on else "")
+        )
+        self.c.itemconfigure(
+            self.lbl, fill=(T.TEXT if on else T.MUTED) if en else T.DIM
+        )
 
     def _hot(self, hot):
         if self.enabled and not self.value:
@@ -661,23 +949,37 @@ class Toggle:
 
 
 class Slider:
-    def __init__(self, kit, x, y, w, value, lo, hi, step, on_change, tags, enabled, accent, fmt):
+    def __init__(
+        self, kit, x, y, w, value, lo, hi, step, on_change, tags, enabled, accent, fmt
+    ):
         self.kit, self.c = kit, kit.c
         self.tag = kit.uid("sl")
         kit.registry[self.tag] = ("slider", "")
         self.x, self.y, self.w = x, y, w
         self.lo, self.hi, self.step = lo, hi, step
-        self.value, self.enabled, self.accent, self.on_change, self.fmt = value, enabled, accent, on_change, fmt
+        self.value, self.enabled, self.accent, self.on_change, self.fmt = (
+            value,
+            enabled,
+            accent,
+            on_change,
+            fmt,
+        )
         tags = (self.tag,) + tuple(tags)
         t = T.px(4)
-        self.track = self.c.create_rectangle(x, y - t / 2, x + w, y + t / 2, fill=T.SURF2,
-                                             outline="", tags=tags)
-        self.fill = self.c.create_rectangle(x, y - t / 2, x, y + t / 2, outline="", tags=tags)
+        self.track = self.c.create_rectangle(
+            x, y - t / 2, x + w, y + t / 2, fill=T.SURF2, outline="", tags=tags
+        )
+        self.fill = self.c.create_rectangle(
+            x, y - t / 2, x, y + t / 2, outline="", tags=tags
+        )
         r = T.px(9)
         self.r = r
-        self.knob = self.c.create_oval(x - r, y - r, x + r, y + r, outline="", tags=tags)
-        self.hit = self.c.create_rectangle(x - r, y - T.px(16), x + w + r, y + T.px(16),
-                                           fill="", outline="", tags=tags)
+        self.knob = self.c.create_oval(
+            x - r, y - r, x + r, y + r, outline="", tags=tags
+        )
+        self.hit = self.c.create_rectangle(
+            x - r, y - T.px(16), x + w + r, y + T.px(16), fill="", outline="", tags=tags
+        )
         self.c.tag_lower(self.hit, self.track)
         self._render()
         kit.hover(self.tag, cursor="hand2" if enabled else "")
@@ -692,7 +994,9 @@ class Slider:
         col = self.accent if self.enabled else T.DIM
         self.c.coords(self.fill, self.x, self.y - t / 2, px_, self.y + t / 2)
         self.c.itemconfigure(self.fill, fill=col)
-        self.c.coords(self.knob, px_ - self.r, self.y - self.r, px_ + self.r, self.y + self.r)
+        self.c.coords(
+            self.knob, px_ - self.r, self.y - self.r, px_ + self.r, self.y + self.r
+        )
         self.c.itemconfigure(self.knob, fill=col)
 
     def _value_at(self, e):
@@ -739,7 +1043,20 @@ class Field:
     not focused): a canvas item under an embedded window is never visible.
     """
 
-    def __init__(self, kit, x, y, w, placeholder, on_change, on_enter, glyph, tags, value, down=False):
+    def __init__(
+        self,
+        kit,
+        x,
+        y,
+        w,
+        placeholder,
+        on_change,
+        on_enter,
+        glyph,
+        tags,
+        value,
+        down=False,
+    ):
         self.kit, self.c = kit, kit.c
         self.tag = kit.uid("fd")
         kit.registry[self.tag] = ("field", placeholder)
@@ -747,21 +1064,49 @@ class Field:
         self._ph_on = False
         h = T.px(40)
         tags = (self.tag,) + tuple(tags)
-        self.box = self.c.create_rectangle(x, y, x + w, y + h, fill=T.SURF, outline="", tags=tags)
+        self.box = self.c.create_rectangle(
+            x, y, x + w, y + h, fill=T.SURF, outline="", tags=tags
+        )
         left = x + T.px(12)
         if glyph:
             kit.glyph(x + T.px(20), y + h / 2, glyph, T.DIM, 11, tags=tags)
             left = x + T.px(38)
-        self.entry = tk.Entry(self.c, bg=T.SURF, fg=T.TEXT, insertbackground=T.AMBER,
-                              relief="flat", font=T.mono(10), highlightthickness=0, borderwidth=0,
-                              selectbackground=T.AMBER, selectforeground=T.BG, disabledbackground=T.SURF)
-        self.win = self.c.create_window(left, y + h / 2, window=self.entry, anchor="w",
-                                        width=w - (left - x) - T.px(34), height=T.px(26), tags=tags)
+        self.entry = tk.Entry(
+            self.c,
+            bg=T.SURF,
+            fg=T.TEXT,
+            insertbackground=T.AMBER,
+            relief="flat",
+            font=T.mono(10),
+            highlightthickness=0,
+            borderwidth=0,
+            selectbackground=T.AMBER,
+            selectforeground=T.BG,
+            disabledbackground=T.SURF,
+        )
+        self.win = self.c.create_window(
+            left,
+            y + h / 2,
+            window=self.entry,
+            anchor="w",
+            width=w - (left - x) - T.px(34),
+            height=T.px(26),
+            tags=tags,
+        )
         kit._widgets[self.tag] = self
-        self.clear = self.c.create_text(x + w - T.px(16), y + h / 2, text=T.GLYPH["close"],
-                                        font=T.icons(9), fill=T.DIM, tags=tags + (self.tag + "x",))
-        kit.hover(self.tag + "x", lambda: self.c.itemconfigure(self.clear, fill=T.TEXT),
-                  lambda: self.c.itemconfigure(self.clear, fill=T.DIM))
+        self.clear = self.c.create_text(
+            x + w - T.px(16),
+            y + h / 2,
+            text=T.GLYPH["close"],
+            font=T.icons(9),
+            fill=T.DIM,
+            tags=tags + (self.tag + "x",),
+        )
+        kit.hover(
+            self.tag + "x",
+            lambda: self.c.itemconfigure(self.clear, fill=T.TEXT),
+            lambda: self.c.itemconfigure(self.clear, fill=T.DIM),
+        )
         kit.on_click(self.tag + "x", self.reset)
         kit.hover(self.tag, cursor="xterm")
         kit._bind(self.tag, "<Button-1>", lambda _e: self.entry.focus_set())
@@ -860,7 +1205,9 @@ class Menu:
         self.current, self.accent = current, accent
         self.row = T.px(34)
         f = T.mono(10)
-        self.w = width or max(T.px(180), max((T.width(i[0], f) for i in items if i), default=0) + T.px(60))
+        self.w = width or max(
+            T.px(180), max((T.width(i[0], f) for i in items if i), default=0) + T.px(60)
+        )
         self.rows = min(len(items), max_rows)
         self.offset = 0
         h = self.rows * self.row + T.px(8)
@@ -868,7 +1215,7 @@ class Menu:
         vy2 = self.c.canvasy(self.c.winfo_height())
         vx2 = self.c.canvasx(self.c.winfo_width())
         if y + h > vy2 - T.px(8) and y - h - T.px(50) > vy1:
-            y = y - h - T.px(46)          # open upwards when there is no room below
+            y = y - h - T.px(46)  # open upwards when there is no room below
         x = min(x, vx2 - self.w - T.px(8))
         self.x, self.y, self.h = x, y, h
         if current is not None and current >= self.rows:
@@ -879,8 +1226,11 @@ class Menu:
         # A real Entry on the canvas always paints above canvas items, so a
         # menu over a search box had the box cut through it: hide what the
         # menu covers while it is open.
-        self.covered = [i for i in self.c.find_overlapping(x, y, x + self.w, y + h)
-                        if self.c.type(i) == "window" and self.c.itemcget(i, "state") != "hidden"]
+        self.covered = [
+            i
+            for i in self.c.find_overlapping(x, y, x + self.w, y + h)
+            if self.c.type(i) == "window" and self.c.itemcget(i, "state") != "hidden"
+        ]
         for i in self.covered:
             self.c.itemconfigure(i, state="hidden")
         self._draw()
@@ -889,37 +1239,78 @@ class Menu:
         c, tag = self.c, self.tag
         c.delete(tag)
         x, y, w = self.x, self.y, self.w
-        c.create_rectangle(x, y, x + w, y + self.h, fill=T.SURF2, outline=T.LINE, tags=tag)
-        visible = self.items[self.offset:self.offset + self.rows]
+        c.create_rectangle(
+            x, y, x + w, y + self.h, fill=T.SURF2, outline=T.LINE, tags=tag
+        )
+        visible = self.items[self.offset : self.offset + self.rows]
         for i, item in enumerate(visible):
             idx = self.offset + i
             ry = y + T.px(4) + i * self.row
             if item is None:
-                c.create_line(x + T.px(10), ry + self.row / 2, x + w - T.px(10), ry + self.row / 2,
-                              fill=T.LINE, tags=tag)
+                c.create_line(
+                    x + T.px(10),
+                    ry + self.row / 2,
+                    x + w - T.px(10),
+                    ry + self.row / 2,
+                    fill=T.LINE,
+                    tags=tag,
+                )
                 continue
             label, cmd = item[0], item[1]
             enabled = item[2] if len(item) > 2 else True
             rt = f"{tag}r{idx}"
-            r = c.create_rectangle(x + 1, ry, x + w - 1, ry + self.row, fill=T.SURF2, outline="",
-                                   tags=(tag, rt))
+            r = c.create_rectangle(
+                x + 1,
+                ry,
+                x + w - 1,
+                ry + self.row,
+                fill=T.SURF2,
+                outline="",
+                tags=(tag, rt),
+            )
             cur = idx == self.current
             col = self.accent if cur else (T.TEXT if enabled else T.DIM)
-            c.create_text(x + T.px(14), ry + self.row / 2, text=T.fit(label, T.mono(10, cur), w - T.px(48)),
-                          fill=col, font=T.mono(10, cur), anchor="w", tags=(tag, rt))
+            c.create_text(
+                x + T.px(14),
+                ry + self.row / 2,
+                text=T.fit(label, T.mono(10, cur), w - T.px(48)),
+                fill=col,
+                font=T.mono(10, cur),
+                anchor="w",
+                tags=(tag, rt),
+            )
             if cur:
-                c.create_text(x + w - T.px(14), ry + self.row / 2, text=T.GLYPH["check"],
-                              font=T.icons(9), fill=self.accent, anchor="e", tags=(tag, rt))
+                c.create_text(
+                    x + w - T.px(14),
+                    ry + self.row / 2,
+                    text=T.GLYPH["check"],
+                    font=T.icons(9),
+                    fill=self.accent,
+                    anchor="e",
+                    tags=(tag, rt),
+                )
             if enabled:
-                self.kit.hover(rt, lambda r=r: c.itemconfigure(r, fill=T.LINE),
-                               lambda r=r: c.itemconfigure(r, fill=T.SURF2))
-                self.kit._bind(rt, "<Button-1>", lambda _e, cmd=cmd: self._pick(cmd), role="click")
+                self.kit.hover(
+                    rt,
+                    lambda r=r: c.itemconfigure(r, fill=T.LINE),
+                    lambda r=r: c.itemconfigure(r, fill=T.SURF2),
+                )
+                self.kit._bind(
+                    rt, "<Button-1>", lambda _e, cmd=cmd: self._pick(cmd), role="click"
+                )
         if len(self.items) > self.rows:
             k = self.offset / (len(self.items) - self.rows)
             th = self.h * self.rows / len(self.items)
             ty = y + (self.h - th) * k
-            c.create_rectangle(x + w - T.px(4), ty, x + w - T.px(1), ty + th, fill=T.MUTED,
-                               outline="", tags=tag)
+            c.create_rectangle(
+                x + w - T.px(4),
+                ty,
+                x + w - T.px(1),
+                ty + th,
+                fill=T.MUTED,
+                outline="",
+                tags=tag,
+            )
         c.tag_raise(tag)
 
     def _wheel_if_inside(self, e) -> bool:

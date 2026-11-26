@@ -19,6 +19,7 @@ hard timeout - a diagnosis that hangs is worse than one that says nothing.
 
 Nothing here writes to the event log, and nothing leaves the machine.
 """
+
 from __future__ import annotations
 
 import calendar
@@ -63,8 +64,13 @@ class Crash:
         m = _base(self.module)
         if m and m in {_base(str(w)) for w in written}:
             return True
-        return ("reshade" in m or "dlss5" in m or "renodx" in m
-                or "optiscaler" in m or m.startswith("nvngx"))
+        return (
+            "reshade" in m
+            or "dlss5" in m
+            or "renodx" in m
+            or "optiscaler" in m
+            or m.startswith("nvngx")
+        )
 
     def ambiguous(self, proxy: str = "") -> bool:
         """The name this install's proxy uses - and also a Windows DLL.
@@ -89,19 +95,28 @@ def _ps(script: str) -> str:
     """
     try:
         p = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
-             "[Console]::OutputEncoding="
-             "[System.Text.Encoding]::UTF8; " + script],
-            capture_output=True, text=True, encoding="utf-8",
-            errors="replace", timeout=TIMEOUT,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            [
+                "powershell",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; " + script,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=TIMEOUT,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
         return p.stdout or ""
     except (OSError, subprocess.SubprocessError):
         return ""
 
 
-def last_crash(exe_name: str, since: float = 0.0,
-               within_days: int = 14) -> Crash | None:
+def last_crash(
+    exe_name: str, since: float = 0.0, within_days: int = 14
+) -> Crash | None:
     """The newest crash Windows recorded for `exe_name`, or None.
 
     `since` is a unix timestamp - normally the install's - so a crash from
@@ -155,9 +170,14 @@ def last_crash(exe_name: str, since: float = 0.0,
         # ...and a ReShade add-on is a DLL with its own extension, which is
         # the one case where the answer is "this is ours" - leaving
         # .addon64/.addon32 off this list hid exactly that.
-        module = next((f for f in fields[3:6]
-                       if f.lower().endswith((".dll", ".exe", ".sys",
-                                              ".addon64", ".addon32"))), "")
+        module = next(
+            (
+                f
+                for f in fields[3:6]
+                if f.lower().endswith((".dll", ".exe", ".sys", ".addon64", ".addon32"))
+            ),
+            "",
+        )
         # An Application Hang carries no module at all, and taking the first
         # matching event regardless would let one hang hide the crash that
         # actually explains the evening.
@@ -166,14 +186,20 @@ def last_crash(exe_name: str, since: float = 0.0,
         code = ""
         if len(fields) > 6 and re.fullmatch(r"[0-9A-Fa-f]{8}", fields[6].strip()):
             code = "0x" + fields[6].strip().upper()
-        best = Crash(when=when.replace("T", " "), exe=exe, module=module,
-                     code=code, provider=provider)
-        break          # newest first
+        best = Crash(
+            when=when.replace("T", " "),
+            exe=exe,
+            module=module,
+            code=code,
+            provider=provider,
+        )
+        break  # newest first
     return best
 
 
-def describe(c: Crash | None, proxy: str = "",
-             written: tuple[str, ...] = ()) -> tuple[str, str] | None:
+def describe(
+    c: Crash | None, proxy: str = "", written: tuple[str, ...] = ()
+) -> tuple[str, str] | None:
     """(title, detail) for the report, or None when there is nothing to say.
 
     `proxy` is the file name this install wrote beside the game, out of the
@@ -186,68 +212,84 @@ def describe(c: Crash | None, proxy: str = "",
         return None
     where = f"{c.when} UTC" if c.when else "an unrecorded time"
     if _base(c.module) == _base(c.exe):
-        return (f"Windows recorded {c.exe} faulting in its own code "
-                f"({c.code or 'no code'}).",
-                f"The crash was inside the game itself, not in anything this "
-                f"tool loaded, at {where}. That does not clear the install - "
-                f"a hook can push a game into its own bad path - but it means "
-                f"the fault is not in our module. Uninstalling and starting "
-                f"the game once is the fastest way to tell the two apart.")
+        return (
+            f"Windows recorded {c.exe} faulting in its own code "
+            f"({c.code or 'no code'}).",
+            f"The crash was inside the game itself, not in anything this "
+            f"tool loaded, at {where}. That does not clear the install - "
+            f"a hook can push a game into its own bad path - but it means "
+            f"the fault is not in our module. Uninstalling and starting "
+            f"the game once is the fastest way to tell the two apart.",
+        )
     # The ambiguous case FIRST. The install's own proxy is in `written`,
     # and its name is also a Windows system DLL's: the event names a module,
     # not a path, so "it is in our file list" is not proof it was our copy.
     # Testing ownership first made this branch unreachable and turned the
     # commonest fault of all into "this is ours to fix".
     if c.ambiguous(proxy):
-        return (f"Windows recorded {c.exe} faulting in {c.module} "
-                f"({c.code or 'no code'}).",
-                f"That is the name this install writes beside the game "
-                f"({proxy}), and it is also the name of a Windows system "
-                f"DLL - the event does not say which copy faulted, at "
-                f"{where}. If it was ours, press 'report a bug'. To tell "
-                f"them apart: uninstall from here and start the game once. "
-                f"A fault in the same place with our file gone is the "
-                f"driver's or the game's.")
+        return (
+            f"Windows recorded {c.exe} faulting in {c.module} ({c.code or 'no code'}).",
+            f"That is the name this install writes beside the game "
+            f"({proxy}), and it is also the name of a Windows system "
+            f"DLL - the event does not say which copy faulted, at "
+            f"{where}. If it was ours, press 'report a bug'. To tell "
+            f"them apart: uninstall from here and start the game once. "
+            f"A fault in the same place with our file gone is the "
+            f"driver's or the game's.",
+        )
     if c.ours(written):
         # Part of this install is not code this tool wrote: every file it
         # installs is another project's (#511: dlss5-feed.addon32 was called
         # "ours to fix", and the reply then sent the fault to the wrong one).
         who = made_by(c.module)
-        return (f"Windows recorded {c.exe} faulting in {c.module} "
-                f"({c.code or 'no code'}).",
-                f"That module is part of this install, at {where}"
-                + (f" - {who}'s code, which this tool installs. That is where "
-                   f"it faulted; the cause can still be another file in the "
-                   f"same process that called it. Press 'report a bug' so the "
-                   f"module, the exception code and the route go in together; "
-                   f"another build or route can be tried here."
-                   if who else
-                   ". Press 'report a bug' so the module, the exception code "
-                   "and the route go in together."))
+        return (
+            f"Windows recorded {c.exe} faulting in {c.module} ({c.code or 'no code'}).",
+            f"That module is part of this install, at {where}"
+            + (
+                f" - {who}'s code, which this tool installs. That is where "
+                f"it faulted; the cause can still be another file in the "
+                f"same process that called it. Press 'report a bug' so the "
+                f"module, the exception code and the route go in together; "
+                f"another build or route can be tried here."
+                if who
+                else ". Press 'report a bug' so the module, the exception code "
+                "and the route go in together."
+            ),
+        )
     if _base(c.module) in _SHARED_RUNTIME:
         # Every module in the process calls these, so the event names who was
         # called, not who called (#987: ucrtbase.dll one second after the
         # game rebuilt its device). "An overlay" there was a guess (#289).
-        return (f"Windows recorded {c.exe} faulting in {c.module} "
-                f"({c.code or 'no code'}).",
-                f"{c.module} is a Windows or Visual C++ runtime library that "
-                f"every module in the process calls, so the event names it, "
-                f"not the caller, at {where}. The last lines of the add-on logs "
-                f"before that time may point to the caller. To tell ours apart "
-                f"from the game's: uninstall from here and start the game once.")
-    return (f"Windows recorded {c.exe} faulting in {c.module} "
-            f"({c.code or 'no code'}).",
-            f"That module is neither the game's executable nor anything this "
-            f"tool installs, at {where} - an overlay, a driver component or "
-            f"another mod. Close overlays (RivaTuner, Discord, GeForce "
-            f"Experience) and try again; if it persists, that module is the "
-            f"one to chase.")
+        return (
+            f"Windows recorded {c.exe} faulting in {c.module} ({c.code or 'no code'}).",
+            f"{c.module} is a Windows or Visual C++ runtime library that "
+            f"every module in the process calls, so the event names it, "
+            f"not the caller, at {where}. The last lines of the add-on logs "
+            f"before that time may point to the caller. To tell ours apart "
+            f"from the game's: uninstall from here and start the game once.",
+        )
+    return (
+        f"Windows recorded {c.exe} faulting in {c.module} ({c.code or 'no code'}).",
+        f"That module is neither the game's executable nor anything this "
+        f"tool installs, at {where} - an overlay, a driver component or "
+        f"another mod. Close overlays (RivaTuner, Discord, GeForce "
+        f"Experience) and try again; if it persists, that module is the "
+        f"one to chase.",
+    )
 
 
 # Windows' own runtime libraries: a fault in one says who was called.
-_SHARED_RUNTIME = frozenset({
-    "ucrtbase.dll", "msvcrt.dll", "vcruntime140.dll", "vcruntime140_1.dll",
-    "msvcp140.dll", "ntdll.dll", "kernelbase.dll"})
+_SHARED_RUNTIME = frozenset(
+    {
+        "ucrtbase.dll",
+        "msvcrt.dll",
+        "vcruntime140.dll",
+        "vcruntime140_1.dll",
+        "msvcp140.dll",
+        "ntdll.dll",
+        "kernelbase.dll",
+    }
+)
 
 
 # Which project made a module this tool installs, by its file name. The
@@ -260,15 +302,20 @@ _MADE_BY_EXACT = {
     "nvngx.dll": "DLSS5-ReShade-AIO (standalone-dlssnr)",
     "nvngx.dll_dlssnr.dll": "OptiScaler",
 }
-_MADE_BY = (("dlss5-feed", "DLSS5-Feeder"), ("vklayer_feed", "DLSS5-Feeder"),
-            ("dlss5-dx11-bridge", "dlss5-bridge"),
-            ("renodx", "renodx-dlss5"),
-            ("standalone-dlssnr", "DLSS5-ReShade-AIO (standalone-dlssnr)"),
-            ("dlss5-bridge", "dlss5-bridge"),
-            ("nvngx.dll.addon", "neural-upstream"),
-            ("reshade", "ReShade"), ("optiscaler", "OptiScaler"),
-            ("rtx40mfg", "RTX40MFG-Unlock"), ("mfgunlocker", "RTX40MFG-Unlock"),
-            ("nvngx", "NVIDIA's DLSS runtime"))
+_MADE_BY = (
+    ("dlss5-feed", "DLSS5-Feeder"),
+    ("vklayer_feed", "DLSS5-Feeder"),
+    ("dlss5-dx11-bridge", "dlss5-bridge"),
+    ("renodx", "renodx-dlss5"),
+    ("standalone-dlssnr", "DLSS5-ReShade-AIO (standalone-dlssnr)"),
+    ("dlss5-bridge", "dlss5-bridge"),
+    ("nvngx.dll.addon", "neural-upstream"),
+    ("reshade", "ReShade"),
+    ("optiscaler", "OptiScaler"),
+    ("rtx40mfg", "RTX40MFG-Unlock"),
+    ("mfgunlocker", "RTX40MFG-Unlock"),
+    ("nvngx", "NVIDIA's DLSS runtime"),
+)
 
 
 def made_by(module: str) -> str:
@@ -292,6 +339,7 @@ def elevated() -> bool:
     """Is this process running as administrator? False when it cannot tell."""
     try:
         import ctypes
+
         return bool(ctypes.windll.shell32.IsUserAnAdmin())
     except Exception:
         return False
@@ -314,15 +362,14 @@ def start_flags(exe_path) -> str:
     if not want:
         return ""
     found: list[str] = []
-    views = ((winreg.HKEY_CURRENT_USER, 0, "per user"),
-             (winreg.HKEY_LOCAL_MACHINE, getattr(winreg, "KEY_WOW64_64KEY", 0),
-              "all users"),
-             (winreg.HKEY_LOCAL_MACHINE, getattr(winreg, "KEY_WOW64_32KEY", 0),
-              "all users"))
+    views = (
+        (winreg.HKEY_CURRENT_USER, 0, "per user"),
+        (winreg.HKEY_LOCAL_MACHINE, getattr(winreg, "KEY_WOW64_64KEY", 0), "all users"),
+        (winreg.HKEY_LOCAL_MACHINE, getattr(winreg, "KEY_WOW64_32KEY", 0), "all users"),
+    )
     for hive, view, label in views:
         try:
-            with winreg.OpenKey(hive, COMPAT_LAYERS, 0,
-                                winreg.KEY_READ | view) as k:
+            with winreg.OpenKey(hive, COMPAT_LAYERS, 0, winreg.KEY_READ | view) as k:
                 i = 0
                 while True:
                     try:

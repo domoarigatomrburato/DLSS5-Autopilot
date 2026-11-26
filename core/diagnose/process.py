@@ -11,6 +11,7 @@ warnings under it, so a second hook in the frame is now said IN it.
 
 Part of core/diagnose; see __init__.py.
 """
+
 from __future__ import annotations
 import re
 from datetime import datetime
@@ -33,8 +34,11 @@ _LOADS_ON_CREATE = ("nvngx_dlssnr.dll",)
 # Registered add-on ...", or ReShade's own first line. No date in it. Not any
 # line: the log's last one is written when the game closes, and measuring
 # from it called every session longer than two minutes "started again".
-_LOG_CLOCK = re.compile(r"^(\d{2}):(\d{2}):(\d{2}):\d+ [^\n]*"
-                        r"(?:Initializing crosire's ReShade|Registered add-on)", re.M)
+_LOG_CLOCK = re.compile(
+    r"^(\d{2}):(\d{2}):(\d{2}):\d+ [^\n]*"
+    r"(?:Initializing crosire's ReShade|Registered add-on)",
+    re.M,
+)
 
 # A launch later than the sighting by less than this is the same launch seen
 # from its two ends: the snapshot is taken as the game comes up and ReShade
@@ -85,13 +89,16 @@ def _sighting_is_older_than_the_last_launch(install_dir: Path, at) -> bool:
 
 # A file this tool writes -> what its add-on calls itself when ReShade
 # registers it. A file that is not here is never taken for registered.
-_REGISTERS_AS = (("bridge", ("dlss 5 bridge",)), ("feed", ("dlss 5 feed",)),
-                 ("renodx-dlss5.", ("dlss 5 neural rendering",)),
-                 ("renodx-dlss.", ("renodx dlss",)),
-                 ("nvngx.dll.addon", ("pre-upscale", "upstream")),
-                 ("standalone-dlssnr", ("standalone dlss-nr",)),
-                 ("gitc-uplift", ("gitc uplift",)),
-                 ("rtx40mfg", ("mfg unlock",)))
+_REGISTERS_AS = (
+    ("bridge", ("dlss 5 bridge",)),
+    ("feed", ("dlss 5 feed",)),
+    ("renodx-dlss5.", ("dlss 5 neural rendering",)),
+    ("renodx-dlss.", ("renodx dlss",)),
+    ("nvngx.dll.addon", ("pre-upscale", "upstream")),
+    ("standalone-dlssnr", ("standalone dlss-nr",)),
+    ("gitc-uplift", ("gitc uplift",)),
+    ("rtx40mfg", ("mfg unlock",)),
+)
 
 
 def _loaded_note(install_dir: Path, man: dict, rep: Report) -> None:
@@ -105,16 +112,18 @@ def _loaded_note(install_dir: Path, man: dict, rep: Report) -> None:
     """
     try:
         from .. import watch
+
         seen = watch.settle(
             watch.last_sighting(install_dir, _installed_at(install_dir)),
-            man.get("files"))
+            man.get("files"),
+        )
         proxy = str(man.get("proxy") or "")
         also = ()
         if man.get("dxvk"):
             from .. import dxvk as _dx
+
             also = _dx.ALL_FILES
-        need = [n for n in seen.get("missing") or []
-                if watch.essential(n, proxy, also)]
+        need = [n for n in seen.get("missing") or [] if watch.essential(n, proxy, also)]
     except Exception:
         return
     if not seen or seen.get("refused"):
@@ -126,14 +135,24 @@ def _loaded_note(install_dir: Path, man: dict, rep: Report) -> None:
     # the snapshot - taken as the process came up - said they were not loaded.
     # File by file: the bridge registering says nothing about the feed, and an
     # HDR mod or the MFG unlock registering says nothing about either.
-    reg = [f.title.lower() for f in rep.findings
-           if f.level == OK and f.title.startswith("ReShade loaded add-on")]
+    reg = [
+        f.title.lower()
+        for f in rep.findings
+        if f.level == OK and f.title.startswith("ReShade loaded add-on")
+    ]
 
     def registered(n: str) -> bool:
         said = next((t for k, t in _REGISTERS_AS if k in n), ())
         return any(s in t for s in said for t in reg)
-    need = [n for n in need if not (str(n).lower().endswith((".addon64", ".addon32"))
-                                    and registered(str(n).lower()))]
+
+    need = [
+        n
+        for n in need
+        if not (
+            str(n).lower().endswith((".addon64", ".addon32"))
+            and registered(str(n).lower())
+        )
+    ]
     later = [n for n in need if str(n).lower() in _LOADS_ON_CREATE]
     need = [n for n in need if n not in later]
     loaded = [n for n in (seen.get("ours") or [])]
@@ -141,27 +160,36 @@ def _loaded_note(install_dir: Path, man: dict, rep: Report) -> None:
         return
     when = datetime.fromtimestamp(seen.get("at", 0)).strftime("%d %b %H:%M")
     if loaded:
-        rep.add(OK, f"When it last ran ({when}), the process had "
-                    f"{', '.join(loaded)} loaded.",
-                "Read out of the running game, not out of a log: those are "
-                "in it. What the overlay still answers is whether the model "
-                "is switched on and drawing.")
+        rep.add(
+            OK,
+            f"When it last ran ({when}), the process had {', '.join(loaded)} loaded.",
+            "Read out of the running game, not out of a log: those are "
+            "in it. What the overlay still answers is whether the model "
+            "is switched on and drawing.",
+        )
     if need:
         # Only what the game has to load. The rest of a package is loaded
         # on demand, and "...and not amd_fidelityfx_vk.dll" under a DX12
         # game read as the fault (#231).
-        rep.add(WARN, (f"...and not {', '.join(need)}."
-                       if loaded else
-                       f"When it last ran ({when}), the process did not have "
-                       f"{', '.join(need)} loaded."),
-                "Written here, and not in the process when it last ran.")
+        rep.add(
+            WARN,
+            (
+                f"...and not {', '.join(need)}."
+                if loaded
+                else f"When it last ran ({when}), the process did not have "
+                f"{', '.join(need)} loaded."
+            ),
+            "Written here, and not in the process when it last ran.",
+        )
     if later:
-        rep.add(INFO, f"{', '.join(later)} was not loaded yet when the game "
-                      f"was seen.",
-                "NVIDIA's runtime loads it when the neural feature is "
-                "created, not when the game starts. A look taken before that, "
-                "or a session that never created the feature, both show this "
-                "- on its own it is not a missing file.")
+        rep.add(
+            INFO,
+            f"{', '.join(later)} was not loaded yet when the game was seen.",
+            "NVIDIA's runtime loads it when the neural feature is "
+            "created, not when the game starts. A look taken before that, "
+            "or a session that never created the feature, both show this "
+            "- on its own it is not a missing file.",
+        )
 
 
 # What a registered add-on's name has to carry to be a DLSS hook, rather
@@ -193,18 +221,24 @@ def _route_owns(name: str, route: str) -> bool:
 
 def _foreign_hooks(loaded, route: str) -> list[str]:
     """The DLSS hooks ReShade loaded in this session that the route did not."""
-    return list(dict.fromkeys(
-        n for n in loaded
-        if _HOOK_WORDS.search(n) and not _route_owns(n, route)))
+    return list(
+        dict.fromkeys(
+            n for n in loaded if _HOOK_WORDS.search(n) and not _route_owns(n, route)
+        )
+    )
 
 
 # Verdicts that only say "we cannot see from here". A second hook in the
 # frame is a better answer than any of them, so it replaces them; every
 # other verdict names something the logs do show, and keeps it.
-_CANNOT_SEE = ("Add-ons loaded", "Inconclusive", "Loaded and set up",
-               "Set up correctly, but not switched on",
-               # 2.0.7: the bridge's own log counted frames and nothing more
-               "The bridge delivered at least")
+_CANNOT_SEE = (
+    "Add-ons loaded",
+    "Inconclusive",
+    "Loaded and set up",
+    "Set up correctly, but not switched on",
+    # 2.0.7: the bridge's own log counted frames and nothing more
+    "The bridge delivered at least",
+)
 
 
 def _name_foreign_hooks(rep: Report, foreign) -> Report:
@@ -215,21 +249,28 @@ def _name_foreign_hooks(rep: Report, foreign) -> Report:
     if rep.verdict.startswith("Working"):
         # Frames came through with it loaded; it did not stop the pass.
         for f in rep.findings:
-            if f.level == BAD and f.title.startswith(("Another DLSS hook was loaded",
-                                                      "Another DLSS tool's add-on")):
+            if f.level == BAD and f.title.startswith(
+                ("Another DLSS hook was loaded", "Another DLSS tool's add-on")
+            ):
                 f.level = WARN
         return rep
     if rep.verdict.startswith(_CANNOT_SEE) and all("DX11 Bridge" in n for n in foreign):
         # The bridge route's own add-on under its 1.0.x name: every ReShade
         # route now moves it aside on install, so that is the step (#439).
-        rep.verdict = (f"An older bridge add-on was loaded beside ours ({names}, "
-                       f"dlss5-dx11-bridge.addon64) - install again and it is "
-                       f"moved aside.")
+        rep.verdict = (
+            f"An older bridge add-on was loaded beside ours ({names}, "
+            f"dlss5-dx11-bridge.addon64) - install again and it is "
+            f"moved aside."
+        )
     elif rep.verdict.startswith(_CANNOT_SEE):
-        rep.verdict = (f"Another DLSS hook was loaded beside ours ({names}) - "
-                       f"move it out of the game folder and test with ours "
-                       f"alone.")
+        rep.verdict = (
+            f"Another DLSS hook was loaded beside ours ({names}) - "
+            f"move it out of the game folder and test with ours "
+            f"alone."
+        )
     else:
-        rep.verdict = (f"{rep.verdict.rstrip()} Another DLSS hook was loaded "
-                       f"beside ours too ({names}) - test without it.")
+        rep.verdict = (
+            f"{rep.verdict.rstrip()} Another DLSS hook was loaded "
+            f"beside ours too ({names}) - test without it."
+        )
     return rep

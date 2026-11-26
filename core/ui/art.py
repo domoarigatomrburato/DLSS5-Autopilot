@@ -15,6 +15,7 @@ Three calls, by thread:
   listen(fn)    fn(folder) is called from the art thread when new pictures
                 land; the window turns it into an ("art", folder) message
 """
+
 from __future__ import annotations
 
 import queue
@@ -32,7 +33,7 @@ _lock = threading.Lock()
 _appids: dict[str, str] | None = None
 _found: dict[str, "Art"] = {}
 _jobs: "queue.Queue" = queue.Queue()
-_asked: set[str] = set()       # asked online this run - never twice (no retry loop)
+_asked: set[str] = set()  # asked online this run - never twice (no retry loop)
 _running = False
 _listeners: list = []
 
@@ -45,7 +46,7 @@ class Art:
     logo: Path | None = None
     exe: Path | None = None
     accent: str | None = None
-    chosen: bool = False        # a picture was chosen by hand (menus offer the reset)
+    chosen: bool = False  # a picture was chosen by hand (menus offer the reset)
 
 
 def _index() -> dict[str, str]:
@@ -87,7 +88,7 @@ def _pick(folder: Path, *names: str) -> Path | None:
         if p.is_file():
             return p
     try:
-        for sub in folder.iterdir():          # hashed folders, one level down
+        for sub in folder.iterdir():  # hashed folders, one level down
             if sub.is_dir():
                 for n in names:
                     p = sub / n
@@ -124,10 +125,12 @@ def find(game) -> Art:
     steam: dict = {}
     if aid and base and (base / aid).is_dir():
         d = base / aid
-        steam = {"cover": _pick(d, "library_600x900.jpg", "library_capsule.jpg"),
-                 "hero": _pick(d, "library_hero.jpg"),
-                 "blur": _pick(d, "library_hero_blur.jpg"),
-                 "logo": _pick(d, "logo.png")}
+        steam = {
+            "cover": _pick(d, "library_600x900.jpg", "library_capsule.jpg"),
+            "hero": _pick(d, "library_hero.jpg"),
+            "blur": _pick(d, "library_hero_blur.jpg"),
+            "logo": _pick(d, "logo.png"),
+        }
     mine, got = {}, {}
     try:
         mine, got = covers.user(game), covers.got(game)
@@ -218,8 +221,9 @@ def _work() -> None:
 def choose(game, kind: str, path) -> str:
     """A picture chosen by hand; '' when it is in place, else what to say.
     Worker only: it reads and copies the file."""
-    said = covers.set_user(game, kind, path,
-                           readable=lambda p: imaging.picture(p, 4, 4) is not None)
+    said = covers.set_user(
+        game, kind, path, readable=lambda p: imaging.picture(p, 4, 4) is not None
+    )
     if not said:
         _tell(game)
     return said

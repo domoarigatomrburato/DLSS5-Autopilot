@@ -4,6 +4,7 @@ Tk draws the client area only; the frame is Windows'. Without these a dark
 app comes with a white title bar and Python's feather in the taskbar, and a
 125%/150% display stretches the whole window like a bitmap.
 """
+
 from __future__ import annotations
 
 import base64
@@ -39,7 +40,10 @@ def set_icons(root) -> None:
     PNG for the taskbar."""
     try:
         from ..icon_png import ICON_ICO_B64, ICON_PNG_B64
-        root._icon_png = __import__("tkinter").PhotoImage(master=root, data=base64.b64decode(ICON_PNG_B64))
+
+        root._icon_png = __import__("tkinter").PhotoImage(
+            master=root, data=base64.b64decode(ICON_PNG_B64)
+        )
         root.iconphoto(True, root._icon_png)
         ico = ico_path()
         data = base64.b64decode(ICON_ICO_B64)
@@ -73,10 +77,15 @@ def dark_titlebar(win) -> None:
         dwm = ctypes.windll.dwmapi
 
         def colorref(c: str) -> int:
-            r, g, b = (int(c[i:i + 2], 16) for i in (1, 3, 5))
+            r, g, b = (int(c[i : i + 2], 16) for i in (1, 3, 5))
             return (b << 16) | (g << 8) | r
-        for attr, val in ((20, 1), (35, colorref(T.RAIL)), (36, colorref(T.MUTED)),
-                          (34, colorref(T.LINE))):
+
+        for attr, val in (
+            (20, 1),
+            (35, colorref(T.RAIL)),
+            (36, colorref(T.MUTED)),
+            (34, colorref(T.LINE)),
+        ):
             v = ctypes.c_int(val)
             dwm.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(v), 4)
     except Exception:

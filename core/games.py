@@ -3,6 +3,7 @@ r"""Finding installed games: Steam, Epic, GOG, emulators, manual folders.
 Nothing is executed; library files are read and executable headers inspected.
 Scanning is entirely local - no network access.
 """
+
 from __future__ import annotations
 
 import json
@@ -19,9 +20,15 @@ from . import emulators, log, pe
 # Any of these next to the executable means we (or an older release of this
 # tool) have installed here. The bridge and native routes leave no feeder
 # add-on, so the manifest name is part of the check.
-MARKER_FILES = ("dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed-helper.addon64",
-                "dlss5-bridge.addon64", "dlss5-autopilot.json",
-                "dlss5kur-kurulum.json", "dlss5-installer.json")
+MARKER_FILES = (
+    "dlss5-feed.addon64",
+    "dlss5-feed.addon32",
+    "dlss5-feed-helper.addon64",
+    "dlss5-bridge.addon64",
+    "dlss5-autopilot.json",
+    "dlss5kur-kurulum.json",
+    "dlss5-installer.json",
+)
 
 
 _ROLLED: dict = {}
@@ -41,13 +48,17 @@ def _rolled_back(record: Path) -> bool:
     key = (str(record), st.st_mtime_ns, st.st_size)
     if key not in _ROLLED:
         from .net import ROLLED_BACK_NOTE
+
         # A record is written by older builds too: any shape it has must
         # read as "installed", never raise out of the library (gate 2.0.7).
         try:
             data = json.loads(record.read_text(encoding="utf8"))
             notes = data.get("notes") if isinstance(data, dict) else None
-            _ROLLED[key] = (isinstance(notes, list) and ROLLED_BACK_NOTE in notes
-                            and not (data.get("files") or data.get("dosyalar")))
+            _ROLLED[key] = (
+                isinstance(notes, list)
+                and ROLLED_BACK_NOTE in notes
+                and not (data.get("files") or data.get("dosyalar"))
+            )
         except Exception:
             _ROLLED[key] = False
     return _ROLLED[key]
@@ -66,36 +77,45 @@ def _isdir(p) -> bool:
     except OSError:
         return False
 
+
 # What to tell someone whose Xbox / Game Pass folder cannot be written to.
 # One sentence, shared with the installer so both places say the same thing.
-XBOX_HINT = ("Windows does not let anything write into this Xbox / Game Pass "
-             "folder. Only games whose publisher allows modding have 'Enable "
-             "mods' (or 'Manage > Files > Browse') in the Xbox app; if yours "
-             "has it, turn it on and press rescan. If it does not - Microsoft "
-             "Flight Simulator, most Store titles - no tool can change this "
-             "folder, and the Steam version of the game is the one that can "
-             "be set up.")
+XBOX_HINT = (
+    "Windows does not let anything write into this Xbox / Game Pass "
+    "folder. Only games whose publisher allows modding have 'Enable "
+    "mods' (or 'Manage > Files > Browse') in the Xbox app; if yours "
+    "has it, turn it on and press rescan. If it does not - Microsoft "
+    "Flight Simulator, most Store titles - no tool can change this "
+    "folder, and the Steam version of the game is the one that can "
+    "be set up."
+)
 # A protected executable is a different thing from a locked folder (#157,
 # Forza Horizon 6): the exe cannot be opened, the folder beside it can be
 # written. What is lost is what the exe would have told us.
-XBOX_EXE_HINT = ("Windows protects this Xbox game's executable, so the tool "
-                 "cannot read it. Choose 64-bit or 32-bit in the game's "
-                 "details (almost every Game Pass game is 64-bit) and check "
-                 "the graphics API there - that guess comes from the files "
-                 "beside the game, not from the game itself.")
+XBOX_EXE_HINT = (
+    "Windows protects this Xbox game's executable, so the tool "
+    "cannot read it. Choose 64-bit or 32-bit in the game's "
+    "details (almost every Game Pass game is 64-bit) and check "
+    "the graphics API there - that guess comes from the files "
+    "beside the game, not from the game itself."
+)
 # The same unreadable exe outside a store folder (#897: a Game Pass library on
 # another drive). The Xbox wording would send somebody to an app that has
 # nothing to do with their game, so it says the same without it.
-EXE_PROTECTED_HINT = ("Windows does not let the tool read this game's "
-                      "executable. Choose 64-bit or 32-bit in the game's "
-                      "details and check the graphics API there - that guess "
-                      "comes from the files beside the game, not from the "
-                      "game itself.")
+EXE_PROTECTED_HINT = (
+    "Windows does not let the tool read this game's "
+    "executable. Choose 64-bit or 32-bit in the game's "
+    "details and check the graphics API there - that guess "
+    "comes from the files beside the game, not from the "
+    "game itself."
+)
 # ...and in the game's settings, where the choice has already been made.
-XBOX_EXE_CHOSEN = ("Windows protects this executable: the architecture is "
-                   "the one chosen in the game's settings, and the graphics API is "
-                   "chosen there or guessed from the files beside the game - "
-                   "neither is read from the game.")
+XBOX_EXE_CHOSEN = (
+    "Windows protects this executable: the architecture is "
+    "the one chosen in the game's settings, and the graphics API is "
+    "chosen there or guessed from the files beside the game - "
+    "neither is read from the game."
+)
 
 # Folder names Windows keeps under its own ownership for store games. Exact
 # segment match on purpose: ModifiableWindowsApps is the one that IS meant
@@ -127,8 +147,9 @@ def _xbox_locked(g: "Game") -> bool:
         with open(g.exe, "rb") as f:
             f.read(1)
     except PermissionError:
-        g.exe_warning = (XBOX_EXE_HINT if is_locked_store_path(g.exe)
-                         else EXE_PROTECTED_HINT)
+        g.exe_warning = (
+            XBOX_EXE_HINT if is_locked_store_path(g.exe) else EXE_PROTECTED_HINT
+        )
         log.write(f"{g.name}: {g.exe} is protected - {g.exe_warning}")
         return True
     except OSError:
@@ -139,19 +160,19 @@ def _xbox_locked(g: "Game") -> bool:
 @dataclass
 class Game:
     name: str
-    folder: Path                 # the game's root folder
-    exe: Path | None = None      # chosen executable
-    bitness: int | None = None   # 32 / 64
+    folder: Path  # the game's root folder
+    exe: Path | None = None  # chosen executable
+    bitness: int | None = None  # 32 / 64
     api: str = "?"
     api_why: str = ""
-    api_detected: str = ""          # what the executable said, before any override
-    source: str = "Manual"       # Steam / Epic / GOG / Emulator / Manual
+    api_detected: str = ""  # what the executable said, before any override
+    source: str = "Manual"  # Steam / Epic / GOG / Emulator / Manual
     candidates: list[Path] = field(default_factory=list)
     error: str = ""
-    emu: object | None = None    # emulators.Profile, when applicable
-    install_root: Path | None = None   # folder an earlier install wrote to
-    kind: str = "game"             # "game" or "video" (a player, no depth)
-    exe_warning: str = ""          # protected Xbox EXE; not a write-access verdict
+    emu: object | None = None  # emulators.Profile, when applicable
+    install_root: Path | None = None  # folder an earlier install wrote to
+    kind: str = "game"  # "game" or "video" (a player, no depth)
+    exe_warning: str = ""  # protected Xbox EXE; not a write-access verdict
 
     @property
     def install_dir(self) -> Path:
@@ -184,9 +205,19 @@ class Game:
             return True
         if not any((d / m).is_file() for m in MARKER_FILES if not m.endswith(".json")):
             return False
-        loaders = ("dxgi.dll", "d3d11.dll", "d3d12.dll", "d3d9.dll", "d3d10.dll",
-                   "opengl32.dll", "winmm.dll", "version.dll", "dbghelp.dll",
-                   "ReShade.ini", "OptiScaler.ini")
+        loaders = (
+            "dxgi.dll",
+            "d3d11.dll",
+            "d3d12.dll",
+            "d3d9.dll",
+            "d3d10.dll",
+            "opengl32.dll",
+            "winmm.dll",
+            "version.dll",
+            "dbghelp.dll",
+            "ReShade.ini",
+            "OptiScaler.ini",
+        )
         return any((d / n).is_file() for n in loaders)
 
     @property
@@ -196,11 +227,15 @@ class Game:
 
 # ---------------------------------------------------------------- Steam
 
+
 def _steam_root() -> Path | None:
     try:
         import winreg
-        for hive, key in ((winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam"),
-                          (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam")):
+
+        for hive, key in (
+            (winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam"),
+            (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam"),
+        ):
             try:
                 with winreg.OpenKey(hive, key) as k:
                     for val in ("SteamPath", "InstallPath"):
@@ -295,10 +330,11 @@ def scan_steam() -> list[Game]:
             # ...and never hide a folder this tool has installed into, even
             # when the game itself is gone: that is the one place someone
             # needs the entry, to press uninstall and get the leftovers out.
-            if (f.name.lower() not in installed and not _has_exe(f)
-                    and not _marked(f)):
+            if f.name.lower() not in installed and not _has_exe(f) and not _marked(f):
                 continue
-            out.append(Game(name=names.get(f.name.lower(), f.name), folder=f, source="Steam"))
+            out.append(
+                Game(name=names.get(f.name.lower(), f.name), folder=f, source="Steam")
+            )
     return out
 
 
@@ -308,19 +344,25 @@ def _has_exe(folder: Path, limit: int = 400) -> bool:
         with os.scandir(folder) as it:
             for i, e in enumerate(it):
                 if i >= limit:
-                    return True     # a folder this full is not a leftover
+                    return True  # a folder this full is not a leftover
                 if e.name.lower().endswith(".exe") and e.is_file():
                     return True
     except OSError:
-        return True                 # unreadable: leave it in the list
+        return True  # unreadable: leave it in the list
     return False
 
 
 # ---------------------------------------------------------------- Epic
 
+
 def scan_epic() -> list[Game]:
-    man = Path(os.environ.get("PROGRAMDATA", r"C:\ProgramData")) / \
-        "Epic" / "EpicGamesLauncher" / "Data" / "Manifests"
+    man = (
+        Path(os.environ.get("PROGRAMDATA", r"C:\ProgramData"))
+        / "Epic"
+        / "EpicGamesLauncher"
+        / "Data"
+        / "Manifests"
+    )
     if not man.is_dir():
         return []
     out: list[Game] = []
@@ -338,8 +380,9 @@ def scan_epic() -> list[Game]:
         loc = d.get("InstallLocation")
         if not loc or not Path(loc).is_dir():
             continue
-        g = Game(name=d.get("DisplayName") or Path(loc).name,
-                 folder=Path(loc), source="Epic")
+        g = Game(
+            name=d.get("DisplayName") or Path(loc).name, folder=Path(loc), source="Epic"
+        )
         launch = d.get("LaunchExecutable")
         if launch:
             cand = Path(loc) / launch
@@ -350,6 +393,7 @@ def scan_epic() -> list[Game]:
 
 
 # ---------------------------------------------------------------- GOG
+
 
 def scan_gog() -> list[Game]:
     out: list[Game] = []
@@ -381,6 +425,7 @@ def scan_gog() -> list[Game]:
 
 
 # ------------------------------------------------- EA / Ubisoft / Battle.net
+
 
 def _reg_walk(hive, key: str, value: str, name_value: str = "") -> list[Game]:
     """Every subkey of `key` that names an install folder in `value`."""
@@ -421,11 +466,15 @@ def scan_ea() -> list[Game]:
     """EA app / Origin. Battlefield and Dead Space live here, not on Steam."""
     out: list[Game] = []
     import sys as _sys
+
     hives = ()
     try:
         import winreg
-        hives = ((winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Electronic Arts"),
-                 (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Electronic Arts"))
+
+        hives = (
+            (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Electronic Arts"),
+            (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Electronic Arts"),
+        )
     except ImportError:
         return out
     for hive, key in hives:
@@ -454,9 +503,11 @@ def scan_ubisoft() -> list[Game]:
         import winreg
     except ImportError:
         return out
-    for g in _reg_walk(winreg.HKEY_LOCAL_MACHINE,
-                       r"SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs",
-                       "InstallDir"):
+    for g in _reg_walk(
+        winreg.HKEY_LOCAL_MACHINE,
+        r"SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs",
+        "InstallDir",
+    ):
         g.source = "Ubisoft"
         out.append(g)
     return out
@@ -487,8 +538,9 @@ def scan_battlenet() -> list[Game]:
                             loc = Path(winreg.QueryValueEx(k, "InstallLocation")[0])
                             nm = winreg.QueryValueEx(k, "DisplayName")[0]
                             if loc.is_dir():
-                                out.append(Game(name=nm, folder=loc,
-                                                source="Battle.net"))
+                                out.append(
+                                    Game(name=nm, folder=loc, source="Battle.net")
+                                )
                     except (OSError, ValueError):
                         continue
         except OSError:
@@ -524,9 +576,13 @@ def scan_xbox() -> list[Game]:
                     continue
                 # XboxGames puts the real files one level down, in Content.
                 inner = f / "Content"
-                out.append(Game(name=f.name,
-                                folder=inner if inner.is_dir() else f,
-                                source="Xbox"))
+                out.append(
+                    Game(
+                        name=f.name,
+                        folder=inner if inner.is_dir() else f,
+                        source="Xbox",
+                    )
+                )
         except OSError:
             continue
     return out
@@ -535,6 +591,7 @@ def scan_xbox() -> list[Game]:
 # ---------------------------------------------------------------- emulators
 
 # ---------------------------------------------- Rockstar / Amazon / itch / Heroic
+
 
 def scan_rockstar() -> list[Game]:
     """Rockstar Games Launcher: GTA V, Red Dead Redemption 2 bought there."""
@@ -555,8 +612,12 @@ def scan_rockstar() -> list[Game]:
                     i += 1
                     # The launcher and Social Club register an InstallFolder of
                     # their own under the same key, and are not games.
-                    if sub.lower() in ("launcher", "rockstar games launcher",
-                                       "rockstar games social club", "social club"):
+                    if sub.lower() in (
+                        "launcher",
+                        "rockstar games launcher",
+                        "rockstar games social club",
+                        "social club",
+                    ):
                         continue
                     try:
                         with winreg.OpenKey(root, sub) as k:
@@ -582,8 +643,11 @@ def scan_amazon() -> list[Game]:
     for r in roots:
         try:
             if _isdir(r):
-                out += [Game(name=f.name, folder=f, source="Amazon")
-                        for f in r.iterdir() if f.is_dir()]
+                out += [
+                    Game(name=f.name, folder=f, source="Amazon")
+                    for f in r.iterdir()
+                    if f.is_dir()
+                ]
         except OSError:
             continue
     return out
@@ -595,8 +659,11 @@ def scan_itch() -> list[Game]:
     base = Path(os.environ.get("APPDATA", "")) / "itch" / "apps"
     try:
         if _isdir(base):
-            out += [Game(name=f.name, folder=f, source="itch")
-                    for f in base.iterdir() if f.is_dir()]
+            out += [
+                Game(name=f.name, folder=f, source="itch")
+                for f in base.iterdir()
+                if f.is_dir()
+            ]
     except OSError:
         pass
     return out
@@ -606,8 +673,11 @@ def scan_heroic() -> list[Game]:
     """Heroic (Epic/GOG/Amazon through one launcher): reads its own records."""
     out: list[Game] = []
     cfg = Path(os.environ.get("APPDATA", "")) / "heroic"
-    for rel in ("legendaryConfig/legendary/installed.json",
-                "gog_store/installed.json", "nile_config/nile/installed.json"):
+    for rel in (
+        "legendaryConfig/legendary/installed.json",
+        "gog_store/installed.json",
+        "nile_config/nile/installed.json",
+    ):
         p = cfg / rel
         if not p.is_file():
             continue
@@ -622,8 +692,9 @@ def scan_heroic() -> list[Game]:
             loc = it.get("install_path") or it.get("path")
             name = it.get("title") or it.get("app_name") or ""
             if loc and Path(loc).is_dir():
-                out.append(Game(name=name or Path(loc).name, folder=Path(loc),
-                                source="Heroic"))
+                out.append(
+                    Game(name=name or Path(loc).name, folder=Path(loc), source="Heroic")
+                )
     return out
 
 
@@ -632,6 +703,7 @@ def is_removable(root: Path) -> bool:
     the copy the person plays - an install landed on one (issue #18)."""
     try:
         import ctypes
+
         DRIVE_REMOVABLE = 2
         return ctypes.windll.kernel32.GetDriveTypeW(str(root)) == DRIVE_REMOVABLE
     except Exception:
@@ -643,8 +715,21 @@ def is_removable(root: Path) -> bool:
 # Only names that are unmistakably a binaries folder: "Game", "Content" or
 # "Engine" can be a real game's own folder, and walking past them would
 # have named a Steam title "common".
-GENERIC_DIRS = {"bin", "bin64", "binaries", "win64", "win32", "x64", "x86",
-                "retail", "shipping", "release", "system", "exe", "executable"}
+GENERIC_DIRS = {
+    "bin",
+    "bin64",
+    "binaries",
+    "win64",
+    "win32",
+    "x64",
+    "x86",
+    "retail",
+    "shipping",
+    "release",
+    "system",
+    "exe",
+    "executable",
+}
 
 
 def display_name(folder: Path) -> str:
@@ -663,8 +748,18 @@ def scan_folders() -> list[Game]:
     drive actually has such a folder - so this stays cheap.
     """
     out: list[Game] = []
-    names = ("Games", "Game", "Oyunlar", "Juegos", "Spiele", "Jeux", "Giochi",
-             "My Games", "PC Games", "Installed Games")
+    names = (
+        "Games",
+        "Game",
+        "Oyunlar",
+        "Juegos",
+        "Spiele",
+        "Jeux",
+        "Giochi",
+        "My Games",
+        "PC Games",
+        "Installed Games",
+    )
     for drive in "CDEFGHIJ":
         base = Path(f"{drive}:/")
         if not _isdir(base) or is_removable(base):
@@ -675,7 +770,7 @@ def scan_folders() -> list[Game]:
                 if not d.is_dir():
                     continue
                 for f in d.iterdir():
-                    if f.is_dir() and not f.name.startswith(("." , "$")):
+                    if f.is_dir() and not f.name.startswith((".", "$")):
                         out.append(Game(name=f.name, folder=f, source="Folder"))
             except OSError:
                 continue
@@ -685,14 +780,19 @@ def scan_folders() -> list[Game]:
 def scan_emulators(progress=None) -> list[Game]:
     out: list[Game] = []
     for prof, exe in emulators.scan(progress):
-        g = Game(name=f"{prof.name} ({prof.system})", folder=exe.parent,
-                 exe=exe, source="Emulator")
+        g = Game(
+            name=f"{prof.name} ({prof.system})",
+            folder=exe.parent,
+            exe=exe,
+            source="Emulator",
+        )
         g.emu = prof
         out.append(g)
     return out
 
 
 # ---------------------------------------------------------------- shared
+
 
 def _marked(d: Path) -> bool:
     """Has an install of ours - or an older release's - left its record here?"""
@@ -704,8 +804,11 @@ def _marked(d: Path) -> bool:
 
 def _recorded_exe(d: Path) -> str | None:
     """The executable name the manifest in this folder was written for."""
-    for name in ("dlss5-autopilot.json", "dlss5kur-kurulum.json",
-                 "dlss5-installer.json"):
+    for name in (
+        "dlss5-autopilot.json",
+        "dlss5kur-kurulum.json",
+        "dlss5-installer.json",
+    ):
         f = d / name
         if not f.is_file():
             continue
@@ -744,8 +847,10 @@ def adopt_previous_install(g: Game) -> None:
             continue
         g.install_root = d
         if here is not None and d != here:
-            log.write(f"{g.name}: an earlier install is recorded in {d}, "
-                      f"not next to {g.exe.name}")
+            log.write(
+                f"{g.name}: an earlier install is recorded in {d}, "
+                f"not next to {g.exe.name}"
+            )
         chosen: Path | None = None
         want = _recorded_exe(d)
         if want and (d / want).is_file():
@@ -773,8 +878,10 @@ def _prefer_real_exe(g: Game) -> None:
         return
     in_bin = lambda p: any(part.lower() == "binaries" for part in p.parts)
     if in_bin(top) and not in_bin(g.exe):
-        log.write(f"{g.name}: the store names {g.exe.name} but the game runs "
-                  f"from {top.relative_to(g.folder)} - using that")
+        log.write(
+            f"{g.name}: the store names {g.exe.name} but the game runs "
+            f"from {top.relative_to(g.folder)} - using that"
+        )
         g.exe = top
 
 
@@ -785,6 +892,7 @@ def api_override(folder: Path) -> str:
     """The graphics API the person chose for this folder, or ""."""
     try:
         from . import prefs
+
         return str((prefs.get("api_override") or {}).get(str(folder).lower(), "") or "")
     except Exception:
         return ""
@@ -793,6 +901,7 @@ def api_override(folder: Path) -> str:
 def set_api_override(folder: Path, api: str | None) -> None:
     """Remember (or forget, with None/"") the API chosen for this folder."""
     from . import prefs
+
     d = dict(prefs.get("api_override") or {})
     key = str(folder).lower()
     if api and api in APIS:
@@ -805,6 +914,7 @@ def set_api_override(folder: Path, api: str | None) -> None:
 def bitness_override(folder: Path) -> int | None:
     """Architecture chosen for a protected Xbox executable, or None."""
     from . import prefs
+
     try:
         value = (prefs.get("bitness_override") or {}).get(str(folder).lower())
         return value if type(value) is int and value in (32, 64) else None
@@ -817,6 +927,7 @@ def set_bitness_override(folder: Path, bitness: int | None) -> None:
     if bitness is not None and (type(bitness) is not int or bitness not in (32, 64)):
         raise ValueError("Architecture must be 32 or 64.")
     from . import prefs
+
     d = dict(prefs.get("bitness_override") or {})
     key = str(folder).lower()
     if bitness is None:
@@ -836,9 +947,16 @@ def emu_api(g: Game, api: str, why: str) -> tuple[str, str]:
     place, because 'auto' is decided in three: enrich(), the settings'
     "back to auto", and the dim label beside the dropdown.
     """
-    if g is not None and g.emu is not None and not g.emu.d3d and str(api).upper().startswith("DX"):
-        return ("Vulkan" if "vulkan" in g.emu.renderer_hint.lower() else "OpenGL",
-                f"{g.emu.name} draws with Vulkan or OpenGL only (its imports read as {api})")
+    if (
+        g is not None
+        and g.emu is not None
+        and not g.emu.d3d
+        and str(api).upper().startswith("DX")
+    ):
+        return (
+            "Vulkan" if "vulkan" in g.emu.renderer_hint.lower() else "OpenGL",
+            f"{g.emu.name} draws with Vulkan or OpenGL only (its imports read as {api})",
+        )
     return api, why
 
 
@@ -898,8 +1016,9 @@ def enrich(g: Game, chosen: bool = False) -> Game:
         # Reported as "sometimes it does not see my games". A folder with no
         # executable we recognise is dropped from the list entirely, and until
         # now without saying which one, so it looked random.
-        log.write(f"no executable under {g.folder} - {g.name} will not be "
-                  f"listed", "warn")
+        log.write(
+            f"no executable under {g.folder} - {g.name} will not be listed", "warn"
+        )
     return g
 
 
@@ -990,12 +1109,20 @@ def quick_scan(known: list, progress=None) -> tuple[list, list]:
 def list_games(progress=None, emulators: bool = True) -> list[Game]:
     """What every store says is installed, before anything is inspected."""
     games: list[Game] = []
-    sources_ = [("Steam", scan_steam), ("Epic", scan_epic),
-                ("GOG", scan_gog), ("EA", scan_ea),
-                ("Ubisoft", scan_ubisoft), ("Battle.net", scan_battlenet),
-                ("Rockstar", scan_rockstar), ("Amazon", scan_amazon),
-                ("itch", scan_itch), ("Heroic", scan_heroic),
-                ("Xbox", scan_xbox), ("Folders", scan_folders)]
+    sources_ = [
+        ("Steam", scan_steam),
+        ("Epic", scan_epic),
+        ("GOG", scan_gog),
+        ("EA", scan_ea),
+        ("Ubisoft", scan_ubisoft),
+        ("Battle.net", scan_battlenet),
+        ("Rockstar", scan_rockstar),
+        ("Amazon", scan_amazon),
+        ("itch", scan_itch),
+        ("Heroic", scan_heroic),
+        ("Xbox", scan_xbox),
+        ("Folders", scan_folders),
+    ]
     if emulators:
         sources_.append(("Emulator", scan_emulators))
     for label, fn in sources_:
@@ -1024,11 +1151,23 @@ def list_games(progress=None, emulators: bool = True) -> list[Game]:
     games = list(uniq.values())
     # A Games folder often holds the launcher libraries themselves
     # (D:\Games\SteamLibrary), which are not games.
-    junk = ("steamlibrary", "steamapps", "epic games", "gog galaxy", "ea games",
-            "ubisoft", "xboxgames", "amazon games", "battle.net", "common",
-            "riot games", "rockstar games")
-    return [g for g in games
-            if not (g.source == "Folder" and g.folder.name.lower() in junk)]
+    junk = (
+        "steamlibrary",
+        "steamapps",
+        "epic games",
+        "gog galaxy",
+        "ea games",
+        "ubisoft",
+        "xboxgames",
+        "amazon games",
+        "battle.net",
+        "common",
+        "riot games",
+        "rockstar games",
+    )
+    return [
+        g for g in games if not (g.source == "Folder" and g.folder.name.lower() in junk)
+    ]
 
 
 def same_exe_once(games: list) -> list:
@@ -1040,6 +1179,7 @@ def same_exe_once(games: list) -> list:
     after enrich(), so this runs after it. Emulators are left alone: several
     games of one system can share an emulator's executable.
     """
+
     def weight(g) -> tuple:
         # The entry that carries something wins over the first one: an
         # install recorded against it, or a graphics API set by hand - both
@@ -1054,8 +1194,11 @@ def same_exe_once(games: list) -> list:
     out = []
     for g in games:
         exe = getattr(g, "exe", None)
-        if exe is None or getattr(g, "emu", None) is not None \
-                or getattr(g, "kind", "game") != "game":
+        if (
+            exe is None
+            or getattr(g, "emu", None) is not None
+            or getattr(g, "kind", "game") != "game"
+        ):
             out.append(g)
             continue
         try:
@@ -1066,8 +1209,10 @@ def same_exe_once(games: list) -> list:
             i = at[key]
             if weight(g) > weight(out[i]):
                 g, out[i] = out[i], g
-            log.write(f"scan: {g.name} ({g.source}) is the same executable as "
-                      f"{out[i].name} ({out[i].source}) - listed once")
+            log.write(
+                f"scan: {g.name} ({g.source}) is the same executable as "
+                f"{out[i].name} ({out[i].source}) - listed once"
+            )
             continue
         at[key] = len(out)
         out.append(g)
@@ -1078,8 +1223,12 @@ def manual(path: Path) -> Game:
     """Build a Game from a user-selected folder or executable."""
     path = Path(path)
     if path.is_file():
-        g = Game(name=display_name(path.parent), folder=path.parent, exe=path,
-                 source="Manual")
+        g = Game(
+            name=display_name(path.parent),
+            folder=path.parent,
+            exe=path,
+            source="Manual",
+        )
     else:
         g = Game(name=display_name(path), folder=path, source="Manual")
     return enrich(g)

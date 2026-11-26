@@ -28,6 +28,7 @@ What it deliberately does NOT do:
 Nothing here writes into a game folder: the installs are `installer.install`
 as the window runs it, and the watching is `watch`, which only reads.
 """
+
 from __future__ import annotations
 
 import os
@@ -55,15 +56,16 @@ CLOSE_SECONDS = 600.0
 @dataclass
 class Attempt:
     """One route, from install to what the process had loaded."""
+
     route: str
     installed: bool = False
     started: bool = False
     ours: list[str] = field(default_factory=list)
     missing: list[str] = field(default_factory=list)
     elsewhere: list[str] = field(default_factory=list)
-    note: str = ""             # advice about the launch, never a reason
-    why: str = ""              # why this attempt could not answer
-    no_record: bool = False    # installed, but nothing could record it
+    note: str = ""  # advice about the launch, never a reason
+    why: str = ""  # why this attempt could not answer
+    no_record: bool = False  # installed, but nothing could record it
 
     @property
     def loaded(self) -> bool:
@@ -82,8 +84,8 @@ class Outcome:
     route: str = ""
     ok: bool = False
     stopped: str = ""
-    installed: str = ""        # the route this pass installed and kept
-    left: str = ""             # what the folder's own record says is in it
+    installed: str = ""  # the route this pass installed and kept
+    left: str = ""  # what the folder's own record says is in it
 
     @property
     def note(self) -> str:
@@ -95,8 +97,14 @@ class Outcome:
         return [a.route for a in self.attempts]
 
 
-def plan(first: str, offer: list[str], data: dict | None = None,
-         game=None, limit: int = MAX_ATTEMPTS, klass: str = "") -> list[str]:
+def plan(
+    first: str,
+    offer: list[str],
+    data: dict | None = None,
+    game=None,
+    limit: int = MAX_ATTEMPTS,
+    klass: str = "",
+) -> list[str]:
     """The routes to try, in order, starting with the recommended one.
 
     Only routes this game is actually offered: naming one that is not in the
@@ -108,6 +116,7 @@ def plan(first: str, offer: list[str], data: dict | None = None,
     # A route offered but never recommended (GITC-Uplift) is tried only when
     # it is the person's own choice: an untried route is not picked for them.
     from .dlss import NEVER_AUTO
+
     rest = [n for n in (offer or []) if n not in out and n not in NEVER_AUTO]
     if data is not None and game is not None:
         try:
@@ -116,11 +125,12 @@ def plan(first: str, offer: list[str], data: dict | None = None,
             rest = [n for n, _why in community.rank_routes(data, game, rest, klass)]
         except Exception:
             pass
-    return (out + rest)[:max(1, limit)]
+    return (out + rest)[: max(1, limit)]
 
 
-def plan_reasons(offer: list[str], data: dict | None, game=None,
-                 klass: str = "") -> list[tuple[str, str]]:
+def plan_reasons(
+    offer: list[str], data: dict | None, game=None, klass: str = ""
+) -> list[tuple[str, str]]:
     """(route, why it is in that place) for a plan, for the log to print.
 
     A pass that reorders itself has to say what reordered it, or the person
@@ -155,6 +165,7 @@ def _layer_reaches_elevated(game) -> bool:
     """
     try:
         from . import vulkan
+
         bits = getattr(game, "bitness", None)
         return bits in (32, 64) and vulkan.reaches_elevated(bits == 64)
     except Exception:
@@ -180,15 +191,20 @@ def may_start(game, check_running: bool = False) -> tuple[bool, str]:
     try:
         found = anticheat.detect(Path(game.install_dir), Path(game.folder))
     except Exception as e:
-        log.write(f"autopilot: could not read {game.folder} for anti-cheat:"
-                  f" {e}", "warn")
-        return False, ("this folder could not be read to check for "
-                       "anti-cheat, so start the game yourself")
+        log.write(
+            f"autopilot: could not read {game.folder} for anti-cheat: {e}", "warn"
+        )
+        return False, (
+            "this folder could not be read to check for "
+            "anti-cheat, so start the game yourself"
+        )
     if found.present:
-        return False, (f"{found.summary} is in this folder ("
-                       f"{', '.join(found.evidence[:2])}) - an anti-cheat can "
-                       f"read a game started by another program as tampering, "
-                       f"so start it yourself the way you always do")
+        return False, (
+            f"{found.summary} is in this folder ("
+            f"{', '.join(found.evidence[:2])}) - an anti-cheat can "
+            f"read a game started by another program as tampering, "
+            f"so start it yourself the way you always do"
+        )
     # Starting a second copy of a running game is never what was meant, and
     # the button's own 10-second lock only covers a double press. THE GAME,
     # though: from_folder returns everything running out of the folder, and
@@ -204,7 +220,7 @@ def may_start(game, check_running: bool = False) -> tuple[bool, str]:
         def _is_the_game(p) -> bool:
             path = str(p.path or "").lower()
             if not path or path.startswith(host):
-                return False     # our own 64-bit helper, never the game
+                return False  # our own 64-bit helper, never the game
             if os.path.basename(path) == want:
                 return True
             # The picked exe is not always the process: a launcher in the
@@ -217,18 +233,24 @@ def may_start(game, check_running: bool = False) -> tuple[bool, str]:
                 return False
 
         try:
-            running = [p for p in watch.from_folder(Path(game.install_dir),
-                                                    exe=str(exe))
-                       if _is_the_game(p)]
+            running = [
+                p
+                for p in watch.from_folder(Path(game.install_dir), exe=str(exe))
+                if _is_the_game(p)
+            ]
         except Exception:
             running = []
         if running:
-            return False, (f"{running[0].name} is already running - "
-                           f"switch to it rather than starting a second copy")
+            return False, (
+                f"{running[0].name} is already running - "
+                f"switch to it rather than starting a second copy"
+            )
     try:
         if pe.launcher_like(Path(exe)):
-            return False, (f"{Path(exe).name} is a launcher, not the game - "
-                           f"starting it would start the wrong thing")
+            return False, (
+                f"{Path(exe).name} is a launcher, not the game - "
+                f"starting it would start the wrong thing"
+            )
     except Exception:
         pass
     # A program this tool starts inherits its token. Run as administrator,
@@ -240,19 +262,26 @@ def may_start(game, check_running: bool = False) -> tuple[bool, str]:
     # ...unless the layer is on the machine's list as well, which an install
     # made as administrator puts there (#562): then the elevated start gets
     # ReShade like any other.
-    if _through_user_layer(game) and wincrash.elevated() \
-            and not _layer_reaches_elevated(game):
-        return False, ("this tool is running as administrator, and a game it "
-                       "starts would be too - the Vulkan loader gives an elevated "
-                       "game none of the per-user layers ReShade needs on "
-                       "this route. Install again from here to put the layer "
-                       "where an elevated game looks, or start the game "
-                       "yourself the way you always do")
+    if (
+        _through_user_layer(game)
+        and wincrash.elevated()
+        and not _layer_reaches_elevated(game)
+    ):
+        return False, (
+            "this tool is running as administrator, and a game it "
+            "starts would be too - the Vulkan loader gives an elevated "
+            "game none of the per-user layers ReShade needs on "
+            "this route. Install again from here to put the layer "
+            "where an elevated game looks, or start the game "
+            "yourself the way you always do"
+        )
     src = str(getattr(game, "source", "") or "")
     if src and src.lower() not in ("manual", "emulator"):
-        return True, (f"{src} game: it starts from the executable here, but "
-                      f"if {src} wants to own the launch, start it there "
-                      f"instead - the watching is the same either way")
+        return True, (
+            f"{src} game: it starts from the executable here, but "
+            f"if {src} wants to own the launch, start it there "
+            f"instead - the watching is the same either way"
+        )
     return True, ""
 
 
@@ -263,13 +292,13 @@ def start(game) -> tuple[bool, str]:
         return False, why
     exe = Path(game.exe)
     try:
-        child.popen([str(exe)], cwd=str(exe.parent),
-                         close_fds=True)
+        child.popen([str(exe)], cwd=str(exe.parent), close_fds=True)
         return True, why
-    except Exception as e:                      # a store stub, a permission
+    except Exception as e:  # a store stub, a permission
         log.write(f"autopilot: could not start {exe.name}: {e}", "warn")
-        return False, (f"{exe.name} would not start ({e}) - start it the "
-                       f"way you normally do")
+        return False, (
+            f"{exe.name} would not start ({e}) - start it the way you normally do"
+        )
 
 
 class Hooks:
@@ -280,9 +309,17 @@ class Hooks:
     with the Hooks object as its first argument.
     """
 
-    def __init__(self, install=None, wait=None, start=None, log=None,
-                 stop=None, seconds: float = START_SECONDS, closed=None,
-                 options=None):
+    def __init__(
+        self,
+        install=None,
+        wait=None,
+        start=None,
+        log=None,
+        stop=None,
+        seconds: float = START_SECONDS,
+        closed=None,
+        options=None,
+    ):
         self.install = install or installer.install
         # Route by route, because half of Options is route-specific: the
         # OptiScaler dials, frame generation, the Remix runtime swap. Taking
@@ -296,8 +333,9 @@ class Hooks:
         self.log = log or (lambda text, kind="": None)
         self.stop = stop or (lambda: False)
         self.seconds = seconds
-        self.closed = closed or (lambda folder, exe, hooks: wait_closed(
-            folder, exe, hooks))
+        self.closed = closed or (
+            lambda folder, exe, hooks: wait_closed(folder, exe, hooks)
+        )
 
 
 def _files(root: Path) -> tuple[list[str], str]:
@@ -316,7 +354,9 @@ def attempt(game, opt, route: str, hooks: Hooks) -> Attempt:
             # The next route would take these files for the game's own and
             # back them up; the message says how to undo it by hand.
             a.no_record = True
-            a.why = next(w for w in rep.warnings if w.startswith(installer.RECORD_LOST_HEAD))
+            a.why = next(
+                w for w in rep.warnings if w.startswith(installer.RECORD_LOST_HEAD)
+            )
             hooks.log(f"  {route}: {a.why}", "warn")
             return a
     except Exception as e:
@@ -334,18 +374,20 @@ def attempt(game, opt, route: str, hooks: Hooks) -> Attempt:
     ours, exe = _files(root)
 
     started, note = hooks.start(game)
-    a.note = note                        # advice about the launch, not a reason
+    a.note = note  # advice about the launch, not a reason
     if started:
         hooks.log(f"  started {Path(game.exe).name} - watching", "")
     else:
         # A note here is always the reason the tool did not start it, so
         # it stands on its own - prefixing it produced "start the game now
         # - it is already running" (gate 1.9.1).
-        hooks.log(f"  {note}" if note else
-                  "  start the game now - watching for it", "warn")
+        hooks.log(
+            f"  {note}" if note else "  start the game now - watching for it", "warn"
+        )
 
-    seen = hooks.wait(root, ours, exe, seconds=hooks.seconds,
-                      tick=lambda _s, _p: not hooks.stop())
+    seen = hooks.wait(
+        root, ours, exe, seconds=hooks.seconds, tick=lambda _s, _p: not hooks.stop()
+    )
     if not seen:
         a.why = "the game was never seen running"
         return a
@@ -357,8 +399,7 @@ def attempt(game, opt, route: str, hooks: Hooks) -> Attempt:
     a.ours, a.missing, a.elsewhere = list(s.ours), list(s.missing), list(s.elsewhere)
     others = [p.proc.name for p in seen[1:]]
     if others:
-        hooks.log(f"  (also running from this folder: {', '.join(others[:3])})",
-                  "")
+        hooks.log(f"  (also running from this folder: {', '.join(others[:3])})", "")
     # The module list is the whole point of the pass, and until it is
     # written down it exists only in this object: the report reads it back
     # through watch.last_sighting(), and the summary tells people the report
@@ -384,8 +425,9 @@ def _exe_name(game, root: Path) -> str:
     return Path(exe).name if exe else ""
 
 
-def wait_closed(folder: Path, exe: str, hooks: Hooks,
-                seconds: float = CLOSE_SECONDS) -> bool:
+def wait_closed(
+    folder: Path, exe: str, hooks: Hooks, seconds: float = CLOSE_SECONDS
+) -> bool:
     """Wait for the game to exit. True when it is gone.
 
     The installer replaces the very DLLs the running game has mapped in, and
@@ -401,8 +443,9 @@ def wait_closed(folder: Path, exe: str, hooks: Hooks,
         if hooks.stop():
             return False
         if not said:
-            hooks.log("  close the game and this carries on with the next "
-                      "route", "warn")
+            hooks.log(
+                "  close the game and this carries on with the next route", "warn"
+            )
             said = True
         time.sleep(2.0)
     return not watch.from_folder(Path(folder), exe=exe)
@@ -431,17 +474,23 @@ def run(game, opt, routes: list[str], hooks: Hooks | None = None) -> Outcome:
             # This route could not be put in place. The next one is a
             # different download and a different set of files.
             if i + 1 < len(todo):
-                if "refused to write" in a.why or "is running" in a.why \
-                        or "being used by another process" in a.why:
+                if (
+                    "refused to write" in a.why
+                    or "is running" in a.why
+                    or "being used by another process" in a.why
+                ):
                     # Windows refused the file because the game has it open,
                     # and the next route writes into the same folder. If it
                     # never closes, the next route fails the same way.
                     root = Path(game.install_dir)
                     if not hooks.closed(root, _exe_name(game, root), hooks):
-                        out.stopped = ("you pressed stop" if hooks.stop() else
-                                       "the game is still running - the files "
-                                       "it has open cannot be replaced while "
-                                       "it is up")
+                        out.stopped = (
+                            "you pressed stop"
+                            if hooks.stop()
+                            else "the game is still running - the files "
+                            "it has open cannot be replaced while "
+                            "it is up"
+                        )
                         break
                 continue
             out.stopped = a.why or "the install did not finish"
@@ -452,21 +501,29 @@ def run(game, opt, routes: list[str], hooks: Hooks | None = None) -> Outcome:
             # executable here..." is not a reason a pass stopped). And a
             # stop arrives here as "nothing came back", so it is asked
             # about first: the person knows why it stopped.
-            out.stopped = ("you pressed stop" if hooks.stop()
-                           else a.why or "the game was never seen running")
-            break                               # nothing to learn from a rerun
+            out.stopped = (
+                "you pressed stop"
+                if hooks.stop()
+                else a.why or "the game was never seen running"
+            )
+            break  # nothing to learn from a rerun
         if a.elsewhere:
-            hooks.log(f"  {route}: the game loaded {a.elsewhere[0]} from "
-                      f"somewhere else, not ours", "warn")
+            hooks.log(
+                f"  {route}: the game loaded {a.elsewhere[0]} from "
+                f"somewhere else, not ours",
+                "warn",
+            )
         else:
-            hooks.log(f"  {route}: the game ran and loaded none of our files",
-                      "warn")
+            hooks.log(f"  {route}: the game ran and loaded none of our files", "warn")
         if i + 1 < len(todo):
             root = Path(game.install_dir)
             if not hooks.closed(root, _exe_name(game, root), hooks):
-                out.stopped = ("you pressed stop" if hooks.stop() else
-                               "the game is still running - the files it has "
-                               "open cannot be replaced while it is up")
+                out.stopped = (
+                    "you pressed stop"
+                    if hooks.stop()
+                    else "the game is still running - the files it has "
+                    "open cannot be replaced while it is up"
+                )
                 break
     else:
         out.stopped = "every route tried"
@@ -474,16 +531,14 @@ def run(game, opt, routes: list[str], hooks: Hooks | None = None) -> Outcome:
     # managed to finish: an install that stopped part way writes its files
     # and its record too, and saying "nothing was left" over that folder
     # hides the uninstall that would clean it up.
-    out.installed = next((a.route for a in reversed(out.attempts)
-                          if a.installed), "")
+    out.installed = next((a.route for a in reversed(out.attempts) if a.installed), "")
     try:
         man = installer._previous_manifest(Path(game.install_dir)) or {}
         # A failed fresh install is taken back out and may leave a record
         # holding only its reason (2.0.6): that route is not an install in
         # the folder.
         rolled = installer.net.ROLLED_BACK_NOTE in (man.get("notes") or [])
-        out.left = ("" if rolled else str(man.get("path") or "")) \
-            or out.installed
+        out.left = ("" if rolled else str(man.get("path") or "")) or out.installed
     except Exception:
         out.left = out.installed
     return out
@@ -506,22 +561,28 @@ def summary(out: Outcome) -> str:
     """One line for the window, and for the person who has to decide."""
     if out.ok:
         last = out.attempts[-1]
-        return (f"The {out.route} install is loaded in the game "
-                f"({_names(last.ours)}). Play for a few minutes, then press "
-                f"'did it work?'.")
+        return (
+            f"The {out.route} install is loaded in the game "
+            f"({_names(last.ours)}). Play for a few minutes, then press "
+            f"'did it work?'."
+        )
     if not out.attempts:
         return "Nothing was tried."
     # What is in the folder NOW is the first thing the person needs: this
     # stops with an install in place, and leaving that unsaid is how
     # somebody ends up with a route they never chose and no idea of it.
     if out.attempts[-1].no_record:
-        where = ""      # the stopped text already says what to remove by hand
+        where = ""  # the stopped text already says what to remove by hand
     elif out.installed:
-        where = (f" The {out.installed} route is what is installed in the "
-                 f"folder now - 'uninstall' takes it back out.")
+        where = (
+            f" The {out.installed} route is what is installed in the "
+            f"folder now - 'uninstall' takes it back out."
+        )
     elif out.left:
-        where = (f" The folder's record says a {out.left} install is in it - "
-                 f"'uninstall' takes that back out.")
+        where = (
+            f" The folder's record says a {out.left} install is in it - "
+            f"'uninstall' takes that back out."
+        )
     else:
         where = " Nothing of ours is in the folder."
     if out.stopped not in (_LOADED, _EXHAUSTED):
@@ -530,15 +591,22 @@ def summary(out: Outcome) -> str:
         # sentence is the answer - a summary about routes is not.
         said = out.stopped.rstrip(". ")
         # The launch advice belongs only where nobody managed to start it.
-        advice = out.note if (out.attempts and not out.attempts[-1].started
-                              and out.note) else ""
+        advice = (
+            out.note
+            if (out.attempts and not out.attempts[-1].started and out.note)
+            else ""
+        )
         return f"Stopped: {said}.{where}" + (f" {advice}" if advice else "")
     last = out.attempts[-1]
     if last.elsewhere:
-        what = (f"the game loaded {_names(last.elsewhere)} from another "
-                f"folder, so the copy beside it is never reached")
+        what = (
+            f"the game loaded {_names(last.elsewhere)} from another "
+            f"folder, so the copy beside it is never reached"
+        )
     else:
         what = "nothing of ours ended up running in the game"
-    return (f"Tried {', '.join(out.tried)} - {what}. Use "
-            f"'report a bug' in the help menu: what the game had loaded is recorded and "
-            f"goes into the report.{where}")
+    return (
+        f"Tried {', '.join(out.tried)} - {what}. Use "
+        f"'report a bug' in the help menu: what the game had loaded is recorded and "
+        f"goes into the report.{where}"
+    )

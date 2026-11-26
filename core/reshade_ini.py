@@ -11,6 +11,7 @@ Technique entries look like "TechniqueName@File.fx".
 IMPORTANT: the motion-vector provider's technique must sit ABOVE DLSS5_Feed in
 the technique list, otherwise the feed never receives vectors.
 """
+
 from __future__ import annotations
 
 import re
@@ -18,15 +19,22 @@ from pathlib import Path
 
 # Provider number -> (label, technique entry or None, we install the shader)
 PROVIDERS = {
-    3: ("LumeniteFX Kernel 2.0 (recommended)", "Lumenite_Kernel@lumenite_Kernel.fx", True),
+    3: (
+        "LumeniteFX Kernel 2.0 (recommended)",
+        "Lumenite_Kernel@lumenite_Kernel.fx",
+        True,
+    ),
     4: ("LumeniteFX QuantMotion", "Lumenite_QuantMotion@lumenite_QuantMotion.fx", True),
     0: ("Generic texMotionVectors (qUINT etc. - install it yourself)", None, False),
     1: ("iMMERSE Launchpad (install it yourself)", None, False),
     # VORT Motion (Vortigern, MIT): optical-flow motion vectors from the
     # colour buffer alone. The default on OpenGL, where LumeniteFX reads 0%
     # motion (perseval-BLR, six GL games); works on the other APIs too.
-    2: ("VORT Motion (optical flow - the OpenGL default)",
-        "vort_MotionEffects@vort_Motion.fx", True),
+    2: (
+        "VORT Motion (optical flow - the OpenGL default)",
+        "vort_MotionEffects@vort_Motion.fx",
+        True,
+    ),
     # DLSS5-Feeder 2.0.0's own estimator inside DLSS5_Feed.fx: nothing to
     # download and no technique to enable. Upstream has not verified it on
     # Direct3D 10 or Vulkan, so it is offered, not picked for anyone.
@@ -151,9 +159,14 @@ def write_reshade_ini(game_dir: Path, provider: int = 3) -> None:
     ini.set_default("GENERAL", "EffectSearchPaths", r".\reshade-shaders\Shaders\**")
     ini.set_default("GENERAL", "TextureSearchPaths", r".\reshade-shaders\Textures\**")
     ini.set_default("GENERAL", "PresetPath", r".\ReShadePreset.ini")
-    ini.set("GENERAL", "PreprocessorDefinitions",
-            _ensure_define(ini.get("GENERAL", "PreprocessorDefinitions") or "",
-                           f"DLSS5_MV_PROVIDER={provider}"))
+    ini.set(
+        "GENERAL",
+        "PreprocessorDefinitions",
+        _ensure_define(
+            ini.get("GENERAL", "PreprocessorDefinitions") or "",
+            f"DLSS5_MV_PROVIDER={provider}",
+        ),
+    )
     # Add-ons live next to the game executable; tell ReShade explicitly.
     ini.set_default("ADDON", "AddonPath", ".\\")
     ini.save(p)
@@ -207,6 +220,7 @@ def overlay_key_name(default: str = "Home") -> str:
     must not then be told to press one of them.
     """
     from . import prefs
+
     try:
         vk = int(prefs.get("overlay_key") or 0)
     except (TypeError, ValueError):
@@ -214,7 +228,7 @@ def overlay_key_name(default: str = "Home") -> str:
     # ROUTE_DEFAULT means "write nothing", and it is stored as 0. A hand
     # edited settings file can still carry the code itself, and the caller
     # knows which key its own route opens on, so it is the same answer.
-    if not vk:                    # ROUTE_DEFAULT: the caller's own key
+    if not vk:  # ROUTE_DEFAULT: the caller's own key
         return default
     for name, code in OVERLAY_KEYS.items():
         if code == vk:
@@ -228,7 +242,7 @@ def set_overlay_key(game_dir: Path, vk: int) -> None:
         return
     p = Path(game_dir) / "ReShade.ini"
     if not p.is_file():
-        return          # nothing to edit; the install writes it before this
+        return  # nothing to edit; the install writes it before this
     ini = Ini.load(p)
     if len(ini.sections) == 1 and not ini.sections[0][1]:
         # Load swallows an OSError and hands back an empty Ini (one root
@@ -268,8 +282,12 @@ def carry_over(game_dir: Path, others: list[Path]) -> Path | None:
             continue
     for _, src in sorted(cands, reverse=True):
         theirs = Ini.load(src)
-        pairs = [(sec, k, v) for sec, kv in theirs.sections
-                 if sec.upper() in CARRY_SECTIONS for k, v in kv]
+        pairs = [
+            (sec, k, v)
+            for sec, kv in theirs.sections
+            if sec.upper() in CARRY_SECTIONS
+            for k, v in kv
+        ]
         if not pairs:
             continue
         mine = Ini.load(p)
@@ -340,8 +358,9 @@ def addon_state(game_dir: Path) -> dict:
         if name.upper() == "ADDON":
             seen = next((v for k, v in kv if k.lower() == "overlaycollapsed"), "")
             break
-    switch = next((v for k, v in keys.items()
-                   if k.lower() == ADDON_SWITCH.lower()), None)
+    switch = next(
+        (v for k, v in keys.items() if k.lower() == ADDON_SWITCH.lower()), None
+    )
     return {"switch": switch, "keys": keys, "overlay_seen": bool(seen)}
 
 
@@ -362,7 +381,7 @@ def enable_dlss5_addon(game_dir: Path) -> bool:
     for name, kv in ini.sections:
         if name.lower() == ADDON_SECTION.lower():
             if any(k.lower() == ADDON_SWITCH.lower() for k, _ in kv):
-                return False          # their choice, whichever way it went
+                return False  # their choice, whichever way it went
             break
     ini.set_default(ADDON_SECTION, ADDON_SWITCH, "1")
     ini.save(p)
@@ -395,8 +414,12 @@ def enable_renodx_dlss_nr(game_dir: Path, exe_name: str = "") -> bool:
     ini.set_default("RENODX-DLSS", "NeuralRenderingEnabled", "1")
     held = ""
     if starts_off(exe_name):
-        held = ("kept" if ini.get("RENODX-DLSS", "DirectNeuralRenderingHookStage")
-                not in (None, "") else "set")
+        held = (
+            "kept"
+            if ini.get("RENODX-DLSS", "DirectNeuralRenderingHookStage")
+            not in (None, "")
+            else "set"
+        )
         ini.set_default("RENODX-DLSS", "DirectNeuralRenderingHookStage", "0")
     ini.save(p)
     return held
@@ -413,18 +436,28 @@ def write_preset(game_dir: Path, provider: int = 3) -> None:
             continue
         rest = [t for t in split_list(ini.get("", key) or "") if t not in ours]
         ini.set("", key, join_list(ours + rest))
-    ini.set("", "PreprocessorDefinitions",
-            _ensure_define(ini.get("", "PreprocessorDefinitions") or "",
-                           f"DLSS5_MV_PROVIDER={provider}"))
+    ini.set(
+        "",
+        "PreprocessorDefinitions",
+        _ensure_define(
+            ini.get("", "PreprocessorDefinitions") or "",
+            f"DLSS5_MV_PROVIDER={provider}",
+        ),
+    )
     # The effect's own definition wins over the global one, and feeder
     # 2.0.0's Alt+C menu writes it there ("Use the built-in vectors"). Once
     # that section exists a provider written only globally is ignored, so it
     # is set where it is read. update keeps a choice made in the menu
     # (provider_in_preset).
     if ini.get(FEED_EFFECT, "PreprocessorDefinitions") is not None:
-        ini.set(FEED_EFFECT, "PreprocessorDefinitions",
-                _ensure_define(ini.get(FEED_EFFECT, "PreprocessorDefinitions") or "",
-                               f"DLSS5_MV_PROVIDER={provider}"))
+        ini.set(
+            FEED_EFFECT,
+            "PreprocessorDefinitions",
+            _ensure_define(
+                ini.get(FEED_EFFECT, "PreprocessorDefinitions") or "",
+                f"DLSS5_MV_PROVIDER={provider}",
+            ),
+        )
     ini.save(p)
 
 
@@ -432,8 +465,10 @@ def provider_in_preset(game_dir: Path) -> int | None:
     """DLSS5_MV_PROVIDER as the feeder's effect will read it, or None."""
     ini = Ini.load(Path(game_dir) / "ReShadePreset.ini")
     for sec in (FEED_EFFECT, ""):
-        m = re.search(r"DLSS5_MV_PROVIDER\s*=\s*(\d+)",
-                      ini.get(sec, "PreprocessorDefinitions") or "")
+        m = re.search(
+            r"DLSS5_MV_PROVIDER\s*=\s*(\d+)",
+            ini.get(sec, "PreprocessorDefinitions") or "",
+        )
         if m:
             return int(m.group(1))
     return None
@@ -461,9 +496,12 @@ def remove_our_techniques(game_dir: Path, provider: int | None = None) -> None:
         # techniques in such a preset are the person's own, and the old else
         # branch stripped them (2.1.1).
         ours = {FEED_TECHNIQUE, *FEED_EXTRA} | (
-            {PROVIDERS[provider][1]} if PROVIDERS[provider][1] else set())
+            {PROVIDERS[provider][1]} if PROVIDERS[provider][1] else set()
+        )
     else:
-        ours = {FEED_TECHNIQUE, *FEED_EXTRA} | {v[1] for k, v in PROVIDERS.items() if v[1] and k in (3, 4)}
+        ours = {FEED_TECHNIQUE, *FEED_EXTRA} | {
+            v[1] for k, v in PROVIDERS.items() if v[1] and k in (3, 4)
+        }
     ini = Ini.load(p)
     changed = False
     for key in ("Techniques", "TechniqueSorting"):

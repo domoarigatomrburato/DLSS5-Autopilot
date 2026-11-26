@@ -28,6 +28,7 @@ Verified against the real thing: the rule picks
 the file set (`.trex`, `d3d9.dll`, `dinput8.dll`, `dxvk.conf`, the .asi and
 the launch .bat files) that a hand-installed copy of that mod has.
 """
+
 from __future__ import annotations
 
 import json
@@ -58,16 +59,17 @@ class NotAModError(RuntimeError):
 @dataclass
 class Fetch:
     """A release asset that holds a Remix install, and where it starts."""
+
     tag: str
     name: str
     url: str
     size: int
-    root: str = ""                      # directory inside the zip, "" = root
-    lands: list[str] = field(default_factory=list)   # top-level names it writes
+    root: str = ""  # directory inside the zip, "" = root
+    lands: list[str] = field(default_factory=list)  # top-level names it writes
 
 
 def repo_of(url: str) -> str:
-    """"owner/name" for a github.com project URL, else ""."""
+    """ "owner/name" for a github.com project URL, else ""."""
     p = urlparse(url)
     if "github.com" not in p.netloc:
         return ""
@@ -96,8 +98,13 @@ def remix_root(names: list[str]) -> str | None:
     # The mod root is the directory holding .trex, whichever level that is:
     # GTA IV buries it under GTAIV-Remix-CompatibilityMod/, NFSU2 has it at
     # the archive root. Shallowest wins if a capture folder repeats the name.
-    roots = sorted({n[:-len("/.trex/d3d9.dll")] if "/.trex/" in n.lower()
-                    else "" for n in trex_dlls}, key=len)
+    roots = sorted(
+        {
+            n[: -len("/.trex/d3d9.dll")] if "/.trex/" in n.lower() else ""
+            for n in trex_dlls
+        },
+        key=len,
+    )
     return roots[0]
 
 
@@ -121,10 +128,12 @@ def inspect(zip_path: Path) -> tuple[str, list[str]]:
             "RTX Remix runtime separately and rename a file by hand first. "
             "Putting only this in would leave the game loading a d3d9.dll "
             "with nothing behind it, so use the mod's own page and follow its "
-            "instructions.")
+            "instructions."
+        )
     pre = f"{root}/" if root else ""
-    lands = sorted({n[len(pre):].split("/")[0]
-                    for n in names if n.startswith(pre) and n != pre})
+    lands = sorted(
+        {n[len(pre) :].split("/")[0] for n in names if n.startswith(pre) and n != pre}
+    )
     return root, lands
 
 
@@ -138,8 +147,10 @@ def resolve(mod_url: str) -> Fetch:
     """
     repo = repo_of(mod_url)
     if not repo:
-        raise NotAModError("This mod is not published on GitHub, so it cannot "
-                           "be fetched automatically. Use its own page.")
+        raise NotAModError(
+            "This mod is not published on GitHub, so it cannot "
+            "be fetched automatically. Use its own page."
+        )
     rels = net.json_get(f"https://api.github.com/repos/{repo}/releases?per_page=10")
     if isinstance(rels, dict):
         rels = [rels]
@@ -147,10 +158,16 @@ def resolve(mod_url: str) -> Fetch:
         for a in rel.get("assets") or []:
             if not a.get("name", "").lower().endswith(".zip"):
                 continue
-            return Fetch(tag=rel.get("tag_name", "?"), name=a["name"],
-                         url=a["browser_download_url"], size=a.get("size") or 0)
-    raise NotAModError("This project publishes no .zip release, so there is "
-                       "nothing to fetch. Use its own page.")
+            return Fetch(
+                tag=rel.get("tag_name", "?"),
+                name=a["name"],
+                url=a["browser_download_url"],
+                size=a.get("size") or 0,
+            )
+    raise NotAModError(
+        "This project publishes no .zip release, so there is "
+        "nothing to fetch. Use its own page."
+    )
 
 
 def _safe_target(root_dir: Path, rel: str) -> Path:
@@ -158,8 +175,9 @@ def _safe_target(root_dir: Path, rel: str) -> Path:
     try:
         return net.inside(root_dir, rel)
     except net.OutsideError:
-        raise NotAModError(f"The archive tries to write outside the game "
-                           f"folder ({rel}) - refused.") from None
+        raise NotAModError(
+            f"The archive tries to write outside the game folder ({rel}) - refused."
+        ) from None
 
 
 def install(mod_url: str, game_dir: Path, log=None, progress=None) -> list[str]:
@@ -175,17 +193,23 @@ def install(mod_url: str, game_dir: Path, log=None, progress=None) -> list[str]:
             "An RTX Remix mod is already installed in this folder (its .trex "
             "runtime is there). Remove it yourself first if you want to "
             "replace it - overwriting somebody's working mod is not something "
-            "this tool will do on its own.")
+            "this tool will do on its own."
+        )
 
     f = resolve(mod_url)
     log(f"      {f.name} ({f.tag}, {net.human(f.size)})")
-    z = net.download(f.url, f"remixmod-{repo_of(mod_url).replace('/', '-')}-"
-                            f"{f.tag}-{f.name}", progress=progress)
+    z = net.download(
+        f.url,
+        f"remixmod-{repo_of(mod_url).replace('/', '-')}-{f.tag}-{f.name}",
+        progress=progress,
+    )
     root, lands = inspect(z)
     if root:
         log(f"      the mod sits under {root}/ inside the archive")
-    log(f"      into the game folder: {', '.join(lands[:6])}"
-        + (" ..." if len(lands) > 6 else ""))
+    log(
+        f"      into the game folder: {', '.join(lands[:6])}"
+        + (" ..." if len(lands) > 6 else "")
+    )
 
     pre = f"{root}/" if root else ""
     written: list[str] = []
@@ -193,11 +217,13 @@ def install(mod_url: str, game_dir: Path, log=None, progress=None) -> list[str]:
     complete = False
     try:
         with zipfile.ZipFile(z) as zf:
-            members = [i for i in zf.infolist()
-                       if not i.is_dir() and i.filename.startswith(pre)
-                       and i.filename != pre]
+            members = [
+                i
+                for i in zf.infolist()
+                if not i.is_dir() and i.filename.startswith(pre) and i.filename != pre
+            ]
             for i, item in enumerate(members):
-                rel = item.filename[len(pre):]
+                rel = item.filename[len(pre) :]
                 if not rel:
                     continue
                 target = _safe_target(game_dir, rel)
@@ -222,8 +248,9 @@ def install(mod_url: str, game_dir: Path, log=None, progress=None) -> list[str]:
                         out.write(chunk)
                 if progress and len(members) > 50 and i % 25 == 0:
                     # (percent, text): the download's calls are (bytes, bytes)
-                    progress(int(i * 100 / len(members)),
-                             f"unpacking {i}/{len(members)}")
+                    progress(
+                        int(i * 100 / len(members)), f"unpacking {i}/{len(members)}"
+                    )
         complete = True
     finally:
         # Written whatever happened above. A failure part way (a full drive,
@@ -232,15 +259,23 @@ def install(mod_url: str, game_dir: Path, log=None, progress=None) -> list[str]:
         # the mod back out.
         if written or backups:
             record = {
-                "mod_url": mod_url, "tag": f.tag, "asset": f.name,
-                "files": written, "backups": backups, "complete": complete,
+                "mod_url": mod_url,
+                "tag": f.tag,
+                "asset": f.name,
+                "files": written,
+                "backups": backups,
+                "complete": complete,
             }
             try:
-                (game_dir / RECORD).write_text(json.dumps(record, indent=2), encoding="utf8")
+                (game_dir / RECORD).write_text(
+                    json.dumps(record, indent=2), encoding="utf8"
+                )
             except OSError as e:
                 log(f"      could not write '{RECORD}': {e}")
-    log(f"      {len(written)} files written; '{RECORD}' records them so the "
-        f"mod can be taken back out")
+    log(
+        f"      {len(written)} files written; '{RECORD}' records them so the "
+        f"mod can be taken back out"
+    )
     return written
 
 
@@ -259,12 +294,14 @@ def remove(game_dir: Path, log=None) -> list[str]:
     game_dir = Path(game_dir)
     rec = installed(game_dir)
     if not rec:
-        raise NotAModError("No record of a Remix mod installed by this tool in "
-                           "this folder, so there is nothing safe to remove.")
+        raise NotAModError(
+            "No record of a Remix mod installed by this tool in "
+            "this folder, so there is nothing safe to remove."
+        )
     gone: list[str] = []
     for rel in rec.get("backups") or []:
         bak = game_dir / rel
-        orig = bak.with_name(bak.name[:-len(BACKUP_SUFFIX)])
+        orig = bak.with_name(bak.name[: -len(BACKUP_SUFFIX)])
         try:
             if bak.is_file():
                 orig.write_bytes(bak.read_bytes())
@@ -272,7 +309,7 @@ def remove(game_dir: Path, log=None) -> list[str]:
                 gone.append(rel)
         except OSError as e:
             log(f"      could not restore {orig.name}: {e}")
-    restored = {r[:-len(BACKUP_SUFFIX)] for r in (rec.get("backups") or [])}
+    restored = {r[: -len(BACKUP_SUFFIX)] for r in (rec.get("backups") or [])}
     for rel in rec.get("files") or []:
         if rel in restored:
             continue
@@ -284,8 +321,9 @@ def remove(game_dir: Path, log=None) -> list[str]:
         except OSError as e:
             log(f"      could not remove {rel}: {e}")
     # Empty directories the mod created, deepest first.
-    for rel in sorted({str(Path(r).parent) for r in rec.get("files") or []},
-                      key=len, reverse=True):
+    for rel in sorted(
+        {str(Path(r).parent) for r in rec.get("files") or []}, key=len, reverse=True
+    ):
         if rel in (".", ""):
             continue
         try:

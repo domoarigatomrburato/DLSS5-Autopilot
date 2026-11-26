@@ -22,6 +22,7 @@ Once registered, ReShade loads into every Vulkan application on this account
 set up. Uninstalling the last Vulkan install removes the per-user value; the
 machine's one needs administrator rights to remove (see cleanup_machine).
 """
+
 from __future__ import annotations
 
 import json
@@ -70,6 +71,7 @@ def _view(x64: bool) -> int:
     WOW6432Node copy and never the other one, whatever this process is.
     """
     import winreg
+
     return getattr(winreg, "KEY_WOW64_64KEY" if x64 else "KEY_WOW64_32KEY", 0)
 
 
@@ -82,8 +84,11 @@ def _hives():
     for every 32-bit game on a PC that also has our 64-bit layer.
     """
     import winreg
-    return ((winreg.HKEY_CURRENT_USER, LAYER_KEY, 0),
-            (winreg.HKEY_LOCAL_MACHINE, LAYER_KEY, _view(True)))
+
+    return (
+        (winreg.HKEY_CURRENT_USER, LAYER_KEY, 0),
+        (winreg.HKEY_LOCAL_MACHINE, LAYER_KEY, _view(True)),
+    )
 
 
 def registrations() -> list[tuple[Path, int]]:
@@ -165,14 +170,14 @@ def registered_for(x64: bool) -> Path | None:
 
 def is_ours(path: Path) -> bool:
     try:
-        return path.resolve().parent in (layer_dir().resolve(),
-                                         machine_dir().resolve())
+        return path.resolve().parent in (layer_dir().resolve(), machine_dir().resolve())
     except OSError:
         return False
 
 
 def _place(setup_exe: Path, d: Path, dll: str, manifest: str) -> Path:
     from . import net
+
     net.extract_one(setup_exe, dll, d / dll)
     net.extract_one(setup_exe, manifest, d / manifest)
     # The manifest points at the DLL relative to itself, which is what we want,
@@ -212,16 +217,17 @@ def name_clash() -> Path | None:
     if not m32.is_file():
         return None
     n32 = layer_name(m32)
-    if n32 and n32 != LAYER_NAME32 and (not m64.is_file()
-                                        or n32 == layer_name(m64)):
+    if n32 and n32 != LAYER_NAME32 and (not m64.is_file() or n32 == layer_name(m64)):
         return m32
     return None
 
 
 def _register(manifest: Path) -> None:
     import winreg
-    with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, LAYER_KEY, 0,
-                            winreg.KEY_SET_VALUE) as k:
+
+    with winreg.CreateKeyEx(
+        winreg.HKEY_CURRENT_USER, LAYER_KEY, 0, winreg.KEY_SET_VALUE
+    ) as k:
         winreg.SetValueEx(k, str(manifest), 0, winreg.REG_DWORD, 0)
 
 
@@ -248,9 +254,13 @@ def machine_dir() -> Path:
     base = ""
     try:
         import winreg
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                            r"SOFTWARE\Microsoft\Windows\CurrentVersion", 0,
-                            winreg.KEY_READ | _view(True)) as k:
+
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion",
+            0,
+            winreg.KEY_READ | _view(True),
+        ) as k:
             base = str(winreg.QueryValueEx(k, "ProgramFilesDir")[0] or "")
     except (ImportError, OSError):
         base = ""
@@ -262,9 +272,11 @@ def _machine_value(x64: bool):
     or None when there is none (or it cannot be read)."""
     try:
         import winreg
+
         target = str(machine_dir() / (MANIFEST if x64 else MANIFEST32))
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, LAYER_KEY, 0,
-                            winreg.KEY_READ | _view(x64)) as k:
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE, LAYER_KEY, 0, winreg.KEY_READ | _view(x64)
+        ) as k:
             return winreg.QueryValueEx(k, target)[0]
     except (ImportError, OSError):
         return None
@@ -272,8 +284,10 @@ def _machine_value(x64: bool):
 
 def _register_machine(manifest: Path, x64: bool) -> None:
     import winreg
-    with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, LAYER_KEY, 0,
-                            winreg.KEY_SET_VALUE | _view(x64)) as k:
+
+    with winreg.CreateKeyEx(
+        winreg.HKEY_LOCAL_MACHINE, LAYER_KEY, 0, winreg.KEY_SET_VALUE | _view(x64)
+    ) as k:
         winreg.SetValueEx(k, str(manifest), 0, winreg.REG_DWORD, 0)
 
 
@@ -282,9 +296,11 @@ def machine_registered(x64: bool) -> bool:
     with its files there? A value whose files are gone loads nothing."""
     name = MANIFEST if x64 else MANIFEST32
     try:
-        return (_machine_value(x64) == 0
-                and (machine_dir() / name).is_file()
-                and (machine_dir() / (DLL if x64 else DLL32)).is_file())
+        return (
+            _machine_value(x64) == 0
+            and (machine_dir() / name).is_file()
+            and (machine_dir() / (DLL if x64 else DLL32)).is_file()
+        )
     except OSError:
         return False
 
@@ -302,8 +318,10 @@ def _foreign_machine(x64: bool) -> bool:
     so both would load into every 32-bit Vulkan program (gate 2.0.9)."""
     try:
         import winreg
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, LAYER_KEY, 0,
-                            winreg.KEY_READ | _view(x64)) as k:
+
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE, LAYER_KEY, 0, winreg.KEY_READ | _view(x64)
+        ) as k:
             i = 0
             while True:
                 try:
@@ -311,10 +329,14 @@ def _foreign_machine(x64: bool) -> bool:
                 except OSError:
                     return False
                 i += 1
-                if ("reshade" in name.lower() and name.lower().endswith(".json")
-                        and val == 0 and Path(name).is_file()
-                        and not is_ours(Path(name))
-                        and manifest_x64(Path(name)) in (None, x64)):
+                if (
+                    "reshade" in name.lower()
+                    and name.lower().endswith(".json")
+                    and val == 0
+                    and Path(name).is_file()
+                    and not is_ours(Path(name))
+                    and manifest_x64(Path(name)) in (None, x64)
+                ):
                     return True
     except (ImportError, OSError):
         return False
@@ -333,6 +355,7 @@ def _for_elevated(setup_exe: Path, manifest: Path, x64: bool, log) -> bool:
     """
     try:
         from . import wincrash
+
         if not wincrash.elevated():
             return False
         d = machine_dir()
@@ -340,11 +363,15 @@ def _for_elevated(setup_exe: Path, manifest: Path, x64: bool, log) -> bool:
         _place(setup_exe, d, DLL if x64 else DLL32, manifest.name)
         _register_machine(d / manifest.name, x64)
     except Exception as e:
-        log(f"      could not add the layer to the machine's list ({e}); "
-            f"programs started as administrator will not get it")
+        log(
+            f"      could not add the layer to the machine's list ({e}); "
+            f"programs started as administrator will not get it"
+        )
         return False
-    log(f"      also on the machine's list ({d / manifest.name}), which is "
-        f"the only one a program started as administrator reads")
+    log(
+        f"      also on the machine's list ({d / manifest.name}), which is "
+        f"the only one a program started as administrator reads"
+    )
     return True
 
 
@@ -361,17 +388,18 @@ def will_do(x64: bool) -> tuple[Path | None, bool]:
     also32 = not x64
     try:
         from . import wincrash
+
         elevated = wincrash.elevated()
     except Exception:
         elevated = False
     found = registered_for(x64)
     stale = name_clash() if also32 else None
     unreachable = not also32 and elevated and not reaches_elevated(True)
-    if found is not None and not is_ours(found) and stale is None \
-            and not unreachable:
+    if found is not None and not is_ours(found) and stale is None and not unreachable:
         return found, False
-    machine = elevated and (not _foreign_machine(True)
-                            or (also32 and not _foreign_machine(False)))
+    machine = elevated and (
+        not _foreign_machine(True) or (also32 and not _foreign_machine(False))
+    )
     return None, machine
 
 
@@ -393,8 +421,10 @@ def install_layer(setup_exe: Path, log=None, also32: bool = False) -> tuple[Path
     # rewritten, not reused, or the 32-bit game gets nothing again.
     stale = name_clash() if also32 else None
     if stale is not None:
-        log(f"      the 32-bit layer registered here shares the 64-bit "
-            f"layer's name, which is why it never loaded - rewriting it")
+        log(
+            f"      the 32-bit layer registered here shares the 64-bit "
+            f"layer's name, which is why it never loaded - rewriting it"
+        )
 
     found = registered_for(x64=not also32)
     # A foreign layer is reused - unless this tool is elevated and that
@@ -403,22 +433,22 @@ def install_layer(setup_exe: Path, log=None, also32: bool = False) -> tuple[Path
     # reuse the same registration every time (gate 2.0.9).
     try:
         from . import wincrash
+
         # 64-bit only: a foreign 32-bit layer is called VK_LAYER_reshade
         # and ours VK_LAYER_reshade32, so adding ours beside it would load
         # two ReShades into one 32-bit process.
-        unreachable = (not also32 and wincrash.elevated()
-                       and not reaches_elevated(True))
+        unreachable = not also32 and wincrash.elevated() and not reaches_elevated(True)
     except Exception:
         unreachable = False
-    if found is not None and not is_ours(found) and stale is None \
-            and not unreachable:
-        log(f"      ReShade's Vulkan layer is already registered "
-            f"({found}); reusing it")
+    if found is not None and not is_ours(found) and stale is None and not unreachable:
+        log(f"      ReShade's Vulkan layer is already registered ({found}); reusing it")
         return found, False
 
     if found is None and existing_registration() is not None:
-        log("      a ReShade Vulkan layer is registered, but not one this "
-            "game's architecture can load - adding ours")
+        log(
+            "      a ReShade Vulkan layer is registered, but not one this "
+            "game's architecture can load - adding ours"
+        )
 
     d = layer_dir()
     d.mkdir(parents=True, exist_ok=True)
@@ -431,8 +461,7 @@ def install_layer(setup_exe: Path, log=None, also32: bool = False) -> tuple[Path
             _register(m32)
             log(f"      registered the 32-bit layer as well ({m32.name})")
     except OSError as e:
-        raise RuntimeError(
-            f"Could not register the Vulkan layer: {e}") from e
+        raise RuntimeError(f"Could not register the Vulkan layer: {e}") from e
     log(f"      registered {LAYER_NAME} for this user")
     log(f"      {manifest}")
     if not _foreign_machine(True):
@@ -453,8 +482,12 @@ def unregister_machine() -> bool:
     removed = False
     for m, dll, x64 in ((MANIFEST, DLL, True), (MANIFEST32, DLL32, False)):
         try:
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, LAYER_KEY, 0,
-                                winreg.KEY_SET_VALUE | _view(x64)) as k:
+            with winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                LAYER_KEY,
+                0,
+                winreg.KEY_SET_VALUE | _view(x64),
+            ) as k:
                 winreg.DeleteValue(k, str(machine_dir() / m))
                 removed = True
         except OSError:
@@ -467,7 +500,7 @@ def unregister_machine() -> bool:
     if removed:
         for d in (machine_dir(), machine_dir().parent):
             try:
-                d.rmdir()               # only when empty
+                d.rmdir()  # only when empty
             except OSError:
                 break
     return removed
@@ -482,8 +515,9 @@ def unregister() -> bool:
     removed = False
     for m in (MANIFEST, MANIFEST32):
         try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, LAYER_KEY, 0,
-                                winreg.KEY_SET_VALUE) as k:
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, LAYER_KEY, 0, winreg.KEY_SET_VALUE
+            ) as k:
                 winreg.DeleteValue(k, str(layer_dir() / m))
                 removed = True
         except OSError:
@@ -495,8 +529,11 @@ def machine_leftover() -> list[str]:
     """Our manifests still on the machine's list, whether or not their
     files are - after unregister(), the ones this process had no right to
     take off."""
-    return [m for m, x64 in ((MANIFEST, True), (MANIFEST32, False))
-            if _machine_value(x64) is not None]
+    return [
+        m
+        for m, x64 in ((MANIFEST, True), (MANIFEST32, False))
+        if _machine_value(x64) is not None
+    ]
 
 
 def cleanup_machine(vulkan_games) -> bool:
@@ -507,10 +544,15 @@ def cleanup_machine(vulkan_games) -> bool:
     on (gate 2.0.9)."""
     try:
         from . import wincrash
+
         # None is "the settings could not be read", which is not "no Vulkan
         # install left": nothing is removed on a guess.
-        if vulkan_games is None or vulkan_games or not machine_leftover() \
-                or not wincrash.elevated():
+        if (
+            vulkan_games is None
+            or vulkan_games
+            or not machine_leftover()
+            or not wincrash.elevated()
+        ):
             return False
         return unregister_machine()
     except Exception:

@@ -4,6 +4,7 @@ nvngx_dlssnr.dll alone is 165 MB. Without a cache every game would pull
 ~150 MB again, so downloads are kept under %LOCALAPPDATA%\dlss5-autopilot\cache
 and later installs finish instantly.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -62,8 +63,8 @@ def is_disk_full(e: BaseException | None) -> bool:
     seen = 0
     while e is not None and seen < 8:
         if isinstance(e, OSError) and (
-                e.errno == _FULL_ERRNO
-                or getattr(e, "winerror", None) in _FULL_WINERROR):
+            e.errno == _FULL_ERRNO or getattr(e, "winerror", None) in _FULL_WINERROR
+        ):
             return True
         e = e.__cause__ or e.__context__
         seen += 1
@@ -99,18 +100,28 @@ def disk_full_message(e: BaseException, game_dir=None, cache_dir=None) -> str:
         if name:
             full = _drive_of(str(name))
         cur = cur.__cause__ or cur.__context__
-    head = (f"Out of disk space on {full} ({_free_on(full)})." if full
-            else "A drive ran out of space.")
-    g, c = _drive_of(game_dir) if game_dir else "", _drive_of(cache_dir) if cache_dir else ""
+    head = (
+        f"Out of disk space on {full} ({_free_on(full)})."
+        if full
+        else "A drive ran out of space."
+    )
+    g, c = (
+        _drive_of(game_dir) if game_dir else "",
+        _drive_of(cache_dir) if cache_dir else "",
+    )
     where = []
     if g:
         where.append(f"beside the game ({g}, {_free_on(g)})")
     if c:
-        where.append(f"in the tool's download cache (%LOCALAPPDATA%\\dlss5-autopilot, "
-                     f"{c}, {_free_on(c)})")
+        where.append(
+            f"in the tool's download cache (%LOCALAPPDATA%\\dlss5-autopilot, "
+            f"{c}, {_free_on(c)})"
+        )
     need = " and ".join(where) if where else "beside the game and in the tool's cache"
-    return (f"{head} The install needs a few hundred MB {need} - free some "
-            f"up, then install again.")
+    return (
+        f"{head} The install needs a few hundred MB {need} - free some "
+        f"up, then install again."
+    )
 
 
 _SSL: ssl.SSLContext | None = None
@@ -150,14 +161,16 @@ def untrusted(name: str, e: Exception) -> RuntimeError | None:
             f"usual causes, in order - a DNS or family-filter service, an "
             f"ISP or router block page, a hotel/campus wifi login page, or a "
             f"VPN. Try a phone hotspot or set this PC's DNS to 1.1.1.1, then "
-            f"install again.")
+            f"install again."
+        )
     if "certificate has expired" in low or "not yet valid" in low:
         return RuntimeError(
             f"{host}: the certificate is outside its dates as far as this PC "
             f"is concerned ({e}). That is almost always the PC's own clock: "
             f"check the date and time in Windows settings (turn 'Set time "
             f"automatically' on), then install again. A wrong date makes "
-            f"every HTTPS site untrusted, not only this one.")
+            f"every HTTPS site untrusted, not only this one."
+        )
     if "self signed" in low or "self-signed" in low:
         return RuntimeError(
             f"{host}: the certificate offered for {host} was signed by "
@@ -165,13 +178,15 @@ def untrusted(name: str, e: Exception) -> RuntimeError | None:
             f"That is an antivirus, a VPN or a company proxy inspecting "
             f"HTTPS, and its root is not one Windows trusts here. Exclude "
             f"this tool from the HTTPS/SSL scanning (or turn it off), then "
-            f"install again.")
+            f"install again."
+        )
     return RuntimeError(
         f"{host}: Windows does not trust the certificate for {host} ({e}). "
         f"Open https://{host} once in Edge (Windows fetches a missing root "
         f"certificate the first time a Microsoft program needs it), then "
         f"try again. An antivirus that inspects HTTPS causes this too - "
-        f"exclude this tool or turn that off.")
+        f"exclude this tool or turn that off."
+    )
 
 
 # Connection failures that are not about the certificate, by the reason
@@ -185,19 +200,41 @@ def untrusted(name: str, e: Exception) -> RuntimeError | None:
 # (kind, what is matched in the lowered text). First match wins.
 _NET_KINDS = (
     ("blocked", ("winerror 10013", "errno 10013")),
-    ("dns", ("getaddrinfo", "gaierror", "winerror 11001", "winerror 11004",
-             "errno 11001", "errno 11004", "name or service not known")),
+    (
+        "dns",
+        (
+            "getaddrinfo",
+            "gaierror",
+            "winerror 11001",
+            "winerror 11004",
+            "errno 11001",
+            "errno 11004",
+            "name or service not known",
+        ),
+    ),
     ("refused", ("winerror 10061", "connectionrefused", "connection refused")),
     ("timeout", ("winerror 10060", "timed out", "timeouterror")),
-    ("cut", ("unexpected_eof", "eof occurred in violation", "winerror 10054",
-             "winerror 10053", "connectionreset", "connectionaborted",
-             "remotedisconnected", "remote end closed", "incompleteread",
-             "connection reset", "connection aborted")),
+    (
+        "cut",
+        (
+            "unexpected_eof",
+            "eof occurred in violation",
+            "winerror 10054",
+            "winerror 10053",
+            "connectionreset",
+            "connectionaborted",
+            "remotedisconnected",
+            "remote end closed",
+            "incompleteread",
+            "connection reset",
+            "connection aborted",
+        ),
+    ),
 )
 
 
 def net_kind(e) -> str:
-    """"blocked" / "dns" / "refused" / "timeout" / "cut", or "".
+    """ "blocked" / "dns" / "refused" / "timeout" / "cut", or "".
 
     Takes an exception or its text (a traceback line from a report). A
     certificate failure is not one of these: untrusted() has its own four
@@ -210,7 +247,8 @@ def net_kind(e) -> str:
     if isinstance(e, urllib.error.HTTPError):
         return ""
     winerror = getattr(e, "winerror", None) or getattr(
-        getattr(e, "reason", None), "winerror", None)
+        getattr(e, "reason", None), "winerror", None
+    )
     if winerror == 10013:
         return "blocked"
     for kind, keys in _NET_KINDS:
@@ -226,34 +264,43 @@ def net_explain(kind: str, host: str = "") -> tuple[str, str]:
     (a traceback from an older build carries no URL)."""
     h = host or "the download server"
     if kind == "blocked":
-        return (f"Windows would not let this tool open a connection to {h} "
-                f"(WinError 10013) - a firewall or security program is "
-                f"blocking dlss5-autopilot.exe",
-                "Installing again gets the same refusal. Allow "
-                "dlss5-autopilot.exe in Windows Firewall, and in the "
-                "antivirus's own firewall if it has one, then install again.")
+        return (
+            f"Windows would not let this tool open a connection to {h} "
+            f"(WinError 10013) - a firewall or security program is "
+            f"blocking dlss5-autopilot.exe",
+            "Installing again gets the same refusal. Allow "
+            "dlss5-autopilot.exe in Windows Firewall, and in the "
+            "antivirus's own firewall if it has one, then install again.",
+        )
     if kind == "cut":
-        return (f"the connection to {h} was cut off before the download "
-                f"finished",
-                f"Something between this PC and {h} keeps closing it - a VPN "
-                f"or proxy, an antivirus that scans HTTPS, or a network or "
-                f"provider that filters the site. Try another network (a "
-                f"phone hotspot is the quickest test) or turn the VPN/proxy "
-                f"off, then install again; what already downloaded is kept.")
+        return (
+            f"the connection to {h} was cut off before the download finished",
+            f"Something between this PC and {h} keeps closing it - a VPN "
+            f"or proxy, an antivirus that scans HTTPS, or a network or "
+            f"provider that filters the site. Try another network (a "
+            f"phone hotspot is the quickest test) or turn the VPN/proxy "
+            f"off, then install again; what already downloaded is kept.",
+        )
     if kind == "dns":
-        return (f"this PC could not look up {h}",
-                "The internet connection or its DNS is not answering. Check "
-                "that the PC is online, or set its DNS to 1.1.1.1, then "
-                "install again.")
+        return (
+            f"this PC could not look up {h}",
+            "The internet connection or its DNS is not answering. Check "
+            "that the PC is online, or set its DNS to 1.1.1.1, then "
+            "install again.",
+        )
     if kind == "refused":
-        return (f"{h} refused the connection",
-                "That is usually a proxy or VPN in the way rather than the "
-                "server. Turn it off or try another network, then install "
-                "again.")
+        return (
+            f"{h} refused the connection",
+            "That is usually a proxy or VPN in the way rather than the "
+            "server. Turn it off or try another network, then install "
+            "again.",
+        )
     if kind == "timeout":
-        return (f"{h} did not answer in time",
-                "A slow or filtered connection. Try again in a few minutes "
-                "or from another network; what already downloaded is kept.")
+        return (
+            f"{h} did not answer in time",
+            "A slow or filtered connection. Try again in a few minutes "
+            "or from another network; what already downloaded is kept.",
+        )
     return "", ""
 
 
@@ -299,6 +346,7 @@ def ssl_context() -> ssl.SSLContext:
         ctx = ssl.create_default_context()
         try:
             import certifi
+
             ctx.load_verify_locations(cafile=certifi.where())
         except Exception:
             pass
@@ -360,8 +408,9 @@ def _head(path: Path, n: int = 24) -> bytes:
         return b""
 
 
-def download(url: str, name: str, progress=None, force: bool = False,
-             attempts: int = 4) -> Path:
+def download(
+    url: str, name: str, progress=None, force: bool = False, attempts: int = 4
+) -> Path:
     """Download to the cache and return the path. progress(done, total).
 
     Retries on failure and resumes from a partial file with an HTTP Range
@@ -386,7 +435,7 @@ def download(url: str, name: str, progress=None, force: bool = False,
     for attempt in range(attempts):
         have = tmp.stat().st_size if tmp.is_file() else 0
         headers = dict(sources.UA)
-        if have and attempt:                     # only resume on a retry
+        if have and attempt:  # only resume on a retry
             headers["Range"] = f"bytes={have}-"
         req = urllib.request.Request(url, headers=headers)
         try:
@@ -408,8 +457,8 @@ def download(url: str, name: str, progress=None, force: bool = False,
             # If the server declared a size, catch truncated downloads here.
             if total and tmp.stat().st_size != total:
                 raise RuntimeError(
-                    f"{name}: incomplete download "
-                    f"({tmp.stat().st_size}/{total} bytes).")
+                    f"{name}: incomplete download ({tmp.stat().st_size}/{total} bytes)."
+                )
             if not _looks_right(tmp, dest.suffix):
                 head = _head(tmp)
                 tmp.unlink(missing_ok=True)
@@ -419,13 +468,14 @@ def download(url: str, name: str, progress=None, force: bool = False,
                     f"{dest.suffix} file (it starts with {head!r}). That is "
                     f"usually a proxy, DNS filter or antivirus page standing "
                     f"in for the download. Nothing was written; try again "
-                    f"or from another network.")
+                    f"or from another network."
+                )
             tmp.replace(dest)
             return dest
         except WrongContent:
-            raise                                # the same page comes back
+            raise  # the same page comes back
         except urllib.error.HTTPError as e:
-            tmp.unlink(missing_ok=True)          # 4xx/5xx: resuming won't help
+            tmp.unlink(missing_ok=True)  # 4xx/5xx: resuming won't help
             # ...but a 5xx is the server having a bad second, not a wrong
             # URL. The big files come through here, and an overloaded host
             # used to end the install with a traceback (#103).
@@ -441,7 +491,8 @@ def download(url: str, name: str, progress=None, force: bool = False,
                     f"connection and not this tool - it was asked "
                     f"{attempts} times. Wait a few minutes and install "
                     f"again: anything already downloaded is cached and will "
-                    f"not be fetched twice.") from e
+                    f"not be fetched twice."
+                ) from e
             raise
         except ssl.SSLError as e:
             # "decryption failed or bad record mac" is not a hiccup: it is
@@ -466,9 +517,10 @@ def download(url: str, name: str, progress=None, force: bool = False,
                     f"Something is sitting between this PC and {_host(url)} - an "
                     f"antivirus with HTTPS/SSL scanning, a VPN or a proxy. "
                     f"Turn that off (or exclude this tool) and try again; the "
-                    f"download resumes where it stopped.") from e
+                    f"download resumes where it stopped."
+                ) from e
             time.sleep(1.5 * (attempt + 1))
-        except Exception as e:                   # network hiccup - retry
+        except Exception as e:  # network hiccup - retry
             if is_disk_full(e):
                 # Asking again fills the same drive again; the partial file
                 # goes, so the space it took comes back (#148).
@@ -519,8 +571,7 @@ def inside(root: Path, rel: str, absolute_ok: bool = False) -> Path:
     """
     root = Path(root).resolve()
     p = Path(rel.replace("\\", "/"))
-    if (p.is_absolute() or p.drive or rel.startswith(("/", "\\"))) \
-            and not absolute_ok:
+    if (p.is_absolute() or p.drive or rel.startswith(("/", "\\"))) and not absolute_ok:
         raise OutsideError(f"{rel} is an absolute path - refused.")
     target = (p if p.is_absolute() else root / p).resolve()
     if target != root and root not in target.parents:
@@ -536,8 +587,14 @@ def zip_members(zpath: Path) -> list[str]:
 def extract_one(zpath: Path, member_suffix: str, dest: Path) -> None:
     """Extract the first member whose name ends with member_suffix."""
     with zipfile.ZipFile(zpath) as z:
-        hit = next((n for n in z.namelist()
-                    if not n.endswith("/") and n.lower().endswith(member_suffix.lower())), None)
+        hit = next(
+            (
+                n
+                for n in z.namelist()
+                if not n.endswith("/") and n.lower().endswith(member_suffix.lower())
+            ),
+            None,
+        )
         if hit is None:
             raise RuntimeError(f"{zpath.name} does not contain {member_suffix}.")
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -545,9 +602,14 @@ def extract_one(zpath: Path, member_suffix: str, dest: Path) -> None:
             shutil.copyfileobj(src, out, 1 << 20)
 
 
-def extract_tree(zpath: Path, inner_dir: str, dest_dir: str, out_root: Path,
-                 only_ext: tuple[str, ...] | None = None,
-                 only_names: tuple[str, ...] | None = None) -> list[Path]:
+def extract_tree(
+    zpath: Path,
+    inner_dir: str,
+    dest_dir: str,
+    out_root: Path,
+    only_ext: tuple[str, ...] | None = None,
+    only_names: tuple[str, ...] | None = None,
+) -> list[Path]:
     """Flatten files under inner_dir into out_root/dest_dir.
 
     `only_names` keeps just those file names (case-insensitive) - used to
@@ -564,8 +626,8 @@ def extract_tree(zpath: Path, inner_dir: str, dest_dir: str, out_root: Path,
             rl = rel.lower()
             if not rl.startswith(key + "/"):
                 continue
-            tail = rel[len(key) + 1:]
-            if "/" in tail:            # only files at this level
+            tail = rel[len(key) + 1 :]
+            if "/" in tail:  # only files at this level
                 continue
             if only_ext and not tail.lower().endswith(only_ext):
                 continue
@@ -592,8 +654,11 @@ def fetch_text(url: str, _try: int = 0) -> bytes:
         with urllib.request.urlopen(req, timeout=60, context=ssl_context()) as r:
             return r.read()
     except urllib.error.URLError as e:
-        if (isinstance(e, urllib.error.HTTPError)
-                and e.code in RETRY_CODES and _try < RETRIES):
+        if (
+            isinstance(e, urllib.error.HTTPError)
+            and e.code in RETRY_CODES
+            and _try < RETRIES
+        ):
             time.sleep(RETRY_WAIT * (_try + 1))
             return fetch_text(url, _try + 1)
         if not isinstance(e, urllib.error.HTTPError):
@@ -618,15 +683,18 @@ def fetch_text(url: str, _try: int = 0) -> bytes:
                 f"the server this file is published on, not your connection "
                 f"and not this tool - it was asked {RETRIES + 1} times. "
                 f"Wait a few minutes and install again: anything already "
-                f"downloaded is cached and will not be fetched twice.") from e
+                f"downloaded is cached and will not be fetched twice."
+            ) from e
         raise
 
 
 # Said once, wherever the answer came off github.com's pages instead of
 # the API - sources.json_or_html sets the same line for the components it
 # resolves, and the installer prints whichever is set.
-_HTML_FALLBACK = ("GitHub's API could not be reached; this release was read "
-                  "from github.com's release pages instead.")
+_HTML_FALLBACK = (
+    "GitHub's API could not be reached; this release was read "
+    "from github.com's release pages instead."
+)
 
 
 def json_get(url: str):

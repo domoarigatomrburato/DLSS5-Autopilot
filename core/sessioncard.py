@@ -13,6 +13,7 @@ States:
   unsure   the logs cannot tell (verdicts.outcome is None): the person
            watched the game, so the card does not call it a failure
 """
+
 from __future__ import annotations
 
 from . import verdicts
@@ -62,8 +63,14 @@ def build(result, entry, measured, running: str = "") -> dict | None:
     `measured` an autotune.Measured or None, `running` the name of the game
     while the watcher has seen it start and not close."""
     if running:
-        return {"state": "running", "headline": f"{running} is running", "stat": "",
-                "findings": [], "next": "", "why": ""}
+        return {
+            "state": "running",
+            "headline": f"{running} is running",
+            "stat": "",
+            "findings": [],
+            "next": "",
+            "why": "",
+        }
     if not isinstance(result, dict) or result.get("kind") != "diagnosis":
         return None
     state = state_of(result)
@@ -71,6 +78,11 @@ def build(result, entry, measured, running: str = "") -> dict | None:
     if state == "failed" and isinstance(entry, dict):
         nxt = str(entry.get("next") or "")
         why = str(entry.get("why") or "") if nxt else ""
-    return {"state": state, "headline": str(result.get("title", "")),
-            "stat": stat_line(measured) if state == "ok" else "",
-            "findings": list(result.get("findings") or []), "next": nxt, "why": why}
+    return {
+        "state": state,
+        "headline": str(result.get("title", "")),
+        "stat": stat_line(measured) if state == "ok" else "",
+        "findings": list(result.get("findings") or []),
+        "next": nxt,
+        "why": why,
+    }

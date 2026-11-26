@@ -23,6 +23,7 @@ How it works, with no server anywhere:
 So the write side is a browser window the person can read and cancel, and
 the read side is one static file. Nothing here phones home.
 """
+
 from __future__ import annotations
 
 import json
@@ -39,9 +40,11 @@ def route_name(route: str) -> str:
     standalone-dlssnr (gate 2.0.6)."""
     try:
         from . import dlss
+
         return dlss.LABELS[route].split(" - ")[0]
     except Exception:
         return str(route)
+
 
 # The compatibility workflow builds a page people can search, one row per
 # card, driver and build (#304), and the aggregate beside it; GitHub Pages
@@ -79,15 +82,28 @@ MIN_DRIVER = 10
 
 def game_class(api: str, native_dlss: bool, upscaler: str = "") -> str:
     """'DX12/dlss', 'DX11/none'... - the key the published tables use."""
-    up = "dlss" if native_dlss else (upscaler if upscaler in ("fsr", "xess") else "none")
+    up = (
+        "dlss" if native_dlss else (upscaler if upscaler in ("fsr", "xess") else "none")
+    )
     api = str(api or "").strip().upper()
     return f"{api}/{up}" if api else ""
 
 
-def record(game, route: str, result: str, *, api: str = "", build: str = "",
-           gpu_sm=None, gpu_name: str = "", driver: str = "",
-           version: str = "", measured: dict | None = None,
-           said_by: str = "", upscaler: str = "") -> dict:
+def record(
+    game,
+    route: str,
+    result: str,
+    *,
+    api: str = "",
+    build: str = "",
+    gpu_sm=None,
+    gpu_name: str = "",
+    driver: str = "",
+    version: str = "",
+    measured: dict | None = None,
+    said_by: str = "",
+    upscaler: str = "",
+) -> dict:
     """The one block a shared result carries. Nothing identifying in it.
 
     `measured` is what the session cost - the work area it ran at, the
@@ -118,7 +134,7 @@ def record(game, route: str, result: str, *, api: str = "", build: str = "",
         "gpu": gpu_name[:40],
         "driver": driver or "",
         "tool": version or "",
-        "result": result,          # "worked" | "failed"
+        "result": result,  # "worked" | "failed"
     }
     for key in ("res", "ms", "fps"):
         value = (measured or {}).get(key)
@@ -153,6 +169,7 @@ def counts(rec: dict, body: str) -> bool:
     "failed" whatever happened in the game (#414 said "WORKED FINE"), so
     they are an unknown, and an unknown is left out rather than counted."""
     from . import verdicts
+
     if rec.get("by") in ("person", "crash"):
         return True
     said = said_verdict(body)
@@ -164,15 +181,20 @@ def counts(rec: dict, body: str) -> bool:
     # Only the stages that cannot see. A verdict nobody mapped, or a body a
     # reporter rewrote, is not evidence of an unseen outcome: 16 real
     # results (#193 a "worked" among them) were left out on it (gate 2.0.5).
-    return (not said or verdicts.stage(said)[0] not in verdicts.UNSEEN
-            or verdicts.outcome(said) is not None)
+    return (
+        not said
+        or verdicts.stage(said)[0] not in verdicts.UNSEEN
+        or verdicts.outcome(said) is not None
+    )
 
 
 def block(rec: dict) -> str:
     """The record as it goes into an issue: visible, and parseable."""
-    return (f"\n\n<!-- {MARKER}\n"
-            + json.dumps(rec, separators=(",", ":"), sort_keys=True)
-            + f"\n{MARKER} -->\n")
+    return (
+        f"\n\n<!-- {MARKER}\n"
+        + json.dumps(rec, separators=(",", ":"), sort_keys=True)
+        + f"\n{MARKER} -->\n"
+    )
 
 
 def parse(text: str) -> dict | None:
@@ -183,7 +205,7 @@ def parse(text: str) -> dict | None:
     end = text.find(f"{MARKER} -->", start + 1)
     if end < 0:
         return None
-    raw = text[start + len(f"<!-- {MARKER}"):end].strip()
+    raw = text[start + len(f"<!-- {MARKER}") : end].strip()
     try:
         rec = json.loads(raw)
     except (ValueError, TypeError):
@@ -269,8 +291,11 @@ def reports_for(data: dict, exe) -> int:
     """How many shared results this executable has, over every route."""
     name = getattr(exe, "name", exe) or ""
     entry = ((data or {}).get("games") or {}).get(str(name).lower()) if name else None
-    return sum(rate(r)[1] for r in ((entry or {}).get("routes") or {}).values()
-               if isinstance(r, dict))
+    return sum(
+        rate(r)[1]
+        for r in ((entry or {}).get("routes") or {}).values()
+        if isinstance(r, dict)
+    )
 
 
 def advice(entry: dict | None, route: str = "", driver: str = "") -> list[str]:
@@ -280,32 +305,46 @@ def advice(entry: dict | None, route: str = "", driver: str = "") -> list[str]:
         return []
     out: list[str] = []
     routes = entry.get("routes") or {}
-    total = sum((r.get("worked", 0) + r.get("failed", 0))
-                for r in routes.values() if isinstance(r, dict))
+    total = sum(
+        (r.get("worked", 0) + r.get("failed", 0))
+        for r in routes.values()
+        if isinstance(r, dict)
+    )
     if total < MIN_REPORTS:
         return []
 
     ranked = sorted(
-        ((name, r.get("worked", 0), r.get("failed", 0))
-         for name, r in routes.items() if isinstance(r, dict)),
-        key=lambda x: (x[1], -x[2]), reverse=True)
+        (
+            (name, r.get("worked", 0), r.get("failed", 0))
+            for name, r in routes.items()
+            if isinstance(r, dict)
+        ),
+        key=lambda x: (x[1], -x[2]),
+        reverse=True,
+    )
     best = ranked[0] if ranked else None
     if best and best[1]:
-        out.append(f"{total} reports for this game. "
-                   f"The {route_name(best[0])} route worked in {best[1]} of them"
-                   + (f" and failed in {best[2]}" if best[2] else "") + ".")
+        out.append(
+            f"{total} reports for this game. "
+            f"The {route_name(best[0])} route worked in {best[1]} of them"
+            + (f" and failed in {best[2]}" if best[2] else "")
+            + "."
+        )
     else:
-        out.append(f"{total} reports for this game, and no route is "
-                   f"reported working.")
+        out.append(f"{total} reports for this game, and no route is reported working.")
     if route and route in routes:
         mine = routes[route]
         w, f = mine.get("worked", 0), mine.get("failed", 0)
         if f and not w:
-            out.append(f"The route chosen here ({route_name(route)}) failed in all "
-                       f"{f} of its reports.")
+            out.append(
+                f"The route chosen here ({route_name(route)}) failed in all "
+                f"{f} of its reports."
+            )
         elif best and best[0] != route and best[1] > (w or 0):
-            out.append(f"The route chosen here ({route_name(route)}) worked in "
-                       f"{w} of its reports.")
+            out.append(
+                f"The route chosen here ({route_name(route)}) worked in "
+                f"{w} of its reports."
+            )
 
     bad = (entry.get("drivers") or {}).get(driver or "")
     if isinstance(bad, dict):
@@ -314,12 +353,16 @@ def advice(entry: dict | None, route: str = "", driver: str = "") -> list[str]:
             # With no denominator this read as though it were counting all
             # the reports, and a driver's own tally can be larger than any
             # one route's. Say what it is a share of.
-            allf = sum(int((r or {}).get("failed", 0) or 0)
-                       for r in routes.values() if isinstance(r, dict))
-            out.append(f"{f} of the {allf} failures reported here were on "
-                       f"driver {driver}."
-                       if allf >= f else
-                       f"{f} failures reported here were on driver {driver}.")
+            allf = sum(
+                int((r or {}).get("failed", 0) or 0)
+                for r in routes.values()
+                if isinstance(r, dict)
+            )
+            out.append(
+                f"{f} of the {allf} failures reported here were on driver {driver}."
+                if allf >= f
+                else f"{f} failures reported here were on driver {driver}."
+            )
     return out
 
 
@@ -343,9 +386,11 @@ def measured_note(entry: dict | None, route: str = "") -> str:
     if route and isinstance(rows.get(route), dict):
         pick = (route, rows[route])
     else:
-        ranked = sorted(((n, r) for n, r in rows.items()
-                         if isinstance(r, dict)),
-                        key=lambda x: count(x[1]), reverse=True)
+        ranked = sorted(
+            ((n, r) for n, r in rows.items() if isinstance(r, dict)),
+            key=lambda x: count(x[1]),
+            reverse=True,
+        )
         pick = ranked[0] if ranked else None
     if not pick:
         return ""
@@ -357,12 +402,18 @@ def measured_note(entry: dict | None, route: str = "") -> str:
     # cost and the frame rate are medians over whichever of those carried
     # them, which can be fewer. So the count is attached to the work area,
     # and the other two are clauses that do not inherit it.
-    line = (f"{n} shared results where this game worked on the {name} "
-            f"route say what they ran at: a {int(res)}% work area")
+    line = (
+        f"{n} shared results where this game worked on the {name} "
+        f"route say what they ran at: a {int(res)}% work area"
+    )
+
     def number(key):
         v = row.get(key)
-        return (float(v) if isinstance(v, (int, float))
-                and not isinstance(v, bool) and v else None)
+        return (
+            float(v)
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and v
+            else None
+        )
 
     ms, fps = number("ms"), number("fps")
     if ms and name == "feeder":
@@ -370,8 +421,9 @@ def measured_note(entry: dict | None, route: str = "") -> str:
         # rates at two work areas, so it is everything that grows with the
         # area - the model, the feed and its shaders - and only an upper
         # bound on the model's own share.
-        line += (f". The model and the feed together cost about {ms:.1f} ms "
-                 f"a frame there")
+        line += (
+            f". The model and the feed together cost about {ms:.1f} ms a frame there"
+        )
     elif ms:
         line += f". The model cost about {ms:.1f} ms a frame there"
     if fps:
@@ -401,8 +453,7 @@ def totals(data: dict) -> dict:
                 got = out[kind].setdefault(name, {"worked": 0, "failed": 0})
                 got["worked"] += int(r.get("worked", 0) or 0)
                 got["failed"] += int(r.get("failed", 0) or 0)
-    out["reports"] = sum(r["worked"] + r["failed"]
-                         for r in out["routes"].values())
+    out["reports"] = sum(r["worked"] + r["failed"] for r in out["routes"].values())
     return out
 
 
@@ -436,12 +487,14 @@ def driver_note(data: dict, driver: str, route: str = "") -> str:
     w, n = rate(all_.get(driver))
     if n < MIN_REPORTS:
         return ""
-    best = max(((d, *rate(c)) for d, c in all_.items() if rate(c)[1] >= MIN_REPORTS),
-               key=lambda x: (x[1] / x[2] if x[2] else 0), default=None)
+    best = max(
+        ((d, *rate(c)) for d, c in all_.items() if rate(c)[1] >= MIN_REPORTS),
+        key=lambda x: x[1] / x[2] if x[2] else 0,
+        default=None,
+    )
     line = f"On driver {driver}, {w} of {n} shared results worked."
     if best and best[0] != driver and best[1] * n > w * best[2]:
-        line += (f" The best reported driver is {best[0]}: {best[1]} of "
-                 f"{best[2]}.")
+        line += f" The best reported driver is {best[0]}: {best[1]} of {best[2]}."
     return line
 
 
@@ -456,8 +509,8 @@ def confidence(worked: int, tried: int) -> float:
     """
     if tried <= 0:
         return 0.0
-    worked = max(0, min(int(worked), int(tried)))    # a hand-edited file can
-    tried = int(tried)                               # say 10 of 1, and did
+    worked = max(0, min(int(worked), int(tried)))  # a hand-edited file can
+    tried = int(tried)  # say 10 of 1, and did
     z = 1.96
     phat = worked / tried
     denom = 1 + z * z / tried
@@ -479,8 +532,16 @@ def _table(data: dict, name: str, key: str) -> dict:
 
     The tables arrived with 2.0.6; a list published before has none, and
     then every caller behaves as it did before."""
-    row = ((data or {}).get(name) or {}).get(key) if isinstance((data or {}).get(name), dict) else None
-    return {r: c for r, c in row.items() if isinstance(c, dict)} if isinstance(row, dict) else {}
+    row = (
+        ((data or {}).get(name) or {}).get(key)
+        if isinstance((data or {}).get(name), dict)
+        else None
+    )
+    return (
+        {r: c for r, c in row.items() if isinstance(c, dict)}
+        if isinstance(row, dict)
+        else {}
+    )
 
 
 def _driver_key(v: str) -> tuple:
@@ -496,13 +557,15 @@ def _driver_in_route(data: dict, driver: str, route: str) -> str:
         w, n = rate(_table(data, "by_driver", driver).get(route))
         if n < MIN_DRIVER:
             return ""
-        line = (f"Shared results with the {route_name(route)} route on driver {driver}: "
-                f"{w} of {n} worked.")
+        line = (
+            f"Shared results with the {route_name(route)} route on driver {driver}: "
+            f"{w} of {n} worked."
+        )
         mine = _driver_key(driver)
         better = []
         for other in table:
             if not mine or _driver_key(other) <= mine:
-                continue                  # never an older driver
+                continue  # never an older driver
             w2, n2 = rate(_table(data, "by_driver", other).get(route))
             if n2 >= MIN_DRIVER and confidence(w2, n2) > ceiling(w, n):
                 better.append((confidence(w2, n2), other, w2, n2))
@@ -522,8 +585,9 @@ def class_counts(data: dict, klass: str) -> dict:
     return _table(data, "by_class", klass) if klass else {}
 
 
-def class_pick(data: dict, klass: str, offer: list[str] | None,
-               current: str) -> tuple[str, str]:
+def class_pick(
+    data: dict, klass: str, offer: list[str] | None, current: str
+) -> tuple[str, str]:
     """(route, why) when the shared results for games like this one clearly
     favour another offered route over `current`; ("", "") otherwise.
 
@@ -550,43 +614,61 @@ def class_pick(data: dict, klass: str, offer: list[str] | None,
     if best is None:
         return "", ""
     _c, name, w2, n2 = best
-    return name, (f"Shared results for {class_words(klass)}: the {route_name(name)} route "
-                  f"worked in {w2} of {n2}, the {route_name(current)} route in {w} of {n}.")
+    return name, (
+        f"Shared results for {class_words(klass)}: the {route_name(name)} route "
+        f"worked in {w2} of {n2}, the {route_name(current)} route in {w} of {n}."
+    )
 
 
 def class_words(klass: str) -> str:
     """'DX12/dlss' -> 'DirectX 12 games with their own DLSS'."""
     api, _, up = str(klass or "").partition("/")
-    tail = {"dlss": " with their own DLSS", "fsr": " with FSR and no DLSS",
-            "xess": " with XeSS and no DLSS",
-            "none": " with no DLSS, FSR or XeSS"}.get(up, "")
-    name = {"DX8": "DirectX 8", "DX9": "DirectX 9", "DX10": "DirectX 10",
-            "DX11": "DirectX 11", "DX12": "DirectX 12", "VULKAN": "Vulkan",
-            "OPENGL": "OpenGL", "UNKNOWN": "unread-API"}.get(api.upper(), api)
+    tail = {
+        "dlss": " with their own DLSS",
+        "fsr": " with FSR and no DLSS",
+        "xess": " with XeSS and no DLSS",
+        "none": " with no DLSS, FSR or XeSS",
+    }.get(up, "")
+    name = {
+        "DX8": "DirectX 8",
+        "DX9": "DirectX 9",
+        "DX10": "DirectX 10",
+        "DX11": "DirectX 11",
+        "DX12": "DirectX 12",
+        "VULKAN": "Vulkan",
+        "OPENGL": "OpenGL",
+        "UNKNOWN": "unread-API",
+    }.get(api.upper(), api)
     return f"{name} games{tail}"
 
 
-def class_line(data: dict, klass: str, route: str,
-               offer: list[str] | None = None) -> str:
+def class_line(
+    data: dict, klass: str, route: str, offer: list[str] | None = None
+) -> str:
     """The counts for this route in this class of games, with the offered
     route that did best beside it, or "". Said, never acted on."""
     rows = class_counts(data, klass)
     w, n = rate(rows.get(route))
     if n < MIN_REPORTS:
         return ""
-    line = (f"Shared results for {class_words(klass)}: the {route_name(route)} route "
-            f"worked in {w} of {n}.")
-    others = [(confidence(*rate(rows.get(o))), o, *rate(rows.get(o)))
-              for o in (offer or []) if o != route
-              and rate(rows.get(o))[1] >= MIN_REPORTS]
+    line = (
+        f"Shared results for {class_words(klass)}: the {route_name(route)} route "
+        f"worked in {w} of {n}."
+    )
+    others = [
+        (confidence(*rate(rows.get(o))), o, *rate(rows.get(o)))
+        for o in (offer or [])
+        if o != route and rate(rows.get(o))[1] >= MIN_REPORTS
+    ]
     if others:
         _c, o, w2, n2 = max(others)
         line += f" The {route_name(o)} route: {w2} of {n2}."
     return line
 
 
-def rank_routes(data: dict, game, offer: list[str] | None = None,
-                klass: str = "") -> list[tuple[str, str]]:
+def rank_routes(
+    data: dict, game, offer: list[str] | None = None, klass: str = ""
+) -> list[tuple[str, str]]:
     """`offer`, ordered by what other people's results say, best first, each
     with the counts that put it there ("" for a route nobody has reported).
 
@@ -622,10 +704,10 @@ def rank_routes(data: dict, game, offer: list[str] | None = None,
     for i, name in enumerate(offer or []):
         w, n = rate(here.get(name))
         w2, n2 = rate(everywhere.get(name))
-        if w:                                   # somebody got THIS game going
+        if w:  # somebody got THIS game going
             rank, share, seen = 3, confidence(w, n), n
             why = f"{w} of {n} in this game"
-        elif w2 and n2 >= MIN_REPORTS:           # or that route, somewhere
+        elif w2 and n2 >= MIN_REPORTS:  # or that route, somewhere
             rank, share, seen = 2, confidence(w2, n2), n2
             why = f"{w2} of {n2} {where}"
         elif n:
@@ -642,8 +724,9 @@ def rank_routes(data: dict, game, offer: list[str] | None = None,
     return [(name, why) for _r, _s, _n, _i, name, why in scored]
 
 
-def next_route(data: dict, game, tried: str, offer: list[str] | None = None,
-               klass: str = "") -> str:
+def next_route(
+    data: dict, game, tried: str, offer: list[str] | None = None, klass: str = ""
+) -> str:
     """One sentence naming the route to try next, or "".
 
     After a route has failed the tool used to say nothing about what else to
@@ -659,37 +742,51 @@ def next_route(data: dict, game, tried: str, offer: list[str] | None = None,
     routes = (entry or {}).get("routes") or {}
     # This game first, when anybody has reported it: a route that worked
     # HERE beats any general rate.
-    here = [(n, *rate(r)) for n, r in routes.items()
-            if n != tried and rate(r)[0] and (allowed is None or n in allowed)]
+    here = [
+        (n, *rate(r))
+        for n, r in routes.items()
+        if n != tried and rate(r)[0] and (allowed is None or n in allowed)
+    ]
     if here:
         here.sort(key=lambda x: (x[1], x[1] / x[2] if x[2] else 0), reverse=True)
         n, w, t = here[0]
-        return (f"In this game the {route_name(n)} route is reported working by {w} of "
-                f"{t}. Try that next - pick it in the route dropdown and "
-                f"install again.")
+        return (
+            f"In this game the {route_name(n)} route is reported working by {w} of "
+            f"{t}. Try that next - pick it in the route dropdown and "
+            f"install again."
+        )
     # Otherwise games like this one when enough of them are in the list
     # (rank_routes reads the same table), else the whole set - and only
     # where there is enough of it.
     all_ = totals(data).get("routes") or {}
     where = "Across every game shared"
     alike = class_counts(data, klass)
-    if any(rate(c)[1] >= MIN_REPORTS for n, c in alike.items()
-           if n != tried and (allowed is None or n in allowed)):
+    if any(
+        rate(c)[1] >= MIN_REPORTS
+        for n, c in alike.items()
+        if n != tried and (allowed is None or n in allowed)
+    ):
         all_, where = alike, f"Across {class_words(klass)}"
     mine_w, mine_n = rate(all_.get(tried))
-    ranked = [(n, *rate(c)) for n, c in all_.items()
-              if n != tried and rate(c)[1] >= MIN_REPORTS
-              and (allowed is None or n in allowed)]
+    ranked = [
+        (n, *rate(c))
+        for n, c in all_.items()
+        if n != tried
+        and rate(c)[1] >= MIN_REPORTS
+        and (allowed is None or n in allowed)
+    ]
     if not ranked:
         return ""
     ranked.sort(key=lambda x: x[1] / x[2] if x[2] else 0, reverse=True)
     n, w, t = ranked[0]
     if mine_n and w * mine_n <= mine_w * t:
-        return ""                    # nothing on offer does better
-    return (f"Nobody has reported this game yet. {where}, "
-            f"the {route_name(n)} route worked in {w} of {t} tries"
-            + (f", against {mine_w} of {mine_n} for {route_name(tried)}" if mine_n else "")
-            + " - it is the next one to try.")
+        return ""  # nothing on offer does better
+    return (
+        f"Nobody has reported this game yet. {where}, "
+        f"the {route_name(n)} route worked in {w} of {t} tries"
+        + (f", against {mine_w} of {mine_n} for {route_name(tried)}" if mine_n else "")
+        + " - it is the next one to try."
+    )
 
 
 def issue_url(rec: dict, note: str = "") -> str:
@@ -697,42 +794,80 @@ def issue_url(rec: dict, note: str = "") -> str:
     tool itself - the person reads it in their browser and decides."""
     from urllib.parse import quote
     from . import update
+
     verb = "worked" if rec.get("result") == "worked" else "did not work"
     title = f"result: {rec.get('game') or rec.get('exe') or '?'} - {verb}"
-    body = (f"**{rec.get('game') or rec.get('exe')}** {verb} on the "
-            f"`{rec.get('route')}` route.\n\n"
-            + (note.strip() + "\n\n" if note.strip() else "")
-            + ("The tool could not see this from the logs; the person who "
-               "played it said so.\n\n" if rec.get("by") == "person" else "")
-            + ("Windows recorded the game crashing in this session.\n\n"
-               if rec.get("by") == "crash" else "")
-            + f"- api: {rec.get('api') or '-'}\n"
-            + ({"dlss": "- the game ships: DLSS\n", "fsr": "- the game ships: FSR, no DLSS\n",
+    body = (
+        f"**{rec.get('game') or rec.get('exe')}** {verb} on the "
+        f"`{rec.get('route')}` route.\n\n"
+        + (note.strip() + "\n\n" if note.strip() else "")
+        + (
+            "The tool could not see this from the logs; the person who "
+            "played it said so.\n\n"
+            if rec.get("by") == "person"
+            else ""
+        )
+        + (
+            "Windows recorded the game crashing in this session.\n\n"
+            if rec.get("by") == "crash"
+            else ""
+        )
+        + f"- api: {rec.get('api') or '-'}\n"
+        + (
+            {
+                "dlss": "- the game ships: DLSS\n",
+                "fsr": "- the game ships: FSR, no DLSS\n",
                 "xess": "- the game ships: XeSS, no DLSS\n",
-                "none": "- the game ships: no DLSS, FSR or XeSS\n"}.get(rec.get("up"), ""))
-            + f"- build: {rec.get('build') or '-'}\n"
-            f"- gpu: {rec.get('gpu') or '-'} ({rec.get('sm') or '-'}), "
-            f"driver {rec.get('driver') or '-'}\n"
-            f"- tool: {rec.get('tool') or '-'}\n"
-            + (f"- measured: {rec.get('res')}% work area"
-               + ((f", {rec.get('ms')} ms a frame for the model and feed "
-                   f"together" if rec.get("route") == "feeder"
-                   else f", {rec.get('ms')} ms of model a frame")
-                  if rec.get("ms") else "")
-               + (f", {rec.get('fps')} fps" if rec.get("fps") else "")
-               + "\n" if rec.get("res") else "")
-            + "\nThe block below is what the compatibility list reads. Once "
-            "a game has five results, the next person with it is told which "
-            "route worked most often on it; three results on the same route "
-            "that worked and carried a measurement tell them what those "
-            "sessions ran at. "
-            "Delete it if you would rather not share it - the rest of the "
-            "report still stands."
-            + block(rec))
-    return (f"https://github.com/{update.REPO}/issues/new"
-            f"?labels=result&title={quote(title)}&body={quote(body)}")
+                "none": "- the game ships: no DLSS, FSR or XeSS\n",
+            }.get(rec.get("up"), "")
+        )
+        + f"- build: {rec.get('build') or '-'}\n"
+        f"- gpu: {rec.get('gpu') or '-'} ({rec.get('sm') or '-'}), "
+        f"driver {rec.get('driver') or '-'}\n"
+        f"- tool: {rec.get('tool') or '-'}\n"
+        + (
+            f"- measured: {rec.get('res')}% work area"
+            + (
+                (
+                    f", {rec.get('ms')} ms a frame for the model and feed together"
+                    if rec.get("route") == "feeder"
+                    else f", {rec.get('ms')} ms of model a frame"
+                )
+                if rec.get("ms")
+                else ""
+            )
+            + (f", {rec.get('fps')} fps" if rec.get("fps") else "")
+            + "\n"
+            if rec.get("res")
+            else ""
+        )
+        + "\nThe block below is what the compatibility list reads. Once "
+        "a game has five results, the next person with it is told which "
+        "route worked most often on it; three results on the same route "
+        "that worked and carried a measurement tell them what those "
+        "sessions ran at. "
+        "Delete it if you would rather not share it - the rest of the "
+        "report still stands." + block(rec)
+    )
+    return (
+        f"https://github.com/{update.REPO}/issues/new"
+        f"?labels=result&title={quote(title)}&body={quote(body)}"
+    )
 
 
-__all__ = ["record", "block", "parse", "said_verdict", "counts", "fetch", "for_game", "advice",
-           "measured_note", "issue_url", "FEED_URL", "MIN_REPORTS",
-           "MIN_MEASURED", "MARKER"]
+__all__ = [
+    "record",
+    "block",
+    "parse",
+    "said_verdict",
+    "counts",
+    "fetch",
+    "for_game",
+    "advice",
+    "measured_note",
+    "issue_url",
+    "FEED_URL",
+    "MIN_REPORTS",
+    "MIN_MEASURED",
+    "MARKER",
+]

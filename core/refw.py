@@ -18,6 +18,7 @@ Two REFramework release trains exist:
     the one that actually reaches the game people are asking about, so it
     is the one used here.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -33,6 +34,7 @@ BACKUP_SUFFIX = ".dlss5-autopilot-backup"
 def resolve() -> tuple[str, str]:
     """(tag, download url) of the newest nightly REFramework.zip."""
     from . import sources
+
     r = sources.json_or_html(API)
     tag = r.get("tag_name", "?")
     for a in r.get("assets", []):
@@ -70,6 +72,7 @@ def install(exe_dir: Path, log=None) -> list[str]:
     bak = existing.with_name(DINPUT8 + BACKUP_SUFFIX)
     if existing.is_file() and not bak.exists() and not is_reframework(existing):
         import shutil
+
         # Raised when it fails (a full drive): written over without a
         # backup, the person's own dinput8.dll was gone for good. A copy cut
         # short is removed first, or the next install took it for the backup.
@@ -86,6 +89,8 @@ def install(exe_dir: Path, log=None) -> list[str]:
 
     net.extract_one(z, DINPUT8, existing)
     written.append(DINPUT8)
-    log(f"      {DINPUT8} (REFramework - loads first and patches around RE "
-        f"Engine's tamper checks, so ReShade survives)")
+    log(
+        f"      {DINPUT8} (REFramework - loads first and patches around RE "
+        f"Engine's tamper checks, so ReShade survives)"
+    )
     return written

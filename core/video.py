@@ -23,6 +23,7 @@ MPC-HC also bundles an old D3DCompiler_47.dll that rejects the cs_5_1 target
 the neural pass is compiled with; the installer moves that aside for every
 game (see installer.SIDELINE), so it is not handled here.
 """
+
 from __future__ import annotations
 
 import zipfile
@@ -124,8 +125,11 @@ def _write_ini(folder: Path) -> None:
             raw = b""
     bom = raw.startswith(b"\xef\xbb\xbf")
     text = (raw[3:] if bom else raw).decode("utf8", "replace")
-    lines = [ln for ln in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
-             if ln.strip()]
+    lines = [
+        ln
+        for ln in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+        if ln.strip()
+    ]
     seen: set[str] = set()
     out: list[str] = []
     in_settings = False
@@ -156,7 +160,7 @@ def _write_ini(folder: Path) -> None:
         if in_settings and "=" in s:
             k = s.split("=", 1)[0].strip()
             if k == "YDLExePath":
-                continue            # an earlier build wrote it; it breaks URLs
+                continue  # an earlier build wrote it; it breaks URLs
             if k in settings:
                 seen.add(k)
                 # The renderer and the update prompt are what make this
@@ -191,8 +195,12 @@ def prepare(folder: Path, on_prog=None, on_log=None) -> games.Game:
     def dl(url: str, fname: str) -> Path:
         def p(done: int, total: int) -> None:
             pct = int(done * 100 / total) if total else 0
-            prog(pct, f"{fname} - {net.human(done)}"
-                      + (f" / {net.human(total)}" if total else ""))
+            prog(
+                pct,
+                f"{fname} - {net.human(done)}"
+                + (f" / {net.human(total)}" if total else ""),
+            )
+
         return net.download(url, fname, progress=p)
 
     if is_player(folder):
@@ -212,7 +220,7 @@ def prepare(folder: Path, on_prog=None, on_log=None) -> games.Game:
             for n in names:
                 if n.endswith("/"):
                     continue
-                rel = n[len(top):] if top else n
+                rel = n[len(top) :] if top else n
                 if not rel:
                     continue
                 # The only place here that keeps an archive's own folder
@@ -223,7 +231,8 @@ def prepare(folder: Path, on_prog=None, on_log=None) -> games.Game:
                 except net.OutsideError as e:
                     raise RuntimeError(
                         f"The {PLAYER} archive contains a path that writes "
-                        f"outside {folder} - refusing it. ({e})") from None
+                        f"outside {folder} - refusing it. ({e})"
+                    ) from None
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 with zf.open(n) as src, open(dst, "wb") as out:
                     out.write(src.read())
@@ -249,12 +258,16 @@ def prepare(folder: Path, on_prog=None, on_log=None) -> games.Game:
             ensure_deno(folder, on_prog=on_prog, on_log=on_log)
         except Exception as e:
             log.write(f"deno: {e}", "warn")
-            say(f"      !! deno could not be fetched ({e}); YouTube may offer "
-                f"fewer formats")
-    except Exception as e:                      # the player still works
+            say(
+                f"      !! deno could not be fetched ({e}); YouTube may offer "
+                f"fewer formats"
+            )
+    except Exception as e:  # the player still works
         log.write(f"yt-dlp: {e}", "warn")
-        say(f"      !! yt-dlp could not be fetched ({e}); local files only "
-            f"until it is dropped into the folder by hand")
+        say(
+            f"      !! yt-dlp could not be fetched ({e}); local files only "
+            f"until it is dropped into the folder by hand"
+        )
 
     try:
         prefs.set_(PREF_KEY, str(folder))
@@ -282,6 +295,7 @@ def known() -> games.Game | None:
 def launch(folder: Path, target: str = "") -> None:
     """Start the player, optionally on a file or URL."""
     import subprocess
+
     exe = Path(folder) / PLAYER_EXE
     args = [str(exe)]
     if target:
@@ -299,8 +313,9 @@ FFMPEG_ASSET = "ffmpeg-master-latest-win64-gpl.zip"
 # ...and when the API is out of reach or the names change again, the tag's
 # download URL resolves on its own, the same fallback the ReShade and
 # DLSS5-Reshade-AIO downloads use.
-FFMPEG_DIRECT = ("https://github.com/BtbN/FFmpeg-Builds/releases/download/"
-                 "latest/" + FFMPEG_ASSET)
+FFMPEG_DIRECT = (
+    "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/" + FFMPEG_ASSET
+)
 FFMPEG = "ffmpeg.exe"
 FFPROBE = "ffprobe.exe"
 DOWNLOADS = "downloads"
@@ -312,10 +327,14 @@ DOWNLOADS = "downloads"
 # it needs are the ones the feeder install already put beside the player,
 # handed over with --dll-dir. ffmpeg decodes and encodes around it, exactly
 # as the project's own nr_video.py does.
-PROCESSOR_API = "https://api.github.com/repos/DaniilSokolyuk/video2dlssnr/releases/latest"
+PROCESSOR_API = (
+    "https://api.github.com/repos/DaniilSokolyuk/video2dlssnr/releases/latest"
+)
 PROCESSOR_ASSET = "video2dlssnr_release_light.zip"
-PROCESSOR_LATEST = ("https://github.com/DaniilSokolyuk/video2dlssnr/releases/latest/"
-                    "download/video2dlssnr_release_light.zip")
+PROCESSOR_LATEST = (
+    "https://github.com/DaniilSokolyuk/video2dlssnr/releases/latest/"
+    "download/video2dlssnr_release_light.zip"
+)
 PROCESSOR_DIR = "video2dlssnr"
 PROCESSOR_EXE = "video2dlssnr.exe"
 PROCESSED = "processed"
@@ -338,15 +357,24 @@ def ensure_processor(folder: Path, on_prog=None, on_log=None) -> Path:
         url = PROCESSOR_LATEST
         try:
             data = sources.json_or_html(PROCESSOR_API)
-            url = next((a["browser_download_url"] for a in data.get("assets", [])
-                        if a.get("name") == PROCESSOR_ASSET), url)
+            url = next(
+                (
+                    a["browser_download_url"]
+                    for a in data.get("assets", [])
+                    if a.get("name") == PROCESSOR_ASSET
+                ),
+                url,
+            )
         except Exception:
             pass
 
         def p(done: int, total: int) -> None:
             if on_prog:
-                on_prog(int(done * 100 / total) if total else 0,
-                        f"{PROCESSOR_ASSET} - {net.human(done)}")
+                on_prog(
+                    int(done * 100 / total) if total else 0,
+                    f"{PROCESSOR_ASSET} - {net.human(done)}",
+                )
+
         z = net.download(url, PROCESSOR_ASSET, progress=p)
         d.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(z) as zf:
@@ -365,19 +393,35 @@ def ensure_processor(folder: Path, on_prog=None, on_log=None) -> Path:
         ensure_ffmpeg(folder, on_prog=on_prog, on_log=on_log)
     for dll in ("nvngx_dlssnr.dll", "nvngx_dlss.dll"):
         if not (folder / dll).is_file():
-            raise RuntimeError(f"{dll} is not beside the player - press install on "
-                               f"the player first, the processor uses the same runtimes")
+            raise RuntimeError(
+                f"{dll} is not beside the player - press install on "
+                f"the player first, the processor uses the same runtimes"
+            )
     return d / PROCESSOR_EXE
 
 
 def _probe(folder: Path, src: Path) -> tuple[int, int, float, int]:
     import subprocess
+
     out = child.run(
-        [str(tools_dir(folder) / FFPROBE), "-v", "error", "-select_streams", "v:0",
-         "-show_entries", "stream=width,height,r_frame_rate,nb_frames",
-         "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1",
-         str(src)], capture_output=True, text=True,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
+        [
+            str(tools_dir(folder) / FFPROBE),
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height,r_frame_rate,nb_frames",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1",
+            str(src),
+        ],
+        capture_output=True,
+        text=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    ).stdout
     d = dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
     if "width" not in d:
         raise RuntimeError("ffprobe could not read the video")
@@ -392,8 +436,15 @@ def _probe(folder: Path, src: Path) -> tuple[int, int, float, int]:
     return int(d["width"]), int(d["height"]), fps, frames
 
 
-def process(folder: Path, src: Path, scale: str = "native", style: int = 0,
-            intensity: float = 1.0, on_prog=None, on_log=None) -> Path:
+def process(
+    folder: Path,
+    src: Path,
+    scale: str = "native",
+    style: int = 0,
+    intensity: float = 1.0,
+    on_prog=None,
+    on_log=None,
+) -> Path:
     """Neural-render a clip on disk into <folder>/processed/<name>_nr.mp4.
 
     ffmpeg decodes to raw RGBA, video2dlssnr runs DLSS SR (when scaling) and
@@ -404,6 +455,7 @@ def process(folder: Path, src: Path, scale: str = "native", style: int = 0,
     import re
     import subprocess
     import threading
+
     folder = Path(folder)
     src = Path(src)
     say = on_log or (lambda *_: None)
@@ -412,7 +464,7 @@ def process(folder: Path, src: Path, scale: str = "native", style: int = 0,
     ffmpeg = str(tools_dir(folder) / FFMPEG)
     in_w, in_h, fps, total = _probe(folder, src)
     factor = SCALES.get(scale, 1.0)
-    if factor == 0.0:                      # 4K: pin the width, keep aspect
+    if factor == 0.0:  # 4K: pin the width, keep aspect
         out_w, out_h = 3840, round(in_h * 3840 / in_w)
     else:
         out_w, out_h = round(in_w * factor), round(in_h * factor)
@@ -421,28 +473,78 @@ def process(folder: Path, src: Path, scale: str = "native", style: int = 0,
     out_dir = folder / PROCESSED
     out_dir.mkdir(exist_ok=True)
     dst = out_dir / f"{src.stem}_nr{'' if factor == 1.0 else '_' + str(out_w)}.mp4"
-    say(f"      {in_w}x{in_h} @ {fps:.2f} fps, {total or '?'} frames -> "
-        f"{out_w}x{out_h}, style {STYLES.get(style, style)}, intensity {intensity}")
+    say(
+        f"      {in_w}x{in_h} @ {fps:.2f} fps, {total or '?'} frames -> "
+        f"{out_w}x{out_h}, style {STYLES.get(style, style)}, intensity {intensity}"
+    )
     say(f"      saving as {dst}")
 
     flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     vf = "setparams=colorspace=bt709:color_primaries=bt709:color_trc=bt709,format=rgba"
     dec = [ffmpeg, "-v", "error", "-i", str(src), "-vf", vf, "-f", "rawvideo", "-"]
-    tool = [str(exe), "--nr-video", "--nr-in", f"{in_w}x{in_h}",
-            "--nr-style", str(int(style)), "--nr-intensity", str(float(intensity)),
-            "--nr-ui-correction", "0", "--nr-motion", "1",
-            "--dll-dir", str(folder)]
+    tool = [
+        str(exe),
+        "--nr-video",
+        "--nr-in",
+        f"{in_w}x{in_h}",
+        "--nr-style",
+        str(int(style)),
+        "--nr-intensity",
+        str(float(intensity)),
+        "--nr-ui-correction",
+        "0",
+        "--nr-motion",
+        "1",
+        "--dll-dir",
+        str(folder),
+    ]
     if (out_w, out_h) != (in_w, in_h):
         tool += ["--nr-width", str(out_w), "--nr-height", str(out_h)]
-    enc = [ffmpeg, "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgba",
-           "-s", f"{out_w}x{out_h}", "-r", f"{fps}", "-i", "-",
-           "-i", str(src), "-map", "0:v:0", "-map", "1:a:0?",
-           "-c:v", "hevc_nvenc", "-preset", "p5", "-pix_fmt", "yuv420p",
-           "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-shortest",
-           str(dst)]
+    enc = [
+        ffmpeg,
+        "-y",
+        "-v",
+        "error",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgba",
+        "-s",
+        f"{out_w}x{out_h}",
+        "-r",
+        f"{fps}",
+        "-i",
+        "-",
+        "-i",
+        str(src),
+        "-map",
+        "0:v:0",
+        "-map",
+        "1:a:0?",
+        "-c:v",
+        "hevc_nvenc",
+        "-preset",
+        "p5",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
+        "-movflags",
+        "+faststart",
+        "-shortest",
+        str(dst),
+    ]
     p1 = child.popen(dec, stdout=subprocess.PIPE, creationflags=flags)
-    p2 = child.popen(tool, stdin=p1.stdout, stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE, cwd=str(exe.parent), creationflags=flags)
+    p2 = child.popen(
+        tool,
+        stdin=p1.stdout,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=str(exe.parent),
+        creationflags=flags,
+    )
     p1.stdout.close()
     p3 = child.popen(enc, stdin=p2.stdout, stderr=subprocess.PIPE, creationflags=flags)
     p2.stdout.close()
@@ -457,38 +559,44 @@ def process(folder: Path, src: Path, scale: str = "native", style: int = 0,
                 n, f = int(m.group(1)), float(m.group(2))
                 pct = int(n * 100 / total) if total else 0
                 left = (total - n) / f if (total and f > 0) else 0
-                prog(min(pct, 99), f"frame {n}/{total or '?'} at {f:.1f} fps"
-                                   + (f", {int(left // 60)}:{int(left % 60):02d} left"
-                                      if left else ""))
+                prog(
+                    min(pct, 99),
+                    f"frame {n}/{total or '?'} at {f:.1f} fps"
+                    + (
+                        f", {int(left // 60)}:{int(left % 60):02d} left" if left else ""
+                    ),
+                )
             else:
                 line = raw.decode("utf8", "replace").strip()
                 if line and not line.startswith("done:"):
                     errs.append(line)
+
     t = threading.Thread(target=pump, daemon=True)
     t.start()
     rc3 = p3.wait()
     p2.wait()
     p1.wait()
     t.join(timeout=5)
-    enc_err = (p3.stderr.read().decode("utf8", "replace").strip() if p3.stderr else "")
+    enc_err = p3.stderr.read().decode("utf8", "replace").strip() if p3.stderr else ""
     # Everything video2dlssnr printed, beside the output: its environment
     # block (driver, which nvngx_dlssnr.dll, its version) is what says which
     # side failed, and the last three lines dropped it (#1042: err 127).
     log_path = dst.with_suffix(".log")
     try:
-        log_path.write_text("\n".join(errs + ([enc_err] if enc_err else [])) + "\n",
-                            encoding="utf8")
+        log_path.write_text(
+            "\n".join(errs + ([enc_err] if enc_err else [])) + "\n", encoding="utf8"
+        )
     except OSError:
         pass
     if rc3 != 0 or p2.returncode not in (0, None) or not dst.is_file():
         first = [e for e in errs if e.startswith("ERROR")][:1]
-        raise RuntimeError("processing failed: "
-                           + (" | ".join((first + errs[-2:] + [enc_err])[-3:])
-                              or "no output written")
-                           + f" (full output: {log_path.name})")
+        raise RuntimeError(
+            "processing failed: "
+            + (" | ".join((first + errs[-2:] + [enc_err])[-3:]) or "no output written")
+            + f" (full output: {log_path.name})"
+        )
     prog(100, dst.name)
     return dst
-
 
 
 DENO_API = "https://api.github.com/repos/denoland/deno/releases/latest"
@@ -512,16 +620,25 @@ def ensure_deno(folder: Path, on_prog=None, on_log=None) -> Path | None:
     say = on_log or (lambda *_: None)
     if not dst.is_file():
         data = sources.json_or_html(DENO_API)
-        url = next((a["browser_download_url"] for a in data.get("assets", [])
-                    if a.get("name") == DENO_ASSET), None)
+        url = next(
+            (
+                a["browser_download_url"]
+                for a in data.get("assets", [])
+                if a.get("name") == DENO_ASSET
+            ),
+            None,
+        )
         if not url:
             return None
 
         def p(done: int, total: int) -> None:
             if on_prog:
-                on_prog(int(done * 100 / total) if total else 0,
-                        f"{DENO_ASSET} - {net.human(done)}"
-                        + (f" / {net.human(total)}" if total else ""))
+                on_prog(
+                    int(done * 100 / total) if total else 0,
+                    f"{DENO_ASSET} - {net.human(done)}"
+                    + (f" / {net.human(total)}" if total else ""),
+                )
+
         z = net.download(url, f"deno-{data.get('tag_name', '')}.zip", progress=p)
         with zipfile.ZipFile(z) as zf:
             member = next((n for n in zf.namelist() if n.endswith("deno.exe")), None)
@@ -530,7 +647,7 @@ def ensure_deno(folder: Path, on_prog=None, on_log=None) -> Path | None:
             with zf.open(member) as src, open(dst, "wb") as out:
                 out.write(src.read())
         say(f"      deno {data.get('tag_name', '')} - JavaScript runtime for yt-dlp")
-    conf = folder / YTDLP_CONF           # read from yt-dlp.exe's own folder
+    conf = folder / YTDLP_CONF  # read from yt-dlp.exe's own folder
     stray = tools_dir(folder) / YTDLP_CONF
     if stray.is_file():
         stray.unlink()
@@ -588,31 +705,51 @@ def ensure_ffmpeg(folder: Path, on_prog=None, on_log=None) -> Path:
     url = None
     try:
         assets = sources.json_or_html(FFMPEG_API).get("assets", [])
-        url = next((a["browser_download_url"] for a in assets
-                    if a.get("name") == FFMPEG_ASSET), None)
+        url = next(
+            (
+                a["browser_download_url"]
+                for a in assets
+                if a.get("name") == FFMPEG_ASSET
+            ),
+            None,
+        )
         if not url:
             # The exact name has moved before. Any static 64-bit Windows GPL
             # build in that release will do: not -shared (it needs its DLLs
             # beside it), not lgpl (no NVENC), not arm64.
-            url = next((a["browser_download_url"] for a in assets
-                        if (n := a.get("name", "").lower()).endswith(".zip")
-                        and "win64" in n and "gpl" in n
-                        and "lgpl" not in n and "shared" not in n), None)
+            url = next(
+                (
+                    a["browser_download_url"]
+                    for a in assets
+                    if (n := a.get("name", "").lower()).endswith(".zip")
+                    and "win64" in n
+                    and "gpl" in n
+                    and "lgpl" not in n
+                    and "shared" not in n
+                ),
+                None,
+            )
     except Exception as e:
-        say(f"      the ffmpeg release listing did not answer ({e}); "
-            f"using the direct download")
+        say(
+            f"      the ffmpeg release listing did not answer ({e}); "
+            f"using the direct download"
+        )
     url = url or FFMPEG_DIRECT
 
     def p(done: int, total: int) -> None:
         if on_prog:
-            on_prog(int(done * 100 / total) if total else 0,
-                    f"{FFMPEG_ASSET} - {net.human(done)}"
-                    + (f" / {net.human(total)}" if total else ""))
+            on_prog(
+                int(done * 100 / total) if total else 0,
+                f"{FFMPEG_ASSET} - {net.human(done)}"
+                + (f" / {net.human(total)}" if total else ""),
+            )
+
     z = net.download(url, FFMPEG_ASSET, progress=p)
     with zipfile.ZipFile(z) as zf:
         for exe_name in (FFMPEG, FFPROBE):
-            member = next((n for n in zf.namelist()
-                           if n.endswith("/bin/" + exe_name)), None)
+            member = next(
+                (n for n in zf.namelist() if n.endswith("/bin/" + exe_name)), None
+            )
             if not member:
                 raise RuntimeError(f"{exe_name} not in the zip")
             with zf.open(member) as src, open(folder / exe_name, "wb") as out:
@@ -621,8 +758,9 @@ def ensure_ffmpeg(folder: Path, on_prog=None, on_log=None) -> Path:
     return dst
 
 
-def download(folder: Path, url: str, on_prog=None, on_log=None,
-             full_quality: bool = False) -> Path:
+def download(
+    folder: Path, url: str, on_prog=None, on_log=None, full_quality: bool = False
+) -> Path:
     """Save a link as a file in <folder>/downloads and return the path.
 
     yt-dlp does the work; its progress lines are turned into the tool's
@@ -633,35 +771,57 @@ def download(folder: Path, url: str, on_prog=None, on_log=None,
         raise ValueError("that is not a link")
     exe = folder / YTDLP
     if not exe.is_file():
-        raise RuntimeError("yt-dlp.exe is missing from the player folder - run "
-                           "'set up the video player' again")
+        raise RuntimeError(
+            "yt-dlp.exe is missing from the player folder - run "
+            "'set up the video player' again"
+        )
     out_dir = folder / DOWNLOADS
     out_dir.mkdir(exist_ok=True)
     say = on_log or (lambda *_: None)
     prog = on_prog or (lambda *_: None)
     import re
     import subprocess
+
     # YouTube stopped offering combined video+audio files (checked
     # 2026-09-02: every format is video-only or audio-only), so a download
     # is always a merge and ffmpeg is not optional.
     if not has_ffmpeg(folder):
-        raise RuntimeError("ffmpeg.exe is missing from the player folder; the "
-                           "download button fetches it once")
+        raise RuntimeError(
+            "ffmpeg.exe is missing from the player folder; the "
+            "download button fetches it once"
+        )
     cap = 2160 if full_quality else 1440
     fmt = f"bv*[ext=mp4][height<={cap}]+ba[ext=m4a]/bv*[height<={cap}]+ba/b"
-    args = [str(exe), "--no-playlist", "--newline", "-f", fmt,
-            "--merge-output-format", "mp4",
-            "-o", str(out_dir / "%(title).80s [%(id)s].%(ext)s"),
-            "--print", "after_move:filepath", "--no-simulate", "--no-quiet",
-            "--progress"]
+    args = [
+        str(exe),
+        "--no-playlist",
+        "--newline",
+        "-f",
+        fmt,
+        "--merge-output-format",
+        "mp4",
+        "-o",
+        str(out_dir / "%(title).80s [%(id)s].%(ext)s"),
+        "--print",
+        "after_move:filepath",
+        "--no-simulate",
+        "--no-quiet",
+        "--progress",
+    ]
     args += ["--ffmpeg-location", str(tools_dir(folder))]
     args.append(url.strip())
     say(f"      yt-dlp: best video up to {cap}p + audio, merged to mp4")
     creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    proc = child.popen(args, cwd=str(tools_dir(folder)), stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, text=True,
-                            encoding="utf8", errors="replace",
-                            creationflags=creationflags)
+    proc = child.popen(
+        args,
+        cwd=str(tools_dir(folder)),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf8",
+        errors="replace",
+        creationflags=creationflags,
+    )
     result = None
     tail: list[str] = []
     errors: list[str] = []
@@ -690,11 +850,15 @@ def download(folder: Path, url: str, on_prog=None, on_log=None,
     # a non-zero exit afterwards was reported as a failed download).
     if result is not None and result.is_file() and result.stat().st_size > 0:
         if proc.returncode != 0:
-            say(f"      yt-dlp ended with exit code {proc.returncode} after "
-                f"saving the file" + (f": {errors[-1][:160]}" if errors else ""))
+            say(
+                f"      yt-dlp ended with exit code {proc.returncode} after "
+                f"saving the file" + (f": {errors[-1][:160]}" if errors else "")
+            )
     else:
-        raise RuntimeError(f"yt-dlp failed (exit {proc.returncode}): "
-                           + " | ".join(errors[-2:] or tail[-3:]))
+        raise RuntimeError(
+            f"yt-dlp failed (exit {proc.returncode}): "
+            + " | ".join(errors[-2:] or tail[-3:])
+        )
     prog(100, result.name)
     return result
 
@@ -712,15 +876,29 @@ def list_cameras(folder: Path) -> list[str]:
     """DirectShow video devices, as ffmpeg names them."""
     import re
     import subprocess
+
     ff = tools_dir(folder) / FFMPEG
     if not ff.is_file():
         return []
     try:
-        out = child.run([str(ff), "-hide_banner", "-list_devices", "true",
-                              "-f", "dshow", "-i", "dummy"],
-                             capture_output=True, text=True, encoding="utf8",
-                             errors="replace", timeout=20,
-                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        out = child.run(
+            [
+                str(ff),
+                "-hide_banner",
+                "-list_devices",
+                "true",
+                "-f",
+                "dshow",
+                "-i",
+                "dummy",
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf8",
+            errors="replace",
+            timeout=20,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
     except Exception:
         return []
     cams: list[str] = []
@@ -734,35 +912,69 @@ def list_cameras(folder: Path) -> list[str]:
 def start_webcam(folder: Path, camera: str, size: str = "1280x720", fps: int = 30):
     """Start the camera stream and the player on it. Returns the ffmpeg process."""
     import subprocess
+
     global _webcam_proc
     stop_webcam()
     ff = tools_dir(folder) / FFMPEG
     if not ff.is_file():
-        raise RuntimeError("ffmpeg is not in the player's tools folder yet - "
-                           "run one download first, or press 'set up the video "
-                           "player' again")
+        raise RuntimeError(
+            "ffmpeg is not in the player's tools folder yet - "
+            "run one download first, or press 'set up the video "
+            "player' again"
+        )
+
     def command(requested: bool) -> list[str]:
-        cam_opts = (["-video_size", size, "-framerate", str(fps)] if requested else [])
-        return ([str(ff), "-hide_banner", "-loglevel", "error", "-f", "dshow",
-                 "-rtbufsize", "64M"] + cam_opts +
-                ["-i", f"video={camera}",
-                 "-vcodec", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-                 "-g", str(fps), "-pix_fmt", "yuv420p", "-f", "mpegts",
-                 f"udp://127.0.0.1:{WEBCAM_PORT}?pkt_size=1316"])
+        cam_opts = ["-video_size", size, "-framerate", str(fps)] if requested else []
+        return (
+            [
+                str(ff),
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-f",
+                "dshow",
+                "-rtbufsize",
+                "64M",
+            ]
+            + cam_opts
+            + [
+                "-i",
+                f"video={camera}",
+                "-vcodec",
+                "libx264",
+                "-preset",
+                "ultrafast",
+                "-tune",
+                "zerolatency",
+                "-g",
+                str(fps),
+                "-pix_fmt",
+                "yuv420p",
+                "-f",
+                "mpegts",
+                f"udp://127.0.0.1:{WEBCAM_PORT}?pkt_size=1316",
+            ]
+        )
+
     flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    _webcam_proc = child.popen(command(True), cwd=str(tools_dir(folder)),
-                                    creationflags=flags)
+    _webcam_proc = child.popen(
+        command(True), cwd=str(tools_dir(folder)), creationflags=flags
+    )
     import time
+
     time.sleep(2.0)
     if _webcam_proc.poll() is not None:
         # The size/rate was refused: try the camera's own default.
-        _webcam_proc = child.popen(command(False), cwd=str(tools_dir(folder)),
-                                        creationflags=flags)
+        _webcam_proc = child.popen(
+            command(False), cwd=str(tools_dir(folder)), creationflags=flags
+        )
         time.sleep(2.0)
         if _webcam_proc.poll() is not None:
             _webcam_proc = None
-            raise RuntimeError(f"ffmpeg could not open the camera '{camera}' - is "
-                               f"another app using it?")
+            raise RuntimeError(
+                f"ffmpeg could not open the camera '{camera}' - is "
+                f"another app using it?"
+            )
     launch(folder, WEBCAM_URL)
     return _webcam_proc
 
@@ -782,6 +994,7 @@ def feed_frames_since(folder: Path, t0: float) -> tuple[int, bool]:
     """
     import datetime
     import re
+
     p = Path(folder) / "dlss5-feed.log"
     try:
         text = p.read_text(encoding="utf8", errors="replace")
@@ -793,9 +1006,15 @@ def feed_frames_since(folder: Path, t0: float) -> tuple[int, bool]:
         m = re.match(r"(\d\d):(\d\d):(\d\d)\.(\d+)\s+(.*)", line)
         if not m:
             continue
-        stamp = datetime.datetime.combine(day, datetime.time(
-            int(m.group(1)), int(m.group(2)), int(m.group(3)),
-            int(m.group(4)[:3].ljust(3, "0")) * 1000)).timestamp()
+        stamp = datetime.datetime.combine(
+            day,
+            datetime.time(
+                int(m.group(1)),
+                int(m.group(2)),
+                int(m.group(3)),
+                int(m.group(4)[:3].ljust(3, "0")) * 1000,
+            ),
+        ).timestamp()
         if stamp - t0 > 43200:
             stamp -= 86400
         elif t0 - stamp > 43200:
@@ -834,12 +1053,13 @@ def feed_frames_since(folder: Path, t0: float) -> tuple[int, bool]:
 #               black, which is why ffmpeg's own window capture is not used.
 SCREEN_PREFIX = "screen "
 WINDOW_PREFIX = "window: "
-SPLIT = 0.62                    # share of the width that is captured
-_windows_by_title: dict = {}    # title -> hwnd, from the last list_screens()
+SPLIT = 0.62  # share of the width that is captured
+_windows_by_title: dict = {}  # title -> hwnd, from the last list_screens()
 
 
 def _user32():
     import ctypes
+
     u = ctypes.windll.user32
     try:
         u.SetProcessDPIAware()
@@ -852,15 +1072,18 @@ def monitors() -> list[tuple[int, int, int, int]]:
     """(left, top, right, bottom) of every monitor, primary first."""
     import ctypes
     import ctypes.wintypes as w
+
     u = _user32()
     out: list[tuple[int, int, int, int]] = []
-    proc = ctypes.WINFUNCTYPE(ctypes.c_int, w.HMONITOR, w.HDC,
-                              ctypes.POINTER(w.RECT), w.LPARAM)
+    proc = ctypes.WINFUNCTYPE(
+        ctypes.c_int, w.HMONITOR, w.HDC, ctypes.POINTER(w.RECT), w.LPARAM
+    )
 
     def cb(_hm, _hdc, lprc, _lp):
         r = lprc.contents
         out.append((r.left, r.top, r.right, r.bottom))
         return 1
+
     try:
         u.EnumDisplayMonitors(None, None, proc(cb), 0)
     except Exception:
@@ -873,6 +1096,7 @@ def list_screens() -> list[str]:
     """Every monitor, then every visible window big enough to matter."""
     import ctypes
     import ctypes.wintypes as w
+
     out: list[str] = []
     _windows_by_title.clear()
     try:
@@ -889,12 +1113,16 @@ def list_screens() -> list[str]:
                     u.GetWindowTextW(h, b, ln + 1)
                     r = w.RECT()
                     u.GetWindowRect(h, ctypes.byref(r))
-                    if r.right - r.left >= 320 and r.bottom - r.top >= 200 \
-                            and b.value not in titles \
-                            and not b.value.startswith("DLSS 5 Autopilot"):
+                    if (
+                        r.right - r.left >= 320
+                        and r.bottom - r.top >= 200
+                        and b.value not in titles
+                        and not b.value.startswith("DLSS 5 Autopilot")
+                    ):
                         titles.append(b.value)
                         _windows_by_title[b.value] = int(h)
             return True
+
         u.EnumWindows(cb, 0)
         out += [WINDOW_PREFIX + t for t in titles]
     except Exception:
@@ -902,7 +1130,9 @@ def list_screens() -> list[str]:
     return out or [SCREEN_PREFIX + "1"]
 
 
-def split_layout(mon: tuple[int, int, int, int]) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int]]:
+def split_layout(
+    mon: tuple[int, int, int, int],
+) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int]]:
     """((x, y, w, h) captured, (x, y, w, h) for the player) on one monitor.
 
     Even numbers throughout - the encoder wants them - and the split lands on
@@ -918,6 +1148,7 @@ def split_layout(mon: tuple[int, int, int, int]) -> tuple[tuple[int, int, int, i
 def _rect(hwnd) -> tuple[int, int, int, int]:
     import ctypes
     import ctypes.wintypes as w
+
     r = w.RECT()
     _user32().GetWindowRect(hwnd, ctypes.byref(r))
     return (r.left, r.top, r.right - r.left, r.bottom - r.top)
@@ -936,17 +1167,32 @@ def _move(hwnd, rect, topmost: bool = False) -> None:
     """Restore and place a window; topmost keeps the player above the source."""
     import ctypes
     import ctypes.wintypes as w
+
     u = _user32()
     SW_RESTORE, SWP_SHOWWINDOW = 9, 0x0040
     x, y, wd, ht = rect
     try:
         # Without argtypes a -1 (HWND_TOPMOST) is passed as a 32-bit int and
         # Windows sees an invalid handle: the call fails and nothing moves.
-        u.SetWindowPos.argtypes = [w.HWND, w.HWND, ctypes.c_int, ctypes.c_int,
-                                   ctypes.c_int, ctypes.c_int, ctypes.c_uint]
+        u.SetWindowPos.argtypes = [
+            w.HWND,
+            w.HWND,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_uint,
+        ]
         u.ShowWindow(w.HWND(hwnd), SW_RESTORE)
-        u.SetWindowPos(w.HWND(hwnd), w.HWND(-1) if topmost else w.HWND(0),
-                       x, y, wd, ht, SWP_SHOWWINDOW)
+        u.SetWindowPos(
+            w.HWND(hwnd),
+            w.HWND(-1) if topmost else w.HWND(0),
+            x,
+            y,
+            wd,
+            ht,
+            SWP_SHOWWINDOW,
+        )
     except Exception:
         pass
 
@@ -961,6 +1207,7 @@ def _player_hwnd(pid: int, timeout: float = 8.0):
     import ctypes
     import ctypes.wintypes as w
     import time
+
     u = _user32()
     deadline = time.monotonic() + timeout
     by_class_after = time.monotonic() + 3.0
@@ -981,6 +1228,7 @@ def _player_hwnd(pid: int, timeout: float = 8.0):
                 if best is None or wd * ht > best[1]:
                     best = (int(h), wd * ht)
             return True
+
         u.EnumWindows(cb, 0)
         if best and best[1] > 200 * 200:
             return best[0]
@@ -988,9 +1236,14 @@ def _player_hwnd(pid: int, timeout: float = 8.0):
     return None
 
 
-def capture_command(ff: Path, target: str, fps: int = 30, gpu: bool = True,
-                    region: tuple[int, int, int, int] | None = None,
-                    output_idx: int = 0) -> list[str]:
+def capture_command(
+    ff: Path,
+    target: str,
+    fps: int = 30,
+    gpu: bool = True,
+    region: tuple[int, int, int, int] | None = None,
+    output_idx: int = 0,
+) -> list[str]:
     """The ffmpeg command line that captures `target` into the player's UDP pipe.
 
     `region` is (x, y, w, h) in desktop coordinates, captured through the
@@ -1000,9 +1253,23 @@ def capture_command(ff: Path, target: str, fps: int = 30, gpu: bool = True,
     works, black for hardware-accelerated windows.
     """
     base = [str(ff), "-hide_banner", "-loglevel", "error"]
-    out = ["-g", str(fps), "-f", "mpegts", f"udp://127.0.0.1:{WEBCAM_PORT}?pkt_size=1316"]
-    x264 = ["-vcodec", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-            "-pix_fmt", "yuv420p"]
+    out = [
+        "-g",
+        str(fps),
+        "-f",
+        "mpegts",
+        f"udp://127.0.0.1:{WEBCAM_PORT}?pkt_size=1316",
+    ]
+    x264 = [
+        "-vcodec",
+        "libx264",
+        "-preset",
+        "ultrafast",
+        "-tune",
+        "zerolatency",
+        "-pix_fmt",
+        "yuv420p",
+    ]
     if not gpu:
         cmd = base + ["-f", "gdigrab", "-framerate", str(min(fps, 30))]
         if region is None:
@@ -1020,13 +1287,31 @@ def capture_command(ff: Path, target: str, fps: int = 30, gpu: bool = True,
     if region:
         x, y, wd, ht = region
         grab += f":offset_x={x}:offset_y={y}:video_size={wd}x{ht}"
-    return base + ["-init_hw_device", "d3d11va", "-filter_complex", grab,
-                   "-c:v", "h264_nvenc", "-preset", "p1", "-tune", "ll",
-                   "-zerolatency", "1"] + out
+    return (
+        base
+        + [
+            "-init_hw_device",
+            "d3d11va",
+            "-filter_complex",
+            grab,
+            "-c:v",
+            "h264_nvenc",
+            "-preset",
+            "p1",
+            "-tune",
+            "ll",
+            "-zerolatency",
+            "1",
+        ]
+        + out
+    )
 
 
-def plan_capture(target: str) -> tuple[tuple[int, int, int, int] | None, int,
-                                       tuple[int, int, int, int] | None, bool]:
+def plan_capture(
+    target: str,
+) -> tuple[
+    tuple[int, int, int, int] | None, int, tuple[int, int, int, int] | None, bool
+]:
     """(region, output_idx, player_rect, other_monitor) for a target.
 
     region None = the whole monitor. player_rect is where the player is
@@ -1035,26 +1320,40 @@ def plan_capture(target: str) -> tuple[tuple[int, int, int, int] | None, int,
     """
     mons = monitors()
     try:
-        idx = max(0, int(target[len(SCREEN_PREFIX):]) - 1)
+        idx = max(0, int(target[len(SCREEN_PREFIX) :]) - 1)
     except ValueError:
         idx = 0
     idx = min(idx, len(mons) - 1)
     mon = mons[idx]
     if len(mons) > 1:
         other = mons[(idx + 1) % len(mons)]
-        return None, idx, (other[0], other[1], other[2] - other[0], other[3] - other[1]), True
+        return (
+            None,
+            idx,
+            (other[0], other[1], other[2] - other[0], other[3] - other[1]),
+            True,
+        )
     cap, park = split_layout(mon)
     return (cap[0] - mon[0], cap[1] - mon[1], cap[2], cap[3]), idx, park, False
 
 
 class _BMI(__import__("ctypes").Structure):
     import ctypes as _c
-    _fields_ = [("biSize", _c.c_uint32), ("biWidth", _c.c_int32), ("biHeight", _c.c_int32),
-                ("biPlanes", _c.c_uint16), ("biBitCount", _c.c_uint16),
-                ("biCompression", _c.c_uint32), ("biSizeImage", _c.c_uint32),
-                ("biXPelsPerMeter", _c.c_int32), ("biYPelsPerMeter", _c.c_int32),
-                ("biClrUsed", _c.c_uint32), ("biClrImportant", _c.c_uint32),
-                ("bmiColors", _c.c_uint32 * 3)]
+
+    _fields_ = [
+        ("biSize", _c.c_uint32),
+        ("biWidth", _c.c_int32),
+        ("biHeight", _c.c_int32),
+        ("biPlanes", _c.c_uint16),
+        ("biBitCount", _c.c_uint16),
+        ("biCompression", _c.c_uint32),
+        ("biSizeImage", _c.c_uint32),
+        ("biXPelsPerMeter", _c.c_int32),
+        ("biYPelsPerMeter", _c.c_int32),
+        ("biClrUsed", _c.c_uint32),
+        ("biClrImportant", _c.c_uint32),
+        ("bmiColors", _c.c_uint32 * 3),
+    ]
 
 
 PW_RENDERFULLCONTENT = 0x2
@@ -1068,6 +1367,7 @@ def grab_window(hwnd) -> tuple[int, int, bytes]:
     out as they are; without that flag a covered browser is black.
     """
     import ctypes
+
     u = _user32()
     g = ctypes.windll.gdi32
     x, y, wd, ht = _rect(hwnd)
@@ -1101,15 +1401,51 @@ def grab_window(hwnd) -> tuple[int, int, bytes]:
     return wd, ht, buf
 
 
-def window_pipe_command(ff: Path, width: int, height: int, fps: int, gpu: bool = True) -> list[str]:
+def window_pipe_command(
+    ff: Path, width: int, height: int, fps: int, gpu: bool = True
+) -> list[str]:
     """ffmpeg reading raw BGRA frames on stdin and streaming them to the player."""
-    base = [str(ff), "-hide_banner", "-loglevel", "error", "-f", "rawvideo",
-            "-pix_fmt", "bgra", "-s", f"{width}x{height}", "-r", str(fps), "-i", "-"]
-    enc = (["-c:v", "h264_nvenc", "-preset", "p1", "-tune", "ll", "-zerolatency", "1"]
-           if gpu else ["-vcodec", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-                        "-pix_fmt", "yuv420p"])
-    return base + enc + ["-g", str(fps), "-f", "mpegts",
-                         f"udp://127.0.0.1:{WEBCAM_PORT}?pkt_size=1316"]
+    base = [
+        str(ff),
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "bgra",
+        "-s",
+        f"{width}x{height}",
+        "-r",
+        str(fps),
+        "-i",
+        "-",
+    ]
+    enc = (
+        ["-c:v", "h264_nvenc", "-preset", "p1", "-tune", "ll", "-zerolatency", "1"]
+        if gpu
+        else [
+            "-vcodec",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-tune",
+            "zerolatency",
+            "-pix_fmt",
+            "yuv420p",
+        ]
+    )
+    return (
+        base
+        + enc
+        + [
+            "-g",
+            str(fps),
+            "-f",
+            "mpegts",
+            f"udp://127.0.0.1:{WEBCAM_PORT}?pkt_size=1316",
+        ]
+    )
 
 
 class _WindowFeed:
@@ -1122,6 +1458,7 @@ class _WindowFeed:
 
     def __init__(self, ff: Path, hwnd: int, fps: int, log=None):
         import threading
+
         self.ff, self.hwnd, self.fps = ff, hwnd, max(1, min(fps, 60))
         self.log = log or (lambda *_: None)
         self.proc = None
@@ -1155,18 +1492,23 @@ class _WindowFeed:
 
     def _open(self, wd: int, ht: int, gpu: bool = True):
         import subprocess
+
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         self.gpu = gpu
         self.since_open = 0
         try:
-            return child.popen(window_pipe_command(self.ff, wd, ht, self.fps, gpu),
-                                    stdin=subprocess.PIPE, cwd=str(self.ff.parent),
-                                    creationflags=flags)
+            return child.popen(
+                window_pipe_command(self.ff, wd, ht, self.fps, gpu),
+                stdin=subprocess.PIPE,
+                cwd=str(self.ff.parent),
+                creationflags=flags,
+            )
         except OSError:
             return None
 
     def _run(self) -> None:
         import time
+
         u = _user32()
         interval = 1.0 / self.fps
         wd = ht = 0
@@ -1182,7 +1524,9 @@ class _WindowFeed:
                 w2, h2, buf = grab_window(self.hwnd)
             if w2 and (w2, h2) != (wd, ht):
                 if self.proc is not None:
-                    self.log(f"      window resized to {w2}x{h2} - restarting the encoder")
+                    self.log(
+                        f"      window resized to {w2}x{h2} - restarting the encoder"
+                    )
                     self.stop_encoder()
                 wd, ht = w2, h2
                 self.proc = self._open(wd, ht)
@@ -1203,7 +1547,9 @@ class _WindowFeed:
                     if self.gpu and self.since_open < self.fps:
                         # ffmpeg opens the encoder at the first frame: NVENC
                         # refusing it shows up here, not at Popen
-                        self.log("      NVENC refused the raw pipe - using the CPU encoder")
+                        self.log(
+                            "      NVENC refused the raw pipe - using the CPU encoder"
+                        )
                         self.stop_encoder()
                         self.proc = self._open(wd, ht, gpu=False)
                         if self.proc is None:
@@ -1246,20 +1592,25 @@ def start_screen(folder: Path, target: str, fps: int = 30):
     import subprocess
     import threading
     import time
+
     global _webcam_proc
     stop_webcam()
     ff = tools_dir(folder) / FFMPEG
     if not ff.is_file():
-        raise RuntimeError("ffmpeg is not in the player's tools folder yet - "
-                           "run one download first, or press 'set up the video "
-                           "player' again")
+        raise RuntimeError(
+            "ffmpeg is not in the player's tools folder yet - "
+            "run one download first, or press 'set up the video "
+            "player' again"
+        )
     global _window_feed
     if target.startswith(WINDOW_PREFIX):
-        hwnd = _windows_by_title.get(target[len(WINDOW_PREFIX):])
+        hwnd = _windows_by_title.get(target[len(WINDOW_PREFIX) :])
         if not hwnd or not _user32().IsWindow(hwnd):
             raise RuntimeError("that window is gone - press refresh and pick it again")
         if _user32().IsIconic(hwnd):
-            _user32().ShowWindow(hwnd, 9)               # SW_RESTORE: a minimised window has no surface
+            _user32().ShowWindow(
+                hwnd, 9
+            )  # SW_RESTORE: a minimised window has no surface
         _window_feed = _WindowFeed(ff, hwnd, fps).start()
         time.sleep(2.0)
         if not _window_feed.alive():
@@ -1272,15 +1623,20 @@ def start_screen(folder: Path, target: str, fps: int = 30):
     region, idx, park, other = plan_capture(target)
     flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     for gpu in (True, False):
-        _webcam_proc = child.popen(capture_command(ff, target, fps, gpu, region, idx),
-                                        cwd=str(tools_dir(folder)), creationflags=flags)
+        _webcam_proc = child.popen(
+            capture_command(ff, target, fps, gpu, region, idx),
+            cwd=str(tools_dir(folder)),
+            creationflags=flags,
+        )
         time.sleep(2.0)
         if _webcam_proc.poll() is None:
             break
     else:
         _webcam_proc = None
-        raise RuntimeError(f"ffmpeg could not capture '{target}' - a window has to be "
-                           f"open and not minimised; a screen number has to exist")
+        raise RuntimeError(
+            f"ffmpeg could not capture '{target}' - a window has to be "
+            f"open and not minimised; a screen number has to exist"
+        )
     exe = Path(folder) / PLAYER_EXE
     player = child.popen([str(exe), WEBCAM_URL, "/play"], cwd=str(folder))
 
@@ -1297,7 +1653,7 @@ def start_screen(folder: Path, target: str, fps: int = 30):
             while time.monotonic() < end:
                 if _monitor_of(_rect(h)) != target:
                     _move(h, park)
-                    _user32().ShowWindow(h, 3)      # SW_MAXIMIZE
+                    _user32().ShowWindow(h, 3)  # SW_MAXIMIZE
                 time.sleep(0.5)
             return
         # The player re-sizes itself when the stream arrives; keep putting it
@@ -1307,6 +1663,7 @@ def start_screen(folder: Path, target: str, fps: int = 30):
             if _rect(h)[:2] != park[:2] or _rect(h)[2] != park[2]:
                 _move(h, park, topmost=True)
             time.sleep(0.5)
+
     threading.Thread(target=park_player, daemon=True).start()
     _watch_player()
     return _webcam_proc
@@ -1324,6 +1681,7 @@ def _watch_player() -> None:
     """
     import threading
     import time
+
     global _watch_gen
     _watch_gen += 1
     gen = _watch_gen
@@ -1341,6 +1699,7 @@ def _watch_player() -> None:
                     stop_webcam()
                 return
             time.sleep(2.0)
+
     threading.Thread(target=run, daemon=True).start()
 
 
@@ -1349,19 +1708,29 @@ def _unpark_player() -> None:
     try:
         import ctypes
         import ctypes.wintypes as w
+
         u = _user32()
         h = u.FindWindowW(WINDOW_CLASS, None)
         if h:
-            u.SetWindowPos.argtypes = [w.HWND, w.HWND, ctypes.c_int, ctypes.c_int,
-                                       ctypes.c_int, ctypes.c_int, ctypes.c_uint]
-            u.SetWindowPos(w.HWND(h), w.HWND(-2), 0, 0, 0, 0, 0x0001 | 0x0002)   # NOTOPMOST, NOSIZE|NOMOVE
+            u.SetWindowPos.argtypes = [
+                w.HWND,
+                w.HWND,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_uint,
+            ]
+            u.SetWindowPos(
+                w.HWND(h), w.HWND(-2), 0, 0, 0, 0, 0x0001 | 0x0002
+            )  # NOTOPMOST, NOSIZE|NOMOVE
     except Exception:
         pass
 
 
 def stop_webcam() -> None:
     global _webcam_proc, _window_feed, _watch_gen
-    _watch_gen += 1                     # stands the player watcher down
+    _watch_gen += 1  # stands the player watcher down
     if _window_feed is not None:
         _window_feed.stop()
         _window_feed = None
@@ -1388,6 +1757,7 @@ def toggle_nr() -> bool:
     Returns False when no player window exists.
     """
     import ctypes
+
     u = ctypes.windll.user32
     hwnd = u.FindWindowW(WINDOW_CLASS, None)
     if not hwnd:

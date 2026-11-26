@@ -16,6 +16,7 @@ install like any other.
 Nobody here has a headset. Every line on this page says what is known and
 what is not, and asks for the report that would settle it.
 """
+
 from __future__ import annotations
 
 import threading
@@ -41,7 +42,7 @@ class VrPage(Page):
     def __init__(self, shell, app):
         super().__init__(shell)
         self.app = app
-        self.found: dict[str, list[str]] | None = None    # game folder -> files found
+        self.found: dict[str, list[str]] | None = None  # game folder -> files found
         self.looking = False
 
     def shown(self) -> None:
@@ -76,11 +77,13 @@ class VrPage(Page):
     def look(self) -> None:
         """Which games carry OpenXR's loader - a folder walk, so on a worker."""
         self.looking = True
-        games = [g for g in (self.app.all_games or []) if getattr(g, "install_dir", None)]
+        games = [
+            g for g in (self.app.all_games or []) if getattr(g, "install_dir", None)
+        ]
 
         def work():
             out: dict[str, list[str]] = {}
-            end = time.monotonic() + 20.0      # a budget, like every other walk
+            end = time.monotonic() + 20.0  # a budget, like every other walk
             for g in games:
                 hits: list[str] = []
                 try:
@@ -99,6 +102,7 @@ class VrPage(Page):
                 if hits:
                     out[str(g.install_dir)] = sorted(set(hits))
             self.app.q.put(("vrfound", out))
+
         threading.Thread(target=work, daemon=True).start()
 
     def got_found(self, out) -> None:
@@ -110,22 +114,36 @@ class VrPage(Page):
     def remove_layer(self) -> None:
         where = openxr.existing_registration()
         if where is None:
-            self.shell.info("vr", "ReShade's OpenXR layer is not registered for this user, so there is "
-                                  "nothing to take out.")
+            self.shell.info(
+                "vr",
+                "ReShade's OpenXR layer is not registered for this user, so there is "
+                "nothing to take out.",
+            )
             return
         if not openxr.is_ours(where):
-            self.shell.info("vr", f"The registered layer is not one this tool wrote:\n\n{where}\n\n"
-                                  f"It came from ReShade's own installer, so it is left alone - remove it "
-                                  f"from there.")
+            self.shell.info(
+                "vr",
+                f"The registered layer is not one this tool wrote:\n\n{where}\n\n"
+                f"It came from ReShade's own installer, so it is left alone - remove it "
+                f"from there.",
+            )
             return
-        if not self.shell.ask("vr", "Take ReShade's OpenXR layer out of this user's registration? VR games "
-                                    "stop loading ReShade, and a DLSS 5 install in a game folder is left "
-                                    "as it is.", "remove", "keep", danger=True):
+        if not self.shell.ask(
+            "vr",
+            "Take ReShade's OpenXR layer out of this user's registration? VR games "
+            "stop loading ReShade, and a DLSS 5 install in a game folder is left "
+            "as it is.",
+            "remove",
+            "keep",
+            danger=True,
+        ):
             return
         gone = openxr.unregister()
         self._layer_seen = None
-        self.app.write(f"> the OpenXR layer registration was {'removed' if gone else 'not found'}",
-                       "ok" if gone else "warn")
+        self.app.write(
+            f"> the OpenXR layer registration was {'removed' if gone else 'not found'}",
+            "ok" if gone else "warn",
+        )
         self.shell.status("the OpenXR layer is out" if gone else "nothing to remove")
         self.shell.redraw()
 
@@ -135,10 +153,24 @@ class VrPage(Page):
         pad = T.px(44)
         tags = ("page",)
         w = min(width - 2 * pad, T.px(1100))
-        c.create_text(pad, T.px(50), text="vr", font=T.mono(22, True), fill=T.TEXT, anchor="w", tags=tags)
-        c.create_text(pad + T.px(2), T.px(84),
-                      text="dlss 5 on what the headset shows, through reshade's openxr layer",
-                      font=T.mono(10), fill=T.MUTED, anchor="w", tags=tags)
+        c.create_text(
+            pad,
+            T.px(50),
+            text="vr",
+            font=T.mono(22, True),
+            fill=T.TEXT,
+            anchor="w",
+            tags=tags,
+        )
+        c.create_text(
+            pad + T.px(2),
+            T.px(84),
+            text="dlss 5 on what the headset shows, through reshade's openxr layer",
+            font=T.mono(10),
+            fill=T.MUTED,
+            anchor="w",
+            tags=tags,
+        )
         y = T.px(130)
 
         # --- what is registered right now, read once per visit and after
@@ -146,65 +178,149 @@ class VrPage(Page):
         # registry key and resolves paths, and draw() runs on the Tk thread
         where, ours = self._layer()
         if where is None:
-            state, colour, detail = "not registered", T.DIM, (
-                "no OpenXR layer is registered for this user. Open a 64-bit game's page, tick "
-                "'VR headset (OpenXR layer)' in its settings and install: the layer is registered then.")
+            state, colour, detail = (
+                "not registered",
+                T.DIM,
+                (
+                    "no OpenXR layer is registered for this user. Open a 64-bit game's page, tick "
+                    "'VR headset (OpenXR layer)' in its settings and install: the layer is registered then."
+                ),
+            )
         elif ours:
             state, colour, detail = "registered", T.OK, str(where)
         else:
-            state, colour, detail = "registered by ReShade itself", T.AMBER, (
-                f"{where} - not a file this tool wrote, so it is reused and never changed.")
+            state, colour, detail = (
+                "registered by ReShade itself",
+                T.AMBER,
+                (
+                    f"{where} - not a file this tool wrote, so it is reused and never changed."
+                ),
+            )
         y = self._card(pad, y, w, "the openxr layer", state, colour, detail)
         if ours:
-            k.button(pad, y, T.width("remove the layer", T.mono(10, True)) + T.px(70), "remove the layer",
-                     self.remove_layer, glyph="trash", h=T.px(38), tags=tags, size=10,
-                     tip="takes this user's registration out; VR games stop loading ReShade")
+            k.button(
+                pad,
+                y,
+                T.width("remove the layer", T.mono(10, True)) + T.px(70),
+                "remove the layer",
+                self.remove_layer,
+                glyph="trash",
+                h=T.px(38),
+                tags=tags,
+                size=10,
+                tip="takes this user's registration out; VR games stop loading ReShade",
+            )
             y += T.px(58)
 
         # --- the games that go through OpenXR at all
         y += T.px(10)
-        c.create_text(pad, y, text="games that carry openxr's loader", font=T.mono(9, True), fill=T.MUTED,
-                      anchor="w", tags=tags)
-        c.create_line(pad + T.width("games that carry openxr's loader", T.mono(9, True)) + T.px(14), y,
-                      pad + w, y, fill=T.LINE, tags=tags)
+        c.create_text(
+            pad,
+            y,
+            text="games that carry openxr's loader",
+            font=T.mono(9, True),
+            fill=T.MUTED,
+            anchor="w",
+            tags=tags,
+        )
+        c.create_line(
+            pad
+            + T.width("games that carry openxr's loader", T.mono(9, True))
+            + T.px(14),
+            y,
+            pad + w,
+            y,
+            fill=T.LINE,
+            tags=tags,
+        )
         y += T.px(30)
         if self.found is None:
-            c.create_text(pad, y, text="reading the library..." if self.looking else "nothing read yet",
-                          font=T.mono(9), fill=T.DIM, anchor="w", tags=tags)
+            c.create_text(
+                pad,
+                y,
+                text="reading the library..." if self.looking else "nothing read yet",
+                font=T.mono(9),
+                fill=T.DIM,
+                anchor="w",
+                tags=tags,
+            )
             y += T.px(30)
         elif not self.found:
-            c.create_text(pad, y, text=T.fit(
-                "none of the games in the library ships openxr_loader.dll. That is not proof a game has no "
-                "VR mode - some load the runtime from the system - but it is the only evidence read from "
-                "disk, so nothing here is guessed.", T.mono(9), w), font=T.mono(9), fill=T.DIM,
-                anchor="w", tags=tags)
+            c.create_text(
+                pad,
+                y,
+                text=T.fit(
+                    "none of the games in the library ships openxr_loader.dll. That is not proof a game has no "
+                    "VR mode - some load the runtime from the system - but it is the only evidence read from "
+                    "disk, so nothing here is guessed.",
+                    T.mono(9),
+                    w,
+                ),
+                font=T.mono(9),
+                fill=T.DIM,
+                anchor="w",
+                tags=tags,
+            )
             y += T.px(36)
         else:
-            for g in (a.all_games or []):
+            for g in a.all_games or []:
                 hits = self.found.get(str(getattr(g, "install_dir", "")))
                 if not hits:
                     continue
-                tag, wid = k.link(pad, y, T.fit(g.name, T.mono(10), T.px(420)),
-                                  lambda gg=g: a.open_game(gg), glyph="game", colour=T.TEXT,
-                                  tags=tags, tip="open this game's page, where the VR box is")
-                c.create_text(pad + T.px(460), y, text=", ".join(hits), font=T.mono(9), fill=T.DIM,
-                              anchor="w", tags=tags)
+                tag, wid = k.link(
+                    pad,
+                    y,
+                    T.fit(g.name, T.mono(10), T.px(420)),
+                    lambda gg=g: a.open_game(gg),
+                    glyph="game",
+                    colour=T.TEXT,
+                    tags=tags,
+                    tip="open this game's page, where the VR box is",
+                )
+                c.create_text(
+                    pad + T.px(460),
+                    y,
+                    text=", ".join(hits),
+                    font=T.mono(9),
+                    fill=T.DIM,
+                    anchor="w",
+                    tags=tags,
+                )
                 y += T.px(30)
             y += T.px(10)
 
         # --- what is known and what is not
         y += T.px(10)
-        y = self._card(pad, y, w, "what is proven", "nothing, in a headset", T.WARN, (
-            "The layer registers and the files land where they should - that much runs here. Whether the "
-            "feeder, the bridge and the DLSS 5 add-on behave inside an OpenXR swapchain has never been "
-            "tried on a headset by the author: there is none on this machine. If you have one, install "
-            "with the VR box ticked and share the result - it is the one thing that would settle this, and "
-            "it lands in the shared results like every other report."))
-        row = [("read reshade's own notes on vr", RESHADE_XR), ("what this page is for", OUR_DOCS)]
+        y = self._card(
+            pad,
+            y,
+            w,
+            "what is proven",
+            "nothing, in a headset",
+            T.WARN,
+            (
+                "The layer registers and the files land where they should - that much runs here. Whether the "
+                "feeder, the bridge and the DLSS 5 add-on behave inside an OpenXR swapchain has never been "
+                "tried on a headset by the author: there is none on this machine. If you have one, install "
+                "with the VR box ticked and share the result - it is the one thing that would settle this, and "
+                "it lands in the shared results like every other report."
+            ),
+        )
+        row = [
+            ("read reshade's own notes on vr", RESHADE_XR),
+            ("what this page is for", OUR_DOCS),
+        ]
         x = pad
         for label, url in row:
-            tag, wid = k.link(x, y, label, lambda u=url: webbrowser.open(u), glyph="link", colour=T.AMBER,
-                              tags=tags)
+            tag, wid = k.link(
+                x,
+                y,
+                label,
+                lambda u=url: webbrowser.open(u),
+                glyph="link",
+                colour=T.AMBER,
+                tags=tags,
+            )
             x += wid + T.px(30)
         y += T.px(40)
         return y + T.px(40)
@@ -215,17 +331,43 @@ class VrPage(Page):
         so the background is the right height the first time."""
         c, tags = self.c, ("page",)
         text = " ".join(str(detail).split())
-        probe = c.create_text(0, -9999, text=text, font=T.mono(9), anchor="nw", width=w - T.px(40))
+        probe = c.create_text(
+            0, -9999, text=text, font=T.mono(9), anchor="nw", width=w - T.px(40)
+        )
         pbox = c.bbox(probe)
         c.delete(probe)
         body = (pbox[3] - pbox[1]) if pbox else T.px(40)
         bottom = y + T.px(52) + body + T.px(18)
         c.create_rectangle(x, y, x + w, bottom, fill=T.SURF, outline="", tags=tags)
-        c.create_rectangle(x, y, x + T.px(3), bottom, fill=colour, outline="", tags=tags)
-        c.create_text(x + T.px(20), y + T.px(26), text=head, font=T.mono(10, True), fill=T.TEXT,
-                      anchor="w", tags=tags)
-        c.create_text(x + T.px(20) + T.width(head, T.mono(10, True)) + T.px(20), y + T.px(26),
-                      text=state, font=T.mono(10), fill=colour, anchor="w", tags=tags)
-        c.create_text(x + T.px(20), y + T.px(44), text=text, font=T.mono(9), fill=T.MUTED,
-                      anchor="nw", width=w - T.px(40), tags=tags)
+        c.create_rectangle(
+            x, y, x + T.px(3), bottom, fill=colour, outline="", tags=tags
+        )
+        c.create_text(
+            x + T.px(20),
+            y + T.px(26),
+            text=head,
+            font=T.mono(10, True),
+            fill=T.TEXT,
+            anchor="w",
+            tags=tags,
+        )
+        c.create_text(
+            x + T.px(20) + T.width(head, T.mono(10, True)) + T.px(20),
+            y + T.px(26),
+            text=state,
+            font=T.mono(10),
+            fill=colour,
+            anchor="w",
+            tags=tags,
+        )
+        c.create_text(
+            x + T.px(20),
+            y + T.px(44),
+            text=text,
+            font=T.mono(9),
+            fill=T.MUTED,
+            anchor="nw",
+            width=w - T.px(40),
+            tags=tags,
+        )
         return bottom + T.px(16)

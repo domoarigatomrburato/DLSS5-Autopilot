@@ -21,6 +21,7 @@ _layer_state and _user_data_roots are patched by the suite and by the
 replay tools: patch them on `diagnose.model`, which is where they live
 and what the package reads.
 """
+
 from . import model, layer, evidence, process, helper, live, routes, body, chain  # noqa: F401
 
 # Everything the nine parts define, under this name, so every caller
@@ -32,7 +33,7 @@ from . import model, layer, evidence, process, helper, live, routes, body, chain
 PATCHED = ("STANDALONE_LOG", "_layer_state", "_user_data_roots")
 
 for _part in (model, layer, evidence, process, helper, live, routes, body, chain):
-    for _name in getattr(_part, '__all__', ()):
+    for _name in getattr(_part, "__all__", ()):
         if _name not in PATCHED:
             globals().setdefault(_name, getattr(_part, _name))
 del _part, _name

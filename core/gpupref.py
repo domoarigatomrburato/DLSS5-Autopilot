@@ -23,6 +23,7 @@ Rules, because this is written outside the game folder:
     token back out only while it still says 2. If the person has changed it
     since, it is theirs now.
 """
+
 from __future__ import annotations
 
 import functools
@@ -42,6 +43,7 @@ class _WinReg:
 
     def get(self, name: str) -> str | None:
         import winreg
+
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, KEY) as k:
                 value, kind = winreg.QueryValueEx(k, name)
@@ -51,15 +53,19 @@ class _WinReg:
 
     def set(self, name: str, value: str) -> None:
         import winreg
-        with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, KEY, 0,
-                                winreg.KEY_SET_VALUE) as k:
+
+        with winreg.CreateKeyEx(
+            winreg.HKEY_CURRENT_USER, KEY, 0, winreg.KEY_SET_VALUE
+        ) as k:
             winreg.SetValueEx(k, name, 0, winreg.REG_SZ, value)
 
     def delete(self, name: str) -> None:
         import winreg
+
         try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, KEY, 0,
-                                winreg.KEY_SET_VALUE) as k:
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, KEY, 0, winreg.KEY_SET_VALUE
+            ) as k:
                 winreg.DeleteValue(k, name)
         except FileNotFoundError:
             pass
@@ -87,6 +93,7 @@ backend = _WinReg()
 
 # ------------------------------------------------------------ the machine
 
+
 def _dxgi_vendors() -> list[int] | None:
     """PCI vendor ids of the hardware adapters DXGI lists, or None.
 
@@ -97,22 +104,35 @@ def _dxgi_vendors() -> list[int] | None:
         from ctypes import wintypes
 
         class GUID(ctypes.Structure):
-            _fields_ = [("a", ctypes.c_uint32), ("b", ctypes.c_uint16),
-                        ("c", ctypes.c_uint16), ("d", ctypes.c_ubyte * 8)]
+            _fields_ = [
+                ("a", ctypes.c_uint32),
+                ("b", ctypes.c_uint16),
+                ("c", ctypes.c_uint16),
+                ("d", ctypes.c_ubyte * 8),
+            ]
 
         class DESC1(ctypes.Structure):
-            _fields_ = [("Description", ctypes.c_wchar * 128),
-                        ("VendorId", wintypes.UINT), ("DeviceId", wintypes.UINT),
-                        ("SubSysId", wintypes.UINT), ("Revision", wintypes.UINT),
-                        ("DedicatedVideoMemory", ctypes.c_size_t),
-                        ("DedicatedSystemMemory", ctypes.c_size_t),
-                        ("SharedSystemMemory", ctypes.c_size_t),
-                        ("LuidLow", wintypes.DWORD), ("LuidHigh", wintypes.LONG),
-                        ("Flags", wintypes.UINT)]
+            _fields_ = [
+                ("Description", ctypes.c_wchar * 128),
+                ("VendorId", wintypes.UINT),
+                ("DeviceId", wintypes.UINT),
+                ("SubSysId", wintypes.UINT),
+                ("Revision", wintypes.UINT),
+                ("DedicatedVideoMemory", ctypes.c_size_t),
+                ("DedicatedSystemMemory", ctypes.c_size_t),
+                ("SharedSystemMemory", ctypes.c_size_t),
+                ("LuidLow", wintypes.DWORD),
+                ("LuidHigh", wintypes.LONG),
+                ("Flags", wintypes.UINT),
+            ]
 
         # IID_IDXGIFactory1 {770aae78-f26f-4dba-a829-253c83d1b387}
-        iid = GUID(0x770AAE78, 0xF26F, 0x4DBA,
-                   (ctypes.c_ubyte * 8)(0xA8, 0x29, 0x25, 0x3C, 0x83, 0xD1, 0xB3, 0x87))
+        iid = GUID(
+            0x770AAE78,
+            0xF26F,
+            0x4DBA,
+            (ctypes.c_ubyte * 8)(0xA8, 0x29, 0x25, 0x3C, 0x83, 0xD1, 0xB3, 0x87),
+        )
         dxgi = ctypes.WinDLL("dxgi")
         factory = ctypes.c_void_p()
         if dxgi.CreateDXGIFactory1(ctypes.byref(iid), ctypes.byref(factory)) != 0:
@@ -129,14 +149,19 @@ def _dxgi_vendors() -> list[int] | None:
             for i in range(16):
                 adapter = ctypes.c_void_p()
                 if enum1(factory, i, ctypes.byref(adapter)) != 0:
-                    break                    # DXGI_ERROR_NOT_FOUND: the end
+                    break  # DXGI_ERROR_NOT_FOUND: the end
                 try:
                     desc = DESC1()
-                    if method(adapter, 10, ctypes.POINTER(DESC1))(adapter, ctypes.byref(desc)) == 0:
-                        if not desc.Flags & 2:          # DXGI_ADAPTER_FLAG_SOFTWARE
+                    if (
+                        method(adapter, 10, ctypes.POINTER(DESC1))(
+                            adapter, ctypes.byref(desc)
+                        )
+                        == 0
+                    ):
+                        if not desc.Flags & 2:  # DXGI_ADAPTER_FLAG_SOFTWARE
                             vendors.append(int(desc.VendorId))
                 finally:
-                    method(adapter, 2)(adapter)         # Release
+                    method(adapter, 2)(adapter)  # Release
         finally:
             method(factory, 2)(factory)
         return vendors
@@ -147,6 +172,7 @@ def _dxgi_vendors() -> list[int] | None:
 def _registry_vendors() -> list[int]:
     """The same answer from adapter names, when DXGI cannot be asked."""
     from . import gpu
+
     out: list[int] = []
     for name in gpu._adapters():
         low = name.lower()
@@ -161,7 +187,7 @@ def _registry_vendors() -> list[int]:
 
 @functools.lru_cache(maxsize=1)
 def other_gpu() -> str:
-    """"Intel" / "AMD" when an NVIDIA card shares this machine with another
+    """ "Intel" / "AMD" when an NVIDIA card shares this machine with another
     GPU (a laptop, or a desktop with the processor's graphics on), else ""."""
     vendors = _dxgi_vendors()
     if vendors is None:
@@ -179,6 +205,7 @@ def hybrid() -> bool:
 
 
 # ------------------------------------------------------------ the value
+
 
 def _tokens(value: str | None) -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
@@ -223,12 +250,18 @@ def apply(exes, before=()) -> tuple[list[dict], list[str]]:
         path = str(exe)
         have = chosen(path)
         if have is not None:
-            old = next((r for r in before or () if isinstance(r, dict)
-                        and _same(r.get("exe", ""), path)), None)
+            old = next(
+                (
+                    r
+                    for r in before or ()
+                    if isinstance(r, dict) and _same(r.get("exe", ""), path)
+                ),
+                None,
+            )
             if have == HIGH and old is not None:
-                records.append(old)     # our own 2 from the last install
+                records.append(old)  # our own 2 from the last install
             else:
-                theirs.append(path)     # chosen by the person, or changed since
+                theirs.append(path)  # chosen by the person, or changed since
             continue
         was = backend.get(path)
         tokens = _tokens(was)
@@ -237,7 +270,7 @@ def apply(exes, before=()) -> tuple[list[dict], list[str]]:
         try:
             backend.set(path, wrote)
         except OSError:
-            continue                    # not written, so not recorded
+            continue  # not written, so not recorded
         records.append({"exe": path, "was": was, "wrote": wrote})
     return records, theirs
 

@@ -30,6 +30,7 @@ Once it says what it should, copy the log lines into a test in test_all.py.
 The reports are the only real inputs this project has; a rule that has never
 seen one is a guess.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,8 +46,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core import diagnose   # noqa: E402
-from core import remix     # noqa: E402
+from core import diagnose  # noqa: E402
+from core import remix  # noqa: E402
 
 # The report template's own headings, so a pasted issue can be taken apart.
 BLOCKS = {
@@ -73,8 +74,11 @@ def _blocks(text: str) -> dict:
     """Every ```-fenced block in the report, keyed by the heading above it."""
     out: dict = {}
     for name, key in BLOCKS.items():
-        m = re.search(r"\*\*" + re.escape(name) + r"[^\n]*\*\*\s*\n```[^\n]*\n(.*?)```",
-                      text, re.S)
+        m = re.search(
+            r"\*\*" + re.escape(name) + r"[^\n]*\*\*\s*\n```[^\n]*\n(.*?)```",
+            text,
+            re.S,
+        )
         if m and m.group(1).strip() not in ("(none)", ""):
             out[key] = m.group(1)
     return out
@@ -88,10 +92,19 @@ def _header(text: str) -> dict:
     from.
     """
     out = {}
-    for k in ("version", "gpu", "game", "exe", "arch/api", "route",
-              "work area", "bridge contract", "starts as administrator",
-              "compatibility flags",
-              "this tool"):
+    for k in (
+        "version",
+        "gpu",
+        "game",
+        "exe",
+        "arch/api",
+        "route",
+        "work area",
+        "bridge contract",
+        "starts as administrator",
+        "compatibility flags",
+        "this tool",
+    ):
         m = re.search(r"^- " + re.escape(k) + r":\s*(.+)$", text, re.M)
         if m:
             out[k] = m.group(1).strip()
@@ -130,12 +143,17 @@ def finished(text: str) -> dict:
     carries a traceback out of the installer (#97, #103).
     """
     said = printed_verdict(text)
-    extra = {"native_dlss": False} if re.search(
-        r"^- bridge contract: synthetic\s*$", text, re.M) else {}
+    extra = (
+        {"native_dlss": False}
+        if re.search(r"^- bridge contract: synthetic\s*$", text, re.M)
+        else {}
+    )
     if said:
         return {"complete": said not in UNFINISHED, **extra}
-    crashed = re.search(r"\*\*Last error\*\*(.*?)```", text, re.S) is not None \
+    crashed = (
+        re.search(r"\*\*Last error\*\*(.*?)```", text, re.S) is not None
         and "installer.py" in text
+    )
     return {"complete": not crashed, **extra}
 
 
@@ -148,8 +166,11 @@ def started(text: str) -> str:
 def presence(text: str) -> list[str]:
     """The report's "Files in the folder" lines, as printed."""
     m = re.search(r"\*\*Files in the folder\*\*\s*\n(.*?)(?:\n\*\*|\Z)", text, re.S)
-    return [ln.strip() for ln in m.group(1).splitlines()
-            if ln.strip().startswith("- ")] if m else []
+    return (
+        [ln.strip() for ln in m.group(1).splitlines() if ln.strip().startswith("- ")]
+        if m
+        else []
+    )
 
 
 def analyse(d: Path, text: str):
@@ -160,18 +181,26 @@ def analyse(d: Path, text: str):
     # A report does not print the install's kind; the video player's exe
     # does (core/video.PLAYER_EXE), hand-edited headers included (#325).
     from core import video as _video
-    kind = "video" if _video.PLAYER_EXE.lower() in \
-        _header(text).get("exe", "").lower() else "game"
+
+    kind = (
+        "video"
+        if _video.PLAYER_EXE.lower() in _header(text).get("exe", "").lower()
+        else "game"
+    )
     ev = re.search(r"^- windows event: (.+?) at [\d-]+ [\d:]+ UTC\s*$", text, re.M)
     if ev and not getattr(rep, "never_ran", False):
         # The window's correction of a "play once" verdict over a counted
         # fault (ctl_game.crash_overrides, #748). The event line is printed
         # only for a fault that counted, so this invents nothing.
         from core.ui.ctl_game import crashed_waiting, waiting_verdict
+
         if waiting_verdict(rep):
             rep.verdict = crashed_waiting(diagnose.event_module(ev.group(1)))
-            rep.findings = [f for f in rep.findings
-                            if "play once and check again" not in f"{f.title} {f.detail}"]
+            rep.findings = [
+                f
+                for f in rep.findings
+                if "play once and check again" not in f"{f.title} {f.detail}"
+            ]
     ref = re.search(r"^- DLL list: refused - (.+?)\s*$", text, re.M)
     ac = re.search(r"^- anti-cheat: (.+?)\s*$", text, re.M)
     acs = ac.group(1) if ac else ""
@@ -179,11 +208,18 @@ def analyse(d: Path, text: str):
         # Reports from before 2.1.1 carry no anti-cheat line; the live tool
         # finds one by the executable's name too (Endfield, HoYoverse, cod).
         from core import anticheat as _ac
+
         exe = Path(_header(text).get("exe", "") or "").name
         acs = (_ac.match(exe) or "") if exe else ""
-    return diagnose.answered(rep, started(text), presence(text), kind,
-                             ev.group(1).strip() if ev else "",
-                             ref.group(1) if ref else "", acs)
+    return diagnose.answered(
+        rep,
+        started(text),
+        presence(text),
+        kind,
+        ev.group(1).strip() if ev else "",
+        ref.group(1) if ref else "",
+        acs,
+    )
 
 
 _DXVK_LOG = re.compile(r"_(d3d8|d3d9|d3d10|d3d11|dxgi)\.log$", re.I)
@@ -220,12 +256,18 @@ def folder_state(text: str) -> dict | None:
     opti_tag = ""
     opti_build = ""
     no_record = False
-    remix: dict = {"trex": False, "files": {}, "flavour": "", "key": "",
-                   "key_set": False, "swapped": False,
-                   # The report's own finding that its Remix log was older
-                   # than the install (#211). The rebuilt log is written
-                   # now, so without this it replays as a fresh run.
-                   "stale": "The Remix log predates the current install" in text}
+    remix: dict = {
+        "trex": False,
+        "files": {},
+        "flavour": "",
+        "key": "",
+        "key_set": False,
+        "swapped": False,
+        # The report's own finding that its Remix log was older
+        # than the install (#211). The rebuilt log is written
+        # now, so without this it replays as a fresh run.
+        "stale": "The Remix log predates the current install" in text,
+    }
     for line in m.group(1).splitlines():
         line = line.strip()
         if not line.startswith("- ") or ":" not in line:
@@ -309,8 +351,9 @@ def folder_state(text: str) -> dict | None:
             # proves nothing about this install, and is dated that way.
             dxvk_logs[name] = "before the install" not in state
             continue
-        if name.lower().startswith(("reshade openxr", "reshade ",
-                                    "the game's own upscaler")):
+        if name.lower().startswith(
+            ("reshade openxr", "reshade ", "the game's own upscaler")
+        ):
             if "vulkan layer" in name.lower():
                 # "registered" / "NOT REGISTERED": the layer is a registry
                 # entry, so this line is the only place a replay can learn
@@ -321,16 +364,32 @@ def folder_state(text: str) -> dict | None:
                 named = named or "registered" in state.lower()
             continue
         files[name] = state.startswith("present") or state.startswith("not written")
-        if re.match(r"(dxgi|d3d9|d3d10|d3d11|d3d12|opengl32|winmm|version|"
-                    r"dinput8|nvngx)\.dll$", name, re.I) or ".addon" in name.lower():
+        if (
+            re.match(
+                r"(dxgi|d3d9|d3d10|d3d11|d3d12|opengl32|winmm|version|"
+                r"dinput8|nvngx)\.dll$",
+                name,
+                re.I,
+            )
+            or ".addon" in name.lower()
+        ):
             named = True
     if not files and not named:
         return None
-    proxy = next((n for n in files if re.match(
-        r"(dxgi|d3d9|d3d10|d3d11|d3d12|opengl32|winmm|version|dinput8)\.dll$",
-        n, re.I)), "")
+    proxy = next(
+        (
+            n
+            for n in files
+            if re.match(
+                r"(dxgi|d3d9|d3d10|d3d11|d3d12|opengl32|winmm|version|dinput8)\.dll$",
+                n,
+                re.I,
+            )
+        ),
+        "",
+    )
     if not proxy and (layer is not None or "(vulkan layer)" in files):
-        proxy = "(vulkan layer)"                  # diagnose.VULKAN_LAYER
+        proxy = "(vulkan layer)"  # diagnose.VULKAN_LAYER
         if layer is None:
             layer = files.get("(vulkan layer)", False)
         files.pop("(vulkan layer)", None)
@@ -339,28 +398,46 @@ def folder_state(text: str) -> dict | None:
     # not": that verdict is reached only with a fresh one beside the exe.
     # Named after the report's own exe and api - the same name the tool
     # looked for - rather than invented (#400).
-    if not dxvk_logs and printed_verdict(text).startswith("DXVK ran and ReShade did not"):
+    if not dxvk_logs and printed_verdict(text).startswith(
+        "DXVK ran and ReShade did not"
+    ):
         head = _header(text)
         stem = Path(head.get("exe", "") or "Game.exe").stem
         api = head.get("arch/api", "")
         kind = "d3d9" if "DX9" in api else "d3d8" if "DX8" in api else "d3d11"
         dxvk_logs[f"{stem}_{kind}.log"] = True
-    return {"files": files, "manifest": named and not no_record, "proxy": proxy, "layer": layer,
-            "dxvk_logs": dxvk_logs,
-            "remix": remix if (remix["trex"] or remix["key"]) else None,
-            "opti_tag": opti_tag, "opti_build": opti_build,
-            "addon_switch": files.pop("(addon switch)", None)}
+    return {
+        "files": files,
+        "manifest": named and not no_record,
+        "proxy": proxy,
+        "layer": layer,
+        "dxvk_logs": dxvk_logs,
+        "remix": remix if (remix["trex"] or remix["key"]) else None,
+        "opti_tag": opti_tag,
+        "opti_build": opti_build,
+        "addon_switch": files.pop("(addon switch)", None),
+    }
 
 
-def build(route: str, api: str, exe: str, logs: dict, bitness: int = 64,
-          extra_manifest: dict | None = None,
-          state: dict | None = None, work_area: str = "") -> Path:
+def build(
+    route: str,
+    api: str,
+    exe: str,
+    logs: dict,
+    bitness: int = 64,
+    extra_manifest: dict | None = None,
+    state: dict | None = None,
+    work_area: str = "",
+) -> Path:
     d = Path(tempfile.mkdtemp(prefix="replay_"))
     proxy = "dxgi.dll"
     files = [proxy] + (list(ADDONS) if route == "feeder" else [])
-    on_disk = files + ["ReShade.ini", "nvngx_dlssnr.dll",
-                       "reshade-shaders/Shaders/DLSS5_Feed.fx",
-                       "reshade-shaders/Shaders/lumenite_Kernel.fx"]
+    on_disk = files + [
+        "ReShade.ini",
+        "nvngx_dlssnr.dll",
+        "reshade-shaders/Shaders/DLSS5_Feed.fx",
+        "reshade-shaders/Shaders/lumenite_Kernel.fx",
+    ]
     write_manifest = True
     if state is not None:
         # The report's own list has the last word on both questions: which
@@ -375,13 +452,24 @@ def build(route: str, api: str, exe: str, logs: dict, bitness: int = 64,
         proxy = state["proxy"]
         files = sorted(set(state["files"]) | ({proxy} if proxy else set()))
         write_manifest = bool(state["manifest"])
-    man = {"version": 1, "complete": True, "exe": exe, "bitness": bitness,
-           "api": api, "proxy": proxy, "path": route, "files": files}
+    man = {
+        "version": 1,
+        "complete": True,
+        "exe": exe,
+        "bitness": bitness,
+        "api": api,
+        "proxy": proxy,
+        "path": route,
+        "files": files,
+    }
     # A D3D proxy name AND a registered ReShade Vulkan layer is the DXVK
     # shape: the install record says dxvk and the proxy is the layer. Read
     # as a plain d3d9.dll proxy, #238 replayed with "the proxy is reached".
-    if state is not None and state.get("layer") is not None \
-            and re.match(r"(d3d9|d3d10|d3d11|dxgi)\.dll$", proxy or "", re.I):
+    if (
+        state is not None
+        and state.get("layer") is not None
+        and re.match(r"(d3d9|d3d10|d3d11|dxgi)\.dll$", proxy or "", re.I)
+    ):
         man["dxvk"] = True
         man["proxy"] = diagnose.VULKAN_LAYER
     rx = (state or {}).get("remix")
@@ -408,7 +496,7 @@ def build(route: str, api: str, exe: str, logs: dict, bitness: int = 64,
         p = d / n
         p.write_text("info:  DXVK\n", encoding="utf8")
         if not fresh:
-            os.utime(p, (978307200, 978307200))      # 2001: before any install
+            os.utime(p, (978307200, 978307200))  # 2001: before any install
     sh = d / "reshade-shaders" / "Shaders"
     sh.mkdir(parents=True, exist_ok=True)
     # The add-on's own switch, as the report recorded it: the diagnosis
@@ -416,11 +504,16 @@ def build(route: str, api: str, exe: str, logs: dict, bitness: int = 64,
     switch = (state or {}).get("addon_switch")
     if switch is not None:
         from core import reshade_ini as _ini
+
         (d / "ReShade.ini").write_text(
-            f"[{_ini.ADDON_SECTION}]\n{_ini.ADDON_SWITCH}={switch}\n",
-            encoding="utf8")
-    for key, name in (("reshade", "ReShade.log"), ("feed", "dlss5-feed.log"),
-                      ("opti", "OptiScaler.log"), ("bridge", diagnose.BRIDGE_LOG)):
+            f"[{_ini.ADDON_SECTION}]\n{_ini.ADDON_SWITCH}={switch}\n", encoding="utf8"
+        )
+    for key, name in (
+        ("reshade", "ReShade.log"),
+        ("feed", "dlss5-feed.log"),
+        ("opti", "OptiScaler.log"),
+        ("bridge", diagnose.BRIDGE_LOG),
+    ):
         if logs.get(key):
             (d / name).write_text(logs[key], encoding="utf8")
     if logs.get("host"):
@@ -434,7 +527,7 @@ def build(route: str, api: str, exe: str, logs: dict, bitness: int = 64,
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(logs["remix"], encoding="utf8")
         if rx and rx.get("stale"):
-            os.utime(p, (978307200, 978307200))      # 2001: before any install
+            os.utime(p, (978307200, 978307200))  # 2001: before any install
     # The report prints no OptiScaler.ini line at all, and the install always
     # writes one with neural rendering and the log on (optiscaler.LOG_VALUES).
     # Without it the replay said "OptiScaler.ini is missing" (verdict_check)
@@ -443,7 +536,8 @@ def build(route: str, api: str, exe: str, logs: dict, bitness: int = 64,
     if route == "optiscaler" and not (d / "OptiScaler.ini").exists():
         (d / "OptiScaler.ini").write_text(
             "[DlssNr]\nEnabled=true\n\n[Log]\nLogToFile=true\nLogLevel=2\n",
-            encoding="utf8")
+            encoding="utf8",
+        )
     if work_area:
         digits = re.search(r"(\d+)", work_area)
         if digits:
@@ -459,13 +553,13 @@ def build(route: str, api: str, exe: str, logs: dict, bitness: int = 64,
                 (d / "OptiScaler.ini").write_text(
                     f"[DlssNr]\nEnabled=true\nWorkingScale={n / 100:.3f}\n\n"
                     f"[Log]\nLogToFile=true\nLogLevel=2\n",
-                    encoding="utf8")
+                    encoding="utf8",
+                )
             else:
                 cfg = d / "dlss5-feed.cfg"
                 was = cfg.read_text(encoding="utf8") if cfg.exists() else ""
                 if "work_resolution" not in was:
-                    cfg.write_text(was + f"work_resolution={n}\n",
-                                   encoding="utf8")
+                    cfg.write_text(was + f"work_resolution={n}\n", encoding="utf8")
     return d
 
 
@@ -530,8 +624,13 @@ def machine(text: str, d: Path):
         # The report said it was older than the install (#787): rebuilt now,
         # it would read as this launch's.
         man_ = d / "dlss5-autopilot.json"
-        if re.search(r"\*\*standalone-dlssnr\.log \(last written [^\n]*before this install",
-                     text) and man_.is_file():
+        if (
+            re.search(
+                r"\*\*standalone-dlssnr\.log \(last written [^\n]*before this install",
+                text,
+            )
+            and man_.is_file()
+        ):
             old = man_.stat().st_mtime - 3600
             os.utime(sa, (old, old))
     layer = (state or {}).get("layer")
@@ -540,6 +639,7 @@ def machine(text: str, d: Path):
     from core import gpu as _gpu
     from core import watch as _watch
     from core import vulkan as _vk
+
     # What the watcher saw on their machine, put where the diagnosis reads
     # it. The block was printed in every 1.9.0 report and the replay never
     # read it, so #238's "another dxgi.dll" answer could not be reproduced.
@@ -548,8 +648,11 @@ def machine(text: str, d: Path):
     rel = seen.pop("ran_from", "") if seen else ""
     if rel == "outside the game folder":
         # somewhere that is surely not the rebuilt folder, as it was live
-        seen["exe"] = os.path.join(os.path.splitdrive(str(d))[0] + os.sep,
-                                   "_outside_", seen.get("name") or "game.exe")
+        seen["exe"] = os.path.join(
+            os.path.splitdrive(str(d))[0] + os.sep,
+            "_outside_",
+            seen.get("name") or "game.exe",
+        )
     elif rel:
         seen["exe"] = os.path.normpath(str(d / rel))
     man_file = d / "dlss5-autopilot.json"
@@ -557,27 +660,29 @@ def machine(text: str, d: Path):
         # Installed two minutes before it was seen, so the record is read as
         # evidence about this install - on any day the replay is run.
         os.utime(man_file, (seen["at"] - 120, seen["at"] - 120))
-    rec_file.write_text(json.dumps(
-        {os.path.normcase(str(d)): seen} if seen else {}),
-        encoding="utf8")
+    rec_file.write_text(
+        json.dumps({os.path.normcase(str(d)): seen} if seen else {}), encoding="utf8"
+    )
     # How Windows started the game, as the report recorded it - never this
     # PC's registry, which knows nothing about their exe. A report from
     # before 2.0.5 carries neither line, which reads as "not elevated".
     from core import wincrash as _wc
+
     head = _header(text)
     flags = head.get("starts as administrator") or head.get("compatibility flags") or ""
     tool_admin = "administrator" in head.get("this tool", "")
-    with patch.object(diagnose.model, "STANDALONE_LOG", sa), \
-            patch.object(diagnose.chain, "_other_standalone", lambda _d: []), \
-            patch.object(_wc, "start_flags", lambda _exe: flags), \
-            patch.object(_wc, "elevated", lambda: tool_admin), \
-            patch.object(diagnose.model, "_layer_state", lambda man: reg), \
-            patch.object(_watch, "RECORD", rec_file), \
-            patch.object(_watch, "inspect", lambda *a, **k: []), \
-            patch.object(_vk, "name_clash", lambda: None), \
-            patch.object(_vk, "reaches_elevated", lambda x64: False), \
-            patch.object(_gpu, "driver_version",
-                         lambda: drv.group(1) if drv else None):
+    with (
+        patch.object(diagnose.model, "STANDALONE_LOG", sa),
+        patch.object(diagnose.chain, "_other_standalone", lambda _d: []),
+        patch.object(_wc, "start_flags", lambda _exe: flags),
+        patch.object(_wc, "elevated", lambda: tool_admin),
+        patch.object(diagnose.model, "_layer_state", lambda man: reg),
+        patch.object(_watch, "RECORD", rec_file),
+        patch.object(_watch, "inspect", lambda *a, **k: []),
+        patch.object(_vk, "name_clash", lambda: None),
+        patch.object(_vk, "reaches_elevated", lambda x64: False),
+        patch.object(_gpu, "driver_version", lambda: drv.group(1) if drv else None),
+    ):
         yield
 
 
@@ -588,27 +693,37 @@ def _seen_at(text: str) -> float:
     on every run, and verdict_check reads that as a changed answer.
     """
     from datetime import datetime
+
     m = re.search(r"\(seen at (\d{1,2} \w{3} \d{2}:\d{2})\)", text)
     y = re.search(r"^(20\d\d)-\d\d-\d\d \d\d:\d\d", text, re.M)
     try:
-        return datetime.strptime(f"{m.group(1)} {y.group(1) if y else 2026}",
-                                 "%d %b %H:%M %Y").timestamp()
+        return datetime.strptime(
+            f"{m.group(1)} {y.group(1) if y else 2026}", "%d %b %H:%M %Y"
+        ).timestamp()
     except (AttributeError, ValueError):
         return datetime(2026, 1, 1).timestamp()
 
 
 def sighting(text: str) -> dict:
     """The report's "What ran, and what it loaded" block, as a record."""
-    m = re.search(r"\*\*What ran, and what it loaded\*\*[^\n]*\n(.*?)(?:\n\s*\n|\Z)",
-                  text, re.S)
+    m = re.search(
+        r"\*\*What ran, and what it loaded\*\*[^\n]*\n(.*?)(?:\n\s*\n|\Z)", text, re.S
+    )
     if not m:
         return {}
-    rec = {"at": _seen_at(text), "exe": "", "name": "", "refused": "", "modules": 0,
-           "ours": [], "elsewhere": [], "missing": []}
+    rec = {
+        "at": _seen_at(text),
+        "exe": "",
+        "name": "",
+        "refused": "",
+        "modules": 0,
+        "ours": [],
+        "elsewhere": [],
+        "missing": [],
+    }
 
     def names(v):
-        return [x.strip() for x in v.split(",")
-                if x.strip() and x.strip() != "none"]
+        return [x.strip() for x in v.split(",") if x.strip() and x.strip() != "none"]
 
     for line in m.group(1).splitlines():
         key, _, val = line.strip().lstrip("- ").partition(":")
@@ -646,7 +761,9 @@ def show(d: Path, label: str, text: str = "") -> None:
     for f in rep.findings:
         print(f"    [{f.level:4}] {f.title}")
         if f.detail:
-            print(f"           {f.detail[:int(os.environ.get('REPLAY_WIDTH', '150'))]}")
+            print(
+                f"           {f.detail[: int(os.environ.get('REPLAY_WIDTH', '150'))]}"
+            )
 
 
 def main() -> int:
@@ -676,10 +793,16 @@ def main() -> int:
                 api = m.group(1)
             if "32-bit" in head["arch/api"]:
                 a.bitness = 32
-        print("report header:", ", ".join(f"{k}={v}" for k, v in head.items()) or "(none)")
+        print(
+            "report header:", ", ".join(f"{k}={v}" for k, v in head.items()) or "(none)"
+        )
         print("log blocks found:", ", ".join(logs) or "(none)")
-    for key, path in (("reshade", a.reshade), ("feed", a.feed), ("opti", a.opti),
-                      ("bridge", a.bridge)):
+    for key, path in (
+        ("reshade", a.reshade),
+        ("feed", a.feed),
+        ("opti", a.opti),
+        ("bridge", a.bridge),
+    ):
         if path:
             logs[key] = Path(path).read_text(encoding="utf8", errors="replace")
     if not logs and state is None:
@@ -687,19 +810,30 @@ def main() -> int:
         return 2
     if state is not None:
         gone = [n for n, there in state["files"].items() if not there]
-        print(f"folder: {len(state['files']) - len(gone)} file(s) present"
-              + (f", gone: {', '.join(gone)}" if gone else "")
-              + ("" if state["manifest"] else ", NO install record"))
+        print(
+            f"folder: {len(state['files']) - len(gone)} file(s) present"
+            + (f", gone: {', '.join(gone)}" if gone else "")
+            + ("" if state["manifest"] else ", NO install record")
+        )
 
     # The same folder verdict_check builds, including whether the install
     # record said "finished" - without it a report whose install died
     # replayed one way here and another way in the corpus measurement.
-    d = build(route, api, exe, logs, a.bitness, state=state,
-              extra_manifest=finished(text) if a.report else None,
-              work_area=(_header(text).get("work area", "") if a.report
-                         else ""))
-    show(d, f"issue #{a.issue}  route={route}  api={api}  exe={exe}",
-         text if a.report else "")
+    d = build(
+        route,
+        api,
+        exe,
+        logs,
+        a.bitness,
+        state=state,
+        extra_manifest=finished(text) if a.report else None,
+        work_area=(_header(text).get("work area", "") if a.report else ""),
+    )
+    show(
+        d,
+        f"issue #{a.issue}  route={route}  api={api}  exe={exe}",
+        text if a.report else "",
+    )
     if a.keep:
         print(f"\nfolder kept: {d}")
     else:

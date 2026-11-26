@@ -1,4 +1,5 @@
 """Offline scan regressions: python -m unittest -v test_scan."""
+
 import json
 import queue
 import struct
@@ -10,9 +11,11 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from core import dlss, games, installer, library, log, net, pe, prefs, watch
+
 # Installs here run for real and this machine may have two GPUs: Windows'
 # graphics preference goes to a dict, never the machine's own HKCU.
 from core import gpupref as _gpupref  # noqa: E402
+
 _gpupref.backend = _gpupref.Memory()
 # ...and runs as a one-GPU machine, whatever this one has: a check that
 # needs two GPUs says so itself.
@@ -47,8 +50,11 @@ class ScanTests(unittest.TestCase):
             folder = self.root / name
             folder.mkdir()
             (folder / "Game.exe").touch()
-            data = {"DisplayName": name, "InstallLocation": str(folder),
-                    "LaunchExecutable": "Game.exe"}
+            data = {
+                "DisplayName": name,
+                "InstallLocation": str(folder),
+                "LaunchExecutable": "Game.exe",
+            }
             if application is not None:
                 data.update(bIsApplication=application, bIsExecutable=executable)
             (manifests / f"{i}.item").write_text(json.dumps(data), encoding="utf8")
@@ -69,14 +75,17 @@ class ScanTests(unittest.TestCase):
         common = apps / "common"
         common.mkdir(parents=True)
         (apps / "appmanifest_1.acf").write_text(
-            '"AppState"{"name" "Real Game" "installdir" "RealGame" '
-            '"StateFlags" "4"}', encoding="utf8")
+            '"AppState"{"name" "Real Game" "installdir" "RealGame" "StateFlags" "4"}',
+            encoding="utf8",
+        )
         # Queued or still downloading: Steam writes the manifest and creates
         # the folder before there is anything in it (Battlefield 6 sat in
         # the list as an empty folder with StateFlags 1042).
         (apps / "appmanifest_2.acf").write_text(
             '"AppState"{"name" "Downloading Game" "installdir" "Downloading" '
-            '"StateFlags" "1042"}', encoding="utf8")
+            '"StateFlags" "1042"}',
+            encoding="utf8",
+        )
         (common / "Downloading").mkdir()
         (common / "RealGame").mkdir()
         (common / "RealGame" / "RealGame.exe").write_bytes(b"MZ")
@@ -91,7 +100,10 @@ class ScanTests(unittest.TestCase):
         ours.mkdir()
         (ours / "dlss5-autopilot.json").write_text("{}", encoding="utf8")
 
-        with patch.object(games, "_steam_root", return_value=lib),                 patch.object(games, "_steam_libraries", return_value=[lib]):
+        with (
+            patch.object(games, "_steam_root", return_value=lib),
+            patch.object(games, "_steam_libraries", return_value=[lib]),
+        ):
             found = {g.name: g for g in games.scan_steam()}
 
         self.assertIn("Real Game", found)
@@ -114,23 +126,49 @@ class ScanTests(unittest.TestCase):
         found = [games.Game(f"Game {i}", self.root / str(i)) for i in range(1, 98)]
         messages = []
         with ExitStack() as stack:
-            for name in ("steam", "epic", "gog", "ea", "ubisoft", "battlenet",
-                         "rockstar", "amazon", "itch", "heroic", "xbox", "folders",
-                         "emulators"):
-                stack.enter_context(patch.object(
-                    games, f"scan_{name}", return_value=found if name == "steam" else []))
-            enrich = stack.enter_context(patch.object(games, "enrich", side_effect=lambda g: g))
+            for name in (
+                "steam",
+                "epic",
+                "gog",
+                "ea",
+                "ubisoft",
+                "battlenet",
+                "rockstar",
+                "amazon",
+                "itch",
+                "heroic",
+                "xbox",
+                "folders",
+                "emulators",
+            ):
+                stack.enter_context(
+                    patch.object(
+                        games,
+                        f"scan_{name}",
+                        return_value=found if name == "steam" else [],
+                    )
+                )
+            enrich = stack.enter_context(
+                patch.object(games, "enrich", side_effect=lambda g: g)
+            )
             result = games.scan_all(messages.append)
         self.assertEqual(len(result), 97)
         self.assertEqual(enrich.call_count, 97)
         inspecting = [m for m in messages if m.startswith("Inspecting games")]
         self.assertEqual(len(inspecting), 97)
-        self.assertEqual(inspecting[-2:], ["Inspecting games... 96/97: Game 96",
-                                          "Inspecting games... 97/97: Game 97"])
+        self.assertEqual(
+            inspecting[-2:],
+            [
+                "Inspecting games... 96/97: Game 96",
+                "Inspecting games... 97/97: Game 97",
+            ],
+        )
 
     def test_runtime_walk_keeps_nested_evidence_and_excludes_our_runtime(self):
         (self.root / "nvngx_dlss.dll").touch()
-        engine = self.root / "Engine/Plugins/Runtime/Nvidia/DLSS/Binaries/ThirdParty/Win64"
+        engine = (
+            self.root / "Engine/Plugins/Runtime/Nvidia/DLSS/Binaries/ThirdParty/Win64"
+        )
         engine.mkdir(parents=True)
         runtime = engine / "NVNGX_DLSS.DLL"
         runtime.touch()
@@ -157,30 +195,44 @@ class ScanTests(unittest.TestCase):
                 visited.append(i)
                 yield str(self.root / str(i)), [], []
 
-        with patch("os.walk", side_effect=wide_tree), patch.object(dlss, "_WALK_DIRS", 3):
+        with (
+            patch("os.walk", side_effect=wide_tree),
+            patch.object(dlss, "_WALK_DIRS", 3),
+        ):
             self.assertEqual(dlss.find_dlss_files(self.root), [])
         self.assertEqual(len(visited), 4)
         self.assertIn("search budget reached", self.logs.call_args.args[0])
 
     def test_runtime_deadline_applies_even_when_install_folder_is_skipped(self):
-        tree = [(str(self.root), ["bin"], []),
-                (str(self.root / "bin"), [], ["nvngx_dlss.dll"])]
-        with patch("os.walk", return_value=iter(tree)), \
-                patch.object(dlss.time, "monotonic", side_effect=[0, 0, 10]):
+        tree = [
+            (str(self.root), ["bin"], []),
+            (str(self.root / "bin"), [], ["nvngx_dlss.dll"]),
+        ]
+        with (
+            patch("os.walk", return_value=iter(tree)),
+            patch.object(dlss.time, "monotonic", side_effect=[0, 0, 10]),
+        ):
             self.assertEqual(dlss.find_dlss_files(self.root, skip_dir=self.root), [])
         self.assertIn("search budget reached", self.logs.call_args.args[0])
 
     def test_runtime_budget_keeps_evidence_already_found(self):
-        tree = [(str(self.root), [], ["nvngx_dlss.dll"]),
-                (str(self.root / "bin"), [], ["nvngx_dlssg.dll"])]
-        with patch("os.walk", return_value=iter(tree)), patch.object(dlss, "_WALK_DIRS", 1):
+        tree = [
+            (str(self.root), [], ["nvngx_dlss.dll"]),
+            (str(self.root / "bin"), [], ["nvngx_dlssg.dll"]),
+        ]
+        with (
+            patch("os.walk", return_value=iter(tree)),
+            patch.object(dlss, "_WALK_DIRS", 1),
+        ):
             self.assertEqual(dlss.find_dlss_files(self.root), ["nvngx_dlss.dll"])
 
     def test_runtime_walk_resolves_roots_only(self):
         for i in range(10):
             (self.root / str(i)).mkdir()
         resolve = Path.resolve
-        with patch.object(Path, "resolve", autospec=True, side_effect=resolve) as resolved:
+        with patch.object(
+            Path, "resolve", autospec=True, side_effect=resolve
+        ) as resolved:
             dlss.find_dlss_files(self.root, skip_dir=self.root)
         self.assertEqual(resolved.call_count, 2)
 
@@ -211,8 +263,9 @@ class ScanTests(unittest.TestCase):
 
     def test_scan_checks_compatibility_off_ui_thread_and_renders_cached_rows(self):
         app = self.make_app()
-        game = games.Game("Game", self.root, exe=self.root / "Game.exe",
-                          bitness=64, api="DX12")
+        game = games.Game(
+            "Game", self.root, exe=self.root / "Game.exe", bitness=64, api="DX12"
+        )
         entered, release = threading.Event(), threading.Event()
         ui_thread = threading.get_ident()
         worker_ids = []
@@ -236,8 +289,14 @@ class ScanTests(unittest.TestCase):
 
         with ExitStack() as stack:
             stack.enter_context(patch.object(games, "scan_all", return_value=[game]))
-            stack.enter_context(patch.object(ctl_library.threading, "Thread", side_effect=thread_factory))
-            detect = stack.enter_context(patch.object(dlss, "detect", side_effect=slow_detect))
+            stack.enter_context(
+                patch.object(
+                    ctl_library.threading, "Thread", side_effect=thread_factory
+                )
+            )
+            detect = stack.enter_context(
+                patch.object(dlss, "detect", side_effect=slow_detect)
+            )
             try:
                 app.scan(full=True)
                 self.assertTrue(entered.wait(2))
@@ -269,8 +328,9 @@ class ScanTests(unittest.TestCase):
         app.shell.busy.assert_called_with("")
 
     def test_unreadable_games_do_not_trigger_another_folder_search(self):
-        g = games.Game("Locked game", self.root, exe=self.root / "Game.exe",
-                       error=games.XBOX_HINT)
+        g = games.Game(
+            "Locked game", self.root, exe=self.root / "Game.exe", error=games.XBOX_HINT
+        )
         with patch.object(dlss, "detect") as detect:
             row = LibraryControl.inspect_row(g, 120)
         detect.assert_not_called()
@@ -280,16 +340,20 @@ class ScanTests(unittest.TestCase):
     def test_row_failure_does_not_discard_other_scan_results_or_manual_games(self):
         app = self.make_app()
         bad = games.Game("Unreadable", self.root, exe=self.root / "Bad.exe", bitness=64)
-        manual = games.Game("Chosen folder", self.root / "manual", exe=self.root / "manual/Game.exe")
+        manual = games.Game(
+            "Chosen folder", self.root / "manual", exe=self.root / "manual/Game.exe"
+        )
         app.all_games = [manual]
-        with patch.object(dlss, "detect", side_effect=OSError("drive removed")), \
-                patch.object(log, "exception"):
+        with (
+            patch.object(dlss, "detect", side_effect=OSError("drive removed")),
+            patch.object(log, "exception"),
+        ):
             failed_row = LibraryControl.inspect_row(bad, 120)
         self.assertIs(failed_row, False)
         app.q.put(("scanned", ([bad], {(str(bad.folder), str(bad.exe)): failed_row})))
         app._pump()
         self.assertEqual(app.all_games, [manual, bad])
-        app._read_rows = Mock()      # the manual game's row would be read on a worker
+        app._read_rows = Mock()  # the manual game's row would be read on a worker
         self.assertEqual(app.visible(), [manual, bad])
         self.assertEqual(app.card(bad)["status"], "unreadable")
         self.assertEqual(app.card(manual)["status"], "reading...")
@@ -309,15 +373,21 @@ class ProtectedXboxTests(unittest.TestCase):
         # A real minimal x64 COFF header, not a mocked architecture result.
         data = bytearray(128)
         data[:2] = b"MZ"
-        struct.pack_into("<I", data, 0x3c, 64)
+        struct.pack_into("<I", data, 0x3C, 64)
         data[64:70] = b"PE\0\0" + struct.pack("<H", pe.PE_X64)
         self.exe.write_bytes(data)
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
-        self.stack.enter_context(patch.object(prefs, "FILE", self.root / "settings.json"))
-        self.stack.enter_context(patch.object(library, "FILE", self.root / "library.json"))
+        self.stack.enter_context(
+            patch.object(prefs, "FILE", self.root / "settings.json")
+        )
+        self.stack.enter_context(
+            patch.object(library, "FILE", self.root / "library.json")
+        )
         self.stack.enter_context(patch.object(log, "write"))
-        self.stack.enter_context(patch.object(installer, "_running_processes", return_value=set()))
+        self.stack.enter_context(
+            patch.object(installer, "_running_processes", return_value=set())
+        )
 
     def protect(self):
         read = open
@@ -355,12 +425,16 @@ class ProtectedXboxTests(unittest.TestCase):
         self.assertIn("'graphics api'", why)
         games.set_bitness_override(self.folder, 64)
         games.enrich(g)
-        self.assertFalse(installer.check_supported(g)[0], "unknown API must not be assumed")
+        self.assertFalse(
+            installer.check_supported(g)[0], "unknown API must not be assumed"
+        )
         games.set_api_override(self.folder, "DX12")
         games.enrich(g)
         self.assertEqual((g.bitness, g.api), (64, "DX12"))
         self.assertTrue(installer.check_supported(g)[0])
-        self.assertIn(games.XBOX_EXE_CHOSEN, installer.preview(g, installer.Options()).warnings)
+        self.assertIn(
+            games.XBOX_EXE_CHOSEN, installer.preview(g, installer.Options()).warnings
+        )
 
     def test_api_detection_can_use_adjacent_files(self):
         self.protect()
@@ -388,10 +462,15 @@ class ProtectedXboxTests(unittest.TestCase):
         games.set_api_override(self.folder, "DX12")
         g = games.manual(self.folder)
         before = set(self.folder.iterdir())
-        with patch.object(installer.tempfile, "NamedTemporaryFile",
-                          side_effect=PermissionError(13, "Permission denied")):
-            for action in (lambda: installer.preflight(g),
-                           lambda: installer.install(g, installer.Options())):
+        with patch.object(
+            installer.tempfile,
+            "NamedTemporaryFile",
+            side_effect=PermissionError(13, "Permission denied"),
+        ):
+            for action in (
+                lambda: installer.preflight(g),
+                lambda: installer.install(g, installer.Options()),
+            ):
                 with self.assertRaises(installer.InstallError) as cm:
                     action()
                 self.assertIn(str(g.install_dir), str(cm.exception))
@@ -466,16 +545,25 @@ class ProtectedXboxTests(unittest.TestCase):
         gets past it, and clearing a choice locks it again (#157)."""
         import time
         import tkinter as tk
+
         self.protect()
-        self.stack.enter_context(patch.object(watch, "RECORD", self.root / "sightings.json"))
+        self.stack.enter_context(
+            patch.object(watch, "RECORD", self.root / "sightings.json")
+        )
         self.stack.enter_context(patch.object(log, "FILE", self.root / "autopilot.log"))
         self.stack.enter_context(patch.object(log, "exception"))
         self.stack.enter_context(patch.object(net, "CACHE", self.root / "cache"))
-        self.stack.enter_context(patch("urllib.request.urlopen", side_effect=OSError("offline test")))
+        self.stack.enter_context(
+            patch("urllib.request.urlopen", side_effect=OSError("offline test"))
+        )
         self.stack.enter_context(patch("webbrowser.open"))
-        for owner, name in ((uiapp.App, "check_update"), (LibraryControl, "load_board"),
-                            (LibraryControl, "load_shared"), (GameControl, "load_catalog"),
-                            (Lookout, "start")):
+        for owner, name in (
+            (uiapp.App, "check_update"),
+            (LibraryControl, "load_board"),
+            (LibraryControl, "load_shared"),
+            (GameControl, "load_catalog"),
+            (Lookout, "start"),
+        ):
             self.stack.enter_context(patch.object(owner, name, lambda *_a, **_k: None))
         made = []
         real_button = kit.Kit.button
@@ -484,16 +572,22 @@ class ProtectedXboxTests(unittest.TestCase):
             b = real_button(k, *a, **kw)
             made.append(b)
             return b
+
         self.stack.enter_context(patch.object(kit.Kit, "button", record_button))
-        install = self.stack.enter_context(patch.object(
-            installer, "install", side_effect=installer.InstallError("the test stops here")))
+        install = self.stack.enter_context(
+            patch.object(
+                installer,
+                "install",
+                side_effect=installer.InstallError("the test stops here"),
+            )
+        )
 
         root = tk.Tk()
         self.addCleanup(root.destroy)
         failures = []
         root.report_callback_exception = lambda *args: failures.append(args)
         try:
-            root.attributes("-alpha", 0.0)      # mapped, so events land, but not shown
+            root.attributes("-alpha", 0.0)  # mapped, so events land, but not shown
         except tk.TclError:
             pass
         app = uiapp.App(root)
@@ -538,10 +632,15 @@ class ProtectedXboxTests(unittest.TestCase):
             self.assertIsNotNone(tag, f"no '{label}' dropdown on the page")
             click(tag)
             menu = k.top()
-            self.assertTrue(menu is not None and menu.tag.startswith("menu"), f"'{label}' opened no menu")
+            self.assertTrue(
+                menu is not None and menu.tag.startswith("menu"),
+                f"'{label}' opened no menu",
+            )
             click(f"{menu.tag}r{index}")
-            self.assertTrue(until(lambda: not app.entering and app.support is not None),
-                            "the game was not read again after the choice")
+            self.assertTrue(
+                until(lambda: not app.entering and app.support is not None),
+                "the game was not read again after the choice",
+            )
             pump(0.2)
 
         def locked():
@@ -560,7 +659,9 @@ class ProtectedXboxTests(unittest.TestCase):
         self.assertEqual(shell.page.name, "game")
         self.assertTrue(until(lambda: not app.entering and app.support is not None))
         pump(0.3)
-        self.assertTrue(app.game_page.settings_open, "the settings did not open for the choices")
+        self.assertTrue(
+            app.game_page.settings_open, "the settings did not open for the choices"
+        )
         self.assertIsNotNone(k.find("architecture", "dropdown"))
         self.assertIsNotNone(k.find("graphics api", "dropdown"))
         self.assertTrue(locked(), "install is possible before anything was chosen")
@@ -574,8 +675,11 @@ class ProtectedXboxTests(unittest.TestCase):
         pump(0.2)
         tag, _b = button("install")
         box = c.bbox(tag)
-        x, y = int((box[0] + box[2]) / 2 - c.canvasx(0)), int((box[1] + box[3]) / 2 - c.canvasy(0))
-        for _ in range(2):          # a double click is two presses in a row
+        x, y = (
+            int((box[0] + box[2]) / 2 - c.canvasx(0)),
+            int((box[1] + box[3]) / 2 - c.canvasy(0)),
+        )
+        for _ in range(2):  # a double click is two presses in a row
             c.event_generate("<Button-1>", x=x, y=y, when="now")
             c.event_generate("<ButtonRelease-1>", x=x, y=y, when="now")
         for keysym in ("Return", "space", "KP_Enter"):
@@ -586,15 +690,17 @@ class ProtectedXboxTests(unittest.TestCase):
         self.assertFalse(app.busy)
         self.assertEqual(app.action, "")
 
-        choose("architecture", 1)                       # 64-bit
+        choose("architecture", 1)  # 64-bit
         self.assertEqual(g.bitness, 64)
         self.assertTrue(locked(), "one choice of two unlocked the install")
         choose("graphics api", games.APIS.index("DX12") + 1)
         self.assertEqual(g.api, "DX12")
         self.assertTrue(installer.check_supported(g)[0])
         tag, b = button("install")
-        self.assertTrue(b is not None and b.enabled and app.entry["ok"][0],
-                        "both chosen and install is still disabled")
+        self.assertTrue(
+            b is not None and b.enabled and app.entry["ok"][0],
+            "both chosen and install is still disabled",
+        )
         self.assertTrue(until(lambda: app.card(g)["kind"] != "reading"))
         self.assertEqual(app.card(g)["kind"], "ready")
         self.assertNotEqual(app.card(g)["status"], "choose architecture / api")
@@ -602,7 +708,7 @@ class ProtectedXboxTests(unittest.TestCase):
         self.assertTrue(until(lambda: install.call_count == 1 and not app.busy))
         pump(0.2)
 
-        choose("architecture", 0)                       # not set
+        choose("architecture", 0)  # not set
         self.assertIsNone(g.bitness)
         self.assertTrue(locked(), "clearing a choice left install enabled")
         tag, _b = button("install")

@@ -7,6 +7,7 @@ the application turns into a queue message for the Tk thread. Balloons are
 the system's own notifications - they appear over a full-screen game the
 way any other does, and Windows' focus assist decides when.
 """
+
 from __future__ import annotations
 
 import ctypes
@@ -33,18 +34,38 @@ WNDPROC = ctypes.WINFUNCTYPE(LRESULT, w.HWND, w.UINT, w.WPARAM, w.LPARAM)
 
 
 class NOTIFYICONDATAW(ctypes.Structure):
-    _fields_ = [("cbSize", w.DWORD), ("hWnd", w.HWND), ("uID", w.UINT), ("uFlags", w.UINT),
-                ("uCallbackMessage", w.UINT), ("hIcon", w.HICON), ("szTip", w.WCHAR * 128),
-                ("dwState", w.DWORD), ("dwStateMask", w.DWORD), ("szInfo", w.WCHAR * 256),
-                ("uVersion", w.UINT), ("szInfoTitle", w.WCHAR * 64), ("dwInfoFlags", w.DWORD),
-                ("guidItem", ctypes.c_byte * 16), ("hBalloonIcon", w.HICON)]
+    _fields_ = [
+        ("cbSize", w.DWORD),
+        ("hWnd", w.HWND),
+        ("uID", w.UINT),
+        ("uFlags", w.UINT),
+        ("uCallbackMessage", w.UINT),
+        ("hIcon", w.HICON),
+        ("szTip", w.WCHAR * 128),
+        ("dwState", w.DWORD),
+        ("dwStateMask", w.DWORD),
+        ("szInfo", w.WCHAR * 256),
+        ("uVersion", w.UINT),
+        ("szInfoTitle", w.WCHAR * 64),
+        ("dwInfoFlags", w.DWORD),
+        ("guidItem", ctypes.c_byte * 16),
+        ("hBalloonIcon", w.HICON),
+    ]
 
 
 class WNDCLASSW(ctypes.Structure):
-    _fields_ = [("style", w.UINT), ("lpfnWndProc", WNDPROC), ("cbClsExtra", ctypes.c_int),
-                ("cbWndExtra", ctypes.c_int), ("hInstance", w.HINSTANCE), ("hIcon", w.HICON),
-                ("hCursor", w.HANDLE), ("hbrBackground", w.HBRUSH), ("lpszMenuName", w.LPCWSTR),
-                ("lpszClassName", w.LPCWSTR)]
+    _fields_ = [
+        ("style", w.UINT),
+        ("lpfnWndProc", WNDPROC),
+        ("cbClsExtra", ctypes.c_int),
+        ("cbWndExtra", ctypes.c_int),
+        ("hInstance", w.HINSTANCE),
+        ("hIcon", w.HICON),
+        ("hCursor", w.HANDLE),
+        ("hbrBackground", w.HBRUSH),
+        ("lpszMenuName", w.LPCWSTR),
+        ("lpszClassName", w.LPCWSTR),
+    ]
 
 
 class Tray:
@@ -59,7 +80,9 @@ class Tray:
     def show(self) -> bool:
         if self._thread is not None and self._thread.is_alive():
             return True
-        self._thread = threading.Thread(target=self._run, name="dlss5-tray", daemon=True)
+        self._thread = threading.Thread(
+            target=self._run, name="dlss5-tray", daemon=True
+        )
         self._thread.start()
         return self._ready.wait(3.0) and self.hwnd is not None
 
@@ -95,13 +118,39 @@ class Tray:
         user32.DefWindowProcW.restype = LRESULT
         user32.DefWindowProcW.argtypes = [w.HWND, w.UINT, w.WPARAM, w.LPARAM]
         user32.CreateWindowExW.restype = w.HWND
-        user32.CreateWindowExW.argtypes = [w.DWORD, w.LPCWSTR, w.LPCWSTR, w.DWORD, ctypes.c_int, ctypes.c_int,
-                                           ctypes.c_int, ctypes.c_int, w.HWND, w.HMENU, w.HINSTANCE, w.LPVOID]
+        user32.CreateWindowExW.argtypes = [
+            w.DWORD,
+            w.LPCWSTR,
+            w.LPCWSTR,
+            w.DWORD,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            w.HWND,
+            w.HMENU,
+            w.HINSTANCE,
+            w.LPVOID,
+        ]
         user32.LoadImageW.restype = w.HANDLE
-        user32.LoadImageW.argtypes = [w.HINSTANCE, w.LPCWSTR, w.UINT, ctypes.c_int, ctypes.c_int, w.UINT]
+        user32.LoadImageW.argtypes = [
+            w.HINSTANCE,
+            w.LPCWSTR,
+            w.UINT,
+            ctypes.c_int,
+            ctypes.c_int,
+            w.UINT,
+        ]
         user32.CreatePopupMenu.restype = w.HMENU
-        user32.TrackPopupMenu.argtypes = [w.HMENU, w.UINT, ctypes.c_int, ctypes.c_int, ctypes.c_int, w.HWND,
-                                          w.LPVOID]
+        user32.TrackPopupMenu.argtypes = [
+            w.HMENU,
+            w.UINT,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            w.HWND,
+            w.LPVOID,
+        ]
         user32.GetCursorPos.argtypes = [ctypes.POINTER(w.POINT)]
         user32.AppendMenuW.argtypes = [w.HMENU, w.UINT, ctypes.c_size_t, w.LPCWSTR]
         user32.DestroyMenu.argtypes = [w.HMENU]
@@ -131,19 +180,22 @@ class Tray:
                 return 0
             return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
 
-        self._proc = WNDPROC(proc)         # kept alive as long as the window
+        self._proc = WNDPROC(proc)  # kept alive as long as the window
         hinst = kernel32.GetModuleHandleW(None)
         wc = WNDCLASSW()
         wc.lpfnWndProc = self._proc
         wc.hInstance = hinst
         wc.lpszClassName = "dlss5AutopilotTray"
         user32.RegisterClassW(ctypes.byref(wc))
-        self.hwnd = user32.CreateWindowExW(0, wc.lpszClassName, "dlss5 tray", 0, 0, 0, 0, 0, None, None, hinst,
-                                           None)
+        self.hwnd = user32.CreateWindowExW(
+            0, wc.lpszClassName, "dlss5 tray", 0, 0, 0, 0, 0, None, None, hinst, None
+        )
         if not self.hwnd:
             self._ready.set()
             return
-        icon = user32.LoadImageW(None, self.icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+        icon = user32.LoadImageW(
+            None, self.icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE
+        )
         nid = self._nid(NIF_MESSAGE | NIF_ICON | NIF_TIP)
         nid.uCallbackMessage = WM_TRAY
         nid.hIcon = icon
@@ -166,7 +218,9 @@ class Tray:
         pt = w.POINT()
         user32.GetCursorPos(ctypes.byref(pt))
         user32.SetForegroundWindow(hwnd)
-        chosen = user32.TrackPopupMenu(menu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hwnd, None)
+        chosen = user32.TrackPopupMenu(
+            menu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hwnd, None
+        )
         user32.DestroyMenu(menu)
         if chosen == 1:
             self.on_event("open")

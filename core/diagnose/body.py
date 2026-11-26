@@ -5,6 +5,7 @@ everything here has to be true of the folder it describes.
 
 Part of core/diagnose; see __init__.py.
 """
+
 from __future__ import annotations
 import itertools
 import json
@@ -24,11 +25,27 @@ from .live import _bridge_excerpt, _bridge_text
 
 
 __all__ = [
-    "CLOSED_ITSELF", "NEVER_STARTED", "_block", "_dlss_record_root",
-    "_last_lines", "_presence", "answered", "refused_reason", "anticheat_named", "event_line", "said_started",
-    "_reshade_excerpt", "_their_provider", "_tool_log_lines", "issue_body",
-    "PASTE_FIRST", "NO_PASTE_FIRST", "issue_url", "event_module"
+    "CLOSED_ITSELF",
+    "NEVER_STARTED",
+    "_block",
+    "_dlss_record_root",
+    "_last_lines",
+    "_presence",
+    "answered",
+    "refused_reason",
+    "anticheat_named",
+    "event_line",
+    "said_started",
+    "_reshade_excerpt",
+    "_their_provider",
+    "_tool_log_lines",
+    "issue_body",
+    "PASTE_FIRST",
+    "NO_PASTE_FIRST",
+    "issue_url",
+    "event_module",
 ]
+
 
 def _reshade_excerpt(text: str, n: int = 25, budget: int = 1500) -> list[str]:
     """The ReShade.log lines a report carries, fitted to its budget.
@@ -40,22 +57,35 @@ def _reshade_excerpt(text: str, n: int = 25, budget: int = 1500) -> list[str]:
     """
     every = text.splitlines()
     nrpre = _nrpre_picks(every)
-    kept = [ln for i, ln in enumerate(every) if i in nrpre or any(k in ln for k in _RESHADE_KEEP)]
+    kept = [
+        ln
+        for i, ln in enumerate(every)
+        if i in nrpre or any(k in ln for k in _RESHADE_KEEP)
+    ]
     held = {_HOOK_ADDRESSES.sub("", every[i].rstrip())[:200] for i in nrpre}
     if not kept and text.strip():
         # A log with none of those lines is still a log: ReShade started and
         # stopped before any add-on registered. The report printed "(none)"
         # for it (#155), which reads as "ReShade never loaded" - the opposite
         # - and left nothing to replay.
-        return [_HOOK_ADDRESSES.sub("", ln.rstrip())[:200]
-                for ln in text.splitlines() if ln.strip()][-min(n, 12):]
+        return [
+            _HOOK_ADDRESSES.sub("", ln.rstrip())[:200]
+            for ln in text.splitlines()
+            if ln.strip()
+        ][-min(n, 12) :]
     # A 250 KB tail can hold thousands of these; only the newest of each
     # kind can end up in the excerpt, so the rest are not looked at twice.
-    firm = set(sorted(i for i, ln in enumerate(kept)
-                      if any(k in ln for k in _RESHADE_FIRM))[-8:])
+    firm = set(
+        sorted(i for i, ln in enumerate(kept) if any(k in ln for k in _RESHADE_FIRM))[
+            -8:
+        ]
+    )
     firm |= {i for i, ln in enumerate(kept) if "[NRPRE] " in ln}
-    firm |= set(sorted(i for i, ln in enumerate(kept)
-                       if any(k in ln for k in _RESHADE_ALSO))[-8:])
+    firm |= set(
+        sorted(i for i, ln in enumerate(kept) if any(k in ln for k in _RESHADE_ALSO))[
+            -8:
+        ]
+    )
     # The diagnosis tells a Direct3D 9 device from a DXGI swap chain by these
     # two lines alone ("Direct3DCreate9" without "CreateSwapChain"). A log full
     # of WARN lines pushed the newest of each out of the excerpt, and the
@@ -70,28 +100,38 @@ def _reshade_excerpt(text: str, n: int = 25, budget: int = 1500) -> list[str]:
             firm.add(at[-1])
             pinned.add(_HOOK_ADDRESSES.sub("", kept[at[-1]].rstrip())[:200])
     rest = [i for i in range(len(kept)) if i not in firm][-n:]
-    lines = [_HOOK_ADDRESSES.sub("", kept[i].rstrip())[:200]
-             for i in sorted(firm | set(rest))]
-    for spare in (lambda ln: ln not in held and not any(
-                      k in ln for k in _RESHADE_FIRM + _RESHADE_ALSO),
-                  lambda ln: ln not in held and not any(
-                      k in ln for k in _RESHADE_FIRM),
-                  lambda ln: True):
+    lines = [
+        _HOOK_ADDRESSES.sub("", kept[i].rstrip())[:200]
+        for i in sorted(firm | set(rest))
+    ]
+    for spare in (
+        lambda ln: (
+            ln not in held and not any(k in ln for k in _RESHADE_FIRM + _RESHADE_ALSO)
+        ),
+        lambda ln: ln not in held and not any(k in ln for k in _RESHADE_FIRM),
+        lambda ln: True,
+    ):
         while len(lines) > n or len("\n".join(lines)) > budget:
             # one occurrence of each pinned line stays (the last: identical
             # lines are the same text, and only one of them is the newest)
-            keep_at = {max(j for j, ln in enumerate(lines) if ln == s)
-                       for s in pinned if s in lines}
-            i = next((i for i, ln in enumerate(lines)
-                      if i not in keep_at and spare(ln)), None)
+            keep_at = {
+                max(j for j, ln in enumerate(lines) if ln == s)
+                for s in pinned
+                if s in lines
+            }
+            i = next(
+                (i for i, ln in enumerate(lines) if i not in keep_at and spare(ln)),
+                None,
+            )
             if i is None:
                 break
             del lines[i]
     return lines
 
 
-def _keyed_lines(text: str, kind, n: int = 20, budget: int = 900,
-                 width: int = 200) -> list[str]:
+def _keyed_lines(
+    text: str, kind, n: int = 20, budget: int = 900, width: int = 200
+) -> list[str]:
     """The last `n` lines, plus the newest line of every kind `kind(line)`
     names, fitted to `budget` by dropping the oldest unkeyed lines first.
 
@@ -147,28 +187,47 @@ def _opti_kind(ln: str) -> str:
     if re.search(r"DlssNr\.\w+:", ln):
         return "setting"
     low = ln.lower()
-    if any(k in low for k in ("create failed", "unavailable", "did not run",
-                              "not found beside", "would not load",
-                              "disabling for this session", "refused")):
+    if any(
+        k in low
+        for k in (
+            "create failed",
+            "unavailable",
+            "did not run",
+            "not found beside",
+            "would not load",
+            "disabling for this session",
+            "refused",
+        )
+    ):
         return "failed"
-    if "running at" in ln or re.search(r"\d\s*ms\b", ln) \
-            or re.search(r"finished picture:\s*[1-9]", ln):
+    if (
+        "running at" in ln
+        or re.search(r"\d\s*ms\b", ln)
+        or re.search(r"finished picture:\s*[1-9]", ln)
+    ):
         return "work"
     return "nr"
 
 
-_FEED_KINDS = (("attached", "attached."), ("provider", "DLSS5_MV_PROVIDER="),
-               ("addon", "DLSS 5 add-on:"), ("technique", "DLSS5_Feed.fx technique"),
-               ("notloaded", "is not loaded"), ("mv", "MV probe"),
-               ("depth", "Depth probe"), ("spawned", "host spawned"),
-               ("connected", "host connected"), ("building", "building: "),
-               ("fault", " stack, by module (innermost first):"),
-               # the other half of the driver-fault rule (#917)
-               ("raised", "evaluate raised"),
-               # feeder 1.18.0-beta: NGX's own result and the helper mode
-               ("ngxresult", "FeatureInitResult"),
-               ("inprocess", "would not set DLSS up inside this game's process"),
-               ("standsdown", "stands down"))
+_FEED_KINDS = (
+    ("attached", "attached."),
+    ("provider", "DLSS5_MV_PROVIDER="),
+    ("addon", "DLSS 5 add-on:"),
+    ("technique", "DLSS5_Feed.fx technique"),
+    ("notloaded", "is not loaded"),
+    ("mv", "MV probe"),
+    ("depth", "Depth probe"),
+    ("spawned", "host spawned"),
+    ("connected", "host connected"),
+    ("building", "building: "),
+    ("fault", " stack, by module (innermost first):"),
+    # the other half of the driver-fault rule (#917)
+    ("raised", "evaluate raised"),
+    # feeder 1.18.0-beta: NGX's own result and the helper mode
+    ("ngxresult", "FeatureInitResult"),
+    ("inprocess", "would not set DLSS up inside this game's process"),
+    ("standsdown", "stands down"),
+)
 
 
 def _feed_kind(ln: str) -> str:
@@ -218,9 +277,10 @@ def _their_provider(install_dir: Path, prov: str, man: dict) -> str:
     want = ("reshade-shaders/shaders/" + prov).lower()
     ours = [f for f in (man.get("files") or []) if isinstance(f, str)]
     if any(f.replace("\\", "/").lower() == want for f in ours):
-        return ""                       # we wrote it; it is gone, say so
+        return ""  # we wrote it; it is gone, say so
     try:
         from .. import installer as _inst
+
         hit = _inst.foreign_lumenite(Path(install_dir), ours, marker=prov)
     except Exception:
         return ""
@@ -246,6 +306,7 @@ def _dlss_record_root(install_dir: Path, game_root=None) -> Path | None:
     holds one, a bounded climb that stops at the drive root.
     """
     from .. import dlssupdate as _du
+
     if game_root:
         try:
             if (Path(game_root) / _du.RECORD).is_file():
@@ -277,17 +338,19 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
     # tool had never installed into looked like an install with files
     # missing - to a reader and to the replay both (#43, #194).
     if _manifest_file(install_dir) is None:
-        extra.append("- install record: MISSING (no install recorded in "
-                     "this folder)")
+        extra.append("- install record: MISSING (no install recorded in this folder)")
     proxy = man.get("proxy")
     if man.get("vr"):
         try:
             from .. import openxr
+
             reg = openxr.existing_registration()
         except Exception:
             reg = None
-        extra.append("- ReShade OpenXR layer (VR): "
-                     + ("registered" if reg else "NOT REGISTERED - install again"))
+        extra.append(
+            "- ReShade OpenXR layer (VR): "
+            + ("registered" if reg else "NOT REGISTERED - install again")
+        )
     if proxy == VULKAN_LAYER:
         # Not a file, so it cannot be looked for in the folder. It used to be
         # reported as "MISSING" here, which sent people hunting through their
@@ -299,16 +362,27 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
         # whether that was ever written (#562).
         try:
             from .. import vulkan as _vk
-            where = (" (for this user and on the machine's list)"
-                     if _vk.reaches_elevated(bits == 64)
-                     else " (for this user only)")
+
+            where = (
+                " (for this user and on the machine's list)"
+                if _vk.reaches_elevated(bits == 64)
+                else " (for this user only)"
+            )
         except Exception:
             where = ""
-        extra.append(f"- ReShade {bits}-bit Vulkan layer: "
-                     + ("registered" + where if mine else
-                        "NOT REGISTERED"
-                        + (" (another ReShade layer is, for the other "
-                           "architecture)" if any_layer else "")))
+        extra.append(
+            f"- ReShade {bits}-bit Vulkan layer: "
+            + (
+                "registered" + where
+                if mine
+                else "NOT REGISTERED"
+                + (
+                    " (another ReShade layer is, for the other architecture)"
+                    if any_layer
+                    else ""
+                )
+            )
+        )
     elif proxy:
         names.append(proxy)
     names += _addons(man)
@@ -318,28 +392,36 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
         # Nothing of ours sits beside the executable on this route; the files
         # that decide whether it can work are all inside .trex.
         from .. import remix as _remix
+
         trex = _remix.find_runtime(install_dir)
         out = [f"- .trex: {'found at ' + str(trex) if trex else 'MISSING'}"]
         if trex is not None:
             for n in (_remix.RUNTIME_DLL, _remix.DLSSNR, _remix.REMIX_NVNGX):
                 state = "present" if (trex / n).is_file() else "MISSING"
                 out.append(f"- {trex.name}/{n}: {state}")
-            out.append(f"- runtime flavour: "
-                       f"{_remix.runtime_flavour(trex) or 'no DLSS 5 pass'}")
+            out.append(
+                f"- runtime flavour: {_remix.runtime_flavour(trex) or 'no DLSS 5 pass'}"
+            )
             # Whether the runtime in there is the mod's own or one this
             # install swapped in: the first thing to suspect when a game
             # stops starting, and nothing in the report said it (#218).
-            out.append("- Remix runtime: "
-                       + ("swapped by this install (the mod's own is backed "
-                          "up)" if (man.get("components") or {}).get("remix_runtime")
-                          else "the mod's own, left alone"))
+            out.append(
+                "- Remix runtime: "
+                + (
+                    "swapped by this install (the mod's own is backed up)"
+                    if (man.get("components") or {}).get("remix_runtime")
+                    else "the mod's own, left alone"
+                )
+            )
         rx = man.get("remix") or {}
         if rx.get("key"):
             conf = Path(rx.get("conf") or "")
             if not conf.is_absolute():
                 conf = install_dir / conf
-            out.append(f"- {rx['key']}: "
-                       f"{'set' if _remix.option_set(conf, rx['key']) else 'NOT SET'}")
+            out.append(
+                f"- {rx['key']}: "
+                f"{'set' if _remix.option_set(conf, rx['key']) else 'NOT SET'}"
+            )
         # The lines that are not about files - "install record: MISSING"
         # above all - belong in a Remix report too. This branch returned
         # before them, which is the class (#43, #194) that line exists for.
@@ -351,12 +433,17 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
     # "is it even switched on" without anybody opening an overlay.
     try:
         from .. import reshade_ini as _ini2
+
         st = _ini2.addon_state(install_dir)
         if st and route in ("native", "bridge", "feeder"):
-            extra.append(f"- DLSS 5 add-on switch: "
-                         + (f"{_ini2.ADDON_SWITCH}={st['switch']}"
-                            if st.get("switch") is not None else
-                            f"no [{_ini2.ADDON_SECTION}] line in ReShade.ini"))
+            extra.append(
+                f"- DLSS 5 add-on switch: "
+                + (
+                    f"{_ini2.ADDON_SWITCH}={st['switch']}"
+                    if st.get("switch") is not None
+                    else f"no [{_ini2.ADDON_SECTION}] line in ReShade.ini"
+                )
+            )
     except Exception:
         pass
     # The person's own frame generation files (#370) and the Windows graphics
@@ -366,56 +453,89 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
         own = man.get("own_fg") or {}
         if isinstance(own, dict) and own.get("recipe"):
             fl = [str(f) for f in (own.get("files") or [])]
-            extra.append(f"- frame generation files: {own['recipe']} ("
-                         + ", ".join(f"{f} {'present' if (install_dir / f).is_file() else 'MISSING'}"
-                                     for f in fl[:4]) + ")")
+            extra.append(
+                f"- frame generation files: {own['recipe']} ("
+                + ", ".join(
+                    f"{f} {'present' if (install_dir / f).is_file() else 'MISSING'}"
+                    for f in fl[:4]
+                )
+                + ")"
+            )
         from .. import gpupref as _gp
+
         for r in (man.get("gpu_pref") or [])[:3]:
             if isinstance(r, dict) and r.get("exe"):
                 now = _gp.chosen(r["exe"])
-                extra.append(f"- Windows graphics setting: {Path(str(r['exe'])).name}: "
-                             + {None: "not set", "0": "let Windows decide",
-                                "1": "power saving", "2": "High performance"}
-                             .get(now, str(now)))
+                extra.append(
+                    f"- Windows graphics setting: {Path(str(r['exe'])).name}: "
+                    + {
+                        None: "not set",
+                        "0": "let Windows decide",
+                        "1": "power saving",
+                        "2": "High performance",
+                    }.get(now, str(now))
+                )
     except Exception:
         pass
     rr = (man.get("components") or {}).get("dlssd")
     if rr:
-        where = next((f for f in (man.get("files") or [])
-                      if isinstance(f, str)
-                      and f.replace("\\", "/").lower().endswith(RR_RUNTIME)
-                      and not f.endswith(_BACKUP_SUFFIX)), RR_RUNTIME)
+        where = next(
+            (
+                f
+                for f in (man.get("files") or [])
+                if isinstance(f, str)
+                and f.replace("\\", "/").lower().endswith(RR_RUNTIME)
+                and not f.endswith(_BACKUP_SUFFIX)
+            ),
+            RR_RUNTIME,
+        )
         there = (install_dir / where).is_file()
-        extra.append(f"- {where}: {'present' if there else 'MISSING'} "
-                     f"(swapped to {rr}; the game's own is backed up)")
+        extra.append(
+            f"- {where}: {'present' if there else 'MISSING'} "
+            f"(swapped to {rr}; the game's own is backed up)"
+        )
     # The game's own nvngx_dlss.dll replaced where it keeps it (#225): a
     # swap is the first suspect when a game starts crashing.
     _dl = (man.get("components") or {}).get("dlss")
     # Every one of them, not the first the walk reached: a reinstall can
     # swap the copy beside the executable AND a nested one, and which of
     # the two a report showed was decided by os.walk order (gate 1.9.1).
-    _nbs = [f for f in (man.get("files") or [])
-            if isinstance(f, str)
-            # beside the exe (no slash) or nested (#225, gate 1.9.1)
-            and f.replace("\\", "/").lower().split("/")[-1]
-            == "nvngx_dlss.dll" + _BACKUP_SUFFIX]
+    _nbs = [
+        f
+        for f in (man.get("files") or [])
+        if isinstance(f, str)
+        # beside the exe (no slash) or nested (#225, gate 1.9.1)
+        and f.replace("\\", "/").lower().split("/")[-1]
+        == "nvngx_dlss.dll" + _BACKUP_SUFFIX
+    ]
     for _nb in _nbs if _dl else []:
-        _w = _nb[:-len(_BACKUP_SUFFIX)]
+        _w = _nb[: -len(_BACKUP_SUFFIX)]
         _p = Path(_w) if Path(_w).is_absolute() else install_dir / _w
-        extra.append(f"- {_w}: {'present' if _p.is_file() else 'MISSING'} "
-                     f"(swapped to {_dl}; the game's own is backed up)")
+        extra.append(
+            f"- {_w}: {'present' if _p.is_file() else 'MISSING'} "
+            f"(swapped to {_dl}; the game's own is backed up)"
+        )
     # The dlss page swaps runtimes outside any install record: a crash after
     # one names that build, or the report points at everything but the file
     # that changed.
     try:
         from types import SimpleNamespace as _NS
         from .. import dlssupdate as _du
+
         _gf = _dlss_record_root(Path(install_dir), game_root)
-        for _e in _du.load_record(_NS(folder=Path(_gf), install_dir=Path(install_dir))) if _gf else []:
+        for _e in (
+            _du.load_record(_NS(folder=Path(_gf), install_dir=Path(install_dir)))
+            if _gf
+            else []
+        ):
             _p = Path(_gf) / _e["path"]
-            extra.append(f"- {_e['path']}: {'present' if _p.is_file() else 'MISSING'} "
-                         f"(updated on the dlss page to {_e['label'] or _e['written'] or '?'}; "
-                         f"the game's own {_e['original'] or ''} kept beside it)".replace("own  kept", "own kept"))
+            extra.append(
+                f"- {_e['path']}: {'present' if _p.is_file() else 'MISSING'} "
+                f"(updated on the dlss page to {_e['label'] or _e['written'] or '?'}; "
+                f"the game's own {_e['original'] or ''} kept beside it)".replace(
+                    "own  kept", "own kept"
+                )
+            )
     except Exception:
         pass
     if route == "optiscaler":
@@ -425,9 +545,11 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
         # install that never wrote a proxy and one something emptied (#364).
         _c = man.get("components")
         _otag = str((_c.get("optiscaler") if isinstance(_c, dict) else "") or "")
-        extra.append("- optiscaler build: "
-                     + (str(man.get("opti_build") or "") or "Dagherbou")
-                     + (f" ({_otag})" if _otag else ""))
+        extra.append(
+            "- optiscaler build: "
+            + (str(man.get("opti_build") or "") or "Dagherbou")
+            + (f" ({_otag})" if _otag else "")
+        )
     else:
         names.append("ReShade.ini")
     names += _dxvk_files(man)
@@ -438,13 +560,19 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
     if man.get("dxvk") and man.get("exe"):
         try:
             from .. import dxvk as _dxvk
+
             since = _installed_at(install_dir)
             for n in _dxvk.logs_for(Path(str(man.get("exe")))):
                 if (install_dir / n).is_file():
-                    extra.append(f"- {n}: present ("
-                                 + ("written since the install"
-                                    if _fresh(install_dir / n, since) else
-                                    "from before the install") + ")")
+                    extra.append(
+                        f"- {n}: present ("
+                        + (
+                            "written since the install"
+                            if _fresh(install_dir / n, since)
+                            else "from before the install"
+                        )
+                        + ")"
+                    )
         except Exception:
             pass
     # On the 32-bit feeder route the DLSS runtimes live in host64/ beside the
@@ -454,9 +582,12 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
         names.append("host64/nvngx_dlssnr.dll")
     elif route == "uplift":
         # its runtime is in its own folder; one beside the exe is moved aside
-        names += ["GITC-Uplift/nvngx_dlssnr.dll", "gitc-uplift-helper64.exe",
-                  "reshade-shaders/Shaders/Uplift.fx",
-                  "reshade-shaders/Shaders/UpliftMask.fx"]
+        names += [
+            "GITC-Uplift/nvngx_dlssnr.dll",
+            "gitc-uplift-helper64.exe",
+            "reshade-shaders/Shaders/Uplift.fx",
+            "reshade-shaders/Shaders/UpliftMask.fx",
+        ]
     else:
         names.append("nvngx_dlssnr.dll")
     prov = None
@@ -475,6 +606,7 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
         # this route gives (#212, and every "inconclusive" like it), and the
         # report it is printed on did not say whether either file was there.
         from .. import installer as _inst
+
         names.append("reshade-shaders/Shaders/" + _inst.STANDALONE_FX)
         prov = _inst.VORT_FX
         names.append("reshade-shaders/Shaders/" + prov)
@@ -482,8 +614,12 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
     for n in dict.fromkeys(names):
         state = "present" if (install_dir / n).is_file() else "MISSING"
         out.append(f"- {n}: {state}")
-        if state == "MISSING" and route in ("feeder", "standalone") and prov \
-                and n.endswith(prov):
+        if (
+            state == "MISSING"
+            and route in ("feeder", "standalone")
+            and prov
+            and n.endswith(prov)
+        ):
             # The install does not write this one when the person already has
             # the pack: their copy is used, wherever they keep it under
             # reshade-shaders. Reporting the place we would have written to as
@@ -494,8 +630,9 @@ def _presence(install_dir: Path, man: dict, route: str, game_root=None) -> list[
                 # Whether ReShade loads that copy depends on its own
                 # EffectSearchPaths, which nothing here reads - so say where
                 # the file is, not that it is the one in use.
-                out[-1] = (f"- {n}: not written by this install - your own "
-                           f"copy is at {mine}")
+                out[-1] = (
+                    f"- {n}: not written by this install - your own copy is at {mine}"
+                )
     out += extra
     # The game's own compiler beside the exe is the cause of the silent
     # "frames flow, nothing happens" case; worth a line whenever it is there.
@@ -512,14 +649,18 @@ def _tool_log_lines(tail: str, game, install_dir, n: int = 15) -> list[str]:
     cut = text.rfind("=" * 70)
     if cut >= 0:
         text = text[cut:]
-    marks = [m.lower() for m in (getattr(game, "name", "") or "",
-                                 str(install_dir or "")) if m]
+    marks = [
+        m.lower()
+        for m in (getattr(game, "name", "") or "", str(install_dir or ""))
+        if m
+    ]
 
     def keep(ln: str) -> bool:
         if not _SCAN_NOISE.search(ln):
             return True
         low = ln.lower()
         return any(m in low for m in marks)
+
     return _last_lines(text, n, keep)
 
 
@@ -536,23 +677,29 @@ def _has_dial(game, route: str) -> bool:
         return True
     if route != "feeder":
         return False
-    return (getattr(game, "bitness", None) == 64
-            and str(getattr(game, "api", "")).upper() == "DX11")
+    return (
+        getattr(game, "bitness", None) == 64
+        and str(getattr(game, "api", "")).upper() == "DX11"
+    )
 
 
 def _work_area(install_dir, route: str, game=None) -> str:
-    """"- work area: 75%", when the add-on's own config says so."""
+    """ "- work area: 75%", when the add-on's own config says so."""
     try:
         from .. import autotune
-        got = (autotune.ran_at_exact(install_dir, route)
-               if install_dir and _has_dial(game, route) else None)
+
+        got = (
+            autotune.ran_at_exact(install_dir, route)
+            if install_dir and _has_dial(game, route)
+            else None
+        )
         return f"- work area: {got}%\n" if got is not None else ""
     except Exception:
         return ""
 
 
 def _contract(install_dir, route: str) -> str:
-    """"- bridge contract: synthetic" when the bridge was installed for a game
+    """ "- bridge contract: synthetic" when the bridge was installed for a game
     that ships no DLSS. The bridge's verdict reads this (it asks nothing of the
     game then), and the report used to leave it out, so a replay said "turn
     DLSS on" where the machine said otherwise (#862)."""
@@ -560,8 +707,9 @@ def _contract(install_dir, route: str) -> str:
         return ""
     try:
         man = _manifest(Path(install_dir))
-        return ("- bridge contract: synthetic\n"
-                if man.get("native_dlss") is False else "")
+        return (
+            "- bridge contract: synthetic\n" if man.get("native_dlss") is False else ""
+        )
     except Exception:
         return ""
 
@@ -577,23 +725,34 @@ NEVER_STARTED = "never started"
 # somebody whose game closed itself, or never started, every one of them is
 # wrong: there is no running game to look at (#412, and the top class of
 # the backlog - "we ask the person to look in the overlay", 21 of 121).
-_LOOK_IN_GAME = ("confirm in the", "check '", "the switch is on",
-                 "open the overlay", "the only live picture", "Working.",
-                 "Add-ons loaded", "Inconclusive", "Loaded and set up",
-                 # "switch it on in the game" needs a game that stays up too:
-                 # #460 crashed on start and was told to press Insert and
-                 # tick a box, #461 crashed on turning the upscaler on and
-                 # was told to turn the upscaler on (2.0.5).
-                 "not switched on", "the game's own upscaler has to be on",
-                 "made no D3D12 DLSS call", "never called DLSS",
-                 "no neural frame followed",
-                 # the bridge's frames, and the panel to compare them in
-                 "whether the neural pass drew them",
-                 "delivered no frame")
+_LOOK_IN_GAME = (
+    "confirm in the",
+    "check '",
+    "the switch is on",
+    "open the overlay",
+    "the only live picture",
+    "Working.",
+    "Add-ons loaded",
+    "Inconclusive",
+    "Loaded and set up",
+    # "switch it on in the game" needs a game that stays up too:
+    # #460 crashed on start and was told to press Insert and
+    # tick a box, #461 crashed on turning the upscaler on and
+    # was told to turn the upscaler on (2.0.5).
+    "not switched on",
+    "the game's own upscaler has to be on",
+    "made no D3D12 DLSS call",
+    "never called DLSS",
+    "no neural frame followed",
+    # the bridge's frames, and the panel to compare them in
+    "whether the neural pass drew them",
+    "delivered no frame",
+)
 
 
-_OVERLAY_ASK = re.compile(r"\b(open|press|check)\b[^.]{0,60}\b(overlay|panel|tab)\b",
-                          re.I)
+_OVERLAY_ASK = re.compile(
+    r"\b(open|press|check)\b[^.]{0,60}\b(overlay|panel|tab)\b", re.I
+)
 
 
 def said_started(text: str) -> str:
@@ -609,7 +768,7 @@ def said_started(text: str) -> str:
 
 
 def event_line(crash) -> str:
-    """"X.exe faulted in Y.dll 0xC0000005" from a wincrash.Crash, or ""."""
+    """ "X.exe faulted in Y.dll 0xC0000005" from a wincrash.Crash, or ""."""
     if crash is None or not getattr(crash, "module", ""):
         return ""
     return f"{crash.exe} faulted in {crash.module} {crash.code}".strip()
@@ -629,6 +788,7 @@ def refused_reason(install_dir) -> str:
     the install ("the process is protected ..."), or "". For answered()."""
     try:
         from .. import watch
+
         d = Path(install_dir)
         return str(watch.last_sighting(d, _installed_at(d)).get("refused") or "")
     except Exception:
@@ -640,17 +800,29 @@ def anticheat_named(install_dir, folder=None) -> str:
     game, or "". The same check the install warns with (core/anticheat)."""
     try:
         from .. import anticheat
+
         d = Path(install_dir)
         f = anticheat.detect(d, Path(folder) if folder else d.parent)
         if not f.present:
             return ""
-        return f"{f.summary}, found: {', '.join(f.evidence[:3])}" if f.evidence else f.summary
+        return (
+            f"{f.summary}, found: {', '.join(f.evidence[:3])}"
+            if f.evidence
+            else f.summary
+        )
     except Exception:
         return ""
 
 
-def answered(rep: Report, started: str, presence=(), kind: str = "game",
-             event: str = "", protected: str = "", anticheat: str = "") -> Report:
+def answered(
+    rep: Report,
+    started: str,
+    presence=(),
+    kind: str = "game",
+    event: str = "",
+    protected: str = "",
+    anticheat: str = "",
+) -> Report:
     """The verdict, corrected by what the person saw.
 
     `started` is their answer to "did the game start?" and `presence` the
@@ -674,8 +846,11 @@ def answered(rep: Report, started: str, presence=(), kind: str = "game",
     # Only those: every other verdict without a look-in-game ask stands
     # (nothing installed, a launcher, the install stopped).
     not_run = rep.verdict.startswith(("Not run yet", "Not started since the install"))
-    blocked = said == NEVER_STARTED and not event_module(event) and (
-        "protected" in (protected or "").lower() or (anticheat or "").strip())
+    blocked = (
+        said == NEVER_STARTED
+        and not event_module(event)
+        and ("protected" in (protected or "").lower() or (anticheat or "").strip())
+    )
     if not look and not (not_run and blocked):
         return rep
     # `protected` is the watcher's refusal reason. Windows refusing to show a
@@ -683,88 +858,142 @@ def answered(rep: Report, started: str, presence=(), kind: str = "game",
     # never started, is an anti-cheat closing it over our files (#992:
     # Endfield's ACE named dxgi.dll an "illegal hijack module"). Only
     # "protected": a process that was still starting (#1047) is not that.
-    if "protected" in (protected or "").lower() and said == NEVER_STARTED \
-            and not event_module(event):
-        rep.findings = [f for f in rep.findings
-                        if not f.title.startswith(("You said", "Neural rendering was switched on"))
-                        and "graphics menu" not in f.detail]
-        rep.findings.insert(0, Finding(
-            BAD, "You said the game never started, and Windows would not let "
-                 "this tool look into its process.",
-            f"{protected[:1].upper()}{protected[1:]}. An anti-cheat does "
-            f"that, and so does a store build or a game started as "
-            f"administrator. If the game showed its own message naming one of "
-            f"the files here, its anti-cheat refused them, and no route of "
-            f"this tool gets past that. Press uninstall on the game's page."))
-        rep.verdict = ("The game is protected and stopped with our files in - "
-                       "most likely its anti-cheat. If it named one of our "
-                       "files, uninstall; no route gets past it.")
+    if (
+        "protected" in (protected or "").lower()
+        and said == NEVER_STARTED
+        and not event_module(event)
+    ):
+        rep.findings = [
+            f
+            for f in rep.findings
+            if not f.title.startswith(("You said", "Neural rendering was switched on"))
+            and "graphics menu" not in f.detail
+        ]
+        rep.findings.insert(
+            0,
+            Finding(
+                BAD,
+                "You said the game never started, and Windows would not let "
+                "this tool look into its process.",
+                f"{protected[:1].upper()}{protected[1:]}. An anti-cheat does "
+                f"that, and so does a store build or a game started as "
+                f"administrator. If the game showed its own message naming one of "
+                f"the files here, its anti-cheat refused them, and no route of "
+                f"this tool gets past that. Press uninstall on the game's page.",
+            ),
+        )
+        rep.verdict = (
+            "The game is protected and stopped with our files in - "
+            "most likely its anti-cheat. If it named one of our "
+            "files, uninstall; no route gets past it."
+        )
         return rep
     # An anti-cheat the install found beside the game, and a game that never
     # started (#1047: HELLDIVERS 2's GameGuard, "anti cheat blocked the
     # starting of the game"). A game that ran and then closed is not this.
     if (anticheat or "").strip() and said == NEVER_STARTED and not event_module(event):
-        rep.findings = [f for f in rep.findings
-                        if not f.title.startswith(("You said", "Neural rendering was switched on"))
-                        and "graphics menu" not in f.detail]
-        rep.findings.insert(0, Finding(
-            BAD, f"You said the game never started, and it ships an "
-                 f"anti-cheat: {anticheat.strip()}.",
-            "An anti-cheat refuses files injected into the game's process, "
-            "and every route of this tool injects one. No route gets past "
-            "that. Press uninstall on the game's page and the game starts "
-            "as before; do not use this in an online game."))
-        rep.verdict = ("The game never started with our files in - its "
-                       "anti-cheat refuses them. Uninstall; no route gets "
-                       "past it.")
+        rep.findings = [
+            f
+            for f in rep.findings
+            if not f.title.startswith(("You said", "Neural rendering was switched on"))
+            and "graphics menu" not in f.detail
+        ]
+        rep.findings.insert(
+            0,
+            Finding(
+                BAD,
+                f"You said the game never started, and it ships an "
+                f"anti-cheat: {anticheat.strip()}.",
+                "An anti-cheat refuses files injected into the game's process, "
+                "and every route of this tool injects one. No route gets past "
+                "that. Press uninstall on the game's page and the game starts "
+                "as before; do not use this in an online game.",
+            ),
+        )
+        rep.verdict = (
+            "The game never started with our files in - its "
+            "anti-cheat refuses them. Uninstall; no route gets "
+            "past it."
+        )
         return rep
     lines = [str(x).strip().lstrip("- ") for x in (presence or ())]
     swaps = [x.split(":", 1)[0] for x in lines if "updated on the dlss page" in x]
-    ours_swapped = [x.split(":", 1)[0] for x in lines
-                    if "swapped to" in x and "backed up" in x]
+    ours_swapped = [
+        x.split(":", 1)[0] for x in lines if "swapped to" in x and "backed up" in x
+    ]
     ran = rep.verdict.startswith("Working")
     steps = []
     # Another mod's add-on ran in ReShade beside ours (#944: Prey Luma): it
     # is the first thing to take out, before anything of ours.
-    beside = next((f.title.split(":", 1)[1].strip() for f in rep.findings
-                   if f.title.startswith(("Other ReShade add-ons are loaded:",
-                                          "Another DLSS hook was loaded beside ours:"))),
-                  "")
+    beside = next(
+        (
+            f.title.split(":", 1)[1].strip()
+            for f in rep.findings
+            if f.title.startswith(
+                (
+                    "Other ReShade add-ons are loaded:",
+                    "Another DLSS hook was loaded beside ours:",
+                )
+            )
+        ),
+        "",
+    )
     if beside:
-        steps.append(f"move {beside} out of the game folder first - ReShade "
-                     f"loads every add-on it finds there, this one is not "
-                     f"ours, and it ran beside ours - and start the game once")
+        steps.append(
+            f"move {beside} out of the game folder first - ReShade "
+            f"loads every add-on it finds there, this one is not "
+            f"ours, and it ran beside ours - and start the game once"
+        )
     if swaps:
-        steps.append(f"undo what the dlss page changed first - "
-                     f"{', '.join(swaps[:3])} - with 'restore original' on "
-                     f"that page, and start the game once: a runtime swap is "
-                     f"the first suspect when a game stops starting")
+        steps.append(
+            f"undo what the dlss page changed first - "
+            f"{', '.join(swaps[:3])} - with 'restore original' on "
+            f"that page, and start the game once: a runtime swap is "
+            f"the first suspect when a game stops starting"
+        )
     if ours_swapped:
-        steps.append(f"this install also swapped {', '.join(ours_swapped[:3])} "
-                     f"(uninstall puts the game's own back)")
-    steps.append("press uninstall on the game's page and start the game "
-                 "once with nothing of ours in it. If it closes the same "
-                 "way, it is not this install. If it runs, install again "
-                 "with another route - where the window shows 'what other "
-                 "people found', it says which worked for this game")
-    what = ("closed itself" if said == CLOSED_ITSELF else "never started")
+        steps.append(
+            f"this install also swapped {', '.join(ours_swapped[:3])} "
+            f"(uninstall puts the game's own back)"
+        )
+    steps.append(
+        "press uninstall on the game's page and start the game "
+        "once with nothing of ours in it. If it closes the same "
+        "way, it is not this install. If it runs, install again "
+        "with another route - where the window shows 'what other "
+        "people found', it says which worked for this game"
+    )
+    what = "closed itself" if said == CLOSED_ITSELF else "never started"
     # Windows' own record of the fault, when the report carries one (#460:
     # "nothing here recorded why" sat above the line that recorded it).
     event = (event or "").strip()
-    seen = (f"Windows recorded it: {event}. " if event else "")
-    detail = (("The logs say neural rendering ran, and you say the game "
-               f"{what} - so the session did not end well, whatever the "
-               "logs got as far as. " + seen if ran else
-               seen + ("The add-on logs could not show why. " if event else
-                       "The logs could not show why, and the check they would "
-                       "have asked for needs a running game. "))
-              + "In this order: " + "; then ".join(steps) + ".")
+    seen = f"Windows recorded it: {event}. " if event else ""
+    detail = (
+        (
+            "The logs say neural rendering ran, and you say the game "
+            f"{what} - so the session did not end well, whatever the "
+            "logs got as far as. " + seen
+            if ran
+            else seen
+            + (
+                "The add-on logs could not show why. "
+                if event
+                else "The logs could not show why, and the check they would "
+                "have asked for needs a running game. "
+            )
+        )
+        + "In this order: "
+        + "; then ".join(steps)
+        + "."
+    )
     # The findings that said the same thing as the verdict - go and look in
     # the overlay - go with it, or the report prints the correction above
     # the advice it corrects (#171's shape). Evidence stays.
-    rep.findings = [f for f in rep.findings
-                    if not (f.level == INFO and _OVERLAY_ASK.search(
-                        f"{f.title} {f.detail}"))]
+    rep.findings = [
+        f
+        for f in rep.findings
+        if not (f.level == INFO and _OVERLAY_ASK.search(f"{f.title} {f.detail}"))
+    ]
     rep.findings.insert(0, Finding(BAD, f"You said the game {what}.", detail))
     # Whole strings, so core/verdicts.py can stage them by their own words.
     mod = event_module(event)
@@ -772,26 +1001,37 @@ def answered(rep: Report, started: str, presence=(), kind: str = "game",
         # Windows recorded the fault: it crashed, it did not close itself.
         # The same words the window prints (ctl_game.crash_overrides), so a
         # replay of the report says what the person saw (#749).
-        rep.verdict = ("It ran, and then the game crashed - Windows recorded "
-                       "the fault" + (f" in {mod}." if mod else "."))
+        rep.verdict = (
+            "It ran, and then the game crashed - Windows recorded "
+            "the fault" + (f" in {mod}." if mod else ".")
+        )
     elif ran and said == CLOSED_ITSELF:
-        rep.verdict = ("Neural rendering ran, then the game closed itself - "
-                       "see below for what to take out first.")
+        rep.verdict = (
+            "Neural rendering ran, then the game closed itself - "
+            "see below for what to take out first."
+        )
     elif ran:
         # The logs hold a session that drew, and this start never came up:
         # they describe an earlier launch than the one being reported.
-        rep.verdict = ("The logs show an earlier session that ran; this time "
-                       "the game never started - see below for what to take "
-                       "out first.")
+        rep.verdict = (
+            "The logs show an earlier session that ran; this time "
+            "the game never started - see below for what to take "
+            "out first."
+        )
     elif event:
-        rep.verdict = ("Windows recorded the game faulting - see below for "
-                       "what to take out first.")
+        rep.verdict = (
+            "Windows recorded the game faulting - see below for what to take out first."
+        )
     elif said == CLOSED_ITSELF:
-        rep.verdict = ("The game closed itself and nothing here recorded why "
-                       "- see below for what to take out first.")
+        rep.verdict = (
+            "The game closed itself and nothing here recorded why "
+            "- see below for what to take out first."
+        )
     else:
-        rep.verdict = ("The game never started with this install in - see "
-                       "below for what to take out first.")
+        rep.verdict = (
+            "The game never started with this install in - see "
+            "below for what to take out first."
+        )
     return rep
 
 
@@ -802,13 +1042,17 @@ def _start_lines(game) -> str:
     replay (the header keys "starts as administrator" and "this tool").
     """
     from .. import wincrash as _wc
+
     out = ""
     try:
         exe = getattr(game, "exe", None)
         flags = _wc.start_flags(exe) if exe else ""
         if flags:
-            out += f"- starts as administrator: {flags}\n" \
-                if _wc.runs_as_admin(flags) else f"- compatibility flags: {flags}\n"
+            out += (
+                f"- starts as administrator: {flags}\n"
+                if _wc.runs_as_admin(flags)
+                else f"- compatibility flags: {flags}\n"
+            )
         if _wc.elevated():
             out += "- this tool: running as administrator\n"
     except Exception:
@@ -817,18 +1061,23 @@ def _start_lines(game) -> str:
 
 
 URL_MAX = 7800
-PASTE_FIRST = ("**The whole report is on your clipboard: click in this box, "
-               "press Ctrl+A, then Ctrl+V, then submit.** Below is only its "
-               "start.\n\n")
+PASTE_FIRST = (
+    "**The whole report is on your clipboard: click in this box, "
+    "press Ctrl+A, then Ctrl+V, then submit.** Below is only its "
+    "start.\n\n"
+)
 
 
 # The clipboard did not take the report (gate 2.1.0: the link said it did).
-NO_PASTE_FIRST = ("**Only the start of the report fits here - attach the zip "
-                  "from 'save zip' in the tool.**\n\n")
+NO_PASTE_FIRST = (
+    "**Only the start of the report fits here - attach the zip "
+    "from 'save zip' in the tool.**\n\n"
+)
 
 
-def issue_url(repo: str, title: str, body: str, limit: int = URL_MAX,
-              pasted: bool = True) -> tuple[str, bool]:
+def issue_url(
+    repo: str, title: str, body: str, limit: int = URL_MAX, pasted: bool = True
+) -> tuple[str, bool]:
     """(the new-issue link, whether the body had to be cut).
 
     Over GitHub's URL cap the whole body goes on the clipboard, and the link
@@ -838,6 +1087,7 @@ def issue_url(repo: str, title: str, body: str, limit: int = URL_MAX,
     the diagnosis and the file list come first), under the instruction, so
     an issue nobody pasted into still says what happened."""
     from urllib.parse import quote
+
     # A long game name in a non-Latin script costs nine characters a letter
     # once quoted and would eat the room the report needs.
     title = " ".join(str(title).split())[:120]
@@ -868,10 +1118,22 @@ def issue_url(repo: str, title: str, body: str, limit: int = URL_MAX,
     return base + quote(first + body[:lo]), True
 
 
-def issue_body(version: str, gpu_name: str, sm, driver: str, game, route: str,
-               last_diag, autopilot_tail: str, autopilot_log_path,
-               install_dir, last_error: str = "", session_error: str = "",
-               answers: dict | None = None, crash=None) -> str:
+def issue_body(
+    version: str,
+    gpu_name: str,
+    sm,
+    driver: str,
+    game,
+    route: str,
+    last_diag,
+    autopilot_tail: str,
+    autopilot_log_path,
+    install_dir,
+    last_error: str = "",
+    session_error: str = "",
+    answers: dict | None = None,
+    crash=None,
+) -> str:
     """The text of a bug report, with the evidence already in it.
 
     A report is only as good as what it carries. The machine, the verdict,
@@ -883,8 +1145,7 @@ def issue_body(version: str, gpu_name: str, sm, driver: str, game, route: str,
     presence: list[str] = []
     if d is not None and d.is_dir():
         try:
-            presence = _presence(d, _manifest(d), route,
-                                 getattr(game, "folder", None))
+            presence = _presence(d, _manifest(d), route, getattr(game, "folder", None))
         except Exception:
             presence = []
     diag = ""
@@ -895,19 +1156,25 @@ def issue_body(version: str, gpu_name: str, sm, driver: str, game, route: str,
     if last_diag is not None and answers:
         try:
             import copy
-            last_diag = answered(copy.deepcopy(last_diag),
-                                 str(answers.get("started") or ""), presence,
-                                 str(getattr(game, "kind", "") or "game"),
-                                 event_line(crash),
-                                 refused_reason(d) if d is not None else "",
-                                 anticheat_named(d, getattr(game, "folder", None))
-                                 if d is not None else "")
+
+            last_diag = answered(
+                copy.deepcopy(last_diag),
+                str(answers.get("started") or ""),
+                presence,
+                str(getattr(game, "kind", "") or "game"),
+                event_line(crash),
+                refused_reason(d) if d is not None else "",
+                anticheat_named(d, getattr(game, "folder", None))
+                if d is not None
+                else "",
+            )
         except Exception:
             pass
     if last_diag is not None:
         try:
             diag = f"\n**Diagnosis**: {last_diag.verdict}\n" + "".join(
-                f"- [{f_.level}] {f_.title}\n" for f_ in last_diag.findings)
+                f"- [{f_.level}] {f_.title}\n" for f_ in last_diag.findings
+            )
         except Exception:
             diag = ""
 
@@ -917,27 +1184,34 @@ def issue_body(version: str, gpu_name: str, sm, driver: str, game, route: str,
     # "yes / no / it closed itself" line untouched and nothing else said.
     if answers:
         said = str(answers.get("happened") or "").strip()
-        asked = (f"**Did the game start?** {answers.get('started') or '-'}\n\n"
-                 f"**What happened**\n{said}\n\n")
+        asked = (
+            f"**Did the game start?** {answers.get('started') or '-'}\n\n"
+            f"**What happened**\n{said}\n\n"
+        )
     else:
-        asked = ("**Did the game start?** yes / no / it closed itself\n\n"
-                 "**What happened**\n\n\n"
-                 "**What I expected**\n\n\n")
+        asked = (
+            "**Did the game start?** yes / no / it closed itself\n\n"
+            "**What happened**\n\n\n"
+            "**What I expected**\n\n\n"
+        )
     head = (
-        asked
-        + "---\n"
+        asked + "---\n"
         f"- version: {version}\n"
         f"- gpu: {gpu_name} (sm_{sm}), driver {driver}\n"
         f"- game: {getattr(game, 'name', None) or '-'}\n"
         f"- exe: {exe}\n"
         f"- arch/api: {getattr(game, 'bit_label', None) or '-'} / "
         f"{getattr(game, 'api', None) or '-'}"
-        + (f" ({game.api_why})" if getattr(game, 'api_why', None) else "") + "\n"
+        + (f" ({game.api_why})" if getattr(game, "api_why", None) else "")
+        + "\n"
         f"- route: {route or '-'}\n"
         # What the install saw beside the game (#1047): the replay and the
         # reply read it from here, the person's "it never started" with it.
-        + (f"- anti-cheat: {ac}\n" if (ac := anticheat_named(
-            install_dir, getattr(game, "folder", None))) else "")
+        + (
+            f"- anti-cheat: {ac}\n"
+            if (ac := anticheat_named(install_dir, getattr(game, "folder", None)))
+            else ""
+        )
         # The work area the add-on itself was told to use. Every number the
         # tool prints about what the session cost is worked out from this,
         # and a report about one of those numbers used to arrive without
@@ -947,13 +1221,17 @@ def issue_body(version: str, gpu_name: str, sm, driver: str, game, route: str,
         # What Windows recorded, when there is one: the faulting module is
         # the most useful line a "the game closed itself" report can carry,
         # and nobody was attaching it because nobody knew to look.
-        + (f"- windows event: {crash.exe} faulted in {crash.module} "
-           f"{crash.code} at {crash.when} UTC\n"
-           if crash is not None and getattr(crash, "module", "") else "")
+        + (
+            f"- windows event: {crash.exe} faulted in {crash.module} "
+            f"{crash.code} at {crash.when} UTC\n"
+            if crash is not None and getattr(crash, "module", "")
+            else ""
+        )
         # How Windows starts the game: an elevated game gets no per-user
         # Vulkan layer, which is the whole DXVK route (#400, #348, #238).
         + _start_lines(game)
-        + diag[:1200])
+        + diag[:1200]
+    )
 
     files = ""
     reshade = feed = opti = ""
@@ -965,27 +1243,38 @@ def issue_body(version: str, gpu_name: str, sm, driver: str, game, route: str,
             p = _opti_log(d)
             # the last run, as _analyse_optiscaler reads it
             from .routes import _last_run
+
             opti = _last_run(_tail(p, TAIL_OPTI)) if p else ""
 
     parts = [head, files, _loaded_block(d)]
     # The last session only, as analyse() reads it: ReShade.log is never
     # truncated, and the excerpt's priorities pulled hook lines and add-on
     # builds out of older sessions over the last one's own errors.
-    parts.append(_block("ReShade.log",
-                        _reshade_excerpt(_last_session(reshade)), 1500))
+    parts.append(_block("ReShade.log", _reshade_excerpt(_last_session(reshade)), 1500))
     # The bridge's own log: the build, its frames and why it stopped. The
     # replay ties it to the ReShade block above by the two logs' clocks.
     if route == "bridge" and d is not None and (d / BRIDGE_LOG).is_file():
-        parts.append(_block(BRIDGE_LOG,
-                            _bridge_excerpt(_bridge_text(d / BRIDGE_LOG)), 900))
+        parts.append(
+            _block(BRIDGE_LOG, _bridge_excerpt(_bridge_text(d / BRIDGE_LOG)), 900)
+        )
     # The last session, as chain.py reads it, and its deciding lines kept.
-    parts.append(_block("dlss5-feed.log",
-                        _keyed_lines(_strip_ngx(_last_feed_session(feed)), _feed_kind, 20, 1400), 1400))
+    parts.append(
+        _block(
+            "dlss5-feed.log",
+            _keyed_lines(_strip_ngx(_last_feed_session(feed)), _feed_kind, 20, 1400),
+            1400,
+        )
+    )
     # A 32-bit game's DLSS runs in the helper, and #252's report carried
     # every log except the one that named the fault.
     if route == "feeder" and d is not None and (d / HOST_LOG).is_file():
-        parts.append(_block("dlss5-feed-host.log",
-                            _helper_excerpt(_tail(d / HOST_LOG, TAIL_HOST)), 900))
+        parts.append(
+            _block(
+                "dlss5-feed-host.log",
+                _helper_excerpt(_tail(d / HOST_LOG, TAIL_HOST)),
+                900,
+            )
+        )
     if route == "optiscaler":
         parts.append(_block("OptiScaler.log", _keyed_lines(opti, _opti_kind), 900))
     if route == "standalone":
@@ -997,27 +1286,40 @@ def issue_body(version: str, gpu_name: str, sm, driver: str, game, route: str,
             since = _installed_at(d) if d is not None else 0.0
             sa = model.STANDALONE_LOG
             if since and sa.is_file() and not _fresh(sa, since):
-                title += (" (last written " + datetime.fromtimestamp(sa.stat().st_mtime)
-                          .strftime("%d %b %H:%M") + ", before this install - not this game's)")
+                title += (
+                    " (last written "
+                    + datetime.fromtimestamp(sa.stat().st_mtime).strftime("%d %b %H:%M")
+                    + ", before this install - not this game's)"
+                )
         except (OSError, ValueError):
             pass
-        parts.append(_block(title,
-                            _keyed_lines(_tail(model.STANDALONE_LOG, TAIL_STANDALONE),
-                                         _standalone_kind), 900))
+        parts.append(
+            _block(
+                title,
+                _keyed_lines(
+                    _tail(model.STANDALONE_LOG, TAIL_STANDALONE), _standalone_kind
+                ),
+                900,
+            )
+        )
     if route == "remix" and d is not None:
         # Only the lines that say anything about the neural pass: the Remix
         # log is enormous and the rest of it is path-tracing chatter.
         from .. import remix as _remix
+
         rtx_log = _tail(_remix.log_path(d), TAIL_REMIX)
         nr_lines = _last_lines(
-            rtx_log, 20, lambda ln: "DLSS-NR" in ln or "dlssnr" in ln.lower()
-            or "Neural" in ln)
+            rtx_log,
+            20,
+            lambda ln: "DLSS-NR" in ln or "dlssnr" in ln.lower() or "Neural" in ln,
+        )
         # A log with no such line is itself the answer (the runtime never
         # tried the pass) - say so, with its last lines, rather than "(none)",
         # which reads as no log at all (#155 had the same shape).
         if not nr_lines and rtx_log.strip():
-            nr_lines = (["(no DLSS-NR line in this log - its last lines:)"]
-                        + _last_lines(rtx_log, 8))
+            nr_lines = [
+                "(no DLSS-NR line in this log - its last lines:)"
+            ] + _last_lines(rtx_log, 8)
         parts.append(_block("remix-dxvk.log", nr_lines, 1200))
     if last_error:
         parts.append(f"\n**Last error**\n```\n{last_error[-900:]}\n```\n")
@@ -1026,10 +1328,16 @@ def issue_body(version: str, gpu_name: str, sm, driver: str, game, route: str,
         # into this folder - worth having in the report, under a heading
         # that says so. A replay reads the block above this one, so a
         # traceback from the update check cannot be read as an install's.
-        parts.append(f"\n**Last error in this session (not from an install "
-                     f"into this folder)**\n```\n{session_error[-900:]}\n```\n")
-    parts.append(_block(
-        f"autopilot.log (`{autopilot_log_path}`)",
-        _tool_log_lines(autopilot_tail or "", game, install_dir), 900))
+        parts.append(
+            f"\n**Last error in this session (not from an install "
+            f"into this folder)**\n```\n{session_error[-900:]}\n```\n"
+        )
+    parts.append(
+        _block(
+            f"autopilot.log (`{autopilot_log_path}`)",
+            _tool_log_lines(autopilot_tail or "", game, install_dir),
+            900,
+        )
+    )
     body = "".join(parts)
     return body[:6000]

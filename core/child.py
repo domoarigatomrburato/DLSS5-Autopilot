@@ -28,6 +28,7 @@ before anyone presses play. TCL_LIBRARY and TK_LIBRARY, set by PyInstaller's
 Tk hook, still reach the child. What Windows itself starts for us -
 webbrowser.open, os.startfile, explorer - does not come through here.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -42,6 +43,7 @@ def _set_dll_directory(path) -> bool:
         return False
     try:
         import ctypes
+
         k32 = ctypes.WinDLL("kernel32", use_last_error=True)
         k32.SetDllDirectoryW.argtypes = [ctypes.c_wchar_p]
         k32.SetDllDirectoryW.restype = ctypes.c_int
@@ -52,13 +54,14 @@ def _set_dll_directory(path) -> bool:
 
 def _start(args, kw) -> subprocess.Popen:
     from . import selfupdate
-    if kw.get("env") is None:               # an explicit None would inherit the lot
+
+    if kw.get("env") is None:  # an explicit None would inherit the lot
         kw["env"] = selfupdate.clean_env()
     ours = getattr(sys, "_MEIPASS", None) if getattr(sys, "frozen", False) else None
     if not ours:
         return subprocess.Popen(args, **kw)
     with _lock:
-        lifted = _set_dll_directory(None)       # None: back to Windows' default search order
+        lifted = _set_dll_directory(None)  # None: back to Windows' default search order
         try:
             return subprocess.Popen(args, **kw)
         finally:
@@ -66,8 +69,9 @@ def _start(args, kw) -> subprocess.Popen:
                 _set_dll_directory(str(ours))
 
 
-def run(args, *, input=None, capture_output=False, timeout=None, check=False,
-        **kw) -> subprocess.CompletedProcess:
+def run(
+    args, *, input=None, capture_output=False, timeout=None, check=False, **kw
+) -> subprocess.CompletedProcess:
     """subprocess.run for a program that is not this tool.
 
     The DLL directory is lifted while the program is CREATED, not while it

@@ -19,6 +19,7 @@ for a day, so no game searches on every launch.
 Everything lands in %LOCALAPPDATA%\dlss5-autopilot\art\<key>\, one folder
 per game folder, so two games never share an image.
 """
+
 from __future__ import annotations
 
 import base64
@@ -38,21 +39,30 @@ from . import log, net, prefs, sources
 ROOT = prefs.FILE.parent / "art"
 KINDS = ("cover", "hero", "logo")
 MAX_BYTES = 8 * 1024 * 1024
-MISS_TTL = 7 * 24 * 3600          # no match: ask again in a week
-FAIL_TTL = 24 * 3600              # no connection: ask again tomorrow
+MISS_TTL = 7 * 24 * 3600  # no match: ask again in a week
+FAIL_TTL = 24 * 3600  # no connection: ask again tomorrow
 TIMEOUT = 15
 PREF = "online_art"
 
-EPIC_DATA = Path(os.environ.get("PROGRAMDATA", r"C:\ProgramData")) / "Epic" / "EpicGamesLauncher" / "Data"
-STEAM_SEARCH = "https://store.steampowered.com/api/storesearch/?term={term}&l=english&cc=US"
+EPIC_DATA = (
+    Path(os.environ.get("PROGRAMDATA", r"C:\ProgramData"))
+    / "Epic"
+    / "EpicGamesLauncher"
+    / "Data"
+)
+STEAM_SEARCH = (
+    "https://store.steampowered.com/api/storesearch/?term={term}&l=english&cc=US"
+)
 _FASTLY = "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{appid}/"
 _CLOUDFLARE = "https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/"
 
 # Epic's keyImages type -> what it is here. DieselGameBoxTall is the
 # 1200x1600 library cover, DieselGameBox the 2560x1440 key art.
-EPIC_TYPES = {"cover": ("DieselGameBoxTall", "OfferImageTall", "DieselStoreFrontTall"),
-              "hero": ("DieselGameBox", "DieselGameBoxWide", "OfferImageWide"),
-              "logo": ("DieselGameBoxLogo",)}
+EPIC_TYPES = {
+    "cover": ("DieselGameBoxTall", "OfferImageTall", "DieselStoreFrontTall"),
+    "hero": ("DieselGameBox", "DieselGameBoxWide", "OfferImageWide"),
+    "logo": ("DieselGameBoxLogo",),
+}
 
 
 def online() -> bool:
@@ -102,7 +112,7 @@ def _files(d: Path, prefix: str) -> dict[str, Path]:
     for n in names:
         stem, ext = os.path.splitext(n)
         if ext.lower() in (".jpg", ".png", ".bmp") and stem.startswith(prefix):
-            kind = stem[len(prefix):]
+            kind = stem[len(prefix) :]
             if kind in KINDS:
                 out[kind] = d / n
     return out
@@ -131,7 +141,9 @@ def _write_meta(game, data: dict) -> None:
     try:
         d.mkdir(parents=True, exist_ok=True)
         data = dict(data, name=game.name, folder=str(game.folder))
-        (d / "meta.json").write_text(json.dumps(data, ensure_ascii=True), encoding="utf8")
+        (d / "meta.json").write_text(
+            json.dumps(data, ensure_ascii=True), encoding="utf8"
+        )
     except OSError:
         pass
 
@@ -251,10 +263,18 @@ def xbox(folder) -> dict[str, Path]:
             text = f.read_text(encoding="utf8", errors="replace")
         except OSError:
             continue
-        attrs = dict((k.lower(), v) for k, v in re.findall(r'([A-Za-z0-9]+)\s*=\s*"([^"]*)"', text))
+        attrs = dict(
+            (k.lower(), v)
+            for k, v in re.findall(r'([A-Za-z0-9]+)\s*=\s*"([^"]*)"', text)
+        )
         logo = re.search(r"<Logo>\s*([^<]+?)\s*</Logo>", text)
-        cover = [attrs.get("square480x480logo"), attrs.get("square310x310logo"),
-                 attrs.get("square150x150logo"), attrs.get("storelogo"), logo.group(1) if logo else None]
+        cover = [
+            attrs.get("square480x480logo"),
+            attrs.get("square310x310logo"),
+            attrs.get("square150x150logo"),
+            attrs.get("storelogo"),
+            logo.group(1) if logo else None,
+        ]
         hero = [attrs.get("splashscreenimage"), attrs.get("image")]
         for kind, names in (("cover", cover), ("hero", hero)):
             for rel in names:
@@ -267,7 +287,7 @@ def xbox(folder) -> dict[str, Path]:
 
 
 # ---------------------------------------------------------------- Epic
-_catalog: tuple | None = None       # (mtime, size, {id: item})
+_catalog: tuple | None = None  # (mtime, size, {id: item})
 
 
 def parse_catcache(raw: bytes) -> dict[str, dict]:
@@ -278,7 +298,11 @@ def parse_catcache(raw: bytes) -> dict[str, dict]:
         return {}
     if not isinstance(items, list):
         return {}
-    return {it["id"]: it for it in items if isinstance(it, dict) and isinstance(it.get("id"), str)}
+    return {
+        it["id"]: it
+        for it in items
+        if isinstance(it, dict) and isinstance(it.get("id"), str)
+    }
 
 
 def _catalog_items() -> dict[str, dict]:
@@ -310,7 +334,11 @@ def epic_manifest(folder, manifests: Path | None = None) -> dict | None:
             d = json.loads(it.read_text(encoding="utf8", errors="replace"))
         except (OSError, ValueError):
             continue
-        if isinstance(d, dict) and d.get("InstallLocation") and _norm_path(d["InstallLocation"]) == want:
+        if (
+            isinstance(d, dict)
+            and d.get("InstallLocation")
+            and _norm_path(d["InstallLocation"]) == want
+        ):
             return d
     return None
 
@@ -318,8 +346,10 @@ def epic_manifest(folder, manifests: Path | None = None) -> dict | None:
 def epic_urls(manifest: dict, catalog: dict[str, dict]) -> dict[str, str]:
     """kind -> image URL for the manifest's catalog item (main game second)."""
     out: dict[str, str] = {}
-    for id_key, ns_key in (("CatalogItemId", "CatalogNamespace"),
-                           ("MainGameCatalogItemId", "MainGameCatalogNamespace")):
+    for id_key, ns_key in (
+        ("CatalogItemId", "CatalogNamespace"),
+        ("MainGameCatalogItemId", "MainGameCatalogNamespace"),
+    ):
         item = catalog.get(manifest.get(id_key) or "")
         if not item:
             continue
@@ -331,8 +361,15 @@ def epic_urls(manifest: dict, catalog: dict[str, dict]) -> dict[str, str]:
             if kind in out:
                 continue
             for t in types:
-                hit = next((k.get("url") for k in images if k.get("type") == t
-                            and str(k.get("url", "")).startswith("https://")), None)
+                hit = next(
+                    (
+                        k.get("url")
+                        for k in images
+                        if k.get("type") == t
+                        and str(k.get("url", "")).startswith("https://")
+                    ),
+                    None,
+                )
                 if hit:
                     out[kind] = hit
                     break
@@ -345,12 +382,14 @@ _APOSTROPHES = dict.fromkeys(map(ord, "'`\u2018\u2019\u02bc\u00b4"), None)
 _EDITION = re.compile(
     r"(?:\s+the)?\s+(?:(?:complete|definitive|enhanced|deluxe|digital deluxe|standard|ultimate|"
     r"gold|premium|special|anniversary|collectors|legendary|game of the year|goty)\s+edition"
-    r"|directors cut|goty)$")
+    r"|directors cut|goty)$"
+)
 # Words that make a store result something other than the game itself.
 _ADDON = re.compile(
     r"\b(?:dlc|soundtrack|ost|pack|bundle|upgrade|demo|season pass|expansion|skin|skins|costume|"
     r"artbook|art book|supply drop|episode|chapter|trial|benchmark|playtest|dedicated server|"
-    r"sdk|wallpapers?|prelude|mask|cosmetic)\b")
+    r"sdk|wallpapers?|prelude|mask|cosmetic)\b"
+)
 
 
 def norm(name: str) -> str:
@@ -405,7 +444,11 @@ def match(name: str, items) -> int | None:
             if ":" not in raw:
                 continue
             head, tail = raw.split(":", 1)
-            if strip_edition(norm(head)) == gs and norm(tail) and not _ADDON.search(norm(tail)):
+            if (
+                strip_edition(norm(head)) == gs
+                and norm(tail)
+                and not _ADDON.search(norm(tail))
+            ):
                 subs.append(aid)
     return subs[0] if len(subs) == 1 else None
 
@@ -424,36 +467,58 @@ def steam_urls(appid, assets: dict | None = None) -> dict[str, list[str]]:
     out = {"cover": [], "hero": [], "logo": []}
     fmt = str((assets or {}).get("asset_url_format") or "")
     if fmt.startswith(f"steam/apps/{a['appid']}/${{FILENAME}}"):
-        for kind, names in (("cover", ("library_capsule_2x", "library_capsule")),
-                            ("hero", ("library_hero",)), ("logo", ("library_logo",))):
+        for kind, names in (
+            ("cover", ("library_capsule_2x", "library_capsule")),
+            ("hero", ("library_hero",)),
+            ("logo", ("library_logo",)),
+        ):
             for n in names:
                 v = str(assets.get(n) or "")
                 if _ASSET_NAME.match(v):
-                    out[kind].append("https://shared.fastly.steamstatic.com/store_item_assets/"
-                                     + fmt.replace("${FILENAME}", v))
-    out["cover"] += [_FASTLY.format(**a) + "library_600x900_2x.jpg",
-                     _FASTLY.format(**a) + "library_600x900.jpg",
-                     _CLOUDFLARE.format(**a) + "library_600x900.jpg"]
-    out["hero"] += [_FASTLY.format(**a) + "library_hero.jpg",
-                    _CLOUDFLARE.format(**a) + "library_hero.jpg"]
-    out["logo"] += [_FASTLY.format(**a) + "logo.png",
-                    _CLOUDFLARE.format(**a) + "logo.png"]
+                    out[kind].append(
+                        "https://shared.fastly.steamstatic.com/store_item_assets/"
+                        + fmt.replace("${FILENAME}", v)
+                    )
+    out["cover"] += [
+        _FASTLY.format(**a) + "library_600x900_2x.jpg",
+        _FASTLY.format(**a) + "library_600x900.jpg",
+        _CLOUDFLARE.format(**a) + "library_600x900.jpg",
+    ]
+    out["hero"] += [
+        _FASTLY.format(**a) + "library_hero.jpg",
+        _CLOUDFLARE.format(**a) + "library_hero.jpg",
+    ]
+    out["logo"] += [
+        _FASTLY.format(**a) + "logo.png",
+        _CLOUDFLARE.format(**a) + "logo.png",
+    ]
     return out
 
 
-STEAM_ITEMS = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json={q}"
+STEAM_ITEMS = (
+    "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json={q}"
+)
 
 
 def steam_assets(appid) -> dict | None:
     """The store's asset list for an app, or None. Not having it is fine:
     the plain CDN paths are tried anyway."""
-    q = json.dumps({"ids": [{"appid": int(appid)}],
-                    "context": {"language": "english", "country_code": "US"},
-                    "data_request": {"include_assets": True}}, separators=(",", ":"))
+    q = json.dumps(
+        {
+            "ids": [{"appid": int(appid)}],
+            "context": {"language": "english", "country_code": "US"},
+            "data_request": {"include_assets": True},
+        },
+        separators=(",", ":"),
+    )
     try:
         body = _get(STEAM_ITEMS.format(q=urllib.parse.quote(q)), 2 * 1024 * 1024)
-        items = json.loads(body.decode("utf8"))["response"]["store_items"] if body else []
-        assets = items[0].get("assets") if items and isinstance(items[0], dict) else None
+        items = (
+            json.loads(body.decode("utf8"))["response"]["store_items"] if body else []
+        )
+        assets = (
+            items[0].get("assets") if items and isinstance(items[0], dict) else None
+        )
         return assets if isinstance(assets, dict) else None
     except (_Offline, ValueError, KeyError, TypeError, AttributeError, IndexError):
         return None
@@ -478,7 +543,9 @@ def _get(url: str, limit: int = MAX_BYTES) -> bytes | None:
         raise _SwitchedOff(url)
     req = urllib.request.Request(url, headers=sources.UA)
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=net.ssl_context()) as r:
+        with urllib.request.urlopen(
+            req, timeout=TIMEOUT, context=net.ssl_context()
+        ) as r:
             n = int(r.headers.get("Content-Length") or 0)
             if n > limit:
                 return None
@@ -524,8 +591,14 @@ def lookup(game, appid=None) -> bool:
         if "cover" not in have:
             aid = appid
             if aid is None:
-                term = urllib.parse.quote(" ".join(str(game.name).translate(_SYMBOLS).split()))
-                body = _get(STEAM_SEARCH.format(term=term), 2 * 1024 * 1024) if term else None
+                term = urllib.parse.quote(
+                    " ".join(str(game.name).translate(_SYMBOLS).split())
+                )
+                body = (
+                    _get(STEAM_SEARCH.format(term=term), 2 * 1024 * 1024)
+                    if term
+                    else None
+                )
                 try:
                     items = json.loads(body.decode("utf8")).get("items") if body else []
                 except (ValueError, AttributeError):
@@ -542,11 +615,15 @@ def lookup(game, appid=None) -> bool:
         log.write(f"art: {game.name}: online lookup switched off part way; stopped")
         return have != before
     except _Offline as e:
-        log.write(f"art: {game.name}: no answer ({str(e)[:120]}); asking again tomorrow")
+        log.write(
+            f"art: {game.name}: no answer ({str(e)[:120]}); asking again tomorrow"
+        )
         _write_meta(game, {"miss": time.time(), "ttl": FAIL_TTL})
         return have != before
-    except Exception as e:                          # never into the UI
-        log.write(f"art: {game.name}: lookup failed ({type(e).__name__}: {str(e)[:120]})")
+    except Exception as e:  # never into the UI
+        log.write(
+            f"art: {game.name}: lookup failed ({type(e).__name__}: {str(e)[:120]})"
+        )
         _write_meta(game, {"miss": time.time(), "ttl": FAIL_TTL})
         return False
     if not online():

@@ -6,6 +6,7 @@ reads only what is new, the saved library that opens at once and re-reads
 changed games off the Tk thread, rows that never walk a folder on the Tk
 thread, the hidden-games list cached from settings.
 """
+
 from __future__ import annotations
 
 import threading
@@ -14,13 +15,33 @@ import traceback
 from contextlib import contextmanager
 from pathlib import Path
 
-from .. import (anticheat, community, components, diagnose, dlss, games, gpu, installer, library, log,
-                prefs, sources, update, video)
+from .. import (
+    anticheat,
+    community,
+    components,
+    diagnose,
+    dlss,
+    games,
+    gpu,
+    installer,
+    library,
+    log,
+    prefs,
+    sources,
+    update,
+    video,
+)
 from . import art, imaging
 from . import theme as T
 
-SORTS = (("", "scan order"), ("name", "name"), ("source", "store"), ("api", "graphics api"),
-         ("route", "route"), ("status", "status"))
+SORTS = (
+    ("", "scan order"),
+    ("name", "name"),
+    ("source", "store"),
+    ("api", "graphics api"),
+    ("route", "route"),
+    ("status", "status"),
+)
 FILTERS = ("all", "installed", "working", "needs a look", "update")
 ARCH = (("all", "32 + 64-bit"), ("64", "64-bit only"), ("32", "32-bit only"))
 
@@ -29,6 +50,7 @@ def first_line(e: Exception) -> str:
     """Why it stopped, in one line - the cause, not the rollback sentence a
     failed install opens with (gate 2.0.7)."""
     from .. import installer
+
     return installer.cause_of(e)
 
 
@@ -91,9 +113,19 @@ class LibraryControl:
         # a hand-edited settings file can hold anything: [[...]] here raised
         # TypeError (a list is not hashable) and the window never opened
         s = prefs.get("games_sort")
-        self.sort = s[0] if isinstance(s, list) and s and isinstance(s[0], str) and s[0] in dict(SORTS) else ""
-        self.sort_desc = bool(s[1]) if isinstance(s, list) and len(s) > 1 and isinstance(s[1], (bool, int)) \
+        self.sort = (
+            s[0]
+            if isinstance(s, list)
+            and s
+            and isinstance(s[0], str)
+            and s[0] in dict(SORTS)
+            else ""
+        )
+        self.sort_desc = (
+            bool(s[1])
+            if isinstance(s, list) and len(s) > 1 and isinstance(s[1], (bool, int))
             else False
+        )
         self._lib_job = None
         self._card_memo: dict | None = None
         self._hidden_cache: set | None = None
@@ -105,7 +137,7 @@ class LibraryControl:
         self.sm: int | None = None
         v = prefs.get("last_verdicts")
         self.verdicts: dict = v if isinstance(v, dict) else {}
-        self.shared = None          # the compatibility list, once fetched
+        self.shared = None  # the compatibility list, once fetched
 
     def _sm(self) -> int | None:
         if self.sm is None:
@@ -127,11 +159,22 @@ class LibraryControl:
             ok, _ = installer.check_supported(g)
             if not ok:
                 return False, "-", installer.EXPERIMENTAL, "-", False, ""
-            sup = dlss.detect(g.install_dir, g.folder, g.api, g.bitness or 0, sm,
-                              driver=gpu.driver_version(), shared=community.cached(), exe=g.exe)
+            sup = dlss.detect(
+                g.install_dir,
+                g.folder,
+                g.api,
+                g.bitness or 0,
+                sm,
+                driver=gpu.driver_version(),
+                shared=community.cached(),
+                exe=g.exe,
+            )
             level, _ = installer.reliability(g, sup.recommended)
-            outlook = {installer.STABLE: "reliable", installer.BETA: "beta",
-                       installer.EXPERIMENTAL: "often fails"}[level]
+            outlook = {
+                installer.STABLE: "reliable",
+                installer.BETA: "beta",
+                installer.EXPERIMENTAL: "often fails",
+            }[level]
             ac = anticheat.detect(g.install_dir, g.folder)
             return ok, sup.recommended, level, outlook, ac.present, ac.summary
         except Exception as e:
@@ -169,6 +212,7 @@ class LibraryControl:
             for g in todo:
                 rows[(str(g.folder), str(g.exe))] = self.inspect_row(g, sm)
             self.q.put(("rechecked", (gen, rows, [str(g.folder) for g in todo])))
+
         threading.Thread(target=work, daemon=True).start()
 
     def forget_row(self, g) -> None:
@@ -181,7 +225,9 @@ class LibraryControl:
     def hidden(self) -> set:
         if self._hidden_cache is None:
             v = prefs.get("hidden_games")
-            self._hidden_cache = {x for x in v if isinstance(x, str)} if isinstance(v, list) else set()
+            self._hidden_cache = (
+                {x for x in v if isinstance(x, str)} if isinstance(v, list) else set()
+            )
         return set(self._hidden_cache)
 
     def set_hidden(self, g, hide: bool) -> None:
@@ -247,8 +293,15 @@ class LibraryControl:
     def _card(self, g) -> dict:
         row = self.row_of(g)
         hid = str(g.folder) in self.hidden()
-        out = {"status": "", "colour": T.MUTED, "dot": False, "dim": hid, "kind": "ready",
-               "route": "", "level": ""}
+        out = {
+            "status": "",
+            "colour": T.MUTED,
+            "dot": False,
+            "dim": hid,
+            "kind": "ready",
+            "route": "",
+            "level": "",
+        }
         if row is None:
             out.update(status="reading...", colour=T.DIM, kind="reading")
             return out
@@ -259,7 +312,11 @@ class LibraryControl:
         out.update(route=route, level=level, anticheat=bool(ac_present))
         installed = g.installed
         if not ok:
-            label = ("choose architecture / api" if g.exe_warning and not g.error else "unsupported")
+            label = (
+                "choose architecture / api"
+                if g.exe_warning and not g.error
+                else "unsupported"
+            )
             out.update(status=label, colour=T.WARN, kind="unsupported", dim=True)
         elif ac_present and not installed:
             out.update(status=ac_summary, colour=T.DIM, kind="anticheat", dim=True)
@@ -271,21 +328,47 @@ class LibraryControl:
             man = diagnose._manifest(g.install_dir)
             man_api = man.get("api") or ""
             v = self.verdict_of(g)
-            if man_api and man_api != g.api and not man.get("dxvk") \
-                    and man.get("proxy") != diagnose.VULKAN_LAYER:
-                out.update(status=f"reinstall - was {man_api}", colour=T.AMBER, kind="update", dot=True)
+            if (
+                man_api
+                and man_api != g.api
+                and not man.get("dxvk")
+                and man.get("proxy") != diagnose.VULKAN_LAYER
+            ):
+                out.update(
+                    status=f"reinstall - was {man_api}",
+                    colour=T.AMBER,
+                    kind="update",
+                    dot=True,
+                )
             elif n_stale:
-                out.update(status=f"update ({n_stale})", colour=T.AMBER, kind="update", dot=True)
+                out.update(
+                    status=f"update ({n_stale})",
+                    colour=T.AMBER,
+                    kind="update",
+                    dot=True,
+                )
             elif v and v.get("ok"):
-                out.update(status="working" + (f"  \u00b7  {v['fps']} fps" if v.get("fps") else ""),
-                           colour=T.OK, kind="working", dot=True)
+                out.update(
+                    status="working"
+                    + (f"  \u00b7  {v['fps']} fps" if v.get("fps") else ""),
+                    colour=T.OK,
+                    kind="working",
+                    dot=True,
+                )
             elif v and not v.get("ok"):
                 out.update(status="needs a look", colour=T.WARN, kind="look", dot=True)
             else:
                 out.update(status="installed", colour=T.MUTED, kind="installed")
         else:
-            out.update(status={"reliable": "", "beta": "beta", "often fails": "experimental"}.get(outlook, ""),
-                       colour=T.DIM, kind="ready")
+            out.update(
+                status={
+                    "reliable": "",
+                    "beta": "beta",
+                    "often fails": "experimental",
+                }.get(outlook, ""),
+                colour=T.DIM,
+                kind="ready",
+            )
             said = self.shared_line(g)
             if said:
                 out.update(status=said, colour=T.AMBER)
@@ -300,8 +383,14 @@ class LibraryControl:
         try:
             entry = community.for_game(data, g)
             routes = (entry or {}).get("routes") or {}
-            best = max(((r.get("worked", 0), r.get("worked", 0) + r.get("failed", 0))
-                        for r in routes.values() if isinstance(r, dict)), default=(0, 0))
+            best = max(
+                (
+                    (r.get("worked", 0), r.get("worked", 0) + r.get("failed", 0))
+                    for r in routes.values()
+                    if isinstance(r, dict)
+                ),
+                default=(0, 0),
+            )
         except Exception:
             return ""
         if not best[0]:
@@ -314,6 +403,7 @@ class LibraryControl:
                 self.q.put(("shared", community.fetch()))
             except Exception:
                 pass
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_shared(self, data) -> None:
@@ -329,7 +419,11 @@ class LibraryControl:
         for g in self.all_games:
             if not g.exe:
                 continue
-            if self.arch != "all" and g.bitness is not None and str(g.bitness) != self.arch:
+            if (
+                self.arch != "all"
+                and g.bitness is not None
+                and str(g.bitness) != self.arch
+            ):
                 continue
             if not self.show_hidden and str(g.folder) in hid:
                 continue
@@ -337,13 +431,17 @@ class LibraryControl:
                 continue
             if self.filter != "all":
                 kind = self.card(g)["kind"]
-                want = {"installed": ("installed", "working", "look", "update"),
-                        "working": ("working",), "needs a look": ("look",),
-                        "update": ("update",)}[self.filter]
+                want = {
+                    "installed": ("installed", "working", "look", "update"),
+                    "working": ("working",),
+                    "needs a look": ("look",),
+                    "update": ("update",),
+                }[self.filter]
                 if kind not in want:
                     continue
             out.append(g)
         if self.sort:
+
             def key(g):
                 if self.sort == "name":
                     return g.name.lower()
@@ -353,12 +451,20 @@ class LibraryControl:
                     return str(g.api).lower()
                 c = self.card(g)
                 return (c["route"] if self.sort == "route" else c["status"]).lower()
+
             out.sort(key=key, reverse=self.sort_desc)
         return out
 
     def counts(self) -> dict:
-        n = {"all": 0, "installed": 0, "working": 0, "needs a look": 0, "update": 0, "hidden": 0,
-             "noexe": 0}
+        n = {
+            "all": 0,
+            "installed": 0,
+            "working": 0,
+            "needs a look": 0,
+            "update": 0,
+            "hidden": 0,
+            "noexe": 0,
+        }
         hid = self.hidden()
         for g in self.all_games:
             if not g.exe:
@@ -366,7 +472,11 @@ class LibraryControl:
                 continue
             # the tabs count what the grid can show: a 32-bit game is not one
             # of "3 installed" while the view shows 64-bit only
-            if self.arch != "all" and g.bitness is not None and str(g.bitness) != self.arch:
+            if (
+                self.arch != "all"
+                and g.bitness is not None
+                and str(g.bitness) != self.arch
+            ):
                 continue
             if str(g.folder) in hid:
                 n["hidden"] += 1
@@ -413,11 +523,13 @@ class LibraryControl:
             except Exception:
                 log.exception(f"cover for {g.name}")
             self.q.put(("cover", (key, buf, w, h, accent, kind)))
+
         threading.Thread(target=work, daemon=True).start()
         return None
 
     def _on_cover(self, payload) -> None:
         import tkinter as tk
+
         key, buf, w, h, accent, kind = payload
         self._cover_busy.discard(key)
         entry = {"accent": accent or T.AMBER, "kind": kind, "levels": []}
@@ -425,8 +537,13 @@ class LibraryControl:
             if kind == "cover" and buf:
                 # rest and hover, and the dimmed one: six images a cover held
                 # about 1.1 MB a game at 100% scale, most of it never shown
-                entry["levels"] = [imaging.photo(tk, imaging.brightness(buf, k), w, h, self.root) for k in (0.9, 1.08)]
-                entry["dim"] = imaging.photo(tk, imaging.brightness(buf, 0.35), w, h, self.root)
+                entry["levels"] = [
+                    imaging.photo(tk, imaging.brightness(buf, k), w, h, self.root)
+                    for k in (0.9, 1.08)
+                ]
+                entry["dim"] = imaging.photo(
+                    tk, imaging.brightness(buf, 0.35), w, h, self.root
+                )
             elif kind == "icon" and buf:
                 ib, iw, ih = buf
                 entry["levels"] = [imaging.photo(tk, ib, iw, ih, self.root)]
@@ -448,6 +565,7 @@ class LibraryControl:
         def run():
             self._lib_job = None
             self.refresh("library", soft=True)
+
         try:
             self._lib_job = self.root.after(100, run)
         except Exception:
@@ -471,9 +589,11 @@ class LibraryControl:
     # ------------------------------------------------------------ pictures by hand
     def picture_items(self, g) -> list:
         """The menu entries that change a game's pictures."""
-        items = [("choose cover...", lambda: self.choose_picture(g, "cover")),
-                 ("choose background...", lambda: self.choose_picture(g, "hero")),
-                 ("choose logo...", lambda: self.choose_picture(g, "logo"))]
+        items = [
+            ("choose cover...", lambda: self.choose_picture(g, "cover")),
+            ("choose background...", lambda: self.choose_picture(g, "hero")),
+            ("choose logo...", lambda: self.choose_picture(g, "logo")),
+        ]
         known = art.peek(g)
         if known is not None and known.chosen:
             items.append(("use the automatic pictures", lambda: self.reset_pictures(g)))
@@ -481,10 +601,16 @@ class LibraryControl:
 
     def choose_picture(self, g, kind: str) -> None:
         from tkinter import filedialog
+
         # only what GDI+ draws: it has no WebP decoder on every Windows
         p = filedialog.askopenfilename(
-            title={"cover": "cover for", "hero": "background for", "logo": "logo for"}[kind] + f" {g.name}",
-            parent=self.root, filetypes=[("pictures", "*.jpg *.jpeg *.png *.bmp")])
+            title={"cover": "cover for", "hero": "background for", "logo": "logo for"}[
+                kind
+            ]
+            + f" {g.name}",
+            parent=self.root,
+            filetypes=[("pictures", "*.jpg *.jpeg *.png *.bmp")],
+        )
         if not p:
             return
 
@@ -495,6 +621,7 @@ class LibraryControl:
                 log.exception("choosing a picture")
                 said = first_line(e)
             self.q.put(("picture", (g.name, kind, said)))
+
         threading.Thread(target=work, daemon=True).start()
 
     def reset_pictures(self, g) -> None:
@@ -505,6 +632,7 @@ class LibraryControl:
             except Exception as e:
                 said = first_line(e)
             self.q.put(("picture", (g.name, "", said)))
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_picture(self, payload) -> None:
@@ -513,12 +641,15 @@ class LibraryControl:
             self.shell.error("picture not used", said)
         else:
             label = {"hero": "background"}.get(kind, kind)
-            self.shell.status(f"{name}: {label} set" if kind else f"{name}: automatic pictures")
+            self.shell.status(
+                f"{name}: {label} set" if kind else f"{name}: automatic pictures"
+            )
 
     def ask_online_art(self) -> None:
         """Once, when a game has no picture on this PC: may its name go to
         Steam's store to find one? A banner, not a dialog - nothing waits on it."""
         from .. import covers
+
         if not covers.undecided() or getattr(self, "_asked_online_art", False):
             return
         self._asked_online_art = True
@@ -526,9 +657,16 @@ class LibraryControl:
         def answer(on):
             self.shell.unbanner("covers")
             self.set_online_art(on)
-        self.shell.banner("covers", "some games have no cover on this PC - look them up online? "
-                                    "(sends their names to Steam's store)",
-                          [("look them up", lambda: answer(True), True), ("no", lambda: answer(False), False)])
+
+        self.shell.banner(
+            "covers",
+            "some games have no cover on this PC - look them up online? "
+            "(sends their names to Steam's store)",
+            [
+                ("look them up", lambda: answer(True), True),
+                ("no", lambda: answer(False), False),
+            ],
+        )
 
     def set_online_art(self, on: bool) -> None:
         prefs.set_("online_art", bool(on))
@@ -565,8 +703,9 @@ class LibraryControl:
         self._recheck = {str(g.folder) for g in changed}
         self._recheck_id += 1
         n = len([g for g in self.all_games if g.exe])
-        self.scan_note = (f"{n} games from the last scan"
-                          + (f", reading {len(self._recheck)} that changed" if self._recheck else ""))
+        self.scan_note = f"{n} games from the last scan" + (
+            f", reading {len(self._recheck)} that changed" if self._recheck else ""
+        )
         if changed:
             self._recheck_changed(changed)
         # 'update (n)' came up only after a scan, an install or an uninstall;
@@ -588,6 +727,7 @@ class LibraryControl:
                 if g.exe:
                     rows[(str(g.folder), str(g.exe))] = self.inspect_row(g, sm)
             self.q.put(("rechecked", (gen, rows, [str(g.folder) for g in changed])))
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_rechecked(self, payload) -> None:
@@ -617,7 +757,9 @@ class LibraryControl:
             rows = {}
             todo = [g for g in gs if g.exe and (only is None or g in only)]
             for i, g in enumerate(todo, 1):
-                self.q.put(("scan", f"checking compatibility {i}/{len(todo)}: {g.name}"))
+                self.q.put(
+                    ("scan", f"checking compatibility {i}/{len(todo)}: {g.name}")
+                )
                 started = time.monotonic()
                 rows[(str(g.folder), str(g.exe))] = self.inspect_row(g, sm)
                 if time.monotonic() - started >= 1:
@@ -626,7 +768,9 @@ class LibraryControl:
 
         def quick(cached):
             known, rows, changed = cached
-            gs, fresh = games.quick_scan(known, progress=lambda m: self.q.put(("scan", m)))
+            gs, fresh = games.quick_scan(
+                known, progress=lambda m: self.q.put(("scan", m))
+            )
             sm = self._sm()
             for g in changed:
                 try:
@@ -636,7 +780,9 @@ class LibraryControl:
             keep = {(str(g.folder), str(g.exe)) for g in gs if g.exe}
             rows = {k: r for k, r in rows.items() if k in keep}
             rows.update(rows_for(gs, sm, only=fresh + [c for c in changed if c in gs]))
-            log.write(f"quick rescan: {len(fresh)} new, {len(changed)} changed, {len(gs)} in all")
+            log.write(
+                f"quick rescan: {len(fresh)} new, {len(changed)} changed, {len(gs)} in all"
+            )
             library.save(gs, rows, update.VERSION, sm)
             self.q.put(("scanned", (gs, rows)))
 
@@ -661,6 +807,7 @@ class LibraryControl:
             except Exception:
                 log.exception("scanning the library")
                 self.q.put(("scanfail", traceback.format_exc()))
+
         threading.Thread(target=start, daemon=True).start()
 
     def _on_scan(self, text: str) -> None:
@@ -670,8 +817,11 @@ class LibraryControl:
         gs, rows = payload
         self.scanning = False
         self.shell.busy("")
-        kept = [g for g in self.all_games if g.source == "Manual" and not any(
-            x.folder == g.folder for x in gs)]
+        kept = [
+            g
+            for g in self.all_games
+            if g.source == "Manual" and not any(x.folder == g.folder for x in gs)
+        ]
         allg = kept + list(gs)
         try:
             # it returns the list with one entry per executable; the answer
@@ -687,7 +837,9 @@ class LibraryControl:
         art.forget()
         n = len([g for g in allg if g.exe])
         noexe = len([g for g in allg if not g.exe])
-        self.scan_note = f"{n} games" + (f", {noexe} folders had no executable" if noexe else "")
+        self.scan_note = f"{n} games" + (
+            f", {noexe} folders had no executable" if noexe else ""
+        )
         self.scan_failed = ""
         self.shell.status(f"scan complete: {n} games")
         self.remember_library()
@@ -705,8 +857,12 @@ class LibraryControl:
         if "Traceback" in text or not text.strip():
             self.scan_failed = "the scan stopped - details in the log"
         else:
-            self.scan_failed = "the scan stopped: " + first_line(Exception(text.strip()))
-        self.write(text.strip().splitlines()[-1] if text.strip() else "scan failed", "err")
+            self.scan_failed = "the scan stopped: " + first_line(
+                Exception(text.strip())
+            )
+        self.write(
+            text.strip().splitlines()[-1] if text.strip() else "scan failed", "err"
+        )
         if "Traceback" in text:
             self.offer_crash_report()
         self.refresh("library")
@@ -725,6 +881,7 @@ class LibraryControl:
                     self.q.put(("stale", components.stale_counts(roots)))
             except Exception:
                 log.exception("checking installed games for updates")
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_stale(self, counts: dict) -> None:
@@ -760,17 +917,29 @@ class LibraryControl:
         if self.busy:
             return
         targets, skipped = self.update_targets()
-        left = (f" {len(skipped)} game{'s' if len(skipped) != 1 else ''} with anti-cheat "
+        left = (
+            (
+                f" {len(skipped)} game{'s' if len(skipped) != 1 else ''} with anti-cheat "
                 f"{'are' if len(skipped) != 1 else 'is'} left for you to update from "
-                f"{'their' if len(skipped) != 1 else 'its'} own page.") if skipped else ""
+                f"{'their' if len(skipped) != 1 else 'its'} own page."
+            )
+            if skipped
+            else ""
+        )
         if not targets:
-            self.shell.status("nothing to update - every installed game is current" if not skipped
-                              else "nothing updated -" + left)
+            self.shell.status(
+                "nothing to update - every installed game is current"
+                if not skipped
+                else "nothing updated -" + left
+            )
             return
-        if not self.shell.ask(f"update {len(targets)} game{'s' if len(targets) != 1 else ''}?",
-                              "Each is installed again with the same route and settings. "
-                              "Backups and your own files are kept." + left,
-                              "update", "cancel"):
+        if not self.shell.ask(
+            f"update {len(targets)} game{'s' if len(targets) != 1 else ''}?",
+            "Each is installed again with the same route and settings. "
+            "Backups and your own files are kept." + left,
+            "update",
+            "cancel",
+        ):
             return
         self.busy = True
 
@@ -787,20 +956,34 @@ class LibraryControl:
                         continue
                     # read again here: the row's answer may be older than the folder
                     if anticheat.detect(g.install_dir, g.folder).present:
-                        self.q.put(("log", (f"{g.name}: anti-cheat found - not updated", "warn")))
+                        self.q.put(
+                            (
+                                "log",
+                                (f"{g.name}: anti-cheat found - not updated", "warn"),
+                            )
+                        )
                         continue
                     rep = installer.install(g, opt, on_log=lambda t: log.write(t))
                     done.append(g)
                     if installer.record_lost(rep):
                         # the next game would meet the same full drive
                         stopped = g.name
-                        self.q.put(("log", (f"{g.name}: {installer.cause_of(rep.warnings[-1])} "
-                                            f"- update all stopped here, the games after it were not updated", "warn")))
+                        self.q.put(
+                            (
+                                "log",
+                                (
+                                    f"{g.name}: {installer.cause_of(rep.warnings[-1])} "
+                                    f"- update all stopped here, the games after it were not updated",
+                                    "warn",
+                                ),
+                            )
+                        )
                         break
                 except Exception as e:
                     log.exception(f"updating {g.name}", e)
                     self.q.put(("log", (f"{g.name}: {first_line(e)}", "err")))
             self.q.put(("updated_all", (len(done), done, len(skipped), stopped)))
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_updated_all(self, payload) -> None:
@@ -827,14 +1010,17 @@ class LibraryControl:
                 log.exception(f"reading the DLSS files of {g.name} again")
         if done:
             prefs.set_("last_verdicts", self.verdicts)
-        self.shell.status(f"updated {n} game{'s' if n != 1 else ''}"
-                          + (f" - stopped at {stopped}: no record could be saved" if stopped else "")
-                          + (f" - {skipped} with anti-cheat left for you" if skipped else ""))
+        self.shell.status(
+            f"updated {n} game{'s' if n != 1 else ''}"
+            + (f" - stopped at {stopped}: no record could be saved" if stopped else "")
+            + (f" - {skipped} with anti-cheat left for you" if skipped else "")
+        )
         self.check_stale()
         self.refresh("library")
 
     def pick_folder(self) -> None:
         from tkinter import filedialog
+
         d = filedialog.askdirectory(title="select the game folder", parent=self.root)
         if not d:
             return
@@ -845,8 +1031,14 @@ class LibraryControl:
         # A game the scan already found, under a name the person did not
         # search for: open that one, and bring it back if it was hidden - a
         # second card for the same executable only merged on the next start.
-        same = next((x for x in self.all_games if getattr(x, "exe", None)
-                     and (x.exe == g.exe or x.folder == g.folder)), None)
+        same = next(
+            (
+                x
+                for x in self.all_games
+                if getattr(x, "exe", None) and (x.exe == g.exe or x.folder == g.folder)
+            ),
+            None,
+        )
         if same is not None:
             if str(same.folder) in self.hidden():
                 self.set_hidden(same, False)

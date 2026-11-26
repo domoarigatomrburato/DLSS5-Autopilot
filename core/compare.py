@@ -10,6 +10,7 @@ Everything here is plain file and ini work; the window lives in compareui.
 The export deliberately uses tkinter's own PNG codec instead of PIL, because
 this tool ships with no third-party packages and must stay that way.
 """
+
 from __future__ import annotations
 
 import math
@@ -35,13 +36,41 @@ _STAMP = re.compile(r"(\d{4})-(\d{2})-(\d{2})[ _](\d{2})-(\d{2})-(\d{2})")
 
 # Virtual-key code -> what the key cap says. ReShade stores the raw VK.
 _VK = {
-    8: "Backspace", 9: "Tab", 13: "Enter", 19: "Pause", 20: "Caps Lock",
-    27: "Escape", 32: "Space", 33: "Page Up", 34: "Page Down", 35: "End",
-    36: "Home", 37: "Left", 38: "Up", 39: "Right", 40: "Down",
-    44: "Print Screen", 45: "Insert", 46: "Delete", 144: "Num Lock",
-    145: "Scroll Lock", 106: "Numpad *", 107: "Numpad +", 109: "Numpad -",
-    110: "Numpad .", 111: "Numpad /", 186: ";", 187: "=", 188: ",",
-    189: "-", 190: ".", 191: "/", 192: "`", 219: "[", 220: "\\", 221: "]",
+    8: "Backspace",
+    9: "Tab",
+    13: "Enter",
+    19: "Pause",
+    20: "Caps Lock",
+    27: "Escape",
+    32: "Space",
+    33: "Page Up",
+    34: "Page Down",
+    35: "End",
+    36: "Home",
+    37: "Left",
+    38: "Up",
+    39: "Right",
+    40: "Down",
+    44: "Print Screen",
+    45: "Insert",
+    46: "Delete",
+    144: "Num Lock",
+    145: "Scroll Lock",
+    106: "Numpad *",
+    107: "Numpad +",
+    109: "Numpad -",
+    110: "Numpad .",
+    111: "Numpad /",
+    186: ";",
+    187: "=",
+    188: ",",
+    189: "-",
+    190: ".",
+    191: "/",
+    192: "`",
+    219: "[",
+    220: "\\",
+    221: "]",
     222: "'",
 }
 _VK.update({48 + i: str(i) for i in range(10)})
@@ -136,8 +165,7 @@ def pair(files: list[Path]) -> tuple[Path, Path] | None:
     files = list(files)
     if len(files) < 2:
         return None
-    stamped = sorted(((taken(p), p) for p in files), key=lambda t: t[0],
-                     reverse=True)
+    stamped = sorted(((taken(p), p) for p in files), key=lambda t: t[0], reverse=True)
     for (t1, a), (t2, b) in zip(stamped, stamped[1:]):
         if t1 - t2 <= PAIR_WINDOW:
             return b, a
@@ -160,14 +188,18 @@ def key_name(spec: str | None) -> str:
         return DEFAULT_KEY
     if vk == 0:
         return "not bound - set one in ReShade's settings tab"
-    mods = [name for flag, name in zip(parts[1:4], ("Ctrl", "Shift", "Alt"))
-            if flag not in ("", "0")]
+    mods = [
+        name
+        for flag, name in zip(parts[1:4], ("Ctrl", "Shift", "Alt"))
+        if flag not in ("", "0")
+    ]
     return " + ".join(mods + [_VK.get(vk, f"key {vk}")])
 
 
 def screenshot_key(install_dir: Path) -> str:
-    return key_name(Ini.load(Path(install_dir) / "ReShade.ini")
-                    .get("INPUT", "KeyScreenshot"))
+    return key_name(
+        Ini.load(Path(install_dir) / "ReShade.ini").get("INPUT", "KeyScreenshot")
+    )
 
 
 # ------------------------------------------------------------------- export
@@ -188,8 +220,9 @@ def _load_capped(tk, master, path: Path, limit: int):
     return img
 
 
-def export_side_by_side(a: Path, b: Path, out: Path, master=None,
-                        max_width: int = EXPORT_MAX_W) -> Path:
+def export_side_by_side(
+    a: Path, b: Path, out: Path, master=None, max_width: int = EXPORT_MAX_W
+) -> Path:
     """Write `a` and `b` next to each other into one PNG, `a` on the left.
 
     Tk's photo image can read and write PNG on its own, so no PIL. Each side
@@ -198,6 +231,7 @@ def export_side_by_side(a: Path, b: Path, out: Path, master=None,
     root is created when no `master` is given so this works from scripts.
     """
     import tkinter as tk
+
     own_root = None
     if master is None:
         own_root = tk.Tk()
@@ -217,8 +251,10 @@ def export_side_by_side(a: Path, b: Path, out: Path, master=None,
             for x0, img, h in ((0, ia, ha), (wa, ib, hb)):
                 for y in range(h):
                     row = [img.get(x, y) for x in range(img.width())]
-                    combined.put("{" + " ".join(
-                        "#%02x%02x%02x" % c for c in row) + "}", to=(x0, y))
+                    combined.put(
+                        "{" + " ".join("#%02x%02x%02x" % c for c in row) + "}",
+                        to=(x0, y),
+                    )
         out = Path(out)
         out.parent.mkdir(parents=True, exist_ok=True)
         combined.write(str(out), format="png")

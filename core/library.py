@@ -28,6 +28,7 @@ and read back on the next launch. Two things decide whether it may be used:
 Nothing here is load-bearing: a missing, unreadable or stale file simply
 means the normal full scan runs, exactly as before.
 """
+
 from __future__ import annotations
 
 import json
@@ -82,6 +83,7 @@ def _to_json(g) -> dict:
 
 def _from_json(d: dict):
     from . import emulators, games
+
     exe = Path(d["exe"]) if d.get("exe") else None
     g = games.Game(
         name=d["name"],
@@ -136,8 +138,10 @@ def save(all_games: list, rows: dict, version: str, sm) -> None:
             "sm": sm,
             "games": [_to_json(g) for g in all_games],
             # The row keys are (folder, exe) tuples; JSON has string keys.
-            "rows": {f"{f}\x00{e}": list(r) if r is not False else False
-                     for (f, e), r in rows.items()},
+            "rows": {
+                f"{f}\x00{e}": list(r) if r is not False else False
+                for (f, e), r in rows.items()
+            },
         }
         FILE.parent.mkdir(parents=True, exist_ok=True)
         tmp = FILE.with_suffix(f".{os.getpid()}-{threading.get_ident()}.tmp")
@@ -154,9 +158,9 @@ def save(all_games: list, rows: dict, version: str, sm) -> None:
                     pass
     except Exception as e:
         from . import log, net
+
         if net.is_disk_full(e):
-            log.write("the library cache was not saved: the drive is full",
-                      "warn")
+            log.write("the library cache was not saved: the drive is full", "warn")
         else:
             log.exception("saving the library cache")
 
@@ -187,12 +191,14 @@ def load(version: str, sm) -> tuple[list, dict, list] | None:
         for d in data.get("games") or []:
             g = _from_json(d)
             if not g.folder.exists():
-                continue                      # the game (or its drive) is gone
+                continue  # the game (or its drive) is gone
             out.append(g)
             # Protection can change without an EXE timestamp change; also
             # recheck manual metadata rather than reuse a compatibility row.
-            if g.exe_warning or _stamp(g) != [list(x) if x else None for x in (d.get("stamp") or [])]:
-                changed.append(g)             # changed on disk: read it again
+            if g.exe_warning or _stamp(g) != [
+                list(x) if x else None for x in (d.get("stamp") or [])
+            ]:
+                changed.append(g)  # changed on disk: read it again
                 continue
             r = raw.get(_key(g))
             if r is not None:
@@ -200,11 +206,13 @@ def load(version: str, sm) -> tuple[list, dict, list] | None:
         # One entry per executable here too: a folder picked by hand is
         # saved beside the store's entry for the same game.
         from .games import same_exe_once
+
         out = same_exe_once(out)
         changed = [g for g in changed if any(g is k for k in out)]
         return (out, rows, changed) if out else None
     except Exception:
         from . import log
+
         log.exception("reading the library cache")
         return None
 

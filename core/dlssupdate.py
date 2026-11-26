@@ -73,6 +73,7 @@ Invariants
 9. One writer at a time: the window runs these jobs under the same busy flag
    installs, autopilot and uninstall wait for.
 """
+
 from __future__ import annotations
 
 import json
@@ -85,9 +86,11 @@ from pathlib import Path
 
 from . import anticheat, dlss, installer, log, net, pe, prefs, sources, watch
 
-FAMILIES = (("dlss", "nvngx_dlss.dll", "super resolution"),
-            ("dlssg", "nvngx_dlssg.dll", "frame generation"),
-            ("dlssd", "nvngx_dlssd.dll", "ray reconstruction"))
+FAMILIES = (
+    ("dlss", "nvngx_dlss.dll", "super resolution"),
+    ("dlssg", "nvngx_dlssg.dll", "frame generation"),
+    ("dlssd", "nvngx_dlssd.dll", "ray reconstruction"),
+)
 FILE_OF = {f: n for f, n, _ in FAMILIES}
 FAMILY_OF = {n: f for f, n, _ in FAMILIES}
 LABEL = {f: lab for f, _, lab in FAMILIES}
@@ -95,7 +98,9 @@ ORDER = {f: i for i, (f, _, _) in enumerate(FAMILIES)}
 
 RECORD = "dlss5-dlss-update.json"
 ORIGINAL_SUFFIX = ".dlss5-dlss-original"
-DISPLACED_SUFFIX = ".dlss5-dlss-displaced"      # a runtime restore or update found in the way
+DISPLACED_SUFFIX = (
+    ".dlss5-dlss-displaced"  # a runtime restore or update found in the way
+)
 PART_SUFFIX = ".dlss5-dlss-part"
 CACHE_NAME = "dlss-scan.json"
 
@@ -103,7 +108,13 @@ ORIGINAL, UPDATED, INSTALL, MISSING = "original", "updated", "install", "missing
 
 # Refusal kinds, so the page can draw each one as its own state.
 R_32BIT, R_RUNNING, R_ANTICHEAT, R_READONLY, R_OFFLINE, R_NOTHING = (
-    "32bit", "running", "anticheat", "readonly", "offline", "nothing")
+    "32bit",
+    "running",
+    "anticheat",
+    "readonly",
+    "offline",
+    "nothing",
+)
 
 
 @dataclass
@@ -113,18 +124,24 @@ class Entry:
     family: str
     version: str
     state: str = ORIGINAL
-    original: str = ""            # the game's own version, once swapped
-    label: str = ""               # the build this module wrote there
-    backup: Path | None = None    # our copy of the game's own, when present
+    original: str = ""  # the game's own version, once swapped
+    label: str = ""  # the build this module wrote there
+    backup: Path | None = None  # our copy of the game's own, when present
 
     @property
     def name(self) -> str:
         return FILE_OF[self.family]
 
     def to_json(self) -> dict:
-        return {"rel": self.rel, "family": self.family, "version": self.version,
-                "state": self.state, "original": self.original, "label": self.label,
-                "backup": self.backup is not None}
+        return {
+            "rel": self.rel,
+            "family": self.family,
+            "version": self.version,
+            "state": self.state,
+            "original": self.original,
+            "label": self.label,
+            "backup": self.backup is not None,
+        }
 
 
 @dataclass
@@ -133,7 +150,7 @@ class Report:
     skipped: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     error: str = ""
-    refused: str = ""             # one of the R_ kinds when nothing was tried
+    refused: str = ""  # one of the R_ kinds when nothing was tried
 
     @property
     def ok(self) -> bool:
@@ -152,13 +169,15 @@ class _Stop(Exception):
 
 # ---------------------------------------------------------------- helpers
 
+
 def _ver(s: str) -> tuple:
     return installer._ver(s)
 
 
 def _number(label: str) -> str:
-    """"310.9.1" from "310.9.1 (NVIDIA SDK)"."""
+    """ "310.9.1" from "310.9.1 (NVIDIA SDK)"."""
     import re
+
     m = re.match(r"\s*v?(\d+(?:\.\d+)*)", label or "")
     return m.group(1) if m else ""
 
@@ -177,7 +196,11 @@ def _rel(folder: Path, p: Path) -> str:
     record keys, or an absolute one the record then refuses.
     """
     try:
-        return Path(os.path.realpath(str(p))).relative_to(os.path.realpath(str(folder))).as_posix()
+        return (
+            Path(os.path.realpath(str(p)))
+            .relative_to(os.path.realpath(str(folder)))
+            .as_posix()
+        )
     except (ValueError, OSError):
         try:
             return Path(p).relative_to(folder).as_posix()
@@ -208,7 +231,9 @@ def _ours(p: Path) -> Path:
 def _same_build(a: Path, b: Path) -> bool:
     """Two files of one build (version and size) - a copy, not a swap."""
     va = pe.file_version(a)
-    return bool(va) and _ver(va) == _ver(pe.file_version(b)) and _size(a) == _size(b) >= 0
+    return (
+        bool(va) and _ver(va) == _ver(pe.file_version(b)) and _size(a) == _size(b) >= 0
+    )
 
 
 def _set_aside(p: Path, suffix: str, runtime: Path | None = None) -> Path:
@@ -219,7 +244,9 @@ def _set_aside(p: Path, suffix: str, runtime: Path | None = None) -> Path:
     """
     stamp = int(time.time())
     for n in range(100):
-        target = p.with_name(f"{(runtime or p).name}{suffix}-{stamp}" + (f"-{n}" if n else ""))
+        target = p.with_name(
+            f"{(runtime or p).name}{suffix}-{stamp}" + (f"-{n}" if n else "")
+        )
         if not target.exists():
             os.replace(p, target)
             return target
@@ -234,6 +261,7 @@ def _size(p: Path) -> int:
 
 
 # ---------------------------------------------------------------- the record
+
 
 def record_path(g) -> Path:
     return Path(g.folder) / RECORD
@@ -263,12 +291,19 @@ def load_record(g) -> list[dict]:
             except (net.OutsideError, OSError):
                 continue
         if target is None:
-            log.write(f"dlss update record: ignored an entry outside the game folder: {rel}", "warn")
+            log.write(
+                f"dlss update record: ignored an entry outside the game folder: {rel}",
+                "warn",
+            )
             continue
         if target.name.lower() != FILE_OF[fam]:
-            log.write(f"dlss update record: ignored an entry that is not a {FILE_OF[fam]}: {rel}", "warn")
+            log.write(
+                f"dlss update record: ignored an entry that is not a {FILE_OF[fam]}: {rel}",
+                "warn",
+            )
             continue
         import posixpath
+
         rel = posixpath.normpath(rel.replace("\\", "/"))
         # one entry per FILE: an absolute and a relative spelling of one
         # runtime would otherwise be two entries, one of them always stale
@@ -283,11 +318,20 @@ def load_record(g) -> list[dict]:
         except (TypeError, ValueError):
             size = 0
         digest = str(e.get("sha256") or "").lower()
-        out.append({"path": rel, "family": fam, "original": str(e.get("original") or ""),
-                    "written": str(e.get("written") or ""), "size": size,
-                    "label": str(e.get("label") or ""), "at": e.get("at") or 0,
-                    "sha256": digest if len(digest) == 64
-                    and all(ch in "0123456789abcdef" for ch in digest) else ""})
+        out.append(
+            {
+                "path": rel,
+                "family": fam,
+                "original": str(e.get("original") or ""),
+                "written": str(e.get("written") or ""),
+                "size": size,
+                "label": str(e.get("label") or ""),
+                "at": e.get("at") or 0,
+                "sha256": digest
+                if len(digest) == 64 and all(ch in "0123456789abcdef" for ch in digest)
+                else "",
+            }
+        )
     return out
 
 
@@ -299,8 +343,18 @@ def _save_record(g, rows: list[dict]) -> None:
         except OSError:
             pass
         return
-    installer._write_atomic(p, json.dumps({"tool": "dlss5-autopilot", "kind": "dlss-update",
-                                           "version": 1, "files": rows}, indent=2))
+    installer._write_atomic(
+        p,
+        json.dumps(
+            {
+                "tool": "dlss5-autopilot",
+                "kind": "dlss-update",
+                "version": 1,
+                "files": rows,
+            },
+            indent=2,
+        ),
+    )
 
 
 def _find(rows: list[dict], rel: str) -> dict | None:
@@ -332,6 +386,7 @@ def _matches(p: Path, version: str, r: dict) -> bool:
 
 # ---------------------------------------------------------------- finding
 
+
 def _manifest_files(g, extra_dirs) -> set[str]:
     """Every path a DLSS 5 install recorded as written, as comparable keys."""
     folder = Path(g.folder)
@@ -353,7 +408,11 @@ def _manifest_files(g, extra_dirs) -> set[str]:
                 data = json.loads(m.read_text(encoding="utf8", errors="replace"))
             except (OSError, ValueError):
                 continue
-            files = (data.get("files") or data.get("dosyalar") or []) if isinstance(data, dict) else []
+            files = (
+                (data.get("files") or data.get("dosyalar") or [])
+                if isinstance(data, dict)
+                else []
+            )
             for f in files if isinstance(files, list) else []:
                 if isinstance(f, str) and f.lower().endswith(tuple(FAMILY_OF)):
                     out.add(_key(r / f))
@@ -376,12 +435,19 @@ def _walk_hits(g, folder: Path) -> list[str]:
     """
     names = tuple(FAMILY_OF)
     try:
-        wide = dlss._WALK_CACHE.get((dlss._walk_key(folder), dlss._walk_key(g.install_dir),
-                                     tuple(dlss.DLSS_FILES)))
+        wide = dlss._WALK_CACHE.get(
+            (
+                dlss._walk_key(folder),
+                dlss._walk_key(g.install_dir),
+                tuple(dlss.DLSS_FILES),
+            )
+        )
     except Exception:
         wide = None
     if wide is not None and len(wide) < _WALK_MATCH_STOP:
-        return [h for h in wide if h.replace("\\", "/").rsplit("/", 1)[-1].lower() in names]
+        return [
+            h for h in wide if h.replace("\\", "/").rsplit("/", 1)[-1].lower() in names
+        ]
     return dlss.walked(folder, names=names)
 
 
@@ -440,8 +506,13 @@ def scan(g, fresh: bool = False) -> list[Entry]:
             continue
         ibak = _install_backup(p)
         if ibak is None and _key(p) in written:
-            continue                      # our own file, never the game's
-        e = Entry(path=p, rel=rel, family=FAMILY_OF[p.name.lower()], version=pe.file_version(p))
+            continue  # our own file, never the game's
+        e = Entry(
+            path=p,
+            rel=rel,
+            family=FAMILY_OF[p.name.lower()],
+            version=pe.file_version(p),
+        )
         r = _find(rows, rel)
         bak = _ours(p)
         has_bak = bak.is_file()
@@ -469,8 +540,18 @@ def scan(g, fresh: bool = False) -> list[Entry]:
     for r in rows:
         p = folder / r["path"]
         if not p.exists() and _ours(p).is_file():
-            out.append(Entry(path=p, rel=r["path"], family=r["family"], version="", state=MISSING,
-                             original=r["original"], label=r["label"], backup=_ours(p)))
+            out.append(
+                Entry(
+                    path=p,
+                    rel=r["path"],
+                    family=r["family"],
+                    version="",
+                    state=MISSING,
+                    original=r["original"],
+                    label=r["label"],
+                    backup=_ours(p),
+                )
+            )
     out.sort(key=lambda e: (ORDER[e.family], e.rel.lower()))
     return out
 
@@ -506,7 +587,11 @@ def newest(catalog: dict | None = None, refresh: bool = False) -> dict[str, dict
             catalog = {}
     out: dict[str, dict] = {}
     for fam in FILE_OF:
-        entries = [x for x in (catalog or {}).get(fam) or [] if isinstance(x, dict) and x.get("url")]
+        entries = [
+            x
+            for x in (catalog or {}).get(fam) or []
+            if isinstance(x, dict) and x.get("url")
+        ]
         if not entries:
             continue
         best = max(entries, key=lambda x: _ver(_number(str(x.get("label", "")))))
@@ -528,6 +613,7 @@ def outdated(e: Entry, new: dict | None) -> bool:
 
 
 # ---------------------------------------------------------------- guards
+
 
 def running(g, all_procs=None) -> str:
     """The name of a process running out of the game's folder, or "".
@@ -554,8 +640,11 @@ def held(g) -> bool:
     answer to #856: Black Ops 7 was updated by "update all", and the only
     protection was a name the tool did not know."""
     try:
-        return _hold_key(g) in {os.path.normcase(str(x)) for x in
-                                (prefs.get("dlss_hold") or []) if isinstance(x, str)}
+        return _hold_key(g) in {
+            os.path.normcase(str(x))
+            for x in (prefs.get("dlss_hold") or [])
+            if isinstance(x, str)
+        }
     except Exception:
         return False
 
@@ -564,8 +653,11 @@ def set_held(g, on: bool) -> None:
     key = _hold_key(g)
     if not key:
         return
-    cur = [x for x in (prefs.get("dlss_hold") or [])
-           if isinstance(x, str) and os.path.normcase(x) != key]
+    cur = [
+        x
+        for x in (prefs.get("dlss_hold") or [])
+        if isinstance(x, str) and os.path.normcase(x) != key
+    ]
     if on:
         cur.append(str(g.folder))
     prefs.set_("dlss_hold", cur)
@@ -588,7 +680,7 @@ def anticheat_info(g) -> tuple[str, str]:
 
 
 def _probe_write(folder: Path) -> str:
-    """"" when a file can be created here, else where Windows refused."""
+    """ "" when a file can be created here, else where Windows refused."""
     try:
         with tempfile.NamedTemporaryFile(prefix=".dlss5-dlss-write-test-", dir=folder):
             pass
@@ -601,10 +693,13 @@ def _probe_write(folder: Path) -> str:
 
 def games_hint(folder: Path) -> str:
     from . import games
+
     if games.is_locked_store_path(folder):
         return " " + games.XBOX_HINT
-    return (" Close the game and its launcher; if it is still refused, the folder needs "
-            "administrator rights.")
+    return (
+        " Close the game and its launcher; if it is still refused, the folder needs "
+        "administrator rights."
+    )
 
 
 def _guards(g, allow_anticheat: bool, rep: Report) -> bool:
@@ -615,19 +710,24 @@ def _guards(g, allow_anticheat: bool, rep: Report) -> bool:
     name = running(g)
     if name:
         rep.refused = R_RUNNING
-        rep.error = (f"{name} is running from this game's folder. Close it first - Windows does not let "
-                     f"anything replace a file a running program has open.")
+        rep.error = (
+            f"{name} is running from this game's folder. Close it first - Windows does not let "
+            f"anything replace a file a running program has open."
+        )
         return False
     ac = anticheat_name(g)
     if ac and not allow_anticheat:
         rep.refused = R_ANTICHEAT
-        rep.error = (f"{ac} is installed with this game. An anti-cheat can treat a changed DLSS file as "
-                     f"tampering; for anything played online, keep the game's own.")
+        rep.error = (
+            f"{ac} is installed with this game. An anti-cheat can treat a changed DLSS file as "
+            f"tampering; for anything played online, keep the game's own."
+        )
         return False
     return True
 
 
 # ---------------------------------------------------------------- acting
+
 
 def settle(g) -> list[str]:
     """Drop record entries whose file is no longer what was written (invariant 5).
@@ -648,7 +748,7 @@ def settle(g) -> list[str]:
         bak = _ours(p)
         if not p.exists():
             if bak.is_file():
-                keep.append(r)            # restore puts the game's own back (invariant 6)
+                keep.append(r)  # restore puts the game's own back (invariant 6)
             else:
                 said.append(f"{name} is no longer at {r['path']}")
             continue
@@ -665,7 +765,9 @@ def settle(g) -> list[str]:
                     bak.unlink()
                 except OSError:
                     pass
-                said.append(f"{name}: the game's own {v} is back (a launcher verified its files)")
+                said.append(
+                    f"{name}: the game's own {v} is back (a launcher verified its files)"
+                )
             else:
                 # Anything else - a newer build from the game, or another tool
                 # that may put our build back later - keeps the game's own
@@ -673,10 +775,14 @@ def settle(g) -> list[str]:
                 # settle still sees the launcher's exact copy, and our build
                 # coming back still reads as ours.
                 keep.append(r)
-                said.append(f"{name}: changed to {v or 'another build'} since the update; "
-                            f"restore original still puts the game's own {old} back")
+                said.append(
+                    f"{name}: changed to {v or 'another build'} since the update; "
+                    f"restore original still puts the game's own {old} back"
+                )
         else:
-            said.append(f"{name}: changed to {v or 'another build'} by something else - left as it is")
+            said.append(
+                f"{name}: changed to {v or 'another build'} by something else - left as it is"
+            )
     if len(keep) != len(rows):
         try:
             _save_record(g, keep)
@@ -707,14 +813,22 @@ def _replace_one(g, e: Entry, build: dict, progress) -> str:
     if why:
         raise _Stop(why, R_READONLY)
     try:
-        got = net.download(build["url"], f"{e.family}-{build['label']}.dll", progress=progress)
+        got = net.download(
+            build["url"], f"{e.family}-{build['label']}.dll", progress=progress
+        )
     except Exception as ex:
-        raise _Stop(f"{e.name} could not be downloaded: {str(ex).splitlines()[0] if str(ex) else ex}. "
-                    f"Nothing was changed.", R_OFFLINE)
+        raise _Stop(
+            f"{e.name} could not be downloaded: {str(ex).splitlines()[0] if str(ex) else ex}. "
+            f"Nothing was changed.",
+            R_OFFLINE,
+        )
     ok, why = installer._is_win64_dll(Path(got))
     want = int(build.get("size") or 0)
     if ok and want and _size(Path(got)) != want:
-        ok, why = False, f"the download is {_size(Path(got))} bytes where {want} were published"
+        ok, why = (
+            False,
+            f"the download is {_size(Path(got))} bytes where {want} were published",
+        )
     if not ok:
         try:
             Path(got).unlink()
@@ -724,15 +838,21 @@ def _replace_one(g, e: Entry, build: dict, progress) -> str:
     # Invariant 8: re-read it now. The download takes a while, and a launcher
     # or an install may have written this very file in the meantime.
     now = pe.file_version(e.path) if e.path.is_file() else ""
-    if not e.path.is_file() or _ver(now) != _ver(e.version) or _install_backup(e.path) is not None:
-        raise _Stop(f"{e.name} changed while the update was downloading ({e.version or '?'} -> "
-                    f"{now or 'gone'}). Nothing was changed; check again.")
+    if (
+        not e.path.is_file()
+        or _ver(now) != _ver(e.version)
+        or _install_backup(e.path) is not None
+    ):
+        raise _Stop(
+            f"{e.name} changed while the update was downloading ({e.version or '?'} -> "
+            f"{now or 'gone'}). Nothing was changed; check again."
+        )
     rows = load_record(g)
     r = _find(rows, e.rel)
     bak = _ours(e.path)
     made, aside = False, None
     if r is not None and _matches(e.path, e.version, r) and bak.is_file():
-        pass                             # our own build, the game's own beside it: that backup stands
+        pass  # our own build, the game's own beside it: that backup stands
     elif r is not None and _matches(e.path, e.version, r) and _written_here(e.path, r):
         # Our own build with the game's copy gone (deleted by hand, cleaned
         # by a tool). A "backup" made now would be OUR build filed as the
@@ -742,16 +862,21 @@ def _replace_one(g, e: Entry, build: dict, progress) -> str:
         # gone, as it did before this update. Version and size alone do not
         # prove it (a record naming the game's own build is not trusted,
         # invariant 7): the bytes must be the ones this module wrote.
-        log.write(f"dlss update: the backup of the game's own {e.name} is gone; "
-                  f"{e.version} there is the build this tool wrote, so it is not backed up", "warn")
+        log.write(
+            f"dlss update: the backup of the game's own {e.name} is gone; "
+            f"{e.version} there is the build this tool wrote, so it is not backed up",
+            "warn",
+        )
     elif not bak.is_file():
         # Invariant 2/7: no copy of what is there yet, and it is not the
         # build the record says was written - so it is the game's.
         try:
             _copy_whole(e.path, bak)
         except OSError as ex:
-            raise _Stop(f"the game's own {e.name} could not be backed up ({ex}); nothing was changed.",
-                        R_READONLY)
+            raise _Stop(
+                f"the game's own {e.name} could not be backed up ({ex}); nothing was changed.",
+                R_READONLY,
+            )
         made = True
         if r is None:
             r = {"path": e.rel, "family": e.family}
@@ -764,8 +889,10 @@ def _replace_one(g, e: Entry, build: dict, progress) -> str:
             try:
                 aside = _set_aside(e.path, DISPLACED_SUFFIX)
             except OSError as ex:
-                raise _Stop(f"Windows refused to move {e.path} aside ({ex.strerror or ex}). Nothing was changed.",
-                            R_READONLY)
+                raise _Stop(
+                    f"Windows refused to move {e.path} aside ({ex.strerror or ex}). Nothing was changed.",
+                    R_READONLY,
+                )
         if r is None:
             r = {"path": e.rel, "family": e.family}
             rows.append(r)
@@ -780,30 +907,47 @@ def _replace_one(g, e: Entry, build: dict, progress) -> str:
                 pass
         if made:
             try:
-                bak.unlink()             # the game's own is still in place
+                bak.unlink()  # the game's own is still in place
             except OSError:
                 pass
-        raise _Stop(f"Windows refused to replace {e.path} ({ex.strerror or ex}). Nothing was changed. "
-                    f"Close the game and its launcher; a read-only file needs its attribute cleared.",
-                    R_READONLY)
+        raise _Stop(
+            f"Windows refused to replace {e.path} ({ex.strerror or ex}). Nothing was changed. "
+            f"Close the game and its launcher; a read-only file needs its attribute cleared.",
+            R_READONLY,
+        )
     was = e.version
     try:
         digest = net.sha256(e.path)
     except OSError:
         digest = ""
-    r.update(written=pe.file_version(e.path) or _number(build["label"]), size=_size(e.path),
-             label=build["label"], at=round(time.time()), sha256=digest)
+    r.update(
+        written=pe.file_version(e.path) or _number(build["label"]),
+        size=_size(e.path),
+        label=build["label"],
+        at=round(time.time()),
+        sha256=digest,
+    )
     try:
         _save_record(g, rows)
     except OSError as ex:
         # The backup beside it still makes it restorable (scan adopts it).
         log.write(f"dlss update record not written: {ex}", "warn")
     line = f"{LABEL[e.family]}  {was or '?'} -> {r['written']}"
-    return line + (f" (the file that was there is kept as {aside.name})" if aside is not None else "")
+    return line + (
+        f" (the file that was there is kept as {aside.name})"
+        if aside is not None
+        else ""
+    )
 
 
-def update(g, families=None, build: str | None = None, allow_anticheat: bool = False,
-           progress=None, catalog: dict | None = None) -> Report:
+def update(
+    g,
+    families=None,
+    build: str | None = None,
+    allow_anticheat: bool = False,
+    progress=None,
+    catalog: dict | None = None,
+) -> Report:
     """Replace the game's DLSS runtimes with NVIDIA's newest (or `build`).
 
     `families` limits it ("dlss", "dlssg", "dlssd"); None is every outdated
@@ -821,23 +965,34 @@ def update(g, families=None, build: str | None = None, allow_anticheat: bool = F
     news = newest(catalog)
     if not news:
         rep.refused = R_OFFLINE
-        rep.error = ("NVIDIA's build list could not be read (raw.githubusercontent.com). "
-                     "Check the connection and try again.")
+        rep.error = (
+            "NVIDIA's build list could not be read (raw.githubusercontent.com). "
+            "Check the connection and try again."
+        )
         return rep
     for e in entries:
         if e.state == INSTALL:
-            rep.skipped.append(f"{LABEL[e.family]}: set by the DLSS 5 install - change it in the game's settings")
+            rep.skipped.append(
+                f"{LABEL[e.family]}: set by the DLSS 5 install - change it in the game's settings"
+            )
             continue
         if e.state == MISSING:
-            rep.skipped.append(f"{LABEL[e.family]}: the file is gone - restore original puts the game's own back")
+            rep.skipped.append(
+                f"{LABEL[e.family]}: the file is gone - restore original puts the game's own back"
+            )
             continue
         new = news.get(e.family)
         if new is None:
             rep.skipped.append(f"{LABEL[e.family]}: NVIDIA publishes no build of it")
             continue
         if build:
-            pool = (catalog if catalog is not None else sources.nvidia_dlss()).get(e.family) or []
-            wanted = next((x for x in pool if x.get("label") == build or x.get("tag") == build), None)
+            pool = (catalog if catalog is not None else sources.nvidia_dlss()).get(
+                e.family
+            ) or []
+            wanted = next(
+                (x for x in pool if x.get("label") == build or x.get("tag") == build),
+                None,
+            )
             if wanted is None:
                 rep.skipped.append(f"{LABEL[e.family]}: no build {build}")
                 continue
@@ -877,9 +1032,15 @@ def restore(g, families=None) -> Report:
     for p in _candidates(g, False):
         if _ours(p).is_file():
             paths.setdefault(_key(p), p)
-    targets = sorted((p for p in paths.values() if p.name.lower() in FAMILY_OF
-                      and (families is None or FAMILY_OF[p.name.lower()] in families)),
-                     key=lambda p: (ORDER[FAMILY_OF[p.name.lower()]], str(p).lower()))
+    targets = sorted(
+        (
+            p
+            for p in paths.values()
+            if p.name.lower() in FAMILY_OF
+            and (families is None or FAMILY_OF[p.name.lower()] in families)
+        ),
+        key=lambda p: (ORDER[FAMILY_OF[p.name.lower()]], str(p).lower()),
+    )
     if not targets:
         return rep
     name = running(g)
@@ -896,7 +1057,11 @@ def restore(g, families=None) -> Report:
         ibak = _install_backup(p)
         drop = True
         if ibak is not None:
-            if bak.is_file() and r is not None and _matches(ibak, pe.file_version(ibak), r):
+            if (
+                bak.is_file()
+                and r is not None
+                and _matches(ibak, pe.file_version(ibak), r)
+            ):
                 # Invariant 4: the install's backup is the build we wrote; hand
                 # it the game's own, so the install's uninstall restores that.
                 try:
@@ -904,28 +1069,44 @@ def restore(g, families=None) -> Report:
                 except OSError as ex:
                     rep.error = f"Windows refused to move {bak} ({ex.strerror or ex}). Nothing was changed."
                     break
-                rep.notes.append(f"{label}: DLSS 5 is installed over it - the game's own "
-                                 f"{r['original'] or 'file'} comes back when DLSS 5 is uninstalled")
+                rep.notes.append(
+                    f"{label}: DLSS 5 is installed over it - the game's own "
+                    f"{r['original'] or 'file'} comes back when DLSS 5 is uninstalled"
+                )
             elif bak.is_file():
                 drop = False
-                rep.notes.append(f"{label}: DLSS 5 was installed over a file that changed since the update - "
-                                 f"uninstall DLSS 5 first, then restore original")
+                rep.notes.append(
+                    f"{label}: DLSS 5 was installed over a file that changed since the update - "
+                    f"uninstall DLSS 5 first, then restore original"
+                )
             else:
-                rep.notes.append(f"{label}: set by the DLSS 5 install; nothing of ours is left under it")
+                rep.notes.append(
+                    f"{label}: set by the DLSS 5 install; nothing of ours is left under it"
+                )
         elif not bak.is_file():
             if p.exists():
                 v = pe.file_version(p)
-                rep.notes.append(f"{label}: the backup of the game's own {p.name} is gone - the {v or 'file there'} "
-                                 f"stays. Verify the game's files in its launcher to get the original back.")
+                rep.notes.append(
+                    f"{label}: the backup of the game's own {p.name} is gone - the {v or 'file there'} "
+                    f"stays. Verify the game's files in its launcher to get the original back."
+                )
             else:
-                rep.notes.append(f"{label}: {p.name} and its backup are both gone. Verify the game's files in "
-                                 f"its launcher to get it back.")
+                rep.notes.append(
+                    f"{label}: {p.name} and its backup are both gone. Verify the game's files in "
+                    f"its launcher to get it back."
+                )
         else:
             was = pe.file_version(p) if p.exists() else ""
             aside = None
             try:
-                if p.exists() and not (r is not None and _matches(p, was, r)) and not _same_build(p, bak):
-                    aside = _set_aside(p, DISPLACED_SUFFIX)     # invariant 1: not ours, not deleted
+                if (
+                    p.exists()
+                    and not (r is not None and _matches(p, was, r))
+                    and not _same_build(p, bak)
+                ):
+                    aside = _set_aside(
+                        p, DISPLACED_SUFFIX
+                    )  # invariant 1: not ours, not deleted
                 _copy_whole(bak, p)
             except OSError as ex:
                 if aside is not None and not p.exists():
@@ -933,16 +1114,22 @@ def restore(g, families=None) -> Report:
                         os.replace(aside, p)
                     except OSError:
                         pass
-                rep.error = (f"Windows refused to replace {p} ({ex.strerror or ex}). Nothing was changed. "
-                             f"Close the game and its launcher.")
+                rep.error = (
+                    f"Windows refused to replace {p} ({ex.strerror or ex}). Nothing was changed. "
+                    f"Close the game and its launcher."
+                )
                 break
             try:
                 bak.unlink()
             except OSError:
                 pass
-            rep.done.append(f"{label}  {was or 'missing'} -> {pe.file_version(p) or '?'}")
+            rep.done.append(
+                f"{label}  {was or 'missing'} -> {pe.file_version(p) or '?'}"
+            )
             if aside is not None:
-                rep.notes.append(f"{label}: the {was or 'file'} that was there is kept as {aside.name}")
+                rep.notes.append(
+                    f"{label}: the {was or 'file'} that was there is kept as {aside.name}"
+                )
         if drop and r is not None:
             rows.remove(r)
         try:
@@ -957,6 +1144,7 @@ def restore(g, families=None) -> Report:
 
 
 # ---------------------------------------------------------------- the page's cache
+
 
 def cache_path() -> Path:
     # Read at call time: tests point prefs.FILE at a temporary folder.

@@ -16,6 +16,7 @@ fetched after the page loads. Every string in the data was typed by
 whoever opened an issue, so the page builds its rows with textContent and
 the data block cannot close its own script tag.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,7 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from core.gpu import SM_NAMES               # noqa: E402  one table of card families
+from core.gpu import SM_NAMES  # noqa: E402  one table of card families
 
 # The fields of one configuration row, in the order compatibility.py keys them.
 KEYS = ("exe", "route", "build", "api", "sm", "gpu", "driver", "tool")
@@ -52,23 +53,41 @@ def data(payload: dict, rows: list[dict]) -> dict:
         gpu = str(r.get("gpu") or "")
         for word in ("NVIDIA ", "GeForce "):
             gpu = gpu.replace(word, "")
-        by_exe.setdefault(str(r["exe"]), []).append([
-            str(r.get("route") or ""), str(r.get("build") or ""),
-            str(r.get("api") or ""), family(str(r.get("sm") or "")), gpu.strip(),
-            str(r.get("driver") or ""), str(r.get("tool") or ""),
-            int(r.get("worked") or 0), int(r.get("failed") or 0),
-            str(r.get("last") or "")])
+        by_exe.setdefault(str(r["exe"]), []).append(
+            [
+                str(r.get("route") or ""),
+                str(r.get("build") or ""),
+                str(r.get("api") or ""),
+                family(str(r.get("sm") or "")),
+                gpu.strip(),
+                str(r.get("driver") or ""),
+                str(r.get("tool") or ""),
+                int(r.get("worked") or 0),
+                int(r.get("failed") or 0),
+                str(r.get("last") or ""),
+            ]
+        )
     games = []
     for exe, g in (payload.get("games") or {}).items():
         if not isinstance(g, dict):
             continue
-        games.append({"exe": exe, "name": str(g.get("name") or exe),
-                      "routes": g.get("routes") or {},
-                      "measured": g.get("measured") or {},
-                      "configs": sorted(by_exe.get(exe, []), key=lambda c: c[9], reverse=True)})
-    return {"generated": str(payload.get("generated") or ""),
-            "reports": int(payload.get("reports") or 0),
-            "detailed": bool(rows), "games": games}
+        games.append(
+            {
+                "exe": exe,
+                "name": str(g.get("name") or exe),
+                "routes": g.get("routes") or {},
+                "measured": g.get("measured") or {},
+                "configs": sorted(
+                    by_exe.get(exe, []), key=lambda c: c[9], reverse=True
+                ),
+            }
+        )
+    return {
+        "generated": str(payload.get("generated") or ""),
+        "reports": int(payload.get("reports") or 0),
+        "detailed": bool(rows),
+        "games": games,
+    }
 
 
 PAGE = """<!doctype html>
@@ -206,7 +225,8 @@ def write(payload: dict, rows: list[dict] | None, out_dir: Path) -> Path:
     page.write_text(render(payload, rows), encoding="utf8")
     # The machine-readable sum beside it, for anyone who wants the numbers.
     (out_dir / "compatibility.json").write_text(
-        json.dumps(payload, indent=1, sort_keys=True) + "\n", encoding="utf8")
+        json.dumps(payload, indent=1, sort_keys=True) + "\n", encoding="utf8"
+    )
     return page
 
 

@@ -5,6 +5,7 @@ is redrawn from state whenever something changes, so typing in the search
 box never loses focus to a redraw. Hovering a cover lifts it in the game's
 own colour and warms the page's glow towards that colour.
 """
+
 from __future__ import annotations
 
 from . import imaging
@@ -53,20 +54,46 @@ class LibraryPage(Page):
         for b in range(bands):
             y0 = int(gh * b / bands)
             y1 = int(gh * (b + 1) / bands) + 1
-            self.glow.append(c.create_rectangle(0, y0, width, y1, fill=T.BG, outline="",
-                                                tags=tags + ("glow",)))
+            self.glow.append(
+                c.create_rectangle(
+                    0, y0, width, y1, fill=T.BG, outline="", tags=tags + ("glow",)
+                )
+            )
         self._set_glow(*self.glow_now)
-        c.create_text(pad, T.px(50), text="games", font=T.mono(22, True), fill=T.TEXT, anchor="w",
-                      tags=tags)
+        c.create_text(
+            pad,
+            T.px(50),
+            text="games",
+            font=T.mono(22, True),
+            fill=T.TEXT,
+            anchor="w",
+            tags=tags,
+        )
         # what is in it, in words, under the title - a bare number beside it
         # read as a badge nobody could explain
-        self.count = c.create_text(pad + T.px(2), T.px(84), text="", font=T.mono(10), fill=T.MUTED,
-                                   anchor="w", tags=tags)
+        self.count = c.create_text(
+            pad + T.px(2),
+            T.px(84),
+            text="",
+            font=T.mono(10),
+            fill=T.MUTED,
+            anchor="w",
+            tags=tags,
+        )
         # scan, with a menu of the other ways to fill the library
         bw = T.px(132)
         bx = width - pad - bw
-        self.scan_btn = k.button(bx, T.px(36), bw, "scan", self.scan_menu, glyph="scan",
-                                 tags=tags, h=T.px(44), tip="rescan, full rescan, add a game, update all")
+        self.scan_btn = k.button(
+            bx,
+            T.px(36),
+            bw,
+            "scan",
+            self.scan_menu,
+            glyph="scan",
+            tags=tags,
+            h=T.px(44),
+            tip="rescan, full rescan, add a game, update all",
+        )
         # a game the scan did not find, beside the scan and not in its menu:
         # two people asked for a feature that was already behind 'scan'
         # (#374, #441). Only the icon when the words would cut the search's
@@ -78,13 +105,29 @@ class LibraryPage(Page):
         if bx - T.px(12) - aw - T.px(12) - left < max(T.px(150), hint):
             aw = T.px(46)
         ax = bx - T.px(12) - aw
-        self.add_btn = k.button(ax, T.px(36), aw, "add a game" if aw > T.px(46) else "", a.pick_folder,
-                                glyph="add", tags=tags, h=T.px(44),
-                                tip="a game the scan did not find - pick the folder its .exe is in (ctrl+o)")
+        self.add_btn = k.button(
+            ax,
+            T.px(36),
+            aw,
+            "add a game" if aw > T.px(46) else "",
+            a.pick_folder,
+            glyph="add",
+            tags=tags,
+            h=T.px(44),
+            tip="a game the scan did not find - pick the folder its .exe is in (ctrl+o)",
+        )
         fw = min(T.px(360), ax - T.px(12) - left)
         prev = self.field.get() if self.field else a.query
-        self.field = k.field(ax - T.px(12) - fw, T.px(38), fw, "search   ctrl+f",
-                             on_change=self._typed, on_enter=self._first, tags=tags, value=prev)
+        self.field = k.field(
+            ax - T.px(12) - fw,
+            T.px(38),
+            fw,
+            "search   ctrl+f",
+            on_change=self._typed,
+            on_enter=self._first,
+            tags=tags,
+            value=prev,
+        )
         # the count line under the title stops short of the search box, which
         # now starts where the title ends
         self.count_room = ax - T.px(12) - fw - T.px(16) - pad
@@ -108,61 +151,141 @@ class LibraryPage(Page):
         n = a.counts()
         shown = a.visible()
         total = n["all"]
-        said = [f"{len(shown)} of {total} games" if len(shown) != total else f"{total} games"]
+        said = [
+            f"{len(shown)} of {total} games"
+            if len(shown) != total
+            else f"{total} games"
+        ]
         if n["installed"]:
             said.append(f"{n['installed']} with dlss 5")
         # a scan that stopped (GitHub's rate limit, a store that did not
         # answer) says so where the games are, not only in the closed log
         if a.scan_failed and not a.scanning:
             said.append(a.scan_failed)
-        c.itemconfigure(self.count, text=T.fit("  \u00b7  ".join(said), T.mono(10),
-                                               min(width - 2 * pad, getattr(self, "count_room", width))))
+        c.itemconfigure(
+            self.count,
+            text=T.fit(
+                "  \u00b7  ".join(said),
+                T.mono(10),
+                min(width - 2 * pad, getattr(self, "count_room", width)),
+            ),
+        )
         # the filter tabs
         y = T.px(124)
         x = pad
         for f in FILTERS:
-            if f in ("working", "needs a look", "update") and not n[f] and a.filter != f:
+            if (
+                f in ("working", "needs a look", "update")
+                and not n[f]
+                and a.filter != f
+            ):
                 continue
             on = a.filter == f
             font = T.mono(10, on)
             label = f
             tag = k.uid("flt")
             wid = T.width(label, font)
-            c.create_rectangle(x - T.px(6), y - T.px(14), x + wid + T.px(34), y + T.px(16), fill="",
-                               outline="", tags=tags + (tag,))
-            t = c.create_text(x, y, text=label, font=font, fill=T.AMBER if on else T.MUTED, anchor="w",
-                              tags=tags + (tag,))
+            c.create_rectangle(
+                x - T.px(6),
+                y - T.px(14),
+                x + wid + T.px(34),
+                y + T.px(16),
+                fill="",
+                outline="",
+                tags=tags + (tag,),
+            )
+            t = c.create_text(
+                x,
+                y,
+                text=label,
+                font=font,
+                fill=T.AMBER if on else T.MUTED,
+                anchor="w",
+                tags=tags + (tag,),
+            )
             if f != "all" and n[f]:
-                colour = {"update": T.AMBER, "needs a look": T.WARN, "working": T.OK}.get(f, T.DIM)
-                c.create_text(x + wid + T.px(8), y, text=str(n[f]), font=T.mono(10, True),
-                              fill=colour, anchor="w", tags=tags + (tag,))
+                colour = {
+                    "update": T.AMBER,
+                    "needs a look": T.WARN,
+                    "working": T.OK,
+                }.get(f, T.DIM)
+                c.create_text(
+                    x + wid + T.px(8),
+                    y,
+                    text=str(n[f]),
+                    font=T.mono(10, True),
+                    fill=colour,
+                    anchor="w",
+                    tags=tags + (tag,),
+                )
                 wid += T.px(8) + T.width(str(n[f]), T.mono(10, True))
             if on:
-                c.create_rectangle(x, y + T.px(13), x + T.width(label, font), y + T.px(15), fill=T.AMBER,
-                                   outline="", tags=tags)
+                c.create_rectangle(
+                    x,
+                    y + T.px(13),
+                    x + T.width(label, font),
+                    y + T.px(15),
+                    fill=T.AMBER,
+                    outline="",
+                    tags=tags,
+                )
             else:
-                k.hover(tag, lambda t=t: c.itemconfigure(t, fill=T.TEXT),
-                        lambda t=t: c.itemconfigure(t, fill=T.MUTED))
+                k.hover(
+                    tag,
+                    lambda t=t: c.itemconfigure(t, fill=T.TEXT),
+                    lambda t=t: c.itemconfigure(t, fill=T.MUTED),
+                )
             k.on_click(tag, lambda f=f: a.set_filter(f))
             x += wid + T.px(30)
         # view menu: architecture, hidden games, sort, scan at start
-        k.link(width - pad, y, "view", self.view_menu, glyph="more", anchor="e", tags=tags,
-               tip="sort, 32/64-bit, hidden games, sidebar pages")
+        k.link(
+            width - pad,
+            y,
+            "view",
+            self.view_menu,
+            glyph="more",
+            anchor="e",
+            tags=tags,
+            tip="sort, 32/64-bit, hidden games, sidebar pages",
+        )
         right = width - pad - T.px(90)
         if a.arch != "all" or a.show_hidden or a.sort:
             bits = [dict(ARCH)[a.arch]] if a.arch != "all" else []
             if a.show_hidden:
                 bits.append("hidden shown")
             if a.sort:
-                bits.append("by " + dict(SORTS)[a.sort] + (" (desc)" if a.sort_desc else ""))
-            c.create_text(right, y, text="  \u00b7  ".join(bits), font=T.mono(9), fill=T.DIM, anchor="e",
-                          tags=tags)
+                bits.append(
+                    "by " + dict(SORTS)[a.sort] + (" (desc)" if a.sort_desc else "")
+                )
+            c.create_text(
+                right,
+                y,
+                text="  \u00b7  ".join(bits),
+                font=T.mono(9),
+                fill=T.DIM,
+                anchor="e",
+                tags=tags,
+            )
         # scanning line
         if a.scanning:
-            c.create_rectangle(pad, y + T.px(26), width - pad, y + T.px(28), fill=T.SURF, outline="",
-                               tags=tags)
-            self._bar = c.create_rectangle(pad, y + T.px(26), pad + T.px(120), y + T.px(28), fill=T.AMBER,
-                                           outline="", tags=tags)
+            c.create_rectangle(
+                pad,
+                y + T.px(26),
+                width - pad,
+                y + T.px(28),
+                fill=T.SURF,
+                outline="",
+                tags=tags,
+            )
+            self._bar = c.create_rectangle(
+                pad,
+                y + T.px(26),
+                pad + T.px(120),
+                y + T.px(28),
+                fill=T.AMBER,
+                outline="",
+                tags=tags,
+            )
             self._sweep()
         top = self.header_h
         self.cards = []
@@ -177,8 +300,15 @@ class LibraryPage(Page):
         foot = top + rows * (ch + T.px(64)) + T.px(10)
         # only what the person can act on: games that are hidden (and where to get them back)
         if n["hidden"] and not a.show_hidden:
-            c.create_text(pad, foot, text=f"{n['hidden']} hidden  \u00b7  view shows them",
-                          font=T.mono(9), fill=T.DIM, anchor="w", tags=tags)
+            c.create_text(
+                pad,
+                foot,
+                text=f"{n['hidden']} hidden  \u00b7  view shows them",
+                font=T.mono(9),
+                fill=T.DIM,
+                anchor="w",
+                tags=tags,
+            )
         if self.sel is not None and self.sel < len(self.cards):
             self._heat(self.sel, 1.0, ms=1)
         return foot + T.px(40)
@@ -189,26 +319,83 @@ class LibraryPage(Page):
         tags = ("page", "grid")
         if not a.have_library():
             if a.scanning:
-                c.create_text(pad, top + T.px(40), text="finding your games...", font=T.mono(14, True),
-                              fill=T.TEXT, anchor="w", tags=tags)
-                c.create_text(pad, top + T.px(74), text="Steam, Epic, GOG, EA, Ubisoft, Xbox and the usual folders",
-                              font=T.mono(10), fill=T.MUTED, anchor="w", tags=tags)
+                c.create_text(
+                    pad,
+                    top + T.px(40),
+                    text="finding your games...",
+                    font=T.mono(14, True),
+                    fill=T.TEXT,
+                    anchor="w",
+                    tags=tags,
+                )
+                c.create_text(
+                    pad,
+                    top + T.px(74),
+                    text="Steam, Epic, GOG, EA, Ubisoft, Xbox and the usual folders",
+                    font=T.mono(10),
+                    fill=T.MUTED,
+                    anchor="w",
+                    tags=tags,
+                )
                 return top + T.px(200)
-            c.create_text(pad, top + T.px(40), text="dlss 5 for the games you have", font=T.mono(16, True),
-                          fill=T.TEXT, anchor="w", tags=tags)
-            c.create_text(pad, top + T.px(76),
-                          text="finds your games, reads each one, and picks the route that fits it.",
-                          font=T.mono(10), fill=T.MUTED, anchor="w", tags=tags)
-            k.button(pad, top + T.px(110), T.px(240), "find my games", lambda: a.scan(full=True),
-                     glyph="search", kind="primary", tags=tags)
-            k.button(pad + T.px(252), top + T.px(110), T.px(220), "add a game", a.pick_folder,
-                     glyph="add", tags=tags)
+            c.create_text(
+                pad,
+                top + T.px(40),
+                text="dlss 5 for the games you have",
+                font=T.mono(16, True),
+                fill=T.TEXT,
+                anchor="w",
+                tags=tags,
+            )
+            c.create_text(
+                pad,
+                top + T.px(76),
+                text="finds your games, reads each one, and picks the route that fits it.",
+                font=T.mono(10),
+                fill=T.MUTED,
+                anchor="w",
+                tags=tags,
+            )
+            k.button(
+                pad,
+                top + T.px(110),
+                T.px(240),
+                "find my games",
+                lambda: a.scan(full=True),
+                glyph="search",
+                kind="primary",
+                tags=tags,
+            )
+            k.button(
+                pad + T.px(252),
+                top + T.px(110),
+                T.px(220),
+                "add a game",
+                a.pick_folder,
+                glyph="add",
+                tags=tags,
+            )
             y = top + T.px(200)
             for line, colour in (
-                    ("works best on 64-bit DirectX 11/12. DirectX 9, OpenGL, Vulkan and 32-bit", T.DIM),
-                    ("games go through extra layers and fail far more often.", T.DIM),
-                    ("never online: anti-cheat treats ReShade add-ons as tampering.", T.AMBER)):
-                c.create_text(pad, y, text=line, font=T.mono(9), fill=colour, anchor="w", tags=tags)
+                (
+                    "works best on 64-bit DirectX 11/12. DirectX 9, OpenGL, Vulkan and 32-bit",
+                    T.DIM,
+                ),
+                ("games go through extra layers and fail far more often.", T.DIM),
+                (
+                    "never online: anti-cheat treats ReShade add-ons as tampering.",
+                    T.AMBER,
+                ),
+            ):
+                c.create_text(
+                    pad,
+                    y,
+                    text=line,
+                    font=T.mono(9),
+                    fill=colour,
+                    anchor="w",
+                    tags=tags,
+                )
                 y += T.px(22)
             return y + T.px(60)
         q = a.query.strip()
@@ -220,17 +407,39 @@ class LibraryPage(Page):
             msg = f"all {n['hidden']} games are hidden"
         else:
             msg = "no games to show with this view"
-        c.create_text(pad, top + T.px(40), text=msg, font=T.mono(12), fill=T.MUTED, anchor="w", tags=tags)
-        k.link(pad, top + T.px(76), "show all games", self._reset_view, glyph="refresh", colour=T.AMBER,
-               hot=T.TEXT, tags=tags)
+        c.create_text(
+            pad,
+            top + T.px(40),
+            text=msg,
+            font=T.mono(12),
+            fill=T.MUTED,
+            anchor="w",
+            tags=tags,
+        )
+        k.link(
+            pad,
+            top + T.px(76),
+            "show all games",
+            self._reset_view,
+            glyph="refresh",
+            colour=T.AMBER,
+            hot=T.TEXT,
+            tags=tags,
+        )
         # A row of its own, and only when a search found nothing: that is
         # the moment a game the scanners do not know about is being looked
         # for, and until now the only way in was a dropdown behind 'scan'
         # (#374 - "please add a button that can search for a game").
         if q:
-            k.link(pad, top + T.px(106), "add a game  -  pick the folder it is in",
-                   a.pick_folder, glyph="add", tags=tags,
-                   tip="for a game no store reports - pick the folder its .exe is in")
+            k.link(
+                pad,
+                top + T.px(106),
+                "add a game  -  pick the folder it is in",
+                a.pick_folder,
+                glyph="add",
+                tags=tags,
+                tip="for a game no store reports - pick the folder its .exe is in",
+            )
             return top + T.px(190)
         return top + T.px(160)
 
@@ -244,8 +453,17 @@ class LibraryPage(Page):
         tags = ("page", "grid", tag, f"card{i}")
         info = a.card(g)
         cov = a.cover(g, cw, ch)
-        items = {"ring": c.create_rectangle(x - T.px(4), y - T.px(4), x + cw + T.px(4), y + ch + T.px(4),
-                                            outline="", width=T.px(2), tags=tags)}
+        items = {
+            "ring": c.create_rectangle(
+                x - T.px(4),
+                y - T.px(4),
+                x + cw + T.px(4),
+                y + ch + T.px(4),
+                outline="",
+                width=T.px(2),
+                tags=tags,
+            )
+        }
         levels = []
         if cov and cov["kind"] == "cover":
             levels = [cov["dim"]] if info["dim"] else cov["levels"]
@@ -253,24 +471,61 @@ class LibraryPage(Page):
         else:
             c.create_rectangle(x, y, x + cw, y + ch, fill=T.SURF, outline="", tags=tags)
             if cov and cov["kind"] == "icon" and cov["levels"]:
-                c.create_image(x + cw / 2, y + ch / 2 - T.px(12), image=cov["levels"][0], tags=tags)
+                c.create_image(
+                    x + cw / 2, y + ch / 2 - T.px(12), image=cov["levels"][0], tags=tags
+                )
             else:
-                c.create_text(x + cw / 2, y + ch / 2 - T.px(12), text=T.GLYPH["game"], font=T.icons(30),
-                              fill=T.LINE, tags=tags)
+                c.create_text(
+                    x + cw / 2,
+                    y + ch / 2 - T.px(12),
+                    text=T.GLYPH["game"],
+                    font=T.icons(30),
+                    fill=T.LINE,
+                    tags=tags,
+                )
         accent = (cov or {}).get("accent") or T.AMBER
         name_col = T.DIM if info["dim"] else T.TEXT
         nx = x
         if info["dot"]:
-            c.create_oval(x, y + ch + T.px(15), x + T.px(8), y + ch + T.px(23), fill=info["colour"],
-                          outline="", tags=tags)
+            c.create_oval(
+                x,
+                y + ch + T.px(15),
+                x + T.px(8),
+                y + ch + T.px(23),
+                fill=info["colour"],
+                outline="",
+                tags=tags,
+            )
             nx = x + T.px(16)
-        items["name"] = c.create_text(nx, y + ch + T.px(19), text=T.fit(g.name, T.mono(10, True), x + cw - nx),
-                                      font=T.mono(10, True), fill=name_col, anchor="w", tags=tags)
+        items["name"] = c.create_text(
+            nx,
+            y + ch + T.px(19),
+            text=T.fit(g.name, T.mono(10, True), x + cw - nx),
+            font=T.mono(10, True),
+            fill=name_col,
+            anchor="w",
+            tags=tags,
+        )
         if info["status"]:
-            c.create_text(x, y + ch + T.px(41), text=T.fit(info["status"], T.mono(8), cw), font=T.mono(8),
-                          fill=info["colour"], anchor="w", tags=tags)
-        self.cards.append({"g": g, "tag": tag, "items": items, "levels": levels, "accent": accent,
-                           "name_col": name_col})
+            c.create_text(
+                x,
+                y + ch + T.px(41),
+                text=T.fit(info["status"], T.mono(8), cw),
+                font=T.mono(8),
+                fill=info["colour"],
+                anchor="w",
+                tags=tags,
+            )
+        self.cards.append(
+            {
+                "g": g,
+                "tag": tag,
+                "items": items,
+                "levels": levels,
+                "accent": accent,
+                "name_col": name_col,
+            }
+        )
         key = str(g.folder)
         self.heat[key] = 0.0
         # not while the wheel is moving the page: every cover passing under
@@ -293,7 +548,9 @@ class LibraryPage(Page):
             if getattr(self, "_rest", None):
                 self.c.after_cancel(self._rest)
             accent = self.cards[i]["accent"]
-            self._rest = self.c.after(90, lambda: self.sel == i and self._glow_to(accent))
+            self._rest = self.c.after(
+                90, lambda: self.sel == i and self._glow_to(accent)
+            )
 
     def _heat(self, i, to, ms=None):
         card = self.cards[i]
@@ -306,9 +563,16 @@ class LibraryPage(Page):
             h = k0 + (to - k0) * kk
             self.heat[key] = h
             if levels and "img" in items:
-                c.itemconfigure(items["img"], image=levels[round(h * (len(levels) - 1))])
-            c.itemconfigure(items["ring"], outline=mix(T.BG, card["accent"], h) if h > 0.02 else "")
-            c.itemconfigure(items["name"], fill=mix(card["name_col"], card["accent"], h))
+                c.itemconfigure(
+                    items["img"], image=levels[round(h * (len(levels) - 1))]
+                )
+            c.itemconfigure(
+                items["ring"], outline=mix(T.BG, card["accent"], h) if h > 0.02 else ""
+            )
+            c.itemconfigure(
+                items["name"], fill=mix(card["name_col"], card["accent"], h)
+            )
+
         self.shell.motion.run(card["tag"], ms or (220 if to else 320), step)
 
     def _set_glow(self, colour, alpha):
@@ -327,6 +591,7 @@ class LibraryPage(Page):
 
         def step(k):
             self._set_glow(mix(c0, colour, k), a0 + (alpha - a0) * k)
+
         self.shell.motion.run("glow", 520, step)
 
     def _sweep(self):
@@ -346,62 +611,104 @@ class LibraryPage(Page):
         def again():
             if self.app.scanning and self.shell.page is self:
                 self.shell.motion.run("sweep", 1400, loop, again)
+
         self.shell.motion.run("sweep", 1400, loop, again)
 
     # ------------------------------------------------------------ menus
     def scan_menu(self):
         a = self.app
-        items = [("rescan  -  look for new games", lambda: a.scan()),
-                 ("full rescan  -  read every game again", lambda: a.scan(full=True)),
-                 ("add a game  -  one the scan did not find", a.pick_folder)]
+        items = [
+            ("rescan  -  look for new games", lambda: a.scan()),
+            ("full rescan  -  read every game again", lambda: a.scan(full=True)),
+            ("add a game  -  one the scan did not find", a.pick_folder),
+        ]
         # the number update all acts on, not the update tab's: a 'reinstall -
         # was DX11' card and a game with anti-cheat are on the tab, and update
         # all leaves both alone
         todo, _skipped = a.update_targets()
         if todo:
-            items.append((f"update all  -  {len(todo)} to install again",
-                          a.update_all))
+            items.append((f"update all  -  {len(todo)} to install again", a.update_all))
         x1, y1, x2, y2 = self.c.bbox(self.scan_btn.tag)
-        self.kit.menu(x2 - T.px(380), y2 + T.px(4), items, opener=self.scan_btn.tag, width=T.px(380))
+        self.kit.menu(
+            x2 - T.px(380),
+            y2 + T.px(4),
+            items,
+            opener=self.scan_btn.tag,
+            width=T.px(380),
+        )
 
     def view_menu(self):
         from .. import prefs
+
         a = self.app
         n = a.counts()
         cur = a.sort
         items = []
         for key, label in SORTS:
-            mark = ("  (desc)" if a.sort_desc else "  (asc)") if key and key == cur else ""
+            mark = (
+                ("  (desc)" if a.sort_desc else "  (asc)") if key and key == cur else ""
+            )
             items.append((f"sort: {label}{mark}", lambda key=key: a.set_sort(key)))
         items.append(None)
         for key, label in ARCH:
-            items.append((("\u2022 " if a.arch == key else "  ") + label, lambda key=key: a.set_arch(key)))
+            items.append(
+                (
+                    ("\u2022 " if a.arch == key else "  ") + label,
+                    lambda key=key: a.set_arch(key),
+                )
+            )
         items.append(None)
-        items.append((("hide" if a.show_hidden else "show") + f" hidden games ({n['hidden']})",
-                      self._toggle_hidden))
+        items.append(
+            (
+                ("hide" if a.show_hidden else "show")
+                + f" hidden games ({n['hidden']})",
+                self._toggle_hidden,
+            )
+        )
         at_start = prefs.get("scan_on_start", True)
-        items.append((("\u2022 " if at_start else "  ") + "read the library when the tool opens",
-                      lambda: prefs.set_("scan_on_start", not at_start)))
+        items.append(
+            (
+                ("\u2022 " if at_start else "  ")
+                + "read the library when the tool opens",
+                lambda: prefs.set_("scan_on_start", not at_start),
+            )
+        )
         # the one setting that sends something (a game's name to Steam's
         # store search), so it says so where it is switched
         from .. import covers as _covers
+
         online = _covers.online()
-        items.append((("\u2022 " if online else "  ") + "look up covers online (sends game names)",
-                      lambda: a.set_online_art(not online)))
+        items.append(
+            (
+                ("\u2022 " if online else "  ")
+                + "look up covers online (sends game names)",
+                lambda: a.set_online_art(not online),
+            )
+        )
         hidden = self.shell.rail_hidden()
         shown = [p for p in self.shell.HIDEABLE if p not in hidden]
-        items.append(("sidebar pages  -  " + (", ".join(shown) if shown else "all hidden"),
-                      lambda: self.shell.root.after(1, self.sidebar_menu)))
+        items.append(
+            (
+                "sidebar pages  -  " + (", ".join(shown) if shown else "all hidden"),
+                lambda: self.shell.root.after(1, self.sidebar_menu),
+            )
+        )
         vx2 = self.c.canvasx(self.c.winfo_width())
-        self.kit.menu(vx2 - T.px(44) - T.px(400), T.px(144), items, width=T.px(400), max_rows=16)
+        self.kit.menu(
+            vx2 - T.px(44) - T.px(400), T.px(144), items, width=T.px(400), max_rows=16
+        )
 
     def sidebar_menu(self):
         """Which of video, remix and vr the rail shows (#293)."""
         sh = self.shell
         hidden = sh.rail_hidden()
-        items = [(("\u2022 " if p not in hidden else "  ") + f"{p} in the sidebar",
-                  lambda p=p: sh.set_rail_hidden(p, p not in hidden))
-                 for p in sh.HIDEABLE]
+        items = [
+            (
+                ("\u2022 " if p not in hidden else "  ") + f"{p} in the sidebar",
+                lambda p=p: sh.set_rail_hidden(p, p not in hidden),
+            )
+            for p in sh.HIDEABLE
+        ]
         vx2 = self.c.canvasx(self.c.winfo_width())
         self.kit.menu(vx2 - T.px(44) - T.px(400), T.px(144), items, width=T.px(400))
 
@@ -412,17 +719,26 @@ class LibraryPage(Page):
     def _card_menu(self, e, g):
         a = self.app
         hid = str(g.folder) in a.hidden()
-        items = [("open", lambda: a.open_game(g)),
-                 (("show in the list again" if hid else "hide from the list"),
-                  lambda: a.set_hidden(g, not hid)),
-                 ("open folder", lambda: __import__("webbrowser").open(str(g.install_dir))),
-                 None] + a.picture_items(g)
+        items = [
+            ("open", lambda: a.open_game(g)),
+            (
+                ("show in the list again" if hid else "hide from the list"),
+                lambda: a.set_hidden(g, not hid),
+            ),
+            ("open folder", lambda: __import__("webbrowser").open(str(g.install_dir))),
+            None,
+        ] + a.picture_items(g)
         if getattr(g, "installed", False):
             # the install comes out from here too, without opening the game's
             # settings (#259). "uninstall" alone, in a menu whose other entries
             # act on the game, reads as uninstalling the game.
-            items += [None, ("uninstall dlss 5", lambda: (a.open_game(g),
-                                                          self.shell.root.after(1, a.uninstall)))]
+            items += [
+                None,
+                (
+                    "uninstall dlss 5",
+                    lambda: (a.open_game(g), self.shell.root.after(1, a.uninstall)),
+                ),
+            ]
         self.kit.menu(self.c.canvasx(e.x), self.c.canvasy(e.y), items, width=T.px(300))
 
     # ------------------------------------------------------------ keys and search
@@ -431,7 +747,9 @@ class LibraryPage(Page):
         self.sel = None
         if getattr(self, "_typed_job", None):
             self.c.after_cancel(self._typed_job)
-        self._typed_job = self.c.after(120, lambda: self.app.refresh("library", soft=True))
+        self._typed_job = self.c.after(
+            120, lambda: self.app.refresh("library", soft=True)
+        )
 
     def _first(self):
         if self.cards:
@@ -452,7 +770,11 @@ class LibraryPage(Page):
         ks = e.keysym
         if ks in ("Left", "Right", "Up", "Down") and self.cards:
             d = {"Left": -1, "Right": 1, "Up": -self.cols, "Down": self.cols}[ks]
-            i = 0 if self.sel is None else max(0, min(len(self.cards) - 1, self.sel + d))
+            i = (
+                0
+                if self.sel is None
+                else max(0, min(len(self.cards) - 1, self.sel + d))
+            )
             self._select(i)
             self._scroll_to_card(i)
             return True
@@ -466,8 +788,14 @@ class LibraryPage(Page):
             box = self.c.bbox(self.cards[i]["tag"])
             if box:
                 from types import SimpleNamespace
-                self._card_menu(SimpleNamespace(x=box[0] - self.c.canvasx(0) + T.px(24),
-                                                y=box[1] - self.c.canvasy(0) + T.px(24)), self.cards[i]["g"])
+
+                self._card_menu(
+                    SimpleNamespace(
+                        x=box[0] - self.c.canvasx(0) + T.px(24),
+                        y=box[1] - self.c.canvasy(0) + T.px(24),
+                    ),
+                    self.cards[i]["g"],
+                )
             return True
         if (e.state & 0x4) and ks.lower() == "f":
             self.field.focus()

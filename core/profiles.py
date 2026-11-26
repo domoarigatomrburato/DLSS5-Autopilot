@@ -16,6 +16,7 @@ Three presets (Quality / Balanced / Performance) are always listed but never
 written to disk: they are the two "cost" dials most people actually move, and
 the same names the games themselves use, so they need no explanation.
 """
+
 from __future__ import annotations
 
 import json
@@ -37,17 +38,40 @@ DIR = prefs.FILE.parent / "profiles"
 # one game's own runtime, and carrying it to another game would ask for a
 # file that game may not have. `overlay_key` and `target_fps` are the same
 # shape - they live in the settings, not in a per-game profile.
-FIELDS = ("path", "provider", "renodx", "dlssnr", "dlss", "keep_game_dlss",
-          "feed", "nr", "feeder_prerelease", "feeder_tag", "reshade_proxy",
-          "opti_proxy", "opti_build", "dxvk", "feed_helper")
+FIELDS = (
+    "path",
+    "provider",
+    "renodx",
+    "dlssnr",
+    "dlss",
+    "keep_game_dlss",
+    "feed",
+    "nr",
+    "feeder_prerelease",
+    "feeder_tag",
+    "reshade_proxy",
+    "opti_proxy",
+    "opti_build",
+    "dxvk",
+    "feed_helper",
+)
 
 # work_resolution is the feeder's only cost dial (the route is always DLAA -
 # see feedcfg). OptiScaler's WorkingScale is quadratic in cost, which is why
 # its steps are wider than the feeder's for the same three names.
 BUILTINS: dict[str, dict] = {
-    "Quality":     {"feed": {"work_resolution": 100}, "nr": {"WorkingScale": 1.0, "Preset": 0}},
-    "Balanced":    {"feed": {"work_resolution": 85},  "nr": {"WorkingScale": 0.75, "Preset": 0}},
-    "Performance": {"feed": {"work_resolution": 70},  "nr": {"WorkingScale": 0.5, "Preset": 0}},
+    "Quality": {
+        "feed": {"work_resolution": 100},
+        "nr": {"WorkingScale": 1.0, "Preset": 0},
+    },
+    "Balanced": {
+        "feed": {"work_resolution": 85},
+        "nr": {"WorkingScale": 0.75, "Preset": 0},
+    },
+    "Performance": {
+        "feed": {"work_resolution": 70},
+        "nr": {"WorkingScale": 0.5, "Preset": 0},
+    },
 }
 
 
@@ -100,9 +124,12 @@ def save(name: str, opt: Options) -> Path:
     if is_builtin(name):
         raise ValueError(f"'{name}' is a built-in preset and cannot be replaced.")
     from .update import VERSION
-    data = {"name": name.strip(),
-            "saved": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "app_version": VERSION}
+
+    data = {
+        "name": name.strip(),
+        "saved": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "app_version": VERSION,
+    }
     data.update(_to_dict(opt))
     p = _path(name)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -136,9 +163,11 @@ def _from_dict(data: dict) -> Options:
             kw[f] = str(v) if v is not None else d
     path = kw.get("path", defaults.path)
     if path not in dlss.ALL_ROUTES:
-        raise ValueError(f"The profile asks for route '{path}', which this "
-                         f"version does not know. Known routes: "
-                         f"{', '.join(dlss.ALL_ROUTES)}.")
+        raise ValueError(
+            f"The profile asks for route '{path}', which this "
+            f"version does not know. Known routes: "
+            f"{', '.join(dlss.ALL_ROUTES)}."
+        )
     return Options(**kw)
 
 
@@ -222,9 +251,14 @@ def describe(opt: Options) -> list[str]:
     if opt.opti_build:
         # The wilsjo2 build carries a placement with it, and a profile that
         # names the build without it describes only half of what it does.
-        out.append(f"optiscaler build: {opt.opti_build}"
-                   + (" (neural pass before the upscaler)"
-                      if optiscaler.is_presr(opt.opti_build) else ""))
+        out.append(
+            f"optiscaler build: {opt.opti_build}"
+            + (
+                " (neural pass before the upscaler)"
+                if optiscaler.is_presr(opt.opti_build)
+                else ""
+            )
+        )
     if opt.dxvk:
         out.append("dxvk")
     return out

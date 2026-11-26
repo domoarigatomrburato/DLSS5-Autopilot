@@ -35,6 +35,7 @@ only things written are inside its `.trex` folder -
 - plus one line in the game's rtx.conf. No ReShade, no add-on, no proxy DLL:
 a ReShade proxy in a Remix game's folder crashes it before it draws.
 """
+
 from __future__ import annotations
 
 import json
@@ -47,14 +48,35 @@ import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from . import (emulators, anticheat, dlss, dxvk, feedcfg, games, gpu, gpupref, mfg, net,
-               optiscaler, ownfg, pe, prefs, reengine, refw, remix, reshade_ini,
-               sources, update, vulkan)
+from . import (
+    emulators,
+    anticheat,
+    dlss,
+    dxvk,
+    feedcfg,
+    games,
+    gpu,
+    gpupref,
+    mfg,
+    net,
+    optiscaler,
+    ownfg,
+    pe,
+    prefs,
+    reengine,
+    refw,
+    remix,
+    reshade_ini,
+    sources,
+    update,
+    vulkan,
+)
+
 # Imported by name as well: inside the Options class body the field
 # `dlss: str | None` shadows the module, so `dlss.FEEDER` would read the
 # field's default (None) instead of the module attribute.
 from .dlss import BRIDGE, FEEDER, NATIVE, OPTI, STANDALONE, UPLIFT, UPSTREAM
-from .dlss import RENODX as ROUTE_RENODX   # the route; RENODX below is a file name
+from .dlss import RENODX as ROUTE_RENODX  # the route; RENODX below is a file name
 from .dlss import REMIX as ROUTE_REMIX
 
 MANIFEST = "dlss5-autopilot.json"
@@ -66,6 +88,7 @@ UPLIFT_RESHADE_MIN = "6.8.0"
 def _vkey(ver: str) -> tuple:
     """'6.7.3' -> (6, 7, 3); anything that is not a number counts as 0."""
     return tuple(int(x) if x.isdigit() else 0 for x in (ver or "").split(".")[:3])
+
 
 FEEDER_ADDON64 = "dlss5-feed.addon64"
 FEEDER_ADDON32 = "dlss5-feed.addon32"
@@ -103,32 +126,41 @@ VORT_TEXTURE = "vort_BlueNoise.png"
 # our add-on gets two things rewriting the same calls: flicker, frame-gen
 # multipliers greyed out, or nothing at all (Cyberpunk 2077 with OptiScaler
 # and a frame-gen unlocker, issue #3). Not refused - stated.
-OTHER_NGX_HOOKS = ("OptiScaler.ini", "nvngx.ini", "fakenvapi.ini",
-                   "dlss-enabler.dll", "dlss-enabler-upscaler.dll",
-                   "nvngx-wrapper.dll", "dlssg_to_fsr3_amd_is_better.dll",
-                   "dlssg_to_fsr3.ini", "nvngx.dll_dlssnr.dll",
-                   # sdli1995/dlssg_for_sm86: frame generation on RTX 30,
-                   # shipped as a version.dll proxy with DLSSG 310.1 inside
-                   # it. That is the same file name the MFG unlock's loader
-                   # and one of the OptiScaler proxies use, so a folder
-                   # holding both has two things in one slot - and the .ini
-                   # is what says which one is there.
-                   "dlssg_sm86.ini",
-                   # xenmods/DLSSNR-Cost-Scaler: a proxy that replaces
-                   # nvngx_dlssnr.dll with its own and adds a model-resolution
-                   # dial. It brings an add-on of its own, so a folder with
-                   # both has two things hooking the model and the runtime
-                   # beside the game is not the one this tool put there.
-                   "dlssnr-companion.addon64", "nvngx_dlssnr.ini",
-                   # ghostinthecamera/GITC-Uplift (#946): its add-ons are
-                   # caught as foreign add-ons; the helper names it when
-                   # the add-on was moved aside. It refuses to run beside
-                   # another NR add-on, and stops the feeder's SR (its #9).
-                   "gitc-uplift-helper64.exe", "uplift-helper64.exe",
-                   # NGX loads a plain nvngx.dll from the game folder before
-                   # the driver's: an OptiScaler installed by hand under its
-                   # old name, or the standalone route's caller bridge.
-                   STANDALONE_BRIDGE)
+OTHER_NGX_HOOKS = (
+    "OptiScaler.ini",
+    "nvngx.ini",
+    "fakenvapi.ini",
+    "dlss-enabler.dll",
+    "dlss-enabler-upscaler.dll",
+    "nvngx-wrapper.dll",
+    "dlssg_to_fsr3_amd_is_better.dll",
+    "dlssg_to_fsr3.ini",
+    "nvngx.dll_dlssnr.dll",
+    # sdli1995/dlssg_for_sm86: frame generation on RTX 30,
+    # shipped as a version.dll proxy with DLSSG 310.1 inside
+    # it. That is the same file name the MFG unlock's loader
+    # and one of the OptiScaler proxies use, so a folder
+    # holding both has two things in one slot - and the .ini
+    # is what says which one is there.
+    "dlssg_sm86.ini",
+    # xenmods/DLSSNR-Cost-Scaler: a proxy that replaces
+    # nvngx_dlssnr.dll with its own and adds a model-resolution
+    # dial. It brings an add-on of its own, so a folder with
+    # both has two things hooking the model and the runtime
+    # beside the game is not the one this tool put there.
+    "dlssnr-companion.addon64",
+    "nvngx_dlssnr.ini",
+    # ghostinthecamera/GITC-Uplift (#946): its add-ons are
+    # caught as foreign add-ons; the helper names it when
+    # the add-on was moved aside. It refuses to run beside
+    # another NR add-on, and stops the feeder's SR (its #9).
+    "gitc-uplift-helper64.exe",
+    "uplift-helper64.exe",
+    # NGX loads a plain nvngx.dll from the game folder before
+    # the driver's: an OptiScaler installed by hand under its
+    # old name, or the standalone route's caller bridge.
+    STANDALONE_BRIDGE,
+)
 
 
 def other_ngx_hooks(root: Path, path: str = "") -> list[str]:
@@ -154,8 +186,11 @@ def other_ngx_hooks(root: Path, path: str = "") -> list[str]:
     # ...nor on another route while they are still on our record: the
     # previous route's uninstall takes them out (gate 2.1.0)
     try:
-        mine |= {Path(x).name.lower() for x in _previously_ours(root)
-                 if Path(x).name in sources.UPLIFT_ADDONS}
+        mine |= {
+            Path(x).name.lower()
+            for x in _previously_ours(root)
+            if Path(x).name in sources.UPLIFT_ADDONS
+        }
     except Exception:
         pass
     for n in OTHER_NGX_HOOKS:
@@ -167,10 +202,17 @@ def other_ngx_hooks(root: Path, path: str = "") -> list[str]:
             found.append(names[n.lower()])
     # A ReShade add-on we did not write - another RenoDX build, say - is
     # loaded by ReShade regardless and hooks the same swap chain.
-    ours = {"dlss5-feed.addon64", "dlss5-bridge.addon64",
-            RENODX.lower(), RENODX_SF.lower(), UPSTREAM_ADDON.lower(),
-            STANDALONE_ADDON.lower(), "rtx40mfg-ui.addon64",
-            FEEDER_ADDON32.lower(), FEEDER_HELPER64.lower()} | mine
+    ours = {
+        "dlss5-feed.addon64",
+        "dlss5-bridge.addon64",
+        RENODX.lower(),
+        RENODX_SF.lower(),
+        UPSTREAM_ADDON.lower(),
+        STANDALONE_ADDON.lower(),
+        "rtx40mfg-ui.addon64",
+        FEEDER_ADDON32.lower(),
+        FEEDER_HELPER64.lower(),
+    } | mine
     for low, orig in names.items():
         # ReShade also loads plain .addon files (Luma mods ship that way).
         if low.endswith((".addon64", ".addon32", ".addon")) and low not in ours:
@@ -184,17 +226,24 @@ def other_ngx_hooks(root: Path, path: str = "") -> list[str]:
 def hook_warning(root: Path, path: str) -> str:
     """One sentence, or "" when the folder is clean."""
     if path == OPTI:
-        found = [n for n in other_ngx_hooks(root) if n.lower() != "optiscaler.ini"
-                 and n.lower() != "nvngx.dll_dlssnr.dll"]
+        found = [
+            n
+            for n in other_ngx_hooks(root)
+            if n.lower() != "optiscaler.ini" and n.lower() != "nvngx.dll_dlssnr.dll"
+        ]
     else:
         found = other_ngx_hooks(root, path)
     if not found:
         return ""
-    return (f"another DLSS hook is already in this folder ({', '.join(found[:5])}"
-            f"{', ...' if len(found) > 5 else ''}). Two things rewriting the "
-            f"same NGX calls means flicker, greyed-out frame-gen multipliers "
-            f"or nothing happening. If it misbehaves, remove that mod (or "
-            f"uninstall this) and try one at a time.")
+    return (
+        f"another DLSS hook is already in this folder ({', '.join(found[:5])}"
+        f"{', ...' if len(found) > 5 else ''}). Two things rewriting the "
+        f"same NGX calls means flicker, greyed-out frame-gen multipliers "
+        f"or nothing happening. If it misbehaves, remove that mod (or "
+        f"uninstall this) and try one at a time."
+    )
+
+
 DLSSNR = "nvngx_dlssnr.dll"
 DLSS = "nvngx_dlss.dll"
 HOST_DIR = "host64"
@@ -206,8 +255,9 @@ FEEDER_HELPER_MIN = "v1.18.0-beta.1"
 def _split(g, opt) -> bool:
     """The feeder runs NGX in the host64 folder - a 32-bit game, or the
     helper mode."""
-    return opt.path == FEEDER and (getattr(g, "bitness", None) != 64
-                                   or bool(getattr(opt, "feed_helper", False)))
+    return opt.path == FEEDER and (
+        getattr(g, "bitness", None) != 64 or bool(getattr(opt, "feed_helper", False))
+    )
 
 
 def _mode_switch(root: Path, g, opt) -> bool:
@@ -228,15 +278,16 @@ def _feeder_addon(g, opt) -> str:
         return FEEDER_ADDON32
     return FEEDER_HELPER64 if getattr(opt, "feed_helper", False) else FEEDER_ADDON64
 
+
 # The RTX Remix route. Nothing of ours goes beside the executable: the
 # runtime lives in the mod's .trex folder and everything we write goes in
 # there, plus one line in rtx.conf.
-REMIX_RUNTIME = remix.RUNTIME_DLL          # .trex/d3d9.dll - the runtime
-REMIX_NVNGX = remix.REMIX_NVNGX            # the caller-identity bridge
+REMIX_RUNTIME = remix.RUNTIME_DLL  # .trex/d3d9.dll - the runtime
+REMIX_NVNGX = remix.REMIX_NVNGX  # the caller-identity bridge
 
 SHADERS = Path("reshade-shaders") / "Shaders"
 INCLUDE = SHADERS / "include"
-VORT_INCLUDE = SHADERS / "Includes"    # VORT's own folder name, its .fx includes it
+VORT_INCLUDE = SHADERS / "Includes"  # VORT's own folder name, its .fx includes it
 TEXTURES = Path("reshade-shaders") / "Textures"
 
 BRIDGE_ADDON = "dlss5-bridge.addon64"
@@ -269,12 +320,12 @@ ORPHAN_SUFFIX = ".dlss5-autopilot-orphan"
 # one behind. Each is regenerated from scratch on the next launch, so removing
 # them loses nothing even in the unlikely case one predates us.
 RUNTIME_ARTIFACTS = (
-    "ReShade.log",              # ReShade, every launch
-    "dlss5-feed.log",           # the feeder add-on
+    "ReShade.log",  # ReShade, every launch
+    "dlss5-feed.log",  # the feeder add-on
     "dlss5-feed-host.log",
     "dlss5-bridge.log",
     "OptiScaler.log",
-    "nvngx.log",                # NGX itself
+    "nvngx.log",  # NGX itself
     "nvngx_dlssnr.log",
     "nvngx_dlss.log",
 )
@@ -297,23 +348,23 @@ class InstallError(Exception):
 
 @dataclass
 class Options:
-    provider: int = 3                       # DLSS5_MV_PROVIDER
+    provider: int = 3  # DLSS5_MV_PROVIDER
     renodx: str | None = sources.RENODX_DEFAULT
-    renodx_local: Path | None = None        # user's own build
-    dlssnr: str | None = None               # None = auto-pick for this GPU
-    dlss: str | None = None                 # None = newest
+    renodx_local: Path | None = None  # user's own build
+    dlssnr: str | None = None  # None = auto-pick for this GPU
+    dlss: str | None = None  # None = newest
     # Ray reconstruction, for a game that already ships it: "" leaves the
     # game's own alone, a label swaps in that build. Never installed into a
     # game that does not have one - nothing would ask for it.
     dlssd: str = ""
-    keep_game_dlss: bool = True             # leave the game's own nvngx_dlss.dll alone
-    feed: dict = field(default_factory=dict)   # dlss5-feed.cfg settings
+    keep_game_dlss: bool = True  # leave the game's own nvngx_dlss.dll alone
+    feed: dict = field(default_factory=dict)  # dlss5-feed.cfg settings
     ignore_gpu_mismatch: bool = False
-    path: str = FEEDER                      # native / bridge / feeder
-    opti_proxy: str = ""                    # "" = pick a free name for this game
-    opti_build: str = ""                    # key of optiscaler.BUILDS
-    reshade_proxy: str = ""                 # "" = choose from the API
-    native_dlss: bool = False               # game ships its own DLSS
+    path: str = FEEDER  # native / bridge / feeder
+    opti_proxy: str = ""  # "" = pick a free name for this game
+    opti_build: str = ""  # key of optiscaler.BUILDS
+    reshade_proxy: str = ""  # "" = choose from the API
+    native_dlss: bool = False  # game ships its own DLSS
     # "fsr" / "xess" / "": the upscaler a game WITHOUT DLSS ships. On the
     # OptiScaler route its calls become OptiScaler's input and DLSS runs in
     # their place, so the tool also puts a nvngx_dlss.dll in the folder.
@@ -322,13 +373,13 @@ class Options:
     # add-on generations lands first. "newest release" means the release
     # line (#325, #348); this asks for the beta line instead.
     feeder_prerelease: bool = False
-    feeder_tag: str = ""                    # "" = stable or newest pre-release
+    feeder_tag: str = ""  # "" = stable or newest pre-release
     # Feeder, 64-bit game: NGX in host64\dlss5-feed-host64.exe instead of in
     # the game (dlss5-feed-helper.addon64), for a game whose own process
     # cannot run it (D3D12_ERROR_INVALID_REDIST #1035, "NGX would not set
     # DLSS up inside this game's process"). The 32-bit layout, built x64.
     feed_helper: bool = False
-    dxvk: bool = False                      # run a D3D11 game on Vulkan via DXVK
+    dxvk: bool = False  # run a D3D11 game on Vulkan via DXVK
     nr: dict = field(default_factory=dict)  # OptiScaler [DlssNr] settings
     # OptiScaler route, D3D12: FSR 3.1 frame generation from the libraries
     # OptiScaler ships, on any card. Off by default - it adds latency and
@@ -389,8 +440,10 @@ class Report:
 # DXGI; everything else is a bolt-on and fails far more often.
 STABLE, BETA, EXPERIMENTAL = "stable", "beta", "experimental"
 
-def reliability(g: games.Game, path: str = FEEDER,
-                upscaler: str = "", remix_swap: bool = False) -> tuple[str, str]:
+
+def reliability(
+    g: games.Game, path: str = FEEDER, upscaler: str = "", remix_swap: bool = False
+) -> tuple[str, str]:
     """(level, explanation) - how likely this route is to actually work.
 
     `upscaler` is set on the OptiScaler route when the game has no DLSS and
@@ -413,102 +466,139 @@ def reliability(g: games.Game, path: str = FEEDER,
                 "tool's test machine. Reports say the game did not start "
                 "after the swap, or stopped at the Remix console. The old "
                 "one is backed up and "
-                "'uninstall' puts it back.")
+                "'uninstall' puts it back."
+            )
         return BETA, (
             "The Remix runtime already installed here has the DLSS 5 neural "
             "pass built in; all this does is put nvngx_dlssnr.dll beside it "
             "and switch the pass on in rtx.conf. Nothing is injected into "
             "the game. Only a handful of Remix mods ship a runtime "
-            "with the pass at all.")
+            "with the pass at all."
+        )
     if g.api == "DX10":
-        return BETA, ("Direct3D 10 through the feeder's private D3D11 relay "
-                      "device (feeder 0.13.1 and newer). A D3D10 game "
-                      "installs like a D3D11 one.")
+        return BETA, (
+            "Direct3D 10 through the feeder's private D3D11 relay "
+            "device (feeder 0.13.1 and newer). A D3D10 game "
+            "installs like a D3D11 one."
+        )
     if path == NATIVE:
-        return STABLE, ("The game's own DLSS is hooked directly - no synthetic "
-                        "contract, no motion-vector shaders, and your in-game "
-                        "DLSS quality setting still applies.")
+        return STABLE, (
+            "The game's own DLSS is hooked directly - no synthetic "
+            "contract, no motion-vector shaders, and your in-game "
+            "DLSS quality setting still applies."
+        )
     if path == UPSTREAM:
-        return BETA, ("neural-upstream runs the network at render resolution, "
-                      "before the game's own DLSS. Its author tested two "
-                      "games (GTA V Enhanced, Bright Memory Infinite).")
+        return BETA, (
+            "neural-upstream runs the network at render resolution, "
+            "before the game's own DLSS. Its author tested two "
+            "games (GTA V Enhanced, Bright Memory Infinite)."
+        )
     if path == STANDALONE:
-        return EXPERIMENTAL, ("standalone-dlssnr does everything itself - own "
-                              "feed, DLAA or DLSS Super Resolution, frame "
-                              "generation - and shows the result through a "
-                              "topmost window of its own. That window trick "
-                              "is the fragile part: resolution or display-mode "
-                              "changes need a restart, and some games hang at "
-                              "start. Few games tested.")
+        return EXPERIMENTAL, (
+            "standalone-dlssnr does everything itself - own "
+            "feed, DLAA or DLSS Super Resolution, frame "
+            "generation - and shows the result through a "
+            "topmost window of its own. That window trick "
+            "is the fragile part: resolution or display-mode "
+            "changes need a restart, and some games hang at "
+            "start. Few games tested."
+        )
     if path == UPLIFT:
-        return EXPERIMENTAL, ("GITC-Uplift runs the network itself, on the "
-                              "finished frame or inside the game's own DLSS "
-                              "where there is one; 32-bit games go through "
-                              "its 64-bit helper. Its settings and log "
-                              "lines can change between releases.")
+        return EXPERIMENTAL, (
+            "GITC-Uplift runs the network itself, on the "
+            "finished frame or inside the game's own DLSS "
+            "where there is one; 32-bit games go through "
+            "its 64-bit helper. Its settings and log "
+            "lines can change between releases."
+        )
     if path == ROUTE_RENODX:
         if g.api == "DX9":
-            return BETA, ("64-bit DirectX 9 through the renodx-dlss add-on: it "
-                          "evaluates the presentation backbuffer with no "
-                          "motion vectors, so expect a softer result.")
-        return EXPERIMENTAL, ("The renodx-dlss add-on hooks the game in-process. "
-                              "Reported not working in many "
-                              "games. Try the recommended route first.")
+            return BETA, (
+                "64-bit DirectX 9 through the renodx-dlss add-on: it "
+                "evaluates the presentation backbuffer with no "
+                "motion vectors, so expect a softer result."
+            )
+        return EXPERIMENTAL, (
+            "The renodx-dlss add-on hooks the game in-process. "
+            "Reported not working in many "
+            "games. Try the recommended route first."
+        )
     if path == OPTI and upscaler:
-        return BETA, ("FSR/XeSS redirected into DLSS by OptiScaler - works in "
-                      "many games, not all. OptiScaler has to hook the game's "
-                      f"{'FSR 2/3' if upscaler == 'fsr' else 'XeSS'} calls "
-                      "first; a game that links its upscaler statically gives "
-                      "it nothing to hook, and the feeder is the fallback."
-                      + (" On D3D11 it needs a bridged upscaler (FSR on D3D12) "
-                         "in place of DLSS." if g.api == "DX11" else ""))
+        return BETA, (
+            "FSR/XeSS redirected into DLSS by OptiScaler - works in "
+            "many games, not all. OptiScaler has to hook the game's "
+            f"{'FSR 2/3' if upscaler == 'fsr' else 'XeSS'} calls "
+            "first; a game that links its upscaler statically gives "
+            "it nothing to hook, and the feeder is the fallback."
+            + (
+                " On D3D11 it needs a bridged upscaler (FSR on D3D12) in place of DLSS."
+                if g.api == "DX11"
+                else ""
+            )
+        )
     if path == OPTI:
-        return BETA, ("OptiScaler replaces the upscaler and runs the model over "
-                      "its output. The game must already use DLSS; the author "
-                      "tested RTX 50 only, older cards run the community runtime."
-                      + (" On D3D11 it needs a bridged upscaler (FSR on D3D12) "
-                         "in place of DLSS." if g.api == "DX11" else ""))
+        return BETA, (
+            "OptiScaler replaces the upscaler and runs the model over "
+            "its output. The game must already use DLSS; the author "
+            "tested RTX 50 only, older cards run the community runtime."
+            + (
+                " On D3D11 it needs a bridged upscaler (FSR on D3D12) in place of DLSS."
+                if g.api == "DX11"
+                else ""
+            )
+        )
     if path == BRIDGE:
         if g.api == "Vulkan":
-            return BETA, ("The bridge mirrors the game's DLSS contract onto a "
-                          "private D3D12 session - the route for Vulkan games "
-                          "that ship DLSS; the feeder is the fallback.")
-        return BETA, ("The bridge reproduces the DLSS contract on a private "
-                      "D3D12 session. Fewer moving parts than the feeder, but "
-                      "less proven.")
+            return BETA, (
+                "The bridge mirrors the game's DLSS contract onto a "
+                "private D3D12 session - the route for Vulkan games "
+                "that ship DLSS; the feeder is the fallback."
+            )
+        return BETA, (
+            "The bridge reproduces the DLSS contract on a private "
+            "D3D12 session. Fewer moving parts than the feeder, but "
+            "less proven."
+        )
     if g.api == "DX8":
         return EXPERIMENTAL, (
             "DirectX 8 through DXVK's d3d8.dll, then the same path as a 32-bit "
             "DirectX 9 game. If you try it, "
             "'share the result' under "
-            "'did it work?' tells the next person how it went.")
+            "'did it work?' tells the next person how it went."
+        )
     if g.api == "DX9":
         return EXPERIMENTAL, (
             "DirectX 9 is the least reliable path. The game runs through "
             "DXVK translation and then the 32-bit helper process; the "
             "DLSS feature frequently fails to create on top of that. Expect "
-            "it not to work.")
+            "it not to work."
+        )
     if g.api == "Vulkan":
-        return BETA, ("Vulkan works through ReShade's layer registration and "
-                      "the component's own D3D12 interop. Newer than the "
-                      "DirectX paths, and it has met fewer real games.")
+        return BETA, (
+            "Vulkan works through ReShade's layer registration and "
+            "the component's own D3D12 interop. Newer than the "
+            "DirectX paths, and it has met fewer real games."
+        )
     if g.bitness == 32:
         return EXPERIMENTAL, (
             "32-bit games go through a cross-process helper (host64). "
             "Upstream marks this beta and it often fails to start the DLSS "
-            "feature.")
+            "feature."
+        )
     if g.api == "OpenGL":
         return BETA, (
             "OpenGL needs interop extensions the driver may not expose to "
             "this game, and the game must render on the NVIDIA card. Verified "
             "on six games with VORT motion vectors and add-on 4.60, which the "
-            "tool applies.")
+            "tool applies."
+        )
     if g.api in ("DX11", "DX12", "Unknown"):
         return STABLE, "DirectX 11/12 is the path DLSS 5 feeding is built around."
     return BETA, "Untested path."
 
 
 # ---------------------------------------------------------------- helpers
+
 
 def _is_reshade(path: Path) -> bool:
     """A ReShade proxy DLL carries the literal string "ReShade" and is >1 MB."""
@@ -530,8 +620,14 @@ def _is_reshade(path: Path) -> bool:
 # later through LoadLibrary - Total War: Warhammer III does - picks it up when
 # it is good and ready. When a game will not start, changing the name it
 # comes in under is the first thing to try.
-RESHADE_PROXIES = ("dxgi.dll", "d3d11.dll", "d3d12.dll", "d3d10.dll",
-                   "d3d9.dll", "opengl32.dll")
+RESHADE_PROXIES = (
+    "dxgi.dll",
+    "d3d11.dll",
+    "d3d12.dll",
+    "d3d10.dll",
+    "d3d9.dll",
+    "opengl32.dll",
+)
 
 RESHADE_PROXY_HELP = {
     "dxgi.dll": "default for Direct3D 10/11/12",
@@ -649,7 +745,9 @@ def via_dxvk(g: games.Game, opt: "Options") -> games.Game:
     """The game as the rest of the install sees it: a Vulkan game."""
     if not uses_dxvk(g, opt):
         return g
-    return replace(g, api="Vulkan", api_why=f"DXVK: {dxvk_api(g, opt) or g.api} -> Vulkan")
+    return replace(
+        g, api="Vulkan", api_why=f"DXVK: {dxvk_api(g, opt) or g.api} -> Vulkan"
+    )
 
 
 def check_supported(g: games.Game) -> tuple[bool, str]:
@@ -659,17 +757,21 @@ def check_supported(g: games.Game) -> tuple[bool, str]:
     if g.error:
         return False, g.error
     if g.exe_warning and (g.bitness not in (32, 64) or g.api not in games.APIS):
-        return False, ("Choose this game's 'architecture' and 'graphics api' in "
-                       "the game's settings - Windows protects its "
-                       "executable, so they cannot be read from it.")
+        return False, (
+            "Choose this game's 'architecture' and 'graphics api' in "
+            "the game's settings - Windows protects its "
+            "executable, so they cannot be read from it."
+        )
     if g.bitness not in (32, 64):
         return False, "Could not read the architecture."
     if g.api == "DX8" and g.bitness == 64:
         # Set by hand: detection never says DX8 for a 64-bit exe, because
         # there is no 64-bit Direct3D 8 (gate 2.0.5).
-        return False, ("DirectX 8 is 32-bit only, and this executable is "
-                       "64-bit - set 'graphics api' to the one it really "
-                       "draws with in the game's settings.")
+        return False, (
+            "DirectX 8 is 32-bit only, and this executable is "
+            "64-bit - set 'graphics api' to the one it really "
+            "draws with in the game's settings."
+        )
     if g.api == "Vulkan":
         # Reachable since the bridge landed: it mirrors the game's DLSS
         # contract onto a private D3D12 session. ReShade still has to be
@@ -712,8 +814,9 @@ def _backup(dst: Path, rep: Report, root: Path) -> None:
             # the backup from every reinstall ("update all"), and uninstall
             # then deleted our file and left the game's own unrestored: the
             # swapped Remix runtime came out of an uninstall missing (#148).
-            if bak.is_file() and rel.replace("\\", "/") not in \
-                    {w.replace("\\", "/") for w in rep.written}:
+            if bak.is_file() and rel.replace("\\", "/") not in {
+                w.replace("\\", "/") for w in rep.written
+            }:
                 rep.written.append(rel)
             return
     except ValueError:
@@ -768,7 +871,8 @@ def _backup_or_refuse(dst: Path, rep: Report, root: Path) -> None:
             f"{dst.name} could not be backed up ({e.strerror or e}), so it "
             f"was left as it is - nothing was overwritten or deleted. Free "
             f"some space on the drive, or close whatever has the file open, "
-            f"and install again.") from e
+            f"and install again."
+        ) from e
 
 
 def _overlay_key_pref() -> int:
@@ -784,8 +888,7 @@ def _overlay_key_pref() -> int:
         return 0
 
 
-def _find_runtime(root: Path, name: str,
-                  folder: Path | None = None) -> Path | None:
+def _find_runtime(root: Path, name: str, folder: Path | None = None) -> Path | None:
     """Where the game keeps this runtime, or None if it does not have one.
 
     Games do not keep these beside the executable - Unreal buries them under
@@ -811,8 +914,9 @@ def _find_runtime(root: Path, name: str,
     return None
 
 
-def _nested_game_dlss(root: Path, g, opt: "Options", x64: bool = True,
-                      ours=()) -> Path | None:
+def _nested_game_dlss(
+    root: Path, g, opt: "Options", x64: bool = True, ours=()
+) -> Path | None:
     """The game's own nvngx_dlss.dll to replace, when it is not beside the exe.
 
     Unreal keeps it under Plugins/.../ThirdParty and loads it from there, so
@@ -825,13 +929,12 @@ def _nested_game_dlss(root: Path, g, opt: "Options", x64: bool = True,
     # native_dlss is what the window read when the game was picked: with no
     # DLSS anywhere in the game there is nothing to swap, and the walk
     # below would run on the Tk thread for every preview (gate 1.9.1).
-    if opt.keep_game_dlss or not x64 or opt.path == UPSTREAM \
-            or not opt.native_dlss:
+    if opt.keep_game_dlss or not x64 or opt.path == UPSTREAM or not opt.native_dlss:
         return None
     mine = {str(o).replace("\\", "/") for o in ours or ()}
     beside = root / DLSS
     if beside.is_file() and DLSS not in mine:
-        return None          # the game's own is beside the exe: swapped there
+        return None  # the game's own is beside the exe: swapped there
     # Our own copy beside the exe from an earlier install is not the game's:
     # without looking past it, the second install ("update all", a new pick)
     # left the nested runtime on the first install's build (gate 1.9.1).
@@ -851,8 +954,11 @@ def _nested_game_dlss(root: Path, g, opt: "Options", x64: bool = True,
         # the answer is in hand; when it is not, this pays for it once and
         # every later click reads the cache.
         try:
-            hits = [h for h in dlss.walked(Path(base), skip_dir=root)
-                    if os.path.basename(str(h)).lower() == DLSS]
+            hits = [
+                h
+                for h in dlss.walked(Path(base), skip_dir=root)
+                if os.path.basename(str(h)).lower() == DLSS
+            ]
             # Detection's walk looks for five runtime names and stops after
             # six matches, so "it found no nvngx_dlss.dll" is only an answer
             # when it did not stop early. When it did, ask the same
@@ -863,9 +969,11 @@ def _nested_game_dlss(root: Path, g, opt: "Options", x64: bool = True,
             # answer is empty. It is cached under its own key and preview()
             # runs on a worker now, so it is paid once, off the Tk thread.
             if not hits:
-                hits = [h for h in dlss.walked(Path(base), skip_dir=root,
-                                               names=(DLSS,))
-                        if os.path.basename(str(h)).lower() == DLSS]
+                hits = [
+                    h
+                    for h in dlss.walked(Path(base), skip_dir=root, names=(DLSS,))
+                    if os.path.basename(str(h)).lower() == DLSS
+                ]
         except Exception:
             hits = []
         for h in hits:
@@ -888,8 +996,9 @@ def _nested_game_dlss(root: Path, g, opt: "Options", x64: bool = True,
 
 def _same_path(a: Path, b: Path) -> bool:
     try:
-        return os.path.normcase(os.path.realpath(str(a))) == \
-            os.path.normcase(os.path.realpath(str(b)))
+        return os.path.normcase(os.path.realpath(str(a))) == os.path.normcase(
+            os.path.realpath(str(b))
+        )
     except OSError:
         return os.path.normcase(str(a)) == os.path.normcase(str(b))
 
@@ -912,8 +1021,12 @@ def _opti_dlss_target(root: Path, g, opt: "Options", ours=()) -> Path | None:
     # the reinstall swaps it again. Detection reads that file as ours by
     # then, so native_dlss is not asked for in that case (gate 1.9.1).
     swapped_before = (root / (DLSS + BACKUP_SUFFIX)).is_file()
-    if x64 and not opt.keep_game_dlss and beside.is_file() and (
-            (opt.native_dlss and DLSS not in mine) or swapped_before):
+    if (
+        x64
+        and not opt.keep_game_dlss
+        and beside.is_file()
+        and ((opt.native_dlss and DLSS not in mine) or swapped_before)
+    ):
         return beside
     return _nested_game_dlss(root, g, opt, x64=x64, ours=ours)
 
@@ -924,12 +1037,15 @@ def _preview_swap(write, pv, root: Path, have: Path, name: str) -> None:
         write(str(have.relative_to(root)))
     except ValueError:
         write(str(have))
-        pv.outside.append(f"replaces the game's own {name} at {have} - outside "
-                          f"the install folder, backed up beside itself")
+        pv.outside.append(
+            f"replaces the game's own {name} at {have} - outside "
+            f"the install folder, backed up beside itself"
+        )
 
 
-def _swap_nested_dlss(have: Path, fam: list, opt: "Options", rep, root: Path,
-                      dl, log) -> None:
+def _swap_nested_dlss(
+    have: Path, fam: list, opt: "Options", rep, root: Path, dl, log
+) -> None:
     """Replace the game's nested nvngx_dlss.dll, the way the RR swap does."""
     try:
         was = pe.file_version(have)
@@ -939,11 +1055,15 @@ def _swap_nested_dlss(have: Path, fam: list, opt: "Options", rep, root: Path,
     except (sources.RateLimited, sources.Unavailable):
         raise
     except Exception as ex:
-        log(f"      nvngx_dlss could not be fetched ({ex}) - the game keeps "
-            f"the one it shipped")
-        rep.warnings.append("nvngx_dlss.dll was not swapped: the download did "
-                            "not arrive. The game keeps the runtime it "
-                            "shipped, and everything else installed normally.")
+        log(
+            f"      nvngx_dlss could not be fetched ({ex}) - the game keeps "
+            f"the one it shipped"
+        )
+        rep.warnings.append(
+            "nvngx_dlss.dll was not swapped: the download did "
+            "not arrive. The game keeps the runtime it "
+            "shipped, and everything else installed normally."
+        )
         rep.skipped.append(DLSS)
         return
     try:
@@ -956,12 +1076,16 @@ def _swap_nested_dlss(have: Path, fam: list, opt: "Options", rep, root: Path,
     # module). With one beside it, what this install backed up is the
     # page's update, and that is what uninstall brings back.
     if have.with_name(have.name + ".dlss5-dlss-original").is_file():
-        rep.notes.append(f"dlss version: {e['label']} (the build the dlss page put in at {where} "
-                         f"is backed up and comes back on uninstall; the game's own stays "
-                         f"beside it for that page's restore)")
+        rep.notes.append(
+            f"dlss version: {e['label']} (the build the dlss page put in at {where} "
+            f"is backed up and comes back on uninstall; the game's own stays "
+            f"beside it for that page's restore)"
+        )
     else:
-        rep.notes.append(f"dlss version: {e['label']} (the game's own at {where} "
-                         f"is backed up and comes back on uninstall)")
+        rep.notes.append(
+            f"dlss version: {e['label']} (the game's own at {where} "
+            f"is backed up and comes back on uninstall)"
+        )
     rep.components["dlss"] = e["label"]
 
 
@@ -978,9 +1102,11 @@ def _is_win64_dll(p: Path, least: int = 200_000) -> tuple[bool, str]:
     except OSError as e:
         return False, f"the download could not be read ({e})"
     if size < least:
-        return False, (f"the download is only {size} bytes, which is not a "
-                       f"runtime - usually an error page from the download "
-                       f"server, or a connection that was cut")
+        return False, (
+            f"the download is only {size} bytes, which is not a "
+            f"runtime - usually an error page from the download "
+            f"server, or a connection that was cut"
+        )
     try:
         with open(p, "rb") as f:
             head = f.read(0x40)
@@ -1008,11 +1134,17 @@ LAST_FAILURE: dict = {}
 def note_failure(root, exc: BaseException) -> None:
     """Record that an install into `root` stopped with this error."""
     import traceback as _tb
+
     LAST_FAILURE.clear()
-    LAST_FAILURE.update({
-        "root": str(root), "at": time.time(),
-        "text": "".join(_tb.format_exception(type(exc), exc,
-                                             exc.__traceback__))[-4000:]})
+    LAST_FAILURE.update(
+        {
+            "root": str(root),
+            "at": time.time(),
+            "text": "".join(_tb.format_exception(type(exc), exc, exc.__traceback__))[
+                -4000:
+            ],
+        }
+    )
 
 
 # An hour: long enough for a slow download that died and a person who went
@@ -1048,9 +1180,17 @@ def last_failure(root) -> str:
     return str(LAST_FAILURE.get("text") or "") if same else ""
 
 
-def _roll_back(g, root: Path, rep: "Report", fresh: bool, log,
-               keep_note: str = "", rewrite=None, replaced: str = "",
-               recorded: bool = True) -> str:
+def _roll_back(
+    g,
+    root: Path,
+    rep: "Report",
+    fresh: bool,
+    log,
+    keep_note: str = "",
+    rewrite=None,
+    replaced: str = "",
+    recorded: bool = True,
+) -> str:
     """Take a failed FRESH install back out; the sentence that says so.
 
     A failed install used to leave what it had written and record it for
@@ -1076,13 +1216,16 @@ def _roll_back(g, root: Path, rep: "Report", fresh: bool, log,
     of route). That one is gone either way, and "the game runs as it did
     before" would be untrue: it is said instead (gate 2.0.6).
     """
-    wrote = bool(rep.written or rep.sidelined or rep.remix
-                 or getattr(g, "emu", None) is not None)
-    kept = ("What was written so far is recorded, so 'uninstall' can take it "
-            "back out.")
-    gone = (f" The previous {replaced} install was taken out before this one "
-            f"began and is not put back - install it again to return to it."
-            if replaced else "")
+    wrote = bool(
+        rep.written or rep.sidelined or rep.remix or getattr(g, "emu", None) is not None
+    )
+    kept = "What was written so far is recorded, so 'uninstall' can take it back out."
+    gone = (
+        f" The previous {replaced} install was taken out before this one "
+        f"began and is not put back - install it again to return to it."
+        if replaced
+        else ""
+    )
     if not wrote:
         return "Nothing was written into the game folder." + gone
     if not recorded or not (root / MANIFEST).is_file():
@@ -1096,16 +1239,23 @@ def _roll_back(g, root: Path, rep: "Report", fresh: bool, log,
         return kept + gone
     try:
         uninstall(g, on_log=lambda s: None)
-    except Exception as e:           # never let the clean-up hide the cause
+    except Exception as e:  # never let the clean-up hide the cause
         log(f"      could not take the partial install back out ({e})")
         return kept + gone
     if (root / MANIFEST).is_file():
         # uninstall keeps a record of the files it could not remove
-        return ("Part of what it wrote could not be removed - a file is in "
-                "use. Close the game and press 'uninstall'." + gone)
-    log("      what this install had written was taken back out"
-        + (f" (the previous {replaced} install stays removed)" if replaced
-           else " - the folder is as it was before"))
+        return (
+            "Part of what it wrote could not be removed - a file is in "
+            "use. Close the game and press 'uninstall'." + gone
+        )
+    log(
+        "      what this install had written was taken back out"
+        + (
+            f" (the previous {replaced} install stays removed)"
+            if replaced
+            else " - the folder is as it was before"
+        )
+    )
     if keep_note and rewrite is not None:
         rep.written.clear()
         rep.sidelined = []
@@ -1121,13 +1271,19 @@ def _roll_back(g, root: Path, rep: "Report", fresh: bool, log,
         except Exception:
             pass
     if replaced:
-        return ("Nothing of the new install was left in the game folder: what "
-                "it had written was taken back out." + gone)
-    return ("Nothing of it was left in the game folder: what it had written "
-            "was taken back out, so the game runs as it did before.")
+        return (
+            "Nothing of the new install was left in the game folder: what "
+            "it had written was taken back out." + gone
+        )
+    return (
+        "Nothing of it was left in the game folder: what it had written "
+        "was taken back out, so the game runs as it did before."
+    )
 
 
-NO_RECORD_HEAD = "No record of this install could be saved, so 'uninstall' has no list of it. "
+NO_RECORD_HEAD = (
+    "No record of this install could be saved, so 'uninstall' has no list of it. "
+)
 RECORD_LOST_HEAD = "The install finished and its files are in place, but "
 
 
@@ -1142,24 +1298,36 @@ def _no_record_text(rep: "Report") -> str:
     if ours:
         out.append(f"Delete what it wrote: {', '.join(ours)}.")
     if kept:
-        out.append(f"Then rename the backups it made of the game's own files, "
-                   f"taking '{BACKUP_SUFFIX}' off the end: {', '.join(kept)}.")
+        out.append(
+            f"Then rename the backups it made of the game's own files, "
+            f"taking '{BACKUP_SUFFIX}' off the end: {', '.join(kept)}."
+        )
     if rep.sidelined:
-        out.append(f"It also renamed {', '.join(rep.sidelined)} by adding "
-                   f"'{SIDELINE_SUFFIX}' - rename {'them' if len(rep.sidelined) > 1 else 'it'} back.")
+        out.append(
+            f"It also renamed {', '.join(rep.sidelined)} by adding "
+            f"'{SIDELINE_SUFFIX}' - rename {'them' if len(rep.sidelined) > 1 else 'it'} back."
+        )
     if rep.remix.get("conf"):
-        out.append(f"It added the line '{rep.remix.get('key')} = True' to "
-                   f"{rep.remix['conf']} - take that one line out.")
+        out.append(
+            f"It added the line '{rep.remix.get('key')} = True' to "
+            f"{rep.remix['conf']} - take that one line out."
+        )
     for note in rep.notes:
         if note.startswith("registered ReShade as a Vulkan layer"):
-            out.append("It also registered ReShade as a Vulkan layer for this "
-                       "Windows user, which loads into every Vulkan application.")
+            out.append(
+                "It also registered ReShade as a Vulkan layer for this "
+                "Windows user, which loads into every Vulkan application."
+            )
         elif note.startswith("registered ReShade as an OpenXR layer"):
-            out.append("It also registered ReShade as an OpenXR layer for this "
-                       "Windows user, which loads into every OpenXR application.")
+            out.append(
+                "It also registered ReShade as an OpenXR layer for this "
+                "Windows user, which loads into every OpenXR application."
+            )
     if not out:
-        out.append("It may have changed a setting of RTX Remix or of the "
-                   "emulator, and wrote no file into the game folder.")
+        out.append(
+            "It may have changed a setting of RTX Remix or of the "
+            "emulator, and wrote no file into the game folder."
+        )
     return " ".join(out)
 
 
@@ -1169,23 +1337,33 @@ def _finish_record(recorded: bool, rep: "Report", log) -> None:
     what the autopilot and 'update all' read."""
     if recorded:
         return
-    text = ("The install finished and its files are in place, but "
-            + NO_RECORD_HEAD[0].lower() + NO_RECORD_HEAD[1:] + _no_record_text(rep))
+    text = (
+        "The install finished and its files are in place, but "
+        + NO_RECORD_HEAD[0].lower()
+        + NO_RECORD_HEAD[1:]
+        + _no_record_text(rep)
+    )
     log(f"      !! {text}")
     rep.warnings.append(text)
 
 
 def record_lost(rep) -> bool:
-    return any(str(w).startswith(RECORD_LOST_HEAD) for w in getattr(rep, "warnings", ()))
+    return any(
+        str(w).startswith(RECORD_LOST_HEAD) for w in getattr(rep, "warnings", ())
+    )
 
 
 # The sentences _roll_back opens an install error with. The cause comes after
 # them (the result card reads the whole text), so a caller that keeps one line
 # - the autopilot's reason, update all's log - takes it with cause_of.
-ROLLBACK_HEADS = ("Nothing of it was left", "Nothing of the new install was left",
-                  "What was written so far is recorded", NO_RECORD_HEAD,
-                  "Part of what it wrote could not be removed",
-                  "Nothing was written into the game folder")
+ROLLBACK_HEADS = (
+    "Nothing of it was left",
+    "Nothing of the new install was left",
+    "What was written so far is recorded",
+    NO_RECORD_HEAD,
+    "Part of what it wrote could not be removed",
+    "Nothing was written into the game folder",
+)
 
 
 def cause_of(err) -> str:
@@ -1215,17 +1393,19 @@ def _ask_for_the_pass(root: Path, opt, log) -> None:
     written itself - which uninstall would then put back.
     """
     if opt.path == ROUTE_RENODX:
-        return                      # ShortFuse's add-on, its own section
+        return  # ShortFuse's add-on, its own section
     try:
         if reshade_ini.enable_dlss5_addon(root):
-            log(f"      [{reshade_ini.ADDON_SECTION}] "
-                f"{reshade_ini.ADDON_SWITCH}=1 (the add-on's own switch)")
+            log(
+                f"      [{reshade_ini.ADDON_SECTION}] "
+                f"{reshade_ini.ADDON_SWITCH}=1 (the add-on's own switch)"
+            )
     except OSError:
-        pass                        # a folder we cannot write is said elsewhere
+        pass  # a folder we cannot write is said elsewhere
 
 
 def _swapped(was: str, label: str) -> str:
-    """"310.2.1 -> 310.9.1 (NVIDIA SDK)", or the build alone when nothing moved.
+    """ "310.2.1 -> 310.9.1 (NVIDIA SDK)", or the build alone when nothing moved.
 
     A swap that says only what it put there leaves the person with no way
     to see what it was worth - and no way to notice, next time, that a
@@ -1237,8 +1417,11 @@ def _swapped(was: str, label: str) -> str:
     strings printed an arrow between a build and itself on every reinstall.
     """
     num = re.match(r"[\d.]+", label or "")
-    return label if (not was or (num and _ver(was) == _ver(num.group(0)))) \
+    return (
+        label
+        if (not was or (num and _ver(was) == _ver(num.group(0))))
         else f"{was} -> {label}"
+    )
 
 
 def _ver(s: str) -> tuple:
@@ -1254,8 +1437,9 @@ def _ver(s: str) -> tuple:
     return tuple(parts)
 
 
-def _place_family(entries: list, want, dest: Path, rep, root: Path, dl,
-                  member: str, prefix: str, log) -> dict:
+def _place_family(
+    entries: list, want, dest: Path, rep, root: Path, dl, member: str, prefix: str, log
+) -> dict:
     """Install the chosen build, falling back to the next source if need be.
 
     The publisher's own builds come first in every family, and they are
@@ -1270,13 +1454,14 @@ def _place_family(entries: list, want, dest: Path, rep, root: Path, dl,
     last = None
     first_err = None
     for i, entry in enumerate(tries):
-        name = f"{prefix}-{entry['label']}" + (".dll" if entry.get("raw")
-                                               else ".zip")
+        name = f"{prefix}-{entry['label']}" + (".dll" if entry.get("raw") else ".zip")
         try:
             _place_entry(entry, dest, rep, root, dl, member, name)
             if i:
-                log(f"      {member}: {tries[0]['label']} could not be "
-                    f"downloaded ({last}) - used {entry['label']} instead")
+                log(
+                    f"      {member}: {tries[0]['label']} could not be "
+                    f"downloaded ({last}) - used {entry['label']} instead"
+                )
             return entry
         except InstallError as ex:
             # A proxy or a DNS filter blocking the download host answers 200
@@ -1306,8 +1491,9 @@ def _place_family(entries: list, want, dest: Path, rep, root: Path, dl,
     raise last if last else RuntimeError(f"{member}: nothing to install")
 
 
-def _place_entry(e: dict, dest: Path, rep, root: Path, dl, member: str,
-                 cache_name: str) -> None:
+def _place_entry(
+    e: dict, dest: Path, rep, root: Path, dl, member: str, cache_name: str
+) -> None:
     """Put one catalog entry on disk, archive or plain file.
 
     NVIDIA publishes its runtimes as the DLL itself; the community mirror
@@ -1320,14 +1506,15 @@ def _place_entry(e: dict, dest: Path, rep, root: Path, dl, member: str,
         ok, why = _is_win64_dll(got)
         if not ok:
             try:
-                got.unlink()          # never serve it from the cache again
+                got.unlink()  # never serve it from the cache again
             except OSError:
                 pass
             raise InstallError(
                 f"{member} was not installed: {why}.\n\n"
                 f"That file was not written and the download was thrown "
                 f"away. Try again - it is fetched fresh - or pick another "
-                f"build.")
+                f"build."
+            )
     _backup(dest, rep, root)
     if e.get("raw"):
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -1382,17 +1569,23 @@ def _install_uplift(root: Path, rep: "Report", dl, log, begin) -> None:
                     bad.unlink()
                 except OSError:
                     pass
-            raise InstallError(f"{name} from GITC-Uplift {tag} does not match the "
-                               f"SHA-256 its release publishes - the download is "
-                               f"damaged or not the release's. Install again.")
+            raise InstallError(
+                f"{name} from GITC-Uplift {tag} does not match the "
+                f"SHA-256 its release publishes - the download is "
+                f"damaged or not the release's. Install again."
+            )
         checked += bool(sums and want)
         rep.written.append(str(dest.relative_to(root)))
         log(f"      {dest.relative_to(root)}")
     total = len(sources.UPLIFT_ADDONS) + len(sources.UPLIFT_SHADERS)
-    log(f"      GITC-Uplift {tag} ({checked} of {total} files checked against its SHA-256 list)")
+    log(
+        f"      GITC-Uplift {tag} ({checked} of {total} files checked against its SHA-256 list)"
+    )
     if surl and checked == 0:
-        rep.warnings.append(f"GITC-Uplift {tag}: its SHA256SUMS.txt could not be read or names "
-                            f"none of the files, so they went in unchecked")
+        rep.warnings.append(
+            f"GITC-Uplift {tag}: its SHA256SUMS.txt could not be read or names "
+            f"none of the files, so they went in unchecked"
+        )
     rep.notes.append(f"uplift version: {tag}")
     rep.components["uplift"] = tag
     stray = root / DLSSNR
@@ -1406,12 +1599,16 @@ def _install_uplift(root: Path, rep: "Report", dl, log, begin) -> None:
                 stray.replace(root / (DLSSNR + SUPERSEDED_SUFFIX))
             elif (root / (DLSSNR + BACKUP_SUFFIX)).is_file():
                 stray.unlink()
-                log(f"      moved the {DLSSNR} beside the executable aside "
-                    f"(RTX 50 would load it before GITC-Uplift can)")
+                log(
+                    f"      moved the {DLSSNR} beside the executable aside "
+                    f"(RTX 50 would load it before GITC-Uplift can)"
+                )
         except OSError:
-            rep.warnings.append(f"could not move the {DLSSNR} beside the "
-                                f"executable aside - on RTX 50 GITC-Uplift "
-                                f"cannot run while it is there")
+            rep.warnings.append(
+                f"could not move the {DLSSNR} beside the "
+                f"executable aside - on RTX 50 GITC-Uplift "
+                f"cannot run while it is there"
+            )
 
 
 def _extract(zpath: Path, member: str, dst: Path, rep: Report, root: Path) -> None:
@@ -1423,7 +1620,7 @@ def _extract(zpath: Path, member: str, dst: Path, rep: Report, root: Path) -> No
 
 def _copy(src: Path, dst: Path, rep: Report, root: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
-    _backup(dst, rep, root)          # never overwrite anything unrecoverably
+    _backup(dst, rep, root)  # never overwrite anything unrecoverably
     shutil.copyfile(src, dst)
     try:
         rep.written.append(str(dst.relative_to(root)))
@@ -1433,11 +1630,13 @@ def _copy(src: Path, dst: Path, rep: Report, root: Path) -> None:
 
 # ---------------------------------------------------------------- plan
 
+
 def _opti_proxy_for(root: Path, opt: Options) -> str:
     """The name OptiScaler goes in under: the one picked, or a free one that
     is not a name the person's own frame generation files need."""
     return opt.opti_proxy or optiscaler.suggest_proxy(
-        root, avoid=ownfg.dests(opt.own_fg) if opt.path == OPTI else ())
+        root, avoid=ownfg.dests(opt.own_fg) if opt.path == OPTI else ()
+    )
 
 
 def _own_fg_refusal(root: Path, opt: Options) -> str:
@@ -1447,9 +1646,14 @@ def _own_fg_refusal(root: Path, opt: Options) -> str:
         return ""
     man = _previous_manifest(root) or {}
     prev = _previous_route(root)
-    return ownfg.refusal(root, opt.own_fg, _opti_proxy_for(root, opt), man,
-                         route_changes=bool(prev and prev != OPTI),
-                         is_optiscaler=optiscaler.is_optiscaler)
+    return ownfg.refusal(
+        root,
+        opt.own_fg,
+        _opti_proxy_for(root, opt),
+        man,
+        route_changes=bool(prev and prev != OPTI),
+        is_optiscaler=optiscaler.is_optiscaler,
+    )
 
 
 def _place_own_fg(root: Path, opt: Options, rep: "Report", log, begin) -> None:
@@ -1471,13 +1675,17 @@ def _place_own_fg(root: Path, opt: Options, rep: "Report", log, begin) -> None:
     else:
         # Checked at the top of install(): the store is gone, and last
         # time's copies are still in place - they stay, and stay recorded.
-        log(f"      {', '.join(ownfg.dests(opt.own_fg))} kept from the last install "
-            f"(the copies in the tool's folder are gone)")
+        log(
+            f"      {', '.join(ownfg.dests(opt.own_fg))} kept from the last install "
+            f"(the copies in the tool's folder are gone)"
+        )
     rep.components["own_fg"] = opt.own_fg
     rep.warnings.append(f"frame generation files ({recipe.label}): {ownfg.UNTRIED}")
-    rep.notes.append(f"frame generation: {recipe.label}, from files you downloaded; "
-                     f"{recipe.tip}. 'uninstall' takes them out and puts back anything "
-                     f"they replaced")
+    rep.notes.append(
+        f"frame generation: {recipe.label}, from files you downloaded; "
+        f"{recipe.tip}. 'uninstall' takes them out and puts back anything "
+        f"they replaced"
+    )
 
 
 def _opti_needs_dlss(opt: Options) -> bool:
@@ -1579,8 +1787,10 @@ def plan(g: games.Game, opt: Options) -> list[str]:
         # install is one runtime file, one config line - unless the runtime
         # has no neural pass and the user opted into replacing it.
         _trex, _flav, swap = remix_state(g, opt)
-        return (["RTX Remix runtime (DLSS 5 build)"] if swap else []) \
-            + [DLSSNR, remix.CONF]
+        return (["RTX Remix runtime (DLSS 5 build)"] if swap else []) + [
+            DLSSNR,
+            remix.CONF,
+        ]
 
     steps: list[str] = []
     if reengine.detected(g.install_dir):
@@ -1594,40 +1804,58 @@ def plan(g: games.Game, opt: Options) -> list[str]:
         # calls are being redirected has none, so one goes in. REFramework
         # still has to go in first on an RE Engine game - OptiScaler is a
         # proxy DLL too, and RE Engine's tamper checks do not care which one.
-        return (steps[:1] if steps[:1] and steps[0].startswith("REFramework") else []) \
-            + [f"OptiScaler ({optiscaler.BUILDS.get(opt.opti_build, optiscaler.BUILDS['']).split('  -  ')[0]})",
-               "nvngx_dlssnr.dll"] \
-            + (["nvngx_dlss.dll"] if _opti_needs_dlss(opt) else []) \
-            + ["OptiScaler configuration"] \
-            + ([f"frame generation files ({ownfg.label(opt.own_fg).split(' (')[0]})"]
-               if opt.own_fg in ownfg.RECIPES else [])
+        return (
+            (steps[:1] if steps[:1] and steps[0].startswith("REFramework") else [])
+            + [
+                f"OptiScaler ({optiscaler.BUILDS.get(opt.opti_build, optiscaler.BUILDS['']).split('  -  ')[0]})",
+                "nvngx_dlssnr.dll",
+            ]
+            + (["nvngx_dlss.dll"] if _opti_needs_dlss(opt) else [])
+            + ["OptiScaler configuration"]
+            + (
+                [f"frame generation files ({ownfg.label(opt.own_fg).split(' (')[0]})"]
+                if opt.own_fg in ownfg.RECIPES
+                else []
+            )
+        )
     steps.append("ReShade (Vulkan layer)" if g.api == "Vulkan" else "ReShade")
 
     if opt.path == UPSTREAM:
         # neural-upstream does the neural rendering itself, so no renodx
         # add-on beside it (two NGX hooks), and the game's nvngx_dlss.dll is
         # never replaced: its DLSS is what the network feeds.
-        return steps + ["neural-upstream", "nvngx_dlssnr.dll",
-                        *([DLSSD] if opt.dlssd else []),
-                        "ReShade configuration"]
+        return steps + [
+            "neural-upstream",
+            "nvngx_dlssnr.dll",
+            *([DLSSD] if opt.dlssd else []),
+            "ReShade configuration",
+        ]
 
     if opt.path == UPLIFT:
         # Runs the network itself (no renodx add-on), on the game's own
         # DLSS when there is one, so no nvngx_dlss.dll goes in.
-        return steps + ["GITC-Uplift", "nvngx_dlssnr.dll",
-                        *([DLSSD] if opt.dlssd else []),
-                        "ReShade configuration"]
+        return steps + [
+            "GITC-Uplift",
+            "nvngx_dlssnr.dll",
+            *([DLSSD] if opt.dlssd else []),
+            "ReShade configuration",
+        ]
 
     if opt.path == STANDALONE:
         # The add-on brings its own feed and runs the network itself: no
         # renodx add-on (it would process the frame twice), but the shader
         # headers, its companion shader with VORT for motion vectors, and
         # the three NVIDIA runtimes it loads privately.
-        return steps + ["ReShade shader headers", "standalone-dlssnr",
-                        "VORT Motion (motion vectors)", "nvngx_dlssnr.dll",
-                        "nvngx_dlss.dll", "nvngx_dlssg.dll",
-                        *([DLSSD] if opt.dlssd else []),
-                        "ReShade configuration"]
+        return steps + [
+            "ReShade shader headers",
+            "standalone-dlssnr",
+            "VORT Motion (motion vectors)",
+            "nvngx_dlssnr.dll",
+            "nvngx_dlss.dll",
+            "nvngx_dlssg.dll",
+            *([DLSSD] if opt.dlssd else []),
+            "ReShade configuration",
+        ]
 
     if opt.path == FEEDER:
         steps.append("ReShade shader headers")
@@ -1642,17 +1870,27 @@ def plan(g: games.Game, opt: Options) -> list[str]:
     elif opt.path == BRIDGE:
         steps.append("dlss5-bridge")
 
-    steps += ["DLSS 5 add-on (renodx-dlss SF)" if opt.path == ROUTE_RENODX
-              else "DLSS 5 add-on (renodx)",
-              "nvngx_dlssnr.dll", "nvngx_dlss.dll"] \
-        + ([DLSSD] if opt.dlssd else [])
+    steps += [
+        "DLSS 5 add-on (renodx-dlss SF)"
+        if opt.path == ROUTE_RENODX
+        else "DLSS 5 add-on (renodx)",
+        "nvngx_dlssnr.dll",
+        "nvngx_dlss.dll",
+    ] + ([DLSSD] if opt.dlssd else [])
     if _split(g, opt):
         steps.append("host64 helper process")
-    if opt.mfg and mfg.applies(gpu.detect()[1], g.api, g.install_dir, g.folder)[0] \
-            and (mfg.loader_name(g.exe,
-                                 {refw.DINPUT8} if reengine.detected(g.install_dir) else set(),
-                                 g.install_dir)
-                 or mfg.existing_plugins(g.install_dir)):
+    if (
+        opt.mfg
+        and mfg.applies(gpu.detect()[1], g.api, g.install_dir, g.folder)[0]
+        and (
+            mfg.loader_name(
+                g.exe,
+                {refw.DINPUT8} if reengine.detected(g.install_dir) else set(),
+                g.install_dir,
+            )
+            or mfg.existing_plugins(g.install_dir)
+        )
+    ):
         steps.append("RTX 40 multi-frame generation")
     steps.append("ReShade configuration")
     if opt.path == FEEDER:
@@ -1664,6 +1902,7 @@ def plan(g: games.Game, opt: Options) -> list[str]:
 
 # ---------------------------------------------------------------- preview
 
+
 @dataclass
 class Preview:
     """What an install would do to this folder, worked out without doing it.
@@ -1672,13 +1911,14 @@ class Preview:
     does not exist, such as the Vulkan layer). `blockers` non-empty means
     install() would raise before writing anything.
     """
-    steps: list[str] = field(default_factory=list)      # from plan()
-    writes: list[str] = field(default_factory=list)     # created / overwritten
-    backups: list[str] = field(default_factory=list)    # kept as *.backup first
-    removes: list[str] = field(default_factory=list)    # cleaned up beforehand
-    outside: list[str] = field(default_factory=list)    # written outside the folder
-    blockers: list[str] = field(default_factory=list)   # would make install() raise
-    warnings: list[str] = field(default_factory=list)   # anti-cheat, reliability
+
+    steps: list[str] = field(default_factory=list)  # from plan()
+    writes: list[str] = field(default_factory=list)  # created / overwritten
+    backups: list[str] = field(default_factory=list)  # kept as *.backup first
+    removes: list[str] = field(default_factory=list)  # cleaned up beforehand
+    outside: list[str] = field(default_factory=list)  # written outside the folder
+    blockers: list[str] = field(default_factory=list)  # would make install() raise
+    warnings: list[str] = field(default_factory=list)  # anti-cheat, reliability
 
 
 def _cached_zip_members(pattern: str) -> list[str] | None:
@@ -1690,6 +1930,7 @@ def _cached_zip_members(pattern: str) -> list[str] | None:
         if not zips:
             return None
         import zipfile
+
         with zipfile.ZipFile(zips[-1]) as z:
             return [n for n in z.namelist() if not n.endswith("/")]
     except Exception:
@@ -1712,29 +1953,36 @@ def launcher_warning(g: games.Game) -> str:
     # `or None`: an empty list is not "nothing recorded" to real_exe_for -
     # it is "these are the candidates", and it then skips the walk that
     # finds the executable that actually draws.
-    real = pe.real_exe_for(exe, list(getattr(g, "candidates", None) or [])
-                           or None)
-    return (f"{exe.name} looks like a launcher, not the game. A launcher "
-            f"starts the game as a separate program, and nothing installed "
-            f"beside it is loaded by the game."
-            + (f" {real.name} in this folder looks like the one that draws: "
-               f"pick it in the game's details and install again."
-               if real else
-               " Find the executable the game itself runs from - it is "
-               "usually under a Binaries or Bin folder - and install "
-               "there."))
+    real = pe.real_exe_for(exe, list(getattr(g, "candidates", None) or []) or None)
+    return (
+        f"{exe.name} looks like a launcher, not the game. A launcher "
+        f"starts the game as a separate program, and nothing installed "
+        f"beside it is loaded by the game."
+        + (
+            f" {real.name} in this folder looks like the one that draws: "
+            f"pick it in the game's details and install again."
+            if real
+            else " Find the executable the game itself runs from - it is "
+            "usually under a Binaries or Bin folder - and install "
+            "there."
+        )
+    )
 
 
 # What the RTX 40 MFG package needs from the game, as install() records it
 # and the preview says it beforehand - one wording, two readers.
-MFG_NO_DLSSG = ("the RTX 40 MFG unlock acts on the game's own DLSS "
-                "frame generation, and this game ships none - the "
-                "neural pass still runs, multi-frame generation "
-                "will not appear")
-MFG_FSR_FG = ("'frame generation' (FSR 3.1) is on: FSR "
-              "frame generation takes the place of DLSS "
-              "frame generation, so the RTX 40 MFG unlock "
-              "has nothing to act on - untick it to use MFG")
+MFG_NO_DLSSG = (
+    "the RTX 40 MFG unlock acts on the game's own DLSS "
+    "frame generation, and this game ships none - the "
+    "neural pass still runs, multi-frame generation "
+    "will not appear"
+)
+MFG_FSR_FG = (
+    "'frame generation' (FSR 3.1) is on: FSR "
+    "frame generation takes the place of DLSS "
+    "frame generation, so the RTX 40 MFG unlock "
+    "has nothing to act on - untick it to use MFG"
+)
 
 
 def _mfg_warnings(g, opt: "Options", root: Path, written=()) -> list[str]:
@@ -1745,8 +1993,9 @@ def _mfg_warnings(g, opt: "Options", root: Path, written=()) -> list[str]:
     if opt.path != OPTI or opt.opti_build != optiscaler.PRESR_MFG:
         return []
     try:
-        fg_file = mfg.has_dlssg(Path(getattr(g, "folder", None) or root), root,
-                                written=written)
+        fg_file = mfg.has_dlssg(
+            Path(getattr(g, "folder", None) or root), root, written=written
+        )
     except Exception:
         fg_file = "?"
     return [] if fg_file else [MFG_NO_DLSSG]
@@ -1793,7 +2042,8 @@ def preview(g: games.Game, opt: Options) -> Preview:
             "route installs ReShade, which crashes a Remix game before it "
             "draws a frame, and on DirectX 9 it would write over the Remix "
             "runtime itself. Choose the remix route, or uninstall the "
-            "Remix mod first.")
+            "Remix mod first."
+        )
     # The RTX 40 MFG package on another card: install() refuses it before
     # anything is written, so the preview says the same - it described a
     # plan the install then turned down (gate 2.0.5).
@@ -1807,7 +2057,7 @@ def preview(g: games.Game, opt: Options) -> Preview:
     pv.steps = plan(g, opt)
     x64 = g.bitness == 64
     if opt.path == FEEDER and g.api == "OpenGL" and opt.provider in (3, 4):
-        opt = replace(opt, provider=2)       # as install() does: VORT on GL
+        opt = replace(opt, provider=2)  # as install() does: VORT on GL
     dxvk_from = dxvk_api(g, opt)
     g = via_dxvk(g, opt)
     proxy = _proxy_name(g.api, opt.reshade_proxy)
@@ -1832,17 +2082,20 @@ def preview(g: games.Game, opt: Options) -> Preview:
         pv.blockers.append(f"{root} does not exist.")
         return pv
     if not os.access(root, os.W_OK):
-        pv.blockers.append(f"No permission to write into {root} - close the "
-                           f"game if it is running, or run as administrator.")
+        pv.blockers.append(
+            f"No permission to write into {root} - close the "
+            f"game if it is running, or run as administrator."
+        )
     if g.exe and g.exe.name.lower() in _running_processes():
         pv.blockers.append(f"{g.exe.name} is running. Close the game first.")
 
     # Warnings, worded as install() records them.
-    trex, flavour, swap = remix_state(g, opt) if opt.path == ROUTE_REMIX \
-        else (None, "", False)
-    level, why_rel = reliability(g, opt.path,
-                                 "" if opt.native_dlss else opt.upscaler,
-                                 remix_swap=swap)
+    trex, flavour, swap = (
+        remix_state(g, opt) if opt.path == ROUTE_REMIX else (None, "", False)
+    )
+    level, why_rel = reliability(
+        g, opt.path, "" if opt.native_dlss else opt.upscaler, remix_swap=swap
+    )
     if level != STABLE:
         pv.warnings.append(f"{level}: {why_rel}")
     hw = hook_warning(root, opt.path)
@@ -1853,21 +2106,30 @@ def preview(g: games.Game, opt: Options) -> Preview:
         pv.warnings.append(
             f"{ac.summary} detected ({', '.join(ac.evidence)}). ReShade "
             f"add-ons and anti-cheat do not coexist: expect the game not to "
-            f"start, or nothing to happen, or a ban. Do not use this online.")
+            f"start, or nothing to happen, or a ban. Do not use this online."
+        )
     if opt.path != ROUTE_REMIX and reengine.detected(root):
         pv.warnings.append(reengine.message())
     # #1035: the game asks Windows for a D3D12 Agility SDK it does not ship
     # and this Windows' own D3D12 is older - no Direct3D 12 device can be made
     # inside its process. Said before the install, with the way round.
-    if opt.path in (FEEDER, STANDALONE, ROUTE_RENODX, UPSTREAM) \
-            and not _split(g, opt) and g.exe is not None:
+    if (
+        opt.path in (FEEDER, STANDALONE, ROUTE_RENODX, UPSTREAM)
+        and not _split(g, opt)
+        and g.exe is not None
+    ):
         why = pe.agility_unmet(g.exe)
         if why:
             pv.warnings.append(
                 why + " Every route that makes a Direct3D 12 device inside the "
                 "game fails there with D3D12_ERROR_INVALID_REDIST."
-                + (" 'run DLSS in a helper process' runs DLSS outside the game "
-                   "and may get past it." if opt.path == FEEDER and g.bitness == 64 else ""))
+                + (
+                    " 'run DLSS in a helper process' runs DLSS outside the game "
+                    "and may get past it."
+                    if opt.path == FEEDER and g.bitness == 64
+                    else ""
+                )
+            )
 
     preinstalled = _previously_ours(root)
 
@@ -1877,15 +2139,17 @@ def preview(g: games.Game, opt: Options) -> Preview:
     previous = _previous_route(root)
     if previous and (previous != opt.path or _mode_switch(root, g, opt)):
         data = _previous_manifest(root) or {}
-        files = [str(f).replace("\\", "/")
-                 for f in (data.get("files") or data.get("dosyalar") or [])]
+        files = [
+            str(f).replace("\\", "/")
+            for f in (data.get("files") or data.get("dosyalar") or [])
+        ]
         suffixes = (BACKUP_SUFFIX,) + LEGACY_BACKUP_SUFFIXES
         restored = set()
         for f in files:
             s = next((s for s in suffixes if f.endswith(s)), None)
             if s and (root / f).is_file():
-                restored.add(f[:-len(s)])
-                add(pv.removes, f"{f[:-len(s)]} (put back from its backup)")
+                restored.add(f[: -len(s)])
+                add(pv.removes, f"{f[: -len(s)]} (put back from its backup)")
                 gone.add(f)
         for f in files:
             if any(f.endswith(s) for s in suffixes) or f in restored:
@@ -1895,8 +2159,7 @@ def preview(g: games.Game, opt: Options) -> Preview:
                 gone.add(f)
         if (root / HOST_DIR).is_dir():
             add(pv.removes, f"{HOST_DIR}/ (previous {previous} install)")
-            gone.update(rel(p.relative_to(root))
-                        for p in (root / HOST_DIR).rglob("*"))
+            gone.update(rel(p.relative_to(root)) for p in (root / HOST_DIR).rglob("*"))
         for name in RUNTIME_ARTIFACTS:
             if (root / name).is_file():
                 add(pv.removes, f"{name} (log)")
@@ -1927,7 +2190,8 @@ def preview(g: games.Game, opt: Options) -> Preview:
             pv.blockers.append(
                 "No RTX Remix runtime (a '.trex' folder) was found in this "
                 "game. This route is only for a game that already has an RTX "
-                "Remix mod installed.")
+                "Remix mod installed."
+            )
             return pv
         try:
             tdir = rel(trex.relative_to(root))
@@ -1939,7 +2203,8 @@ def preview(g: games.Game, opt: Options) -> Preview:
                 "pass (NVIDIA's own runtime has none). Turn on 'swap the Remix "
                 "runtime' to replace it with a community build that does - "
                 "experimental: it also replaces any game-specific fixes the "
-                "mod's own runtime carries.")
+                "mod's own runtime carries."
+            )
             return pv
         # A ReShade proxy left in the folder kills the game outright: a
         # 32-bit ReShade dxgi.dll took GTAIV.exe down with 0xc0000005 before
@@ -1952,22 +2217,25 @@ def preview(g: games.Game, opt: Options) -> Preview:
                 add(pv.removes, f"{name} (our ReShade - it crashes a Remix game)")
             else:
                 backup(name)
-                add(pv.removes, f"{name} (a ReShade proxy - it crashes a "
-                                f"Remix game)")
+                add(pv.removes, f"{name} (a ReShade proxy - it crashes a Remix game)")
         if swap:
             write(rel(tdir, REMIX_RUNTIME))
             write(rel(tdir, REMIX_NVNGX))
             pv.warnings.append(
                 "the mod's own Remix runtime is being replaced; it is backed "
-                "up and 'uninstall' puts it back")
+                "up and 'uninstall' puts it back"
+            )
         write(rel(tdir, DLSSNR))
         try:
             crel = rel(remix.conf_path(root, trex).relative_to(root))
         except ValueError:
             crel = rel(remix.conf_path(root, trex))
         key = remix.enable_key(flavour or remix.NEURAL)
-        add(pv.writes, f"{crel} ({key} = True - this one line, nothing else "
-                       f"in the file is touched)")
+        add(
+            pv.writes,
+            f"{crel} ({key} = True - this one line, nothing else "
+            f"in the file is touched)",
+        )
         for r in sorted(preinstalled):
             if present(r):
                 add(pv.writes, r)
@@ -1977,7 +2245,11 @@ def preview(g: games.Game, opt: Options) -> Preview:
     # Another injector already under the proxy name?
     if opt.path != OPTI and proxy != VULKAN_LAYER:
         existing = root / proxy
-        if existing.is_file() and not _is_reshade(existing) and proxy not in preinstalled:
+        if (
+            existing.is_file()
+            and not _is_reshade(existing)
+            and proxy not in preinstalled
+        ):
             if optiscaler.is_optiscaler(existing):
                 backup(proxy)
                 add(pv.removes, f"{proxy} (an OptiScaler installed by hand)")
@@ -1988,7 +2260,8 @@ def preview(g: games.Game, opt: Options) -> Preview:
             else:
                 pv.blockers.append(
                     f"{proxy} already exists but is not ReShade (DXVK, Special "
-                    f"K or another injector?). Remove it first, then try again.")
+                    f"K or another injector?). Remove it first, then try again."
+                )
 
     # A ReShade under another name.
     if opt.path != OPTI:
@@ -2056,8 +2329,7 @@ def preview(g: games.Game, opt: Options) -> Preview:
         # A .7z cannot be listed at all, and neither can a build nobody has
         # downloaded yet; both fall through to naming the folders instead.
         arch = optiscaler.archive_name(opt.opti_build)
-        members = (_cached_zip_members(arch)
-                   if arch.lower().endswith(".zip") else None)
+        members = _cached_zip_members(arch) if arch.lower().endswith(".zip") else None
         if members:
             for m in members:
                 if Path(m).name in optiscaler.SKIP:
@@ -2069,8 +2341,9 @@ def preview(g: games.Game, opt: Options) -> Preview:
             write(optiscaler.INI)
             add(pv.writes, "OptiScaler/* and Licenses/* (the rest of the package)")
         write(DLSSNR)
-        if _opti_needs_dlss(opt) and not (present(DLSS) and opt.keep_game_dlss
-                                          and DLSS not in preinstalled):
+        if _opti_needs_dlss(opt) and not (
+            present(DLSS) and opt.keep_game_dlss and DLSS not in preinstalled
+        ):
             write(DLSS)
         elif not _opti_needs_dlss(opt):
             _nd = _opti_dlss_target(root, g, opt, ours=preinstalled)
@@ -2083,17 +2356,22 @@ def preview(g: games.Game, opt: Options) -> Preview:
             pv.blockers.append(_why_fg)
         _fg_key, _fg_had = ownfg.recorded(_previous_manifest(root))
         for n in _fg_had:
-            if n.lower() not in {d.lower() for d in ownfg.dests(opt.own_fg)} \
-                    and present(n):
+            if n.lower() not in {
+                d.lower() for d in ownfg.dests(opt.own_fg)
+            } and present(n):
                 _back = (root / (n + BACKUP_SUFFIX)).is_file()
-                add(pv.removes, f"{n} (frame generation files are off now"
-                    + ("; your own file goes back in its place)" if _back else ")"))
+                add(
+                    pv.removes,
+                    f"{n} (frame generation files are off now"
+                    + ("; your own file goes back in its place)" if _back else ")"),
+                )
                 preinstalled = preinstalled - {n}
         if opt.own_fg:
             for n in ownfg.dests(opt.own_fg):
                 write(n)
-            pv.warnings.append(f"frame generation files ({ownfg.label(opt.own_fg)}): "
-                               f"{ownfg.UNTRIED}")
+            pv.warnings.append(
+                f"frame generation files ({ownfg.label(opt.own_fg)}): {ownfg.UNTRIED}"
+            )
         for r in sorted(preinstalled):
             if present(r):
                 add(pv.writes, r)
@@ -2101,9 +2379,11 @@ def preview(g: games.Game, opt: Options) -> Preview:
         return pv
 
     if getattr(g, "emu", None) is not None:
-        pv.outside.append(f"{g.emu.name}: its own config is switched to the "
-                          f"render backend ReShade can reach (backed up beside "
-                          f"it; 'uninstall' restores it)")
+        pv.outside.append(
+            f"{g.emu.name}: its own config is switched to the "
+            f"render backend ReShade can reach (backed up beside "
+            f"it; 'uninstall' restores it)"
+        )
     # 1) ReShade
     if g.api == "Vulkan":
         # The questions install_layer asks, in its order, so what is shown
@@ -2117,24 +2397,29 @@ def preview(g: games.Game, opt: Options) -> Preview:
             pv.outside.append(
                 f"Vulkan layer: {vulkan.LAYER_NAME} registered for this user "
                 f"(files in {vulkan.layer_dir()}) - it loads into EVERY Vulkan "
-                f"application until 'uninstall' removes it")
+                f"application until 'uninstall' removes it"
+            )
             pv.warnings.append(
                 "the Vulkan layer is global, and also registered for all "
                 "users because this tool is running as administrator; "
                 "'uninstall' removes that part only while the tool runs as "
-                "administrator" if machine_too else
-                "the Vulkan layer is global; 'uninstall' removes it again")
+                "administrator"
+                if machine_too
+                else "the Vulkan layer is global; 'uninstall' removes it again"
+            )
             if machine_too:
                 pv.outside.append(
                     f"this tool is running as administrator, so a copy of "
                     f"the layer also goes into {vulkan.machine_dir()} and on "
                     f"the machine's list (all users) - the only one a game "
                     f"started as administrator reads; taking that one off "
-                    f"again needs this tool run as administrator")
+                    f"again needs this tool run as administrator"
+                )
     else:
         write(proxy)
     if opt.vr and x64:
         from . import openxr
+
         xr_found = openxr.existing_registration()
         if xr_found is not None and not openxr.is_ours(xr_found):
             pv.outside.append(f"reuses the existing ReShade OpenXR layer ({xr_found})")
@@ -2142,12 +2427,17 @@ def preview(g: games.Game, opt: Options) -> Preview:
             pv.outside.append(
                 f"OpenXR layer (VR): {openxr.LAYER_NAME} registered for this "
                 f"user (files in {openxr.layer_dir()}) - it loads into EVERY "
-                f"OpenXR application until the last VR install is removed")
-        pv.warnings.append("VR through OpenXR has not been tried with a "
-                           "headset by the author; OpenXR games only")
+                f"OpenXR application until the last VR install is removed"
+            )
+        pv.warnings.append(
+            "VR through OpenXR has not been tried with a "
+            "headset by the author; OpenXR games only"
+        )
     elif opt.vr:
-        pv.warnings.append("VR: the OpenXR layer is 64-bit only - nothing is "
-                           "registered for this 32-bit game")
+        pv.warnings.append(
+            "VR: the OpenXR layer is 64-bit only - nothing is "
+            "registered for this 32-bit game"
+        )
     host = HOST_DIR
     if _split(g, opt):
         add(pv.writes, rel(host, "dxgi.dll"))
@@ -2158,9 +2448,12 @@ def preview(g: games.Game, opt: Options) -> Preview:
         if present(LEGACY_BRIDGE_ADDON):
             add(pv.removes, f"{LEGACY_BRIDGE_ADDON} (older bridge, conflicts)")
     elif present(LEGACY_BRIDGE_ADDON):
-        add(pv.removes, f"{LEGACY_BRIDGE_ADDON} (an older bridge add-on - "
-                        f"ReShade would load it beside this route's; it comes "
-                        f"back on uninstall)")
+        add(
+            pv.removes,
+            f"{LEGACY_BRIDGE_ADDON} (an older bridge add-on - "
+            f"ReShade would load it beside this route's; it comes "
+            f"back on uninstall)",
+        )
     if opt.path == FEEDER:
         for h in sources.RESHADE_HEADERS:
             write(rel(SHADERS, h))
@@ -2169,18 +2462,25 @@ def preview(g: games.Game, opt: Options) -> Preview:
         if _split(g, opt):
             add(pv.writes, rel(host, FEEDER_HOST))
         if opt.provider in (3, 4) and foreign_lumenite(root, _previously_ours(root)):
-            pv.warnings.append("LumeniteFX is already installed here - your "
-                               "copy is used, nothing duplicated")
+            pv.warnings.append(
+                "LumeniteFX is already installed here - your "
+                "copy is used, nothing duplicated"
+            )
         elif opt.provider in (3, 4):
             listed = False
             for m in _cached_zip_members("LumeniteFX-mainline.zip") or []:
-                parts = m.split("/")[1:]        # drop the archive root
+                parts = m.split("/")[1:]  # drop the archive root
                 if len(parts) not in (2, 3):
                     continue
                 tail = parts[-1].lower()
                 where = "/".join(parts[:-1]).lower()
                 if where == "shaders" and tail.endswith(".fx"):
-                    if tail != LUMENITE_PROVIDER_FX.get(opt.provider, "lumenite_kernel.fx").lower():
+                    if (
+                        tail
+                        != LUMENITE_PROVIDER_FX.get(
+                            opt.provider, "lumenite_kernel.fx"
+                        ).lower()
+                    ):
                         continue
                     add(pv.writes, rel(SHADERS, parts[-1]))
                 elif where == "shaders/include" and tail.endswith(".fxh"):
@@ -2191,7 +2491,13 @@ def preview(g: games.Game, opt: Options) -> Preview:
                     continue
                 listed = True
             if not listed:
-                add(pv.writes, rel(SHADERS, LUMENITE_PROVIDER_FX.get(opt.provider, "lumenite_Kernel.fx")))
+                add(
+                    pv.writes,
+                    rel(
+                        SHADERS,
+                        LUMENITE_PROVIDER_FX.get(opt.provider, "lumenite_Kernel.fx"),
+                    ),
+                )
                 add(pv.writes, rel(INCLUDE, "lumenite_*.fxh"))
                 add(pv.writes, rel(TEXTURES, "lumenite_*.png"))
         # what install writes: VORT for 2, and for LumeniteFX on OpenGL
@@ -2211,10 +2517,12 @@ def preview(g: games.Game, opt: Options) -> Preview:
         for n in sources.UPLIFT_SHADERS:
             write(rel(SHADERS, n))
         if present(DLSSNR) and DLSSNR not in preinstalled:
-            pv.warnings.append(f"the {DLSSNR} beside the executable is moved "
-                               f"aside (uninstall puts it back): on RTX 50 "
-                               f"NVIDIA's DLSS would load it first, and "
-                               f"GITC-Uplift cannot use that copy")
+            pv.warnings.append(
+                f"the {DLSSNR} beside the executable is moved "
+                f"aside (uninstall puts it back): on RTX 50 "
+                f"NVIDIA's DLSS would load it first, and "
+                f"GITC-Uplift cannot use that copy"
+            )
     elif opt.path == STANDALONE:
         for h in sources.RESHADE_HEADERS:
             write(rel(SHADERS, h))
@@ -2222,16 +2530,20 @@ def preview(g: games.Game, opt: Options) -> Preview:
         write(STANDALONE_BRIDGE)
         write(rel(SHADERS, STANDALONE_FX))
         if foreign_lumenite(root, preinstalled, marker=VORT_FX):
-            pv.warnings.append("VORT is already installed here - your copy "
-                               "is used, nothing duplicated")
+            pv.warnings.append(
+                "VORT is already installed here - your copy is used, nothing duplicated"
+            )
         else:
             write(rel(SHADERS, VORT_FX))
             listed = False
             for m in _cached_zip_members(sources.VORT_ZIP_NAME) or []:
-                parts = m.split("/")[1:]        # drop the archive root
-                if (len(parts) == 3 and parts[0].lower() == "shaders"
-                        and parts[1].lower() == "includes"
-                        and parts[2].lower().endswith(".fxh")):
+                parts = m.split("/")[1:]  # drop the archive root
+                if (
+                    len(parts) == 3
+                    and parts[0].lower() == "shaders"
+                    and parts[1].lower() == "includes"
+                    and parts[2].lower().endswith(".fxh")
+                ):
                     add(pv.writes, rel(VORT_INCLUDE, parts[2]))
                     listed = True
             if not listed:
@@ -2242,7 +2554,8 @@ def preview(g: games.Game, opt: Options) -> Preview:
     write(rel(UPLIFT_DIR if opt.path == UPLIFT else dlss_dir, DLSSNR))
     game_has = present(DLSS)
     if opt.path not in (UPSTREAM, UPLIFT) and not (
-            x64 and not _split(g, opt) and game_has and opt.keep_game_dlss):
+        x64 and not _split(g, opt) and game_has and opt.keep_game_dlss
+    ):
         write(rel(dlss_dir, DLSS))
         _nd = _nested_game_dlss(root, g, opt, x64, ours=preinstalled)
         if _nd is not None and not _same_path(_nd, root / rel(dlss_dir, DLSS)):
@@ -2260,19 +2573,21 @@ def preview(g: games.Game, opt: Options) -> Preview:
                 write(str(rr))
                 pv.outside.append(
                     f"replaces the game's own {DLSSD} at {rr} - outside the "
-                    f"install folder, backed up beside itself")
+                    f"install folder, backed up beside itself"
+                )
 
     # 8b) RTX 40 multi-frame generation, when it applies here
     if opt.mfg and mfg.applies(gpu.detect()[1], g.api, root, g.folder)[0]:
-        lname = mfg.loader_name(g.exe,
-                                {refw.DINPUT8} if reengine.detected(root) else set(),
-                                root)
+        lname = mfg.loader_name(
+            g.exe, {refw.DINPUT8} if reengine.detected(root) else set(), root
+        )
         plug = mfg.existing_plugins(root) if lname is None else None
         if lname is None and plug is None:
             pv.warnings.append(
                 f"multi-frame generation will be skipped: {g.exe.name if g.exe else 'the executable'} "
                 f"imports none of {', '.join(mfg.LOADER_NAMES)} that is free here, so the ASI "
-                f"loader has no name it would be loaded under")
+                f"loader has no name it would be loaded under"
+            )
         elif lname is None:
             # Another mod's loader is already here and its name is not
             # ours to take: the unlock goes into its plugins folder (#137).
@@ -2294,10 +2609,10 @@ def preview(g: games.Game, opt: Options) -> Preview:
         # is on the record, so the loader only comes out with them. The
         # preview must promise exactly that and no more.
         _unlock_here = any(
-            n.lower() in _pre_low for n in
-            [*mfg.FILES] + [f"{mfg.PLUGINS_DIR}/{x}" for x in mfg.PLUGIN_FILES])
-        for n in [*mfg.FILES] + [f"{mfg.PLUGINS_DIR}/{x}"
-                                 for x in mfg.PLUGIN_FILES]:
+            n.lower() in _pre_low
+            for n in [*mfg.FILES] + [f"{mfg.PLUGINS_DIR}/{x}" for x in mfg.PLUGIN_FILES]
+        )
+        for n in [*mfg.FILES] + [f"{mfg.PLUGINS_DIR}/{x}" for x in mfg.PLUGIN_FILES]:
             if n in preinstalled or n.lower() in _pre_low:
                 add(pv.removes, f"{n} (multi-frame generation is off now)")
         # ...and the loader itself, which remove_leftovers also takes out -
@@ -2309,9 +2624,11 @@ def preview(g: games.Game, opt: Options) -> Preview:
             # One line, not two: the same name listed twice - once as a
             # removal and once as a restore - reads as two files.
             _back = (root / (n + mfg.BACKUP_SUFFIX)).is_file()
-            add(pv.removes,
+            add(
+                pv.removes,
                 f"{n} (the ASI loader, multi-frame generation is off now"
-                + ("; your own file goes back in its place)" if _back else ")"))
+                + ("; your own file goes back in its place)" if _back else ")"),
+            )
             # remove_leftovers unlinks the loader's ini as well, and the
             # preview's ON branch writes it - so the OFF branch names it.
             _lini = n[:-4] + ".ini"
@@ -2319,18 +2636,35 @@ def preview(g: games.Game, opt: Options) -> Preview:
                 add(pv.removes, f"{_lini} (the loader's settings)")
     # A pinned feeder build older than the D3D10 relay is a blocker, and
     # needs no network to say so.
-    if opt.path == FEEDER and g.api == "DX10" and opt.feeder_tag and \
-            sources.feeder_key(opt.feeder_tag) < sources.feeder_key(sources.FEEDER_DX10_MIN):
-        pv.blockers.append(f"DLSS5-Feeder {opt.feeder_tag} refuses Direct3D 10 games - "
-                           f"pick {sources.FEEDER_DX10_MIN} or newer in 'feeder build'")
+    if (
+        opt.path == FEEDER
+        and g.api == "DX10"
+        and opt.feeder_tag
+        and sources.feeder_key(opt.feeder_tag)
+        < sources.feeder_key(sources.FEEDER_DX10_MIN)
+    ):
+        pv.blockers.append(
+            f"DLSS5-Feeder {opt.feeder_tag} refuses Direct3D 10 games - "
+            f"pick {sources.FEEDER_DX10_MIN} or newer in 'feeder build'"
+        )
     if opt.path == FEEDER and opt.feeder_tag:
         tkey = sources.feeder_key(opt.feeder_tag)
-        if _split(g, opt) and g.bitness == 64 and tkey < sources.feeder_key(FEEDER_HELPER_MIN):
-            pv.blockers.append(f"DLSS5-Feeder {opt.feeder_tag} has no 64-bit helper mode - "
-                               f"pick 1.18.0 or newer in 'feeder build'")
-        if opt.provider == reshade_ini.BUILTIN and tkey < sources.feeder_key(reshade_ini.BUILTIN_MIN):
-            pv.blockers.append(f"DLSS5-Feeder {opt.feeder_tag} has no built-in motion vectors - "
-                               f"pick {reshade_ini.BUILTIN_MIN} or newer in 'feeder build'")
+        if (
+            _split(g, opt)
+            and g.bitness == 64
+            and tkey < sources.feeder_key(FEEDER_HELPER_MIN)
+        ):
+            pv.blockers.append(
+                f"DLSS5-Feeder {opt.feeder_tag} has no 64-bit helper mode - "
+                f"pick 1.18.0 or newer in 'feeder build'"
+            )
+        if opt.provider == reshade_ini.BUILTIN and tkey < sources.feeder_key(
+            reshade_ini.BUILTIN_MIN
+        ):
+            pv.blockers.append(
+                f"DLSS5-Feeder {opt.feeder_tag} has no built-in motion vectors - "
+                f"pick {reshade_ini.BUILTIN_MIN} or newer in 'feeder build'"
+            )
 
     # 8/9/10) host64, ReShade configuration, the cfg
     if _split(g, opt):
@@ -2377,8 +2711,9 @@ def preview_lines(pv: Preview) -> list[str]:
     return out
 
 
-def _install_feeder_parts(g, opt, root: Path, host: Path, x64: bool,
-                          rep: "Report", begin, dl, log) -> None:
+def _install_feeder_parts(
+    g, opt, root: Path, host: Path, x64: bool, rep: "Report", begin, dl, log
+) -> None:
     """Shader headers, the feeder add-on and the motion-vector provider.
 
     Only the feeder path needs any of this: it is the only one that builds a
@@ -2395,17 +2730,28 @@ def _install_feeder_parts(g, opt, root: Path, host: Path, x64: bool,
     log(f"      {', '.join(sources.RESHADE_HEADERS)}")
 
     begin("DLSS5-Feeder")
-    tag, assets = sources.resolve_feeder(prerelease=opt.feeder_prerelease,
-                                         tag=opt.feeder_tag)
-    log(f"      DLSS5-Feeder {tag}"
-        + ("  (this exact build, as requested)" if opt.feeder_tag
-           else "  (pre-release, as requested)" if opt.feeder_prerelease else ""))
+    tag, assets = sources.resolve_feeder(
+        prerelease=opt.feeder_prerelease, tag=opt.feeder_tag
+    )
+    log(
+        f"      DLSS5-Feeder {tag}"
+        + (
+            "  (this exact build, as requested)"
+            if opt.feeder_tag
+            else "  (pre-release, as requested)"
+            if opt.feeder_prerelease
+            else ""
+        )
+    )
     rep.components["feeder"] = tag
-    if g.api == "DX10" and sources.feeder_key(tag) < sources.feeder_key(sources.FEEDER_DX10_MIN):
+    if g.api == "DX10" and sources.feeder_key(tag) < sources.feeder_key(
+        sources.FEEDER_DX10_MIN
+    ):
         raise InstallError(
             f"DLSS5-Feeder {tag} refuses Direct3D 10 games. Pick "
             f"{sources.FEEDER_DX10_MIN} or newer in 'feeder build' - that is "
-            f"the first build with the D3D10 relay - and install again.")
+            f"the first build with the D3D10 relay - and install again."
+        )
     addon = _feeder_addon(g, opt)
     split = _split(g, opt)
     # The host first (2.1.1): feeder 2.0.0 add-on and host refuse each other
@@ -2414,14 +2760,23 @@ def _install_feeder_parts(g, opt, root: Path, host: Path, x64: bool,
     # add-on beside a v11 host.
     needed = ((FEEDER_HOST,) if split else ()) + (addon, FEEDER_FX)
     # From 0.10.0 the feeder ships one zip instead of loose files.
-    zurl = next((u for n, u in assets.items()
-                 if n.lower().endswith(".zip") and "feeder" in n.lower()), None)
+    zurl = next(
+        (
+            u
+            for n, u in assets.items()
+            if n.lower().endswith(".zip") and "feeder" in n.lower()
+        ),
+        None,
+    )
     zpath = None
     if zurl and any(n not in assets for n in needed):
         zpath = dl(zurl, f"{tag}-{zurl.rsplit('/', 1)[-1]}")
     for name in needed:
-        dest = (root / SHADERS / name) if name.endswith(".fx") else \
-               (host / name if name == FEEDER_HOST else root / name)
+        dest = (
+            (root / SHADERS / name)
+            if name.endswith(".fx")
+            else (host / name if name == FEEDER_HOST else root / name)
+        )
         if name in assets:
             f = dl(assets[name], f"{tag}-{name}")
             _copy(f, dest, rep, root)
@@ -2442,36 +2797,46 @@ def _install_feeder_parts(g, opt, root: Path, host: Path, x64: bool,
             # Theirs wins - it is their install, and the technique name
             # in ReShade.ini matches by file name, not by path.
             rel_t = theirs.relative_to(root)
-            rep.notes.append(f"LumeniteFX is already installed at {rel_t.parent} "
-                             f"- your copy is used, nothing duplicated")
+            rep.notes.append(
+                f"LumeniteFX is already installed at {rel_t.parent} "
+                f"- your copy is used, nothing duplicated"
+            )
             rep.skipped.append("LumeniteFX (already installed)")
-            log(f"      already installed at {rel_t.parent} - using your copy, "
-                f"no duplicate")
+            log(
+                f"      already installed at {rel_t.parent} - using your copy, "
+                f"no duplicate"
+            )
             return
         z = dl(sources.LUMENITE_ZIP, "LumeniteFX-mainline.zip")
         want_fx = LUMENITE_PROVIDER_FX.get(opt.provider, "lumenite_Kernel.fx")
-        w = net.extract_tree(z, "Shaders", str(SHADERS), root, only_ext=(".fx",),
-                             only_names=(want_fx,))
-        w += net.extract_tree(z, "Shaders/include", str(INCLUDE), root,
-                              only_ext=(".fxh",))
-        w += net.extract_tree(z, "Textures", str(TEXTURES), root,
-                              only_ext=(".png",))
+        w = net.extract_tree(
+            z, "Shaders", str(SHADERS), root, only_ext=(".fx",), only_names=(want_fx,)
+        )
+        w += net.extract_tree(
+            z, "Shaders/include", str(INCLUDE), root, only_ext=(".fxh",)
+        )
+        w += net.extract_tree(z, "Textures", str(TEXTURES), root, only_ext=(".png",))
         # Effects an earlier install of ours dropped in are taken back out:
         # they were compiling for nothing.
         for old in sorted((root / SHADERS).glob("lumenite_*.fx")):
             rel_old = str(old.relative_to(root))
             if old.name.lower() != want_fx.lower() and rel_old.replace("\\", "/") in {
-                    p.replace("\\", "/") for p in rep.preinstalled}:
+                p.replace("\\", "/") for p in rep.preinstalled
+            }:
                 try:
                     old.unlink()
-                    rep.notes.append(f"removed {old.name} - an effect the feed does "
-                                     f"not use, left by an earlier install")
+                    rep.notes.append(
+                        f"removed {old.name} - an effect the feed does "
+                        f"not use, left by an earlier install"
+                    )
                 except OSError:
                     pass
         for p_ in w:
             rep.written.append(str(p_.relative_to(root)))
-        log(f"      {want_fx} + includes + texture ({len(w)} files) - only the "
-            f"provider the feed reads, not the whole pack")
+        log(
+            f"      {want_fx} + includes + texture ({len(w)} files) - only the "
+            f"provider the feed reads, not the whole pack"
+        )
     elif opt.provider == 2:
         _install_vort(root, rep, dl, log, begin)
 
@@ -2487,24 +2852,26 @@ def _install_vort(root: Path, rep: "Report", dl, log, begin) -> None:
     theirs = foreign_lumenite(root, rep.preinstalled, marker=VORT_FX)
     if theirs:
         rel_t = theirs.relative_to(root)
-        rep.notes.append(f"VORT is already installed at {rel_t.parent} "
-                         f"- your copy is used, nothing duplicated")
+        rep.notes.append(
+            f"VORT is already installed at {rel_t.parent} "
+            f"- your copy is used, nothing duplicated"
+        )
         rep.skipped.append("VORT (already installed)")
-        log(f"      already installed at {rel_t.parent} - using your "
-            f"copy, no duplicate")
+        log(
+            f"      already installed at {rel_t.parent} - using your copy, no duplicate"
+        )
         return
     z = dl(sources.VORT_ZIP, sources.VORT_ZIP_NAME)
     _extract(z, "Shaders/" + VORT_FX, root / SHADERS / VORT_FX, rep, root)
     rep.written.append(str(SHADERS / VORT_FX))
-    w = net.extract_tree(z, "Shaders/Includes", str(VORT_INCLUDE),
-                         root, only_ext=(".fxh",))
+    w = net.extract_tree(
+        z, "Shaders/Includes", str(VORT_INCLUDE), root, only_ext=(".fxh",)
+    )
     for p_ in w:
         rep.written.append(str(p_.relative_to(root)))
-    _extract(z, "Textures/" + VORT_TEXTURE,
-             root / TEXTURES / VORT_TEXTURE, rep, root)
+    _extract(z, "Textures/" + VORT_TEXTURE, root / TEXTURES / VORT_TEXTURE, rep, root)
     rep.written.append(str(TEXTURES / VORT_TEXTURE))
-    log(f"      {VORT_FX} + {len(w)} includes + {VORT_TEXTURE} "
-        f"(Vortigern, MIT)")
+    log(f"      {VORT_FX} + {len(w)} includes + {VORT_TEXTURE} (Vortigern, MIT)")
 
 
 # ---------------------------------------------------------------- install
@@ -2518,13 +2885,18 @@ LUMENITE_MARKER = "lumenite_Kernel.fx"
 # crash on its own (Bayonetta, issue #2, confirmed from the dump by the
 # feeder's author). The provider's own includes are small and all needed.
 LUMENITE_PROVIDER_FX = {3: "lumenite_Kernel.fx", 4: "lumenite_QuantMotion.fx"}
-LUMENITE_INCLUDES = ("lumenite_Projections.fxh", "lumenite_Helpers.fxh",
-                     "lumenite_Compute.fxh", "lumenite_ColorManagement.fxh")
+LUMENITE_INCLUDES = (
+    "lumenite_Projections.fxh",
+    "lumenite_Helpers.fxh",
+    "lumenite_Compute.fxh",
+    "lumenite_ColorManagement.fxh",
+)
 LUMENITE_TEXTURES = ("lumenite_bluenoise256.png",)
 
 
-def foreign_lumenite(root: Path, preinstalled=(),
-                     marker: str = LUMENITE_MARKER) -> Path | None:
+def foreign_lumenite(
+    root: Path, preinstalled=(), marker: str = LUMENITE_MARKER
+) -> Path | None:
     """A LumeniteFX the person installed themselves, anywhere under
     reshade-shaders - or None. A copy an earlier install of OURS wrote (in
     the manifest) does not count: that one is overwritten as usual.
@@ -2574,8 +2946,9 @@ def _previous_route(root: Path) -> str | None:
     # A record a failed first install left holding only its reason: that
     # route is not in the folder, and "removing the previous X install" /
     # "replaced a previous X install" over it were untrue (gate 2.0.7).
-    if net.ROLLED_BACK_NOTE in (data.get("notes") or []) \
-            and not (data.get("files") or data.get("dosyalar")):
+    if net.ROLLED_BACK_NOTE in (data.get("notes") or []) and not (
+        data.get("files") or data.get("dosyalar")
+    ):
         return None
     # v1.0-v1.2 wrote no route at all; everything then was the feeder.
     return data.get("path") or FEEDER
@@ -2662,12 +3035,16 @@ def _clear_stale_reshade(root: Path, keep: str, rep: Report, log) -> None:
                 _backup_or_refuse(p, rep, root)
                 p.unlink()
         except OSError as e:
-            log(f"      could not move {name} aside ({e}) - if the game will "
-                f"not start, remove it by hand")
+            log(
+                f"      could not move {name} aside ({e}) - if the game will "
+                f"not start, remove it by hand"
+            )
             continue
         rep.notes.append(f"moved aside a second ReShade copy: {name}")
-        log(f"      moved {name} out of the way - a second ReShade under "
-            f"another name would stop the game from starting")
+        log(
+            f"      moved {name} out of the way - a second ReShade under "
+            f"another name would stop the game from starting"
+        )
 
 
 def _purge_foreign_addons(root: Path, keep: str, rep: Report, log) -> None:
@@ -2706,15 +3083,26 @@ def _purge_foreign_addons(root: Path, keep: str, rep: Report, log) -> None:
                     _backup_or_refuse(p, rep, root)
                     p.unlink()
                 rep.notes.append(f"moved aside an orphaned {route} add-on: {name}")
-                log(f"      moved {name} out of the way - it is a {route} "
-                    f"add-on and ReShade would load it alongside this one")
+                log(
+                    f"      moved {name} out of the way - it is a {route} "
+                    f"add-on and ReShade would load it alongside this one"
+                )
             except OSError:
-                log(f"      WARNING: {name} belongs to the {route} route and "
-                    f"could not be moved; the two will conflict")
+                log(
+                    f"      WARNING: {name} belongs to the {route} route and "
+                    f"could not be moved; the two will conflict"
+                )
 
 
-def _write_manifest(root: Path, g: games.Game, opt: Options, rep: Report,
-                    proxy: str, level: str, complete: bool) -> bool:
+def _write_manifest(
+    root: Path,
+    g: games.Game,
+    opt: Options,
+    rep: Report,
+    proxy: str,
+    level: str,
+    complete: bool,
+) -> bool:
     """Record what was written; False when the record could not be saved.
 
     Also written when an install FAILS part way: without it the orphaned files
@@ -2762,51 +3150,63 @@ def _write_manifest(root: Path, g: games.Game, opt: Options, rep: Report,
         gpu_records = list((_previous_manifest(root) or {}).get("gpu_pref") or [])
 
     try:
-        _write_atomic(root / MANIFEST, json.dumps({
-            "version": 1,
-            # Which BUILD of this tool set the folder up. The report carries
-            # the version that is running now; nothing said what wrote the
-            # install, so a folder built by 1.5.0 and diagnosed by 1.8.2
-            # looked the same as one installed a minute ago (#215).
-            "tool": update.VERSION,
-            "complete": complete,
-            "exe": g.exe.name if g.exe else None,
-            "bitness": g.bitness,
-            "api": g.api,
-            "proxy": proxy,
-            "opti_build": opt.opti_build if opt.path == OPTI else "",
-            "provider": opt.provider,
-            "path": opt.path,
-            "reliability": level,
-            "files": rep.written,
-            "skipped": rep.skipped,
-            "notes": rep.notes,
-            "warnings": rep.warnings,
-            "feed_cfg": opt.feed,
-            "nr": opt.nr,
-            "fg": opt.fg,
-            "mfg": opt.mfg,
-            "vr": bool(opt.vr) and opt.path not in (OPTI, ROUTE_REMIX),
-            "native_dlss": opt.native_dlss,
-            "upscaler": opt.upscaler,
-            "keep_game_dlss": opt.keep_game_dlss,
-            "feeder_prerelease": opt.feeder_prerelease,
-            "feeder_tag": opt.feeder_tag,
-            "feed_helper": bool(getattr(opt, "feed_helper", False)),
-            "dxvk": rep.components.get("dxvk"),
-            "components": rep.components,
-            "kind": g.kind,
-            "sidelined": rep.sidelined,
-            "remix": rep.remix,
-            # which of the files above are the person's own frame generation
-            # files: the diagnosis does not name them as another hook, and
-            # a reinstall with the option off takes exactly these out
-            "own_fg": ({"recipe": rep.components["own_fg"],
-                        "files": ownfg.dests(rep.components["own_fg"])}
-                       if rep.components.get("own_fg") else {}),
-            "gpu_pref_on": bool(opt.gpu_pref),
-            "gpu_pref": gpu_records,
-        }, ensure_ascii=False, indent=2))
+        _write_atomic(
+            root / MANIFEST,
+            json.dumps(
+                {
+                    "version": 1,
+                    # Which BUILD of this tool set the folder up. The report carries
+                    # the version that is running now; nothing said what wrote the
+                    # install, so a folder built by 1.5.0 and diagnosed by 1.8.2
+                    # looked the same as one installed a minute ago (#215).
+                    "tool": update.VERSION,
+                    "complete": complete,
+                    "exe": g.exe.name if g.exe else None,
+                    "bitness": g.bitness,
+                    "api": g.api,
+                    "proxy": proxy,
+                    "opti_build": opt.opti_build if opt.path == OPTI else "",
+                    "provider": opt.provider,
+                    "path": opt.path,
+                    "reliability": level,
+                    "files": rep.written,
+                    "skipped": rep.skipped,
+                    "notes": rep.notes,
+                    "warnings": rep.warnings,
+                    "feed_cfg": opt.feed,
+                    "nr": opt.nr,
+                    "fg": opt.fg,
+                    "mfg": opt.mfg,
+                    "vr": bool(opt.vr) and opt.path not in (OPTI, ROUTE_REMIX),
+                    "native_dlss": opt.native_dlss,
+                    "upscaler": opt.upscaler,
+                    "keep_game_dlss": opt.keep_game_dlss,
+                    "feeder_prerelease": opt.feeder_prerelease,
+                    "feeder_tag": opt.feeder_tag,
+                    "feed_helper": bool(getattr(opt, "feed_helper", False)),
+                    "dxvk": rep.components.get("dxvk"),
+                    "components": rep.components,
+                    "kind": g.kind,
+                    "sidelined": rep.sidelined,
+                    "remix": rep.remix,
+                    # which of the files above are the person's own frame generation
+                    # files: the diagnosis does not name them as another hook, and
+                    # a reinstall with the option off takes exactly these out
+                    "own_fg": (
+                        {
+                            "recipe": rep.components["own_fg"],
+                            "files": ownfg.dests(rep.components["own_fg"]),
+                        }
+                        if rep.components.get("own_fg")
+                        else {}
+                    ),
+                    "gpu_pref_on": bool(opt.gpu_pref),
+                    "gpu_pref": gpu_records,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+        )
     except OSError:
         return False
     return True
@@ -2863,8 +3263,17 @@ def options_from_manifest(root: Path) -> Options | None:
     if not data:
         return None
     path = data.get("path") or FEEDER
-    if path not in (NATIVE, BRIDGE, FEEDER, OPTI, ROUTE_RENODX, UPSTREAM,
-                    STANDALONE, ROUTE_REMIX, UPLIFT):
+    if path not in (
+        NATIVE,
+        BRIDGE,
+        FEEDER,
+        OPTI,
+        ROUTE_RENODX,
+        UPSTREAM,
+        STANDALONE,
+        ROUTE_REMIX,
+        UPLIFT,
+    ):
         return None
     upscaler = str(data.get("upscaler") or "")
     return Options(
@@ -2884,15 +3293,22 @@ def options_from_manifest(root: Path) -> Options | None:
         feed_helper=bool(data.get("feed_helper", False)),
         # OptiScaler used to imply the game's own DLSS; with an upscaler
         # recorded it is OptiScaler's DLSS in place of the game's FSR/XeSS.
-        native_dlss=(path in (NATIVE, UPSTREAM) or (path == OPTI and not upscaler)
-                     or bool(data.get("native_dlss", False))),
+        native_dlss=(
+            path in (NATIVE, UPSTREAM)
+            or (path == OPTI and not upscaler)
+            or bool(data.get("native_dlss", False))
+        ),
         opti_proxy=(data.get("proxy") or "") if path == OPTI else "",
         opti_build=str(data.get("opti_build") or "") if path == OPTI else "",
         # A set the person pressed 'forget them' on reads as none, so the
         # next install takes it out (gate 2.0.7).
-        own_fg=(ownfg.recorded(data)[0] if path == OPTI
-                and ownfg.recorded(data)[0] in ownfg.RECIPES
-                and not ownfg.forgotten(ownfg.recorded(data)[0]) else ""),
+        own_fg=(
+            ownfg.recorded(data)[0]
+            if path == OPTI
+            and ownfg.recorded(data)[0] in ownfg.RECIPES
+            and not ownfg.forgotten(ownfg.recorded(data)[0])
+            else ""
+        ),
         # A runtime we swapped last time must be swapped again on an update,
         # or the update would put the mod's neural-pass-less runtime back.
         remix_swap=bool((data.get("components") or {}).get("remix_runtime")),
@@ -2904,11 +3320,16 @@ def options_from_manifest(root: Path) -> Options | None:
         dxvk=bool(data.get("dxvk")) and path in (NATIVE, BRIDGE, FEEDER),
         # ...except dxgi.dll on a DirectX 9 game: that was the default before
         # 2.1.0, not a choice, and a DX9 game never loads it (#77 #171).
-        reshade_proxy=(str(data.get("proxy") or "")
-                       if path not in (OPTI, ROUTE_REMIX)
-                       and str(data.get("proxy") or "") in RESHADE_PROXIES
-                       and not (str(data.get("api") or "") in ("DX9", "DX8")
-                                and str(data.get("proxy") or "") == "dxgi.dll") else ""),
+        reshade_proxy=(
+            str(data.get("proxy") or "")
+            if path not in (OPTI, ROUTE_REMIX)
+            and str(data.get("proxy") or "") in RESHADE_PROXIES
+            and not (
+                str(data.get("api") or "") in ("DX9", "DX8")
+                and str(data.get("proxy") or "") == "dxgi.dll"
+            )
+            else ""
+        ),
         gpu_pref=bool(data.get("gpu_pref_on", True)),
     )
 
@@ -2936,10 +3357,12 @@ def _gpu_pref_line(root: Path, g: games.Game, opt: Options) -> str:
     names = [p.name for p in _gpu_exes(root, g, opt)]
     if not names:
         return ""
-    return (f"Windows graphics setting: {' and '.join(names)} set to 'High "
-            f"performance' (the NVIDIA card, not the {other} one) for this "
-            f"user. A choice you already made there is kept. 'uninstall' "
-            f"(--remove on the command line) takes it back out")
+    return (
+        f"Windows graphics setting: {' and '.join(names)} set to 'High "
+        f"performance' (the NVIDIA card, not the {other} one) for this "
+        f"user. A choice you already made there is kept. 'uninstall' "
+        f"(--remove on the command line) takes it back out"
+    )
 
 
 def _set_gpu_pref(root: Path, g: games.Game, opt: Options, rep: Report, log) -> None:
@@ -2947,8 +3370,11 @@ def _set_gpu_pref(root: Path, g: games.Game, opt: Options, rep: Report, log) -> 
 
     Never stops an install: it is a convenience on top of files that are
     already in place."""
-    before = [r for r in (_previous_manifest(root) or {}).get("gpu_pref") or []
-              if isinstance(r, dict)]
+    before = [
+        r
+        for r in (_previous_manifest(root) or {}).get("gpu_pref") or []
+        if isinstance(r, dict)
+    ]
     try:
         if not opt.gpu_pref or not gpupref.hybrid():
             if gpupref.restore(before):
@@ -2960,15 +3386,21 @@ def _set_gpu_pref(root: Path, g: games.Game, opt: Options, rep: Report, log) -> 
         # An exe from an earlier install that this one no longer targets (the
         # person picked another executable): still ours, still on the record.
         for r in before:
-            if not any(gpupref._same(r.get("exe", ""), x.get("exe", "")) for x in records) \
-                    and gpupref.chosen(r.get("exe", "")) == gpupref.HIGH:
+            if (
+                not any(
+                    gpupref._same(r.get("exe", ""), x.get("exe", "")) for x in records
+                )
+                and gpupref.chosen(r.get("exe", "")) == gpupref.HIGH
+            ):
                 records.append(r)
         rep.gpu_pref = records
         for exe in exes:
             if any(gpupref._same(exe, t) for t in theirs):
                 log(f"      {exe.name}: your own Windows graphics setting is kept")
-                rep.notes.append(f"{exe.name} already had a Windows graphics setting "
-                                 f"(Settings > System > Display > Graphics); it was left as it is")
+                rep.notes.append(
+                    f"{exe.name} already had a Windows graphics setting "
+                    f"(Settings > System > Display > Graphics); it was left as it is"
+                )
             elif any(gpupref._same(exe, r.get("exe", "")) for r in records):
                 log(f"      {exe.name}: Windows graphics setting -> High performance")
         if any(r.get("exe") for r in records):
@@ -2976,12 +3408,15 @@ def _set_gpu_pref(root: Path, g: games.Game, opt: Options, rep: Report, log) -> 
                 f"Windows graphics setting 'High performance' is set for "
                 f"{', '.join(Path(r['exe']).name for r in records)} - the NVIDIA "
                 f"card, not the {gpupref.other_gpu()} one. 'uninstall' takes it "
-                f"back out")
+                f"back out"
+            )
     except Exception as e:
         log(f"      Windows graphics setting not changed ({e})")
-        rep.warnings.append(f"could not set the Windows graphics setting to High "
-                            f"performance ({e}); set it by hand in Settings > System > "
-                            f"Display > Graphics if the game runs on the other GPU")
+        rep.warnings.append(
+            f"could not set the Windows graphics setting to High "
+            f"performance ({e}); set it by hand in Settings > System > "
+            f"Display > Graphics if the game runs on the other GPU"
+        )
         if rep.gpu_pref is None:
             rep.gpu_pref = before
 
@@ -2990,11 +3425,19 @@ def _running_processes() -> set[str]:
     """Lower-cased names of running executables, best effort."""
     try:
         import subprocess
-        out = subprocess.run(["tasklist", "/fo", "csv", "/nh"],
-                             capture_output=True, text=True, timeout=15,
-                             creationflags=0x08000000).stdout
-        return {line.split('","')[0].lstrip('"').lower()
-                for line in out.splitlines() if line.startswith('"')}
+
+        out = subprocess.run(
+            ["tasklist", "/fo", "csv", "/nh"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            creationflags=0x08000000,
+        ).stdout
+        return {
+            line.split('","')[0].lstrip('"').lower()
+            for line in out.splitlines()
+            if line.startswith('"')
+        }
     except Exception:
         return set()
 
@@ -3011,24 +3454,27 @@ def preflight(g: games.Game) -> None:
         raise InstallError(f"{root} does not exist.")
 
     try:
-        with tempfile.NamedTemporaryFile(prefix=".dlss5-autopilot-write-test-",
-                                         dir=root) as probe:
+        with tempfile.NamedTemporaryFile(
+            prefix=".dlss5-autopilot-write-test-", dir=root
+        ) as probe:
             probe.write(b"x")
     except PermissionError as e:
         if games.is_locked_store_path(root):
             # Xbox / Game Pass: the folder is owned by the system, and
             # elevation does not help - the Xbox app has the switch for it.
             from . import log
+
             log.write(f"preflight: cannot write into {root}: {e}", "warn")
             raise InstallError(
-                f"No permission to write into:\n{root}\n\n"
-                f"{games.XBOX_HINT}") from None
+                f"No permission to write into:\n{root}\n\n{games.XBOX_HINT}"
+            ) from None
         raise InstallError(
             f"No permission to write into:\n{root}\n\n"
             f"Close the game if it is running, then try again. If that is not "
             f"it, right-click dlss5-autopilot.exe and choose 'Run as "
             f"administrator' - some games installed outside Steam or Epic sit "
-            f"in folders only an administrator can write to.") from None
+            f"in folders only an administrator can write to."
+        ) from None
     except OSError as e:
         if net.is_disk_full(e):
             raise InstallError(net.disk_full_message(e, root, net.CACHE)) from None
@@ -3038,7 +3484,9 @@ def preflight(g: games.Game) -> None:
         raise InstallError(
             f"{g.exe.name} is running. Close the game first - Windows will not "
             f"let anything replace files a running program has open, and a "
-            f"half-finished install is worse than none.")
+            f"half-finished install is worse than none."
+        )
+
 
 def _sideline(root: Path, rep: Report, log) -> None:
     """Move a game-shipped file that breaks the neural pass out of the way.
@@ -3059,20 +3507,26 @@ def _sideline(root: Path, rep: Report, log) -> None:
         moved = f.with_name(f.name + SIDELINE_SUFFIX)
         try:
             if moved.exists():
-                f.unlink()          # an earlier run already kept a copy
+                f.unlink()  # an earlier run already kept a copy
             else:
                 f.rename(moved)
         except OSError as e:
-            rep.warnings.append(f"{f.name} could not be moved aside ({e}); "
-                                f"if it is too old for the neural pass, "
-                                f"nothing will visibly happen in game")
+            rep.warnings.append(
+                f"{f.name} could not be moved aside ({e}); "
+                f"if it is too old for the neural pass, "
+                f"nothing will visibly happen in game"
+            )
             continue
         rep.sidelined.append(f.name)
-        rep.notes.append(f"{f.name} renamed to {moved.name}: the game's copy "
-                         f"is older than Windows' and the neural pass will not "
-                         f"compile against it; uninstall puts it back")
-        log(f"      {f.name} moved aside ({moved.name}) - the game's copy "
-            f"is too old for the neural pass; Windows' own is used instead")
+        rep.notes.append(
+            f"{f.name} renamed to {moved.name}: the game's copy "
+            f"is older than Windows' and the neural pass will not "
+            f"compile against it; uninstall puts it back"
+        )
+        log(
+            f"      {f.name} moved aside ({moved.name}) - the game's copy "
+            f"is too old for the neural pass; Windows' own is used instead"
+        )
 
 
 def _restore_sidelined(root: Path, names, log) -> list[str]:
@@ -3082,7 +3536,7 @@ def _restore_sidelined(root: Path, names, log) -> list[str]:
     try:
         for f in root.iterdir():
             if f.is_file() and f.name.lower().endswith(SIDELINE_SUFFIX):
-                n = f.name[:-len(SIDELINE_SUFFIX)]
+                n = f.name[: -len(SIDELINE_SUFFIX)]
                 if n not in cands:
                     cands.append(n)
     except OSError:
@@ -3103,7 +3557,9 @@ def _restore_sidelined(root: Path, names, log) -> list[str]:
     return back
 
 
-def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None) -> Report:
+def install(
+    g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
+) -> Report:
     # "the version list is 14h old" is a sentence about one install. It was
     # module state that nothing ever cleared, so the next install in the
     # same session repeated it whether or not it had fallen back to
@@ -3128,7 +3584,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             "inside the Remix runtime. Every other route installs ReShade, "
             "which crashes a Remix game before it draws a frame - and on "
             "DirectX 9 it would write over the Remix runtime itself.\n\n"
-            "Choose the remix route, or uninstall the Remix mod first.")
+            "Choose the remix route, or uninstall the Remix mod first."
+        )
     # A card no route can run DLSS on, also before the first write (#770: a
     # GTX 1650 was told "RTX 20/30 ... works, but heavy").
     if not opt.ignore_gpu_mismatch:
@@ -3151,26 +3608,26 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
         # LumeniteFX reads 0% motion under OpenGL (perseval-BLR, six GL
         # games); VORT's optical flow is what works there.
         opt = replace(opt, provider=2)
-        log("      OpenGL game: motion vectors from VORT (LumeniteFX gives "
-            "none on GL)")
+        log("      OpenGL game: motion vectors from VORT (LumeniteFX gives none on GL)")
     # Through DXVK the game is a Vulkan game from here on: no proxy DLL, the
     # Vulkan layer instead. DXVK itself goes in at step 0, below.
     dxvk_from = dxvk_api(g, opt)
-    steps = plan(g, opt)          # counted before the switch: DXVK is a step
+    steps = plan(g, opt)  # counted before the switch: DXVK is a step
     g = via_dxvk(g, opt)
     proxy = _proxy_name(g.api, opt.reshade_proxy)
     host = root / HOST_DIR
-    trex, flavour, swap = remix_state(g, opt) if opt.path == ROUTE_REMIX \
-        else (None, "", False)
+    trex, flavour, swap = (
+        remix_state(g, opt) if opt.path == ROUTE_REMIX else (None, "", False)
+    )
     if opt.path == ROUTE_REMIX:
         # Nothing of ours is a proxy DLL on this route, and d3d9.dll here
         # belongs to Remix - recording it as "our proxy" would make the
         # diagnosis and uninstall reach for the mod's own file.
         proxy = ""
 
-    level, why_rel = reliability(g, opt.path,
-                                 "" if opt.native_dlss else opt.upscaler,
-                                 remix_swap=swap)
+    level, why_rel = reliability(
+        g, opt.path, "" if opt.native_dlss else opt.upscaler, remix_swap=swap
+    )
     if level != STABLE:
         rep.warnings.append(f"{level}: {why_rel}")
 
@@ -3179,9 +3636,11 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
     # "the other one" looks like it broke this one.
     other = games._recorded_exe(root)
     if other and g.exe and other.lower() != g.exe.name.lower():
-        rep.notes.append(f"this folder was already set up for {other}; both "
-                         f"executables share these files, and uninstalling "
-                         f"either removes them for both")
+        rep.notes.append(
+            f"this folder was already set up for {other}; both "
+            f"executables share these files, and uninstalling "
+            f"either removes them for both"
+        )
         log(f"      note: {other} in this folder uses the same files")
 
     # Unreal and CryEngine games run from a subfolder; the executable in the
@@ -3191,12 +3650,16 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
     try:
         if root.resolve() != g.folder.resolve():
             rel_dir = root.relative_to(g.folder)
-            log(f"      installing into {rel_dir} - the game runs from there "
+            log(
+                f"      installing into {rel_dir} - the game runs from there "
                 f"(the exe in the root is a launcher). Start it from the store "
-                f"as usual.")
-            rep.notes.append(f"files are in {rel_dir}, beside the executable "
-                             f"the game actually runs; start it from the store "
-                             f"as usual")
+                f"as usual."
+            )
+            rep.notes.append(
+                f"files are in {rel_dir}, beside the executable "
+                f"the game actually runs; start it from the store "
+                f"as usual"
+            )
     except (OSError, ValueError):
         pass
 
@@ -3216,20 +3679,27 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
         rep.warnings.append(
             f"{ac.summary} detected ({', '.join(ac.evidence)}). ReShade "
             f"add-ons and anti-cheat do not coexist: expect the game not to "
-            f"start, or nothing to happen, or a ban. Do not use this online.")
+            f"start, or nothing to happen, or a ban. Do not use this online."
+        )
         log(f"      !! {ac.summary} detected - see the warning above")
     if opt.path != ROUTE_REMIX and reengine.detected(root):
         rep.warnings.append(reengine.message())
-        log("      !! RE Engine game detected - ReShade's add-on support is "
-            "documented to crash this engine; see the warning above")
+        log(
+            "      !! RE Engine game detected - ReShade's add-on support is "
+            "documented to crash this engine; see the warning above"
+        )
 
     # Is another injector already in place?
     existing = root / proxy if proxy else root
     # Our own file under that name (DXVK's d3d9.dll from a previous route,
     # now that DX9 takes ReShade as d3d9.dll) is not another injector: the
     # previous route's uninstall below takes it out (gate 2.1.0).
-    if opt.path not in (OPTI, ROUTE_REMIX) and existing.is_file() \
-            and not _is_reshade(existing) and proxy not in _previously_ours(root):
+    if (
+        opt.path not in (OPTI, ROUTE_REMIX)
+        and existing.is_file()
+        and not _is_reshade(existing)
+        and proxy not in _previously_ours(root)
+    ):
         if optiscaler.is_optiscaler(existing):
             # A hand-installed OptiScaler (no record of ours) under the name
             # ReShade needs. Two injectors under one name cannot coexist, and
@@ -3243,15 +3713,20 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 if p_.is_file():
                     _backup_or_refuse(p_, rep, root)
                     p_.unlink()
-            rep.notes.append(f"an OptiScaler installed by hand as {proxy} was "
-                             f"backed up and moved aside - two injectors "
-                             f"cannot share the name")
-            log(f"      {proxy} was OptiScaler (not installed by this tool) - "
-                f"backed up and moved aside")
+            rep.notes.append(
+                f"an OptiScaler installed by hand as {proxy} was "
+                f"backed up and moved aside - two injectors "
+                f"cannot share the name"
+            )
+            log(
+                f"      {proxy} was OptiScaler (not installed by this tool) - "
+                f"backed up and moved aside"
+            )
         else:
             raise InstallError(
                 f"{proxy} already exists but is not ReShade (DXVK, Special K or "
-                f"another injector?). Remove it first, then try again.")
+                f"another injector?). Remove it first, then try again."
+            )
 
     # Read before anything is written: what is here that we put here.
     rep.preinstalled = _previously_ours(root)
@@ -3265,8 +3740,7 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
     if opt.path != OPTI:
         # On the Remix route there is no proxy to keep: every ReShade in the
         # folder has to go, whatever name it is under.
-        _clear_stale_reshade(root, "" if opt.path == ROUTE_REMIX else proxy,
-                             rep, log)
+        _clear_stale_reshade(root, "" if opt.path == ROUTE_REMIX else proxy, rep, log)
 
     # Switching routes must not leave the previous one behind. The routes put
     # very different things in the folder - the feeder alone drops 28 files,
@@ -3278,16 +3752,22 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
         # Only feeder 0.13.1+ reaches D3D10. Checked here, before a single
         # file is written: raised from inside the feeder step it left a
         # bare ReShade behind (review, 1.7.0).
-        tag0, _ = sources.resolve_feeder(prerelease=opt.feeder_prerelease,
-                                         tag=opt.feeder_tag)
+        tag0, _ = sources.resolve_feeder(
+            prerelease=opt.feeder_prerelease, tag=opt.feeder_tag
+        )
         if sources.feeder_key(tag0) < sources.feeder_key(sources.FEEDER_DX10_MIN):
             raise InstallError(
                 f"DLSS5-Feeder {tag0} refuses Direct3D 10 games. Pick "
                 f"{sources.FEEDER_DX10_MIN} or newer in 'feeder build' - that is "
-                f"the first build with the D3D10 relay - and install again.")
+                f"the first build with the D3D10 relay - and install again."
+            )
 
-    if opt.path == FEEDER and g.bitness == 64 and opt.provider == reshade_ini.BUILTIN \
-            and g.api in ("DX10", "Vulkan"):
+    if (
+        opt.path == FEEDER
+        and g.bitness == 64
+        and opt.provider == reshade_ini.BUILTIN
+        and g.api in ("DX10", "Vulkan")
+    ):
         # not verified there by the feeder's author; the dropdown does not
         # offer it, and an update carrying it from a preset falls back
         opt.provider = 3
@@ -3297,21 +3777,32 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
         # Both need a feeder build that has them, and are refused before the
         # first write. Unreachable GitHub: the step itself says so later.
         try:
-            tagf, _ = sources.resolve_feeder(prerelease=opt.feeder_prerelease,
-                                             tag=opt.feeder_tag)
+            tagf, _ = sources.resolve_feeder(
+                prerelease=opt.feeder_prerelease, tag=opt.feeder_tag
+            )
         except Exception:
             tagf = ""
-        if tagf and need5 and sources.feeder_key(tagf) < sources.feeder_key(reshade_ini.BUILTIN_MIN):
+        if (
+            tagf
+            and need5
+            and sources.feeder_key(tagf) < sources.feeder_key(reshade_ini.BUILTIN_MIN)
+        ):
             raise InstallError(
                 f"DLSS5-Feeder {tagf} has no built-in motion vectors - they "
                 f"start with {reshade_ini.BUILTIN_MIN}. Pick that or newer in "
                 f"'feeder build', or another motion-vector provider, and "
-                f"install again.")
-        if tagf and needh and sources.feeder_key(tagf) < sources.feeder_key(FEEDER_HELPER_MIN):
+                f"install again."
+            )
+        if (
+            tagf
+            and needh
+            and sources.feeder_key(tagf) < sources.feeder_key(FEEDER_HELPER_MIN)
+        ):
             raise InstallError(
                 f"DLSS5-Feeder {tagf} has no 64-bit helper mode - it starts "
                 f"with 1.18.0. Pick a newer 'feeder build', or untick 'run "
-                f"DLSS in a helper process', and install again.")
+                f"DLSS in a helper process', and install again."
+            )
 
     if opt.path == UPLIFT and g.api in ("Vulkan", "OpenGL"):
         # GITC-Uplift's README: "Vulkan and OpenGL games need 6.8 or newer".
@@ -3327,7 +3818,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 f"GITC-Uplift needs ReShade {UPLIFT_RESHADE_MIN} or newer for "
                 f"{g.api} games, and the only ReShade this PC can get right now "
                 f"is {rver} (reshade.me and GitHub could not be reached). "
-                f"Connect and install again.")
+                f"Connect and install again."
+            )
 
     if opt.path == OPTI:
         # The same rule for the RTX 40 MFG package: raised inside the
@@ -3373,9 +3865,11 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             for line in emulators.set_backend(g.emu, g.exe):
                 rep.notes.append(line)
                 log(f"      {line}")
-        except Exception as e:      # never let a config quirk stop the install
-            rep.warnings.append(f"could not set the emulator's render backend "
-                                f"({e}); {g.emu.renderer_hint}")
+        except Exception as e:  # never let a config quirk stop the install
+            rep.warnings.append(
+                f"could not set the emulator's render backend "
+                f"({e}); {g.emu.renderer_hint}"
+            )
 
     n = len(steps)
     i = 0
@@ -3390,8 +3884,12 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
     def dl(url: str, fname: str) -> Path:
         def p(done: int, total: int) -> None:
             pct = int(done * 100 / total) if total else 0
-            prog(pct, f"{fname} - {net.human(done)}"
-                      + (f" / {net.human(total)}" if total else ""))
+            prog(
+                pct,
+                f"{fname} - {net.human(done)}"
+                + (f" / {net.human(total)}" if total else ""),
+            )
+
         return net.download(url, fname, progress=p)
 
     # Every step below can fail (network, rate limit, permissions). If it
@@ -3422,7 +3920,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             rep.notes.append(
                 "REFramework installed: it loads before the game's own "
                 "tamper checks and patches around them, so ReShade (below) "
-                "does not get killed the way it would on its own.")
+                "does not get killed the way it would on its own."
+            )
 
         # --- 0b) DXVK: the game renders on Vulkan, ReShade stays outside -----
         # DirectX 9 arrives here too, and never on the remix route: Remix IS
@@ -3434,10 +3933,12 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             ver, files = dxvk.install(root, x64, log, api=dxvk_from)
             rep.written += files
             rep.components["dxvk"] = ver
-            rep.notes.append(f"DXVK {ver} installed ({dxvk_from} -> Vulkan): the "
-                             f"game renders on Vulkan and ReShade loads as a "
-                             f"Vulkan layer, so nothing hooks the game itself. "
-                             f"Use a borderless window, not exclusive fullscreen.")
+            rep.notes.append(
+                f"DXVK {ver} installed ({dxvk_from} -> Vulkan): the "
+                f"game renders on Vulkan and ReShade loads as a "
+                f"Vulkan layer, so nothing hooks the game itself. "
+                f"Use a borderless window, not exclusive fullscreen."
+            )
 
         # --- the RTX Remix route ---------------------------------------
         if opt.path == ROUTE_REMIX:
@@ -3445,7 +3946,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 raise InstallError(
                     "No RTX Remix runtime (a '.trex' folder) was found in "
                     "this game. This route is only for a game that already "
-                    "has an RTX Remix mod installed.")
+                    "has an RTX Remix mod installed."
+                )
             if not flavour and not swap:
                 raise InstallError(
                     "The RTX Remix runtime installed here has no DLSS 5 "
@@ -3454,7 +3956,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     "runtime' to replace it with a build that has the pass. "
                     "That is experimental: a mod's runtime is often a fork "
                     "carrying fixes for this exact game, and replacing it "
-                    "can break them. The old one is backed up either way.")
+                    "can break them. The old one is backed up either way."
+                )
             conf = remix.conf_path(root, trex)
 
             def _rel(p: Path) -> str:
@@ -3492,7 +3995,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                             rep.notes.append(
                                 f"{_rel(aside)} is the runtime this mod had "
                                 f"before it updated - delete it if you do not "
-                                f"need it")
+                                f"need it"
+                            )
                         except OSError:
                             # Left under the backup name, uninstall would
                             # put the older runtime back over the mod's.
@@ -3503,15 +4007,17 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                                     f"{_rel(stale)} could not be moved aside "
                                     f"({e}) - rename or delete it before "
                                     f"uninstalling, or uninstall puts an older "
-                                    f"runtime back")
-                    log("      the mod has its own DLSS 5 runtime now - "
-                        "left as it is")
+                                    f"runtime back"
+                                )
+                    log("      the mod has its own DLSS 5 runtime now - left as it is")
                 else:
                     # Still the runtime we swapped in: the record keeps
                     # saying so, or the next update would not renew it.
                     rep.components["remix_runtime"] = rec["remix_runtime"]
                     if rec.get("remix_runtime_stamp"):
-                        rep.components["remix_runtime_stamp"] = rec["remix_runtime_stamp"]
+                        rep.components["remix_runtime_stamp"] = rec[
+                            "remix_runtime_stamp"
+                        ]
 
             if swap:
                 begin("RTX Remix runtime (DLSS 5 build)")
@@ -3536,17 +4042,22 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                             pass
                         raise InstallError(
                             f"Could not back up the mod's own runtime before "
-                            f"replacing it ({e}). Nothing was replaced.") from e
-                    log("      the mod updated its own runtime since the last "
-                        "swap - that one is kept as the backup")
+                            f"replacing it ({e}). Nothing was replaced."
+                        ) from e
+                    log(
+                        "      the mod updated its own runtime since the last "
+                        "swap - that one is kept as the backup"
+                    )
                 for name in sources.REMIX_RUNTIME_ASSETS:
                     f_ = dl(rurls[name], f"remix-runtime-{rtag}-{name}")
                     _copy(f_, trex / name, rep, root)
                     log(f"      {_rel(trex / name)}")
                 log(f"      dxvk-remix-plus-dlssnr {rtag}")
                 if rtag == "latest":
-                    log("      (GitHub's API was out of reach; took the "
-                        "newest release by its download redirect)")
+                    log(
+                        "      (GitHub's API was out of reach; took the "
+                        "newest release by its download redirect)"
+                    )
                 rep.components["remix_runtime"] = rtag
                 stamp = _runtime_stamp(rt)
                 if stamp:
@@ -3556,7 +4067,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     "the mod's own Remix runtime was replaced with a "
                     "community build that has the neural pass; the original "
                     "is backed up beside it and 'uninstall' puts it back. If "
-                    "the mod misbehaves after this, that swap is the reason.")
+                    "the mod misbehaves after this, that swap is the reason."
+                )
                 flavour = remix.runtime_flavour(trex) or remix.NEURAL
 
             begin(DLSSNR)
@@ -3570,9 +4082,11 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     rep.warnings.append(sources.last_fallback)
             tried: list[str] = []
             chosen = None
-            candidates = ([sources.pick(catalog["dlssnr"], opt.dlssnr)]
-                          if opt.dlssnr
-                          else gpu.order_dlssnr(catalog["dlssnr"], sm))
+            candidates = (
+                [sources.pick(catalog["dlssnr"], opt.dlssnr)]
+                if opt.dlssnr
+                else gpu.order_dlssnr(catalog["dlssnr"], sm)
+            )
             for e in candidates:
                 f_ = dl(e["url"], f"dlssnr-{e['label']}.zip")
                 _extract(f_, DLSSNR, trex / DLSSNR, rep, root)
@@ -3581,7 +4095,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     if opt.dlssnr:
                         raise InstallError(
                             f"Build {e['label']} will not run on "
-                            f"{card or 'your card'}.\n\n{why_gpu}")
+                            f"{card or 'your card'}.\n\n{why_gpu}"
+                        )
                     tried.append(e["label"])
                     log(f"      skipped {e['label']} - {why_gpu}")
                     continue
@@ -3590,7 +4105,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             if chosen is None:
                 raise InstallError(
                     f"No suitable nvngx_dlssnr build found for "
-                    f"{card or 'your card'}.\n\nTried: {', '.join(tried)}")
+                    f"{card or 'your card'}.\n\nTried: {', '.join(tried)}"
+                )
             e, compat, why_gpu = chosen
             rep.written.append(_rel(trex / DLSSNR))
             log(f"      {_rel(trex / DLSSNR)}  (nvngx_dlssnr {e['label']})")
@@ -3602,8 +4118,9 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 log(f"      {tier}")
                 rep.notes.append(tier)
             if compat is False:
-                rep.warnings.append(f"dlssnr {e['label']} does not match your "
-                                    f"card - installed anyway")
+                rep.warnings.append(
+                    f"dlssnr {e['label']} does not match your card - installed anyway"
+                )
 
             begin(remix.CONF)
             key = remix.enable_key(flavour)
@@ -3611,29 +4128,44 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             # put back: set_option adds one when it is missing.
             had_nl = remix.ends_with_newline(conf)
             if not remix.set_option(conf, key, "True"):
-                raise InstallError(f"Could not write {conf}. Close the game "
-                                   f"and the Remix toolkit, then try again.")
-            rep.remix = {"conf": _rel(conf), "key": key,
-                         "trex": _rel(trex), "flavour": flavour,
-                         "conf_final_newline": had_nl}
+                raise InstallError(
+                    f"Could not write {conf}. Close the game "
+                    f"and the Remix toolkit, then try again."
+                )
+            rep.remix = {
+                "conf": _rel(conf),
+                "key": key,
+                "trex": _rel(trex),
+                "flavour": flavour,
+                "conf_final_newline": had_nl,
+            }
             log(f"      {_rel(conf)}: {key} = True")
-            log("      (that one line; every other setting in rtx.conf is "
-                "left exactly as it was)")
+            log(
+                "      (that one line; every other setting in rtx.conf is "
+                "left exactly as it was)"
+            )
             rep.notes.append(
                 f"{key} = True was set in {_rel(conf)}; 'uninstall' takes "
-                f"that line back out and touches nothing else in the file")
+                f"that line back out and touches nothing else in the file"
+            )
             rep.notes.append(
                 "In game: Alt+X opens the Remix menu -> Developer Settings "
                 "Menu -> Post-Processing, where the neural pass can be "
                 "toggled. It runs inside the Remix runtime, after DLSS, so "
-                "the game's own DLSS/RR settings still apply.")
+                "the game's own DLSS/RR settings still apply."
+            )
             rep.notes.append(
                 "No ReShade, no feeder and no add-on go into a Remix game. A "
                 "ReShade proxy DLL left in this folder crashes it before it "
-                "draws a frame.")
-            clear_failure(root)     # this folder's last failure is history now
+                "draws a frame."
+            )
+            clear_failure(root)  # this folder's last failure is history now
             _set_gpu_pref(root, g, opt, rep, log)
-            _finish_record(_write_manifest(root, g, opt, rep, proxy, level, complete=True), rep, log)
+            _finish_record(
+                _write_manifest(root, g, opt, rep, proxy, level, complete=True),
+                rep,
+                log,
+            )
             if not record_lost(rep):
                 prefs.add_install(root)
             prog(100, "Done")
@@ -3646,8 +4178,10 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             # file replaced, unless the user picked one explicitly.
             oproxy = _opti_proxy_for(root, opt)
             if oproxy != optiscaler.DEFAULT_PROXY and not opt.opti_proxy:
-                log(f"      {optiscaler.DEFAULT_PROXY} is already taken here, "
-                    f"installing as {oproxy} instead")
+                log(
+                    f"      {optiscaler.DEFAULT_PROXY} is already taken here, "
+                    f"installing as {oproxy} instead"
+                )
             # The RTX 40 MFG package on any other card was refused at the top
             # of install(), before the previous route came out.
             try:
@@ -3660,55 +4194,70 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 raise InstallError(str(e)) from e
             if opt.opti_build == optiscaler.FORK:
                 log(f"      y4my4my4m's fork, {orel[0]}")
-                rep.notes.append("OptiScaler is y4my4my4m's fork of the DLSS-NR "
-                                 "build, with multi-frame generation on RTX 40 "
-                                 "(OptiScaler.ini: [DLSSG] AdaMfgUnlock=true) and "
-                                 "its own neural-pass changes. The rest is on the "
-                                 "overlay. Development builds - if a "
-                                 "game misbehaves, install again with the "
-                                 "DLSS-NR build.")
+                rep.notes.append(
+                    "OptiScaler is y4my4my4m's fork of the DLSS-NR "
+                    "build, with multi-frame generation on RTX 40 "
+                    "(OptiScaler.ini: [DLSSG] AdaMfgUnlock=true) and "
+                    "its own neural-pass changes. The rest is on the "
+                    "overlay. Development builds - if a "
+                    "game misbehaves, install again with the "
+                    "DLSS-NR build."
+                )
             elif opt.opti_build == optiscaler.PRESR:
                 log(f"      wilsjo2's fork, {orel[0]}")
-                rep.notes.append("OptiScaler is wilsjo2's fork of the DLSS-NR "
-                                 "build: the neural pass runs before super "
-                                 "resolution rather than after it, over one to "
-                                 "three passes (OptiScaler.ini: Passes=). If it "
-                                 "misbehaves, install again with the "
-                                 "DLSS-NR build.")
+                rep.notes.append(
+                    "OptiScaler is wilsjo2's fork of the DLSS-NR "
+                    "build: the neural pass runs before super "
+                    "resolution rather than after it, over one to "
+                    "three passes (OptiScaler.ini: Passes=). If it "
+                    "misbehaves, install again with the "
+                    "DLSS-NR build."
+                )
             elif opt.opti_build == optiscaler.JANBLADE:
                 log(f"      Janblade's fork, {orel[0]}")
-                rep.notes.append("OptiScaler is Janblade's fork of wilsjo2's "
-                                 "build: the neural pass runs before super "
-                                 "resolution rather than after it, over one to "
-                                 "three passes (OptiScaler.ini: Passes=). If it "
-                                 "misbehaves, install again with the "
-                                 "DLSS-NR build.")
+                rep.notes.append(
+                    "OptiScaler is Janblade's fork of wilsjo2's "
+                    "build: the neural pass runs before super "
+                    "resolution rather than after it, over one to "
+                    "three passes (OptiScaler.ini: Passes=). If it "
+                    "misbehaves, install again with the "
+                    "DLSS-NR build."
+                )
             elif opt.opti_build == optiscaler.JLROUZIES:
                 log(f"      jlrouzies' fork, {orel[0]}")
-                rep.notes.append("OptiScaler is jlrouzies' fork of wilsjo2's "
-                                 "build: the neural pass runs before super "
-                                 "resolution, over one to three passes, and "
-                                 "the [DlssNr] settings in OptiScaler.ini are "
-                                 "applied while the game runs. If it "
-                                 "misbehaves, install again with the "
-                                 "DLSS-NR build.")
+                rep.notes.append(
+                    "OptiScaler is jlrouzies' fork of wilsjo2's "
+                    "build: the neural pass runs before super "
+                    "resolution, over one to three passes, and "
+                    "the [DlssNr] settings in OptiScaler.ini are "
+                    "applied while the game runs. If it "
+                    "misbehaves, install again with the "
+                    "DLSS-NR build."
+                )
             elif opt.opti_build == optiscaler.PRESR_MFG:
                 log(f"      wilsjo2's fork with RTX 40 MFG, {orel[0]}")
-                rep.notes.append("OptiScaler is wilsjo2's RTX 40 MFG package: "
-                                 "the neural pass runs before super resolution, "
-                                 "over one to three passes (OptiScaler.ini: "
-                                 "Passes=), and its RTX 40 unlock is switched "
-                                 "on ([DLSSG] AdaMfgUnlock=true), so a game "
-                                 "with its own DLSS frame generation can offer "
-                                 "3x/4x on an RTX 40. If frame generation "
-                                 "misbehaves, install again "
-                                 "with \"wilsjo2's fork\" in 'optiscaler build'.")
+                rep.notes.append(
+                    "OptiScaler is wilsjo2's RTX 40 MFG package: "
+                    "the neural pass runs before super resolution, "
+                    "over one to three passes (OptiScaler.ini: "
+                    "Passes=), and its RTX 40 unlock is switched "
+                    "on ([DLSSG] AdaMfgUnlock=true), so a game "
+                    "with its own DLSS frame generation can offer "
+                    "3x/4x on an RTX 40. If frame generation "
+                    "misbehaves, install again "
+                    "with \"wilsjo2's fork\" in 'optiscaler build'."
+                )
             try:
-                for f in optiscaler.install(root, proxy=oproxy, dl=dl, log=log,
-                                            backup=lambda p: _backup(p, rep, root),
-                                            release=orel):
+                for f in optiscaler.install(
+                    root,
+                    proxy=oproxy,
+                    dl=dl,
+                    log=log,
+                    backup=lambda p: _backup(p, rep, root),
+                    release=orel,
+                ):
                     rep.written.append(f)
-            except RuntimeError as e:      # the archive carried no OptiScaler
+            except RuntimeError as e:  # the archive carried no OptiScaler
                 raise InstallError(str(e)) from e
             # After the files are down, not before: an install that is
             # refused (#364 - the release carried no OptiScaler package)
@@ -3742,7 +4291,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 rep.notes.append(tier_)
             if compat_ is False and not opt.ignore_gpu_mismatch:
                 raise InstallError(
-                    f"Build {e_['label']} will not run on your card.\n\n{why_}")
+                    f"Build {e_['label']} will not run on your card.\n\n{why_}"
+                )
 
             if _opti_needs_dlss(opt):
                 # The game has FSR/XeSS and no DLSS: OptiScaler will call
@@ -3750,29 +4300,42 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 # pick as the ReShade routes - newest unless pinned - and a
                 # copy someone put here by hand is kept, as everywhere else.
                 begin("nvngx_dlss.dll")
-                game_has = (root / DLSS).is_file() and DLSS not in rep.written \
+                game_has = (
+                    (root / DLSS).is_file()
+                    and DLSS not in rep.written
                     and DLSS not in rep.preinstalled
+                )
                 if game_has and opt.keep_game_dlss:
                     log("      a nvngx_dlss.dll is already here, left untouched")
                     rep.skipped.append(DLSS)
                 else:
                     was_ = pe.file_version(root / DLSS)
-                    e_ = _place_family(catalog_["dlss"], opt.dlss,
-                                       root / DLSS, rep, root, dl, DLSS,
-                                       "dlss", log)
-                    log(f"      nvngx_dlss {_swapped(was_, e_['label'])} "
+                    e_ = _place_family(
+                        catalog_["dlss"],
+                        opt.dlss,
+                        root / DLSS,
+                        rep,
+                        root,
+                        dl,
+                        DLSS,
+                        "dlss",
+                        log,
+                    )
+                    log(
+                        f"      nvngx_dlss {_swapped(was_, e_['label'])} "
                         f"(the game has none: "
                         f"OptiScaler runs DLSS in place of its "
-                        f"{'FSR' if opt.upscaler == 'fsr' else 'XeSS'})")
+                        f"{'FSR' if opt.upscaler == 'fsr' else 'XeSS'})"
+                    )
                     rep.notes.append(f"dlss version: {e_['label']}")
                     rep.components["dlss"] = e_["label"]
             else:
-                nested_ = _opti_dlss_target(root, g, opt,
-                                            ours=rep.preinstalled)
+                nested_ = _opti_dlss_target(root, g, opt, ours=rep.preinstalled)
                 if nested_ is not None:
                     begin("nvngx_dlss.dll")
-                    _swap_nested_dlss(nested_, catalog_["dlss"], opt, rep,
-                                      root, dl, log)
+                    _swap_nested_dlss(
+                        nested_, catalog_["dlss"], opt, rep, root, dl, log
+                    )
 
             begin("OptiScaler configuration")
             nr_settings = dict(opt.nr)
@@ -3787,10 +4350,12 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 if not optiscaler.enable_mfg_unlock(root, log):
                     # Silent until the 2.0.5 gate: the install then said
                     # nothing and the unlock was simply never there.
-                    rep.warnings.append("the RTX 40 MFG unlock could not be switched on - "
-                                        "OptiScaler.ini could not be written. Close the "
-                                        "game and install again, or add AdaMfgUnlock=true "
-                                        "under [DLSSG] in OptiScaler.ini by hand")
+                    rep.warnings.append(
+                        "the RTX 40 MFG unlock could not be switched on - "
+                        "OptiScaler.ini could not be written. Close the "
+                        "game and install again, or add AdaMfgUnlock=true "
+                        "under [DLSSG] in OptiScaler.ini by hand"
+                    )
                 # What the unlock needs from the game, said at install rather
                 # than found out in it (gate 2.0.5): a DLSS frame-generation
                 # runtime of the game's own.
@@ -3811,21 +4376,27 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                         # turn the game's own frame generation off - the one
                         # the unlock needs.
                         rep.warnings.append(MFG_FSR_FG)
-                        rep.notes.append("frame generation: FSR 3.1 through "
-                                         "OptiScaler, one generated frame per "
-                                         "rendered one - in place of the MFG "
-                                         "unlock, see the warning")
+                        rep.notes.append(
+                            "frame generation: FSR 3.1 through "
+                            "OptiScaler, one generated frame per "
+                            "rendered one - in place of the MFG "
+                            "unlock, see the warning"
+                        )
                     else:
-                        rep.notes.append("frame generation: FSR 3.1 through "
-                                         "OptiScaler, one generated frame per "
-                                         "rendered one, on any RTX card. Turn the "
-                                         "game's own frame generation OFF; expect "
-                                         "added latency and check the HUD")
+                        rep.notes.append(
+                            "frame generation: FSR 3.1 through "
+                            "OptiScaler, one generated frame per "
+                            "rendered one, on any RTX card. Turn the "
+                            "game's own frame generation OFF; expect "
+                            "added latency and check the HUD"
+                        )
                     rep.components["fg"] = "fsr31"
             elif opt.fg:
                 log("      frame generation needs a D3D12 game - not on this one")
-                rep.warnings.append("frame generation was requested but the "
-                                    "game is not D3D12; not enabled")
+                rep.warnings.append(
+                    "frame generation was requested but the "
+                    "game is not D3D12; not enabled"
+                )
             if _opti_needs_dlss(opt):
                 optiscaler.enable_inputs(root, opt.upscaler, g.api, log)
                 rep.notes.append(
@@ -3834,28 +4405,36 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     f"and runs DLSS in their place, then neural rendering. "
                     f"Pick the upscaler you would normally pick in the game's "
                     f"own menu; if nothing changes in game, the game probably "
-                    f"links its upscaler statically - use the feeder route.")
+                    f"links its upscaler statically - use the feeder route."
+                )
             if g.api == "DX11":
                 # The model refuses to run on a D3D11 device. OptiScaler gets
                 # around it by running the upscaler on D3D12 underneath -
                 # which means DLSS cannot be the upscaler here, FSR is.
                 optiscaler.set_dx11_bridged_upscaler(root, log)
-                rep.notes.append("D3D11 game: OptiScaler's upscaler set to FSR "
-                                 "2.2 on D3D12 (the model does not run on "
-                                 "D3D11 directly; DLSS cannot be the upscaler "
-                                 "on this route)")
+                rep.notes.append(
+                    "D3D11 game: OptiScaler's upscaler set to FSR "
+                    "2.2 on D3D12 (the model does not run on "
+                    "D3D11 directly; DLSS cannot be the upscaler "
+                    "on this route)"
+                )
             _place_own_fg(root, opt, rep, log, begin)
             rep.notes.append(
                 f"OptiScaler is installed INSTEAD of ReShade. Press "
                 f"{reshade_ini.overlay_key_name(optiscaler.OVERLAY_KEY)} "
                 f"in game to open its overlay, then "
                 f"turn on Neural Rendering - it is off by default. If it "
-                f"refuses, the overlay says why under the checkbox.")
+                f"refuses, the overlay says why under the checkbox."
+            )
             rep.notes.append(f"OptiScaler proxy: {oproxy}")
             # Record the name OptiScaler actually went in under, not the
             # ReShade proxy this route never installs.
             _set_gpu_pref(root, g, opt, rep, log)
-            _finish_record(_write_manifest(root, g, opt, rep, oproxy, level, complete=True), rep, log)
+            _finish_record(
+                _write_manifest(root, g, opt, rep, oproxy, level, complete=True),
+                rep,
+                log,
+            )
             prog(100, "Done")
             return rep
 
@@ -3867,27 +4446,35 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
         log(f"      ReShade {ver}")
         rep.components["reshade"] = ver
         if opt.vr and not x64:
-            log("      VR: the OpenXR layer is 64-bit only - skipped for this "
-                "32-bit game")
+            log(
+                "      VR: the OpenXR layer is 64-bit only - skipped for this "
+                "32-bit game"
+            )
         elif opt.vr:
             from . import openxr
+
             xr_manifest, xr_fresh = openxr.install_layer(setup, log)
             prefs.add_openxr_game(root)
             if xr_fresh:
-                rep.notes.append("registered ReShade as an OpenXR layer for this "
-                                 "user, so the pass reaches the headset's image; "
-                                 "it loads into EVERY OpenXR application until "
-                                 "'uninstall' removes it")
+                rep.notes.append(
+                    "registered ReShade as an OpenXR layer for this "
+                    "user, so the pass reaches the headset's image; "
+                    "it loads into EVERY OpenXR application until "
+                    "'uninstall' removes it"
+                )
             else:
-                rep.notes.append(f"reused the existing ReShade OpenXR layer "
-                                 f"({xr_manifest})")
-            rep.warnings.append("VR through OpenXR has not been tried with a "
-                                "headset by the author, and only games that "
-                                "run on OpenXR are reached (OpenVR/SteamVR "
-                                "titles are not): if the headset shows nothing "
-                                "new, or the game refuses to start, untick "
-                                "'VR headset' and install again - and say what "
-                                "happened in a report")
+                rep.notes.append(
+                    f"reused the existing ReShade OpenXR layer ({xr_manifest})"
+                )
+            rep.warnings.append(
+                "VR through OpenXR has not been tried with a "
+                "headset by the author, and only games that "
+                "run on OpenXR are reached (OpenVR/SteamVR "
+                "titles are not): if the headset shows nothing "
+                "new, or the game refuses to start, untick "
+                "'VR headset' and install again - and say what "
+                "happened in a report"
+            )
         # The installer exe has a zip appended: both ReShade32.dll and ReShade64.dll.
         if g.api == "Vulkan":
             # A Vulkan game never loads dxgi.dll. ReShade reaches it as an
@@ -3898,29 +4485,36 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             manifest, layer_new = vulkan.install_layer(setup, log, also32=not x64)
             prefs.add_vulkan_game(root)
             if layer_new:
-                rep.notes.append("registered ReShade as a Vulkan layer for this "
-                                 "user - it now loads into EVERY Vulkan "
-                                 "application, not just this game")
+                rep.notes.append(
+                    "registered ReShade as a Vulkan layer for this "
+                    "user - it now loads into EVERY Vulkan "
+                    "application, not just this game"
+                )
                 rep.warnings.append(
                     "the Vulkan layer is global, and also registered for "
                     "all users; 'uninstall' removes that part only while "
                     "the tool runs as administrator"
-                    if vulkan.machine_registered(x64) else
-                    "the Vulkan layer is global; 'uninstall' removes it again")
+                    if vulkan.machine_registered(x64)
+                    else "the Vulkan layer is global; 'uninstall' removes it again"
+                )
                 if vulkan.machine_registered(x64):
-                    rep.notes.append(f"a copy of the layer is in "
-                                     f"{vulkan.machine_dir()} and on the "
-                                     f"machine's list (all users), the one a "
-                                     f"game started as administrator reads; "
-                                     f"taking it off again needs this tool "
-                                     f"run as administrator")
+                    rep.notes.append(
+                        f"a copy of the layer is in "
+                        f"{vulkan.machine_dir()} and on the "
+                        f"machine's list (all users), the one a "
+                        f"game started as administrator reads; "
+                        f"taking it off again needs this tool "
+                        f"run as administrator"
+                    )
             else:
-                rep.notes.append(f"reused the existing ReShade Vulkan layer "
-                                 f"({manifest})")
+                rep.notes.append(
+                    f"reused the existing ReShade Vulkan layer ({manifest})"
+                )
         else:
             _backup(root / proxy, rep, root)
-            net.extract_one(setup, "ReShade64.dll" if x64 else "ReShade32.dll",
-                            root / proxy)
+            net.extract_one(
+                setup, "ReShade64.dll" if x64 else "ReShade32.dll", root / proxy
+            )
             rep.written.append(proxy)
             log(f"      {proxy} <- ReShade{'64' if x64 else '32'}.dll")
         if _split(g, opt):
@@ -3943,13 +4537,17 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             if legacy.is_file():
                 try:
                     legacy.unlink()
-                    log("      removed the older dlss5-dx11-bridge.addon64 "
-                        "(both loading at once conflict)")
+                    log(
+                        "      removed the older dlss5-dx11-bridge.addon64 "
+                        "(both loading at once conflict)"
+                    )
                     rep.notes.append("removed a legacy dlss5-dx11-bridge.addon64")
                 except OSError:
-                    rep.warnings.append("could not remove the older "
-                                        "dlss5-dx11-bridge.addon64 - delete it "
-                                        "by hand, it conflicts")
+                    rep.warnings.append(
+                        "could not remove the older "
+                        "dlss5-dx11-bridge.addon64 - delete it "
+                        "by hand, it conflicts"
+                    )
 
         elif (root / LEGACY_BRIDGE_ADDON).is_file():
             # ReShade loads every add-on in the folder, so an older bridge
@@ -3960,18 +4558,23 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             # Only once its copy is really there (or it is ours from last
             # time): _backup says nothing when the copy fails, and the
             # preview promised it comes back on uninstall (gate 2.0.6).
-            kept_copy = (root / (LEGACY_BRIDGE_ADDON + BACKUP_SUFFIX)).is_file() \
-                or LEGACY_BRIDGE_ADDON in rep.preinstalled
+            kept_copy = (
+                root / (LEGACY_BRIDGE_ADDON + BACKUP_SUFFIX)
+            ).is_file() or LEGACY_BRIDGE_ADDON in rep.preinstalled
             try:
                 if not kept_copy:
                     raise OSError("no backup copy")
                 (root / LEGACY_BRIDGE_ADDON).unlink()
-                log(f"      moved the older {LEGACY_BRIDGE_ADDON} aside "
-                    f"(it would load beside this route's add-on)")
+                log(
+                    f"      moved the older {LEGACY_BRIDGE_ADDON} aside "
+                    f"(it would load beside this route's add-on)"
+                )
                 rep.notes.append(f"moved an older {LEGACY_BRIDGE_ADDON} aside")
             except OSError:
-                rep.warnings.append(f"could not move the older {LEGACY_BRIDGE_ADDON} "
-                                    f"aside - delete it by hand, it conflicts")
+                rep.warnings.append(
+                    f"could not move the older {LEGACY_BRIDGE_ADDON} "
+                    f"aside - delete it by hand, it conflicts"
+                )
 
         if opt.path == FEEDER:
             _install_feeder_parts(g, opt, root, host, x64, rep, begin, dl, log)
@@ -3992,13 +4595,17 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             _copy(uf, dlss_dir / UPSTREAM_ADDON, rep, root)
             log(f"      neural-upstream {utag} -> {UPSTREAM_ADDON}")
             if utag == "latest":
-                log("      (GitHub's API was out of reach; took the newest "
-                    "release by its download redirect)")
+                log(
+                    "      (GitHub's API was out of reach; took the newest "
+                    "release by its download redirect)"
+                )
             rep.notes.append(f"upstream version: {utag}")
             rep.components["upstream"] = utag
-            rep.notes.append("neural-upstream runs the network itself, before "
-                             "the game's DLSS: no renodx-dlss5 add-on on this "
-                             "route, and the game's nvngx_dlss.dll is left alone")
+            rep.notes.append(
+                "neural-upstream runs the network itself, before "
+                "the game's DLSS: no renodx-dlss5 add-on on this "
+                "route, and the game's nvngx_dlss.dll is left alone"
+            )
         elif opt.path == STANDALONE:
             # VORT and the companion shader include ReShade.fxh, so the
             # headers go in exactly as on the feeder route.
@@ -4017,31 +4624,41 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 # 2.1.0 and later: one 64-bit archive laid out like a game folder.
                 zf = dl(surls[sources.STANDALONE_ZIP], f"standalone-{stag}-64-bit.zip")
                 for name in sources.STANDALONE_ASSETS + sources.STANDALONE_ZIP_EXTRA:
-                    dest = (root / SHADERS / name) if name.endswith(".fx") else root / name
+                    dest = (
+                        (root / SHADERS / name) if name.endswith(".fx") else root / name
+                    )
                     try:
                         _extract(zf, name, dest, rep, root)
-                    except RuntimeError:        # net.extract_one: not in the archive
+                    except RuntimeError:  # net.extract_one: not in the archive
                         if name in sources.STANDALONE_ASSETS:
-                            raise RuntimeError(f"The DLSS5-Reshade-AIO archive has no {name}.")
+                            raise RuntimeError(
+                                f"The DLSS5-Reshade-AIO archive has no {name}."
+                            )
                         continue
                     rep.written.append(str(dest.relative_to(root)))
                     log(f"      {dest.relative_to(root)}")
             else:
                 for name in sources.STANDALONE_ASSETS:
                     f = dl(surls[name], f"standalone-{stag}-{name}")
-                    dest = (root / SHADERS / name) if name.endswith(".fx") else root / name
+                    dest = (
+                        (root / SHADERS / name) if name.endswith(".fx") else root / name
+                    )
                     _copy(f, dest, rep, root)
                     log(f"      {dest.relative_to(root)}")
             log(f"      standalone-dlssnr {stag}")
             if stag == "latest":
-                log("      (GitHub's API was out of reach; took the newest "
-                    "release by its download redirect)")
+                log(
+                    "      (GitHub's API was out of reach; took the newest "
+                    "release by its download redirect)"
+                )
             rep.notes.append(f"standalone version: {stag}")
             rep.components["standalone"] = stag
-            rep.notes.append("standalone-dlssnr runs its own feed and the network "
-                             "itself: no renodx add-on on this route. The "
-                             "nvngx.dll beside it is the add-on's caller bridge, "
-                             "not a driver file - uninstall removes it")
+            rep.notes.append(
+                "standalone-dlssnr runs its own feed and the network "
+                "itself: no renodx add-on on this route. The "
+                "nvngx.dll beside it is the add-on's caller bridge, "
+                "not a driver file - uninstall removes it"
+            )
 
             _install_vort(root, rep, dl, log, begin)
         elif opt.path == UPLIFT:
@@ -4066,16 +4683,20 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     if pe.exe_bitness(src) != 64:
                         raise InstallError("The selected renodx file is not 64-bit.")
                 except pe.PEError as e:
-                    raise InstallError(f"The selected renodx file is not valid: {e}") from e
+                    raise InstallError(
+                        f"The selected renodx file is not valid: {e}"
+                    ) from e
                 _copy(src, dlss_dir / addon_name, rep, root)
                 log(f"      {src.name} (your local file) -> {addon_name}")
                 rep.notes.append(f"renodx: local file used ({src.name})")
             elif sf:
                 fam = catalog.get("renodx_sf") or []
                 if not fam:
-                    raise InstallError("The mirror lists no renodx-dlss (SF) build. "
-                                       "Pick 'use my file' with the add-on from the "
-                                       "RenoDX Discord, or choose another route.")
+                    raise InstallError(
+                        "The mirror lists no renodx-dlss (SF) build. "
+                        "Pick 'use my file' with the add-on from the "
+                        "RenoDX Discord, or choose another route."
+                    )
                 e = sources.pick(fam, opt.renodx)
                 f = dl(e["url"], f"renodx-sf-{e['label']}.zip")
                 _extract(f, ".addon64", dlss_dir / RENODX_SF, rep, root)
@@ -4091,35 +4712,46 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     # runs there - and it also satisfies the OpenGL and stable-
                     # feeder pins below, so it wins outright.
                     want = sources.DRIVER_FAULT_RENODX_PIN
-                    log(f"      driver {gpu.driver_version()}: renodx-dlss5 pinned to "
+                    log(
+                        f"      driver {gpu.driver_version()}: renodx-dlss5 pinned to "
                         f"{want} - 4.6/4.7 fault inside the NGX runtime on 616.64 "
-                        f"and newer (every evaluate, no neural frame)")
-                    rep.notes.append(f"renodx-dlss5 pinned to {want}: on driver "
-                                     f"616.64+ the 4.6/4.7 builds fault in the "
-                                     f"driver's NGX runtime on every evaluate")
+                        f"and newer (every evaluate, no neural frame)"
+                    )
+                    rep.notes.append(
+                        f"renodx-dlss5 pinned to {want}: on driver "
+                        f"616.64+ the 4.6/4.7 builds fault in the "
+                        f"driver's NGX runtime on every evaluate"
+                    )
                 if not want and g.api == "OpenGL":
                     # 4.70's fenced workset pool never recycles under GL and
                     # the pass stalls after four frames; 4.60 is the last
                     # build that runs there (verified on six GL games by
                     # perseval-BLR/dlss5-classic-games).
                     want = sources.OPENGL_RENODX_PIN
-                    log(f"      OpenGL game: renodx-dlss5 pinned to {want} "
-                        f"(4.70 stalls on GL after a few frames)")
-                    rep.notes.append(f"renodx-dlss5 pinned to {want}: newer "
-                                     f"builds stall on OpenGL")
+                    log(
+                        f"      OpenGL game: renodx-dlss5 pinned to {want} "
+                        f"(4.70 stalls on GL after a few frames)"
+                    )
+                    rep.notes.append(
+                        f"renodx-dlss5 pinned to {want}: newer builds stall on OpenGL"
+                    )
                 if not want and opt.path == FEEDER:
                     # Feeder builds below 0.8.0-beta.3 accept only 4.55;
                     # anything newer overlaps them and the DLSS feature dies
                     # in CreateFeature. Above that, nothing is pinned here.
                     want = sources.renodx_for_feeder(rep.components.get("feeder", ""))
                     if want:
-                        log(f"      DLSS5-Feeder {rep.components.get('feeder')} accepts "
+                        log(
+                            f"      DLSS5-Feeder {rep.components.get('feeder')} accepts "
                             f"renodx-dlss5 up to {want} - pinning to it (newer builds "
                             f"conflict; pick 'newest pre-release' under 'feeder build' "
-                            f"to use them)")
-                        rep.notes.append(f"renodx-dlss5 pinned to {want} for this "
-                                         f"feeder release - newer builds conflict "
-                                         f"with it")
+                            f"to use them)"
+                        )
+                        rep.notes.append(
+                            f"renodx-dlss5 pinned to {want} for this "
+                            f"feeder release - newer builds conflict "
+                            f"with it"
+                        )
                 e = sources.pick(catalog["renodx"], want)
                 # pick() falls back to the newest build when the wanted one
                 # is not on the list, and every pin above exists because the
@@ -4127,11 +4759,13 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 # as "pinned to 4.55" in the log and install 5.2.1, so the
                 # miss is said out loud and carried into the report.
                 if want and e["label"] != want:
-                    miss = (f"renodx-dlss5 {want} is not on the build "
-                            f"list - installing {e['label']} instead, which "
-                            f"is the kind of build that pin exists to avoid. "
-                            f"If the neural pass faults, pick {want} under "
-                            f"'dlss5 add-on' in the game's settings.")
+                    miss = (
+                        f"renodx-dlss5 {want} is not on the build "
+                        f"list - installing {e['label']} instead, which "
+                        f"is the kind of build that pin exists to avoid. "
+                        f"If the neural pass faults, pick {want} under "
+                        f"'dlss5 add-on' in the game's settings."
+                    )
                     log(f"      {miss}")
                     rep.warnings.append(miss)
                 f = dl(e["url"], f"renodx-{e['label']}.zip")
@@ -4156,8 +4790,11 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
         # download, inspect, and move down the list if it does not match.
         tried: list[str] = []
         chosen = None
-        candidates = ([sources.pick(catalog["dlssnr"], opt.dlssnr)] if opt.dlssnr
-                      else gpu.order_dlssnr(catalog["dlssnr"], sm))
+        candidates = (
+            [sources.pick(catalog["dlssnr"], opt.dlssnr)]
+            if opt.dlssnr
+            else gpu.order_dlssnr(catalog["dlssnr"], sm)
+        )
         for e in candidates:
             f = dl(e["url"], f"dlssnr-{e['label']}.zip")
             _extract(f, DLSSNR, dlss_dir / DLSSNR, rep, root)
@@ -4167,7 +4804,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     raise InstallError(
                         f"Build {e['label']} will not run on {card or 'your card'}.\n\n"
                         f"{why_gpu}\n\nLeave the version on Auto and the tool picks "
-                        f"the newest build that supports your card.")
+                        f"the newest build that supports your card."
+                    )
                 tried.append(e["label"])
                 log(f"      skipped {e['label']} - {why_gpu}")
                 continue
@@ -4178,7 +4816,8 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             raise InstallError(
                 f"No suitable nvngx_dlssnr build found for {card or 'your card'}.\n\n"
                 f"Tried: {', '.join(tried)}\n\n"
-                f"DLSS 5 currently runs on NVIDIA RTX 20 series and newer.")
+                f"DLSS 5 currently runs on NVIDIA RTX 20 series and newer."
+            )
 
         e, compat, why_gpu = chosen
         rep.written.append(str((dlss_dir / DLSSNR).relative_to(root)))
@@ -4195,7 +4834,9 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             log(f"      GPU check: {why_gpu}")
         elif compat is False:
             log(f"      GPU check: {why_gpu}")
-            rep.warnings.append(f"dlssnr {e['label']} does not match your card - installed anyway")
+            rep.warnings.append(
+                f"dlssnr {e['label']} does not match your card - installed anyway"
+            )
         else:
             rep.warnings.append(f"could not verify GPU compatibility ({why_gpu})")
 
@@ -4210,20 +4851,26 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             else:
                 # Looked for before the copy beside the exe is written, which
                 # would otherwise read as the game's own being right there.
-                nested = _nested_game_dlss(root, g, opt, x64,
-                                           ours=rep.preinstalled)
+                nested = _nested_game_dlss(root, g, opt, x64, ours=rep.preinstalled)
                 was = pe.file_version(dlss_dir / DLSS)
-                e = _place_family(catalog["dlss"], opt.dlss,
-                                  dlss_dir / DLSS, rep, root, dl, DLSS,
-                                  "dlss", log)
+                e = _place_family(
+                    catalog["dlss"],
+                    opt.dlss,
+                    dlss_dir / DLSS,
+                    rep,
+                    root,
+                    dl,
+                    DLSS,
+                    "dlss",
+                    log,
+                )
                 log(f"      nvngx_dlss {_swapped(was, e['label'])}")
                 rep.notes.append(f"dlss version: {e['label']}")
                 rep.components["dlss"] = e["label"]
                 # The copy beside the exe is not the one an Unreal game
                 # loads: its own under Plugins is swapped as well (#225).
                 if nested is not None and not _same_path(nested, dlss_dir / DLSS):
-                    _swap_nested_dlss(nested, catalog["dlss"], opt, rep, root,
-                                      dl, log)
+                    _swap_nested_dlss(nested, catalog["dlss"], opt, rep, root, dl, log)
 
         # Ray reconstruction. A swap, never an addition: the game asks for
         # this feature or it does not, and a runtime nothing calls is dead
@@ -4237,9 +4884,11 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             have = _find_runtime(root, DLSSD, g.folder)
             fam = catalog.get("dlssd") or []
             if have is None:
-                log("      this game does not ship nvngx_dlssd.dll - ray "
+                log(
+                    "      this game does not ship nvngx_dlssd.dll - ray "
                     "reconstruction is not something it asks for, so nothing "
-                    "was written")
+                    "was written"
+                )
                 rep.skipped.append(DLSSD)
             elif not fam:
                 log("      no nvngx_dlssd build could be listed")
@@ -4253,19 +4902,23 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 # on rather than ending the install over an extra.
                 try:
                     rr_was = pe.file_version(have)
-                    rr_entry = _place_family(fam, opt.dlssd, have, rep, root,
-                                             dl, DLSSD, "dlssd", log)
+                    rr_entry = _place_family(
+                        fam, opt.dlssd, have, rep, root, dl, DLSSD, "dlssd", log
+                    )
                 except PermissionError:
-                    raise      # the game is running: that answer is better
+                    raise  # the game is running: that answer is better
                 except (sources.RateLimited, sources.Unavailable):
-                    raise      # a server outage has words of its own
+                    raise  # a server outage has words of its own
                 except Exception as ex:
-                    log(f"      nvngx_dlssd could not be fetched ({ex}) - "
-                        f"the game keeps the one it shipped")
+                    log(
+                        f"      nvngx_dlssd could not be fetched ({ex}) - "
+                        f"the game keeps the one it shipped"
+                    )
                     rep.warnings.append(
                         "ray reconstruction was not swapped: the download did "
                         "not arrive. The game keeps the runtime it shipped, "
-                        "and everything else installed normally.")
+                        "and everything else installed normally."
+                    )
                     rep.skipped.append(DLSSD)
                     rr_entry = None
             if rr_entry is not None:
@@ -4273,16 +4926,22 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     where = have.relative_to(root)
                 except ValueError:
                     where = have
-                log(f"      nvngx_dlssd {_swapped(rr_was, rr_entry['label'])}"
-                    f"  ({where})")
-                rep.notes.append(f"ray reconstruction: {rr_entry['label']} "
-                                 f"(the game's own is backed up and comes "
-                                 f"back on uninstall)")
-                rep.notes.append("a launcher that verifies its files will put "
-                                 "its own nvngx_dlssd.dll back, and an online "
-                                 "game's anti-cheat can treat a changed file "
-                                 "as tampering - this is a single-player "
-                                 "swap")
+                log(
+                    f"      nvngx_dlssd {_swapped(rr_was, rr_entry['label'])}"
+                    f"  ({where})"
+                )
+                rep.notes.append(
+                    f"ray reconstruction: {rr_entry['label']} "
+                    f"(the game's own is backed up and comes "
+                    f"back on uninstall)"
+                )
+                rep.notes.append(
+                    "a launcher that verifies its files will put "
+                    "its own nvngx_dlssd.dll back, and an online "
+                    "game's anti-cheat can treat a changed file "
+                    "as tampering - this is a single-player "
+                    "swap"
+                )
                 rep.components["dlssd"] = rr_entry["label"]
 
         if opt.path == STANDALONE:
@@ -4295,23 +4954,32 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 log("      a nvngx_dlssg.dll is already here, left untouched")
                 rep.skipped.append(DLSSG)
             elif not fam:
-                log("      no nvngx_dlssg build could be listed - frame "
-                    "generation stays off")
-                rep.notes.append("frame generation needs nvngx_dlssg.dll, not "
-                                 "fetched (no source listed one); neural "
-                                 "rendering and DLAA/DLSS SR still run")
+                log(
+                    "      no nvngx_dlssg build could be listed - frame "
+                    "generation stays off"
+                )
+                rep.notes.append(
+                    "frame generation needs nvngx_dlssg.dll, not "
+                    "fetched (no source listed one); neural "
+                    "rendering and DLAA/DLSS SR still run"
+                )
                 rep.skipped.append(DLSSG)
             else:
                 g_was = pe.file_version(root / DLSSG)
-                e = _place_family(fam, None, root / DLSSG, rep, root, dl,
-                                  DLSSG, "dlssg", log)
-                log(f"      nvngx_dlssg {_swapped(g_was, e['label'])} "
-                    f"(frame generation)")
+                e = _place_family(
+                    fam, None, root / DLSSG, rep, root, dl, DLSSG, "dlssg", log
+                )
+                log(
+                    f"      nvngx_dlssg {_swapped(g_was, e['label'])} "
+                    f"(frame generation)"
+                )
                 rep.notes.append(f"dlssg version: {e['label']}")
                 rep.components["dlssg"] = e["label"]
                 if sm is not None and sm < 89:
-                    fg = ("frame generation needs an RTX 40 or 50 card; on "
-                          "this one the add-on falls back to real frames")
+                    fg = (
+                        "frame generation needs an RTX 40 or 50 card; on "
+                        "this one the add-on falls back to real frames"
+                    )
                     log(f"      {fg}")
                     rep.notes.append(fg)
 
@@ -4329,14 +4997,20 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 begin("RTX 40 multi-frame generation")
                 taken = {refw.DINPUT8} if reengine.detected(root) else set()
                 try:
-                    mtag, mfiles = mfg.install(root, g.exe, log, taken=taken,
-                                               preinstalled=rep.preinstalled)
+                    mtag, mfiles = mfg.install(
+                        root, g.exe, log, taken=taken, preinstalled=rep.preinstalled
+                    )
                 # An opt-in extra: whatever stops it - a project that changed
                 # shape (#141), GitHub's rate limit, a proxy page - is a
                 # warning, not the end of an install that is otherwise done.
                 # mfg.install checks both archives before it writes a file.
-                except (mfg.NoLoaderName, mfg.ShapeChanged, sources.RateLimited,
-                        sources.Unavailable, net.WrongContent) as e:
+                except (
+                    mfg.NoLoaderName,
+                    mfg.ShapeChanged,
+                    sources.RateLimited,
+                    sources.Unavailable,
+                    net.WrongContent,
+                ) as e:
                     log(f"      multi-frame generation skipped: {e}")
                     rep.warnings.append(f"multi-frame generation not enabled: {e}")
                     mtag, mfiles = "", []
@@ -4350,11 +5024,13 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     f"RTX 40 - pick the multiplier in ReShade's DLSS MFG tab "
                     f"(Follow game / fixed / Dynamic). The game's own DLSS "
                     f"Frame Generation must be ON; the unlock raises its "
-                    f"multiplier, it does not add frame generation")
+                    f"multiplier, it does not add frame generation"
+                )
                 rep.warnings.append(
                     "multi-frame generation on RTX 40 is research software: "
                     "artifacts, a frozen picture or a crash are possible at "
-                    "the higher multipliers, and on Vulkan")
+                    "the higher multipliers, and on Vulkan"
+                )
             elif not ok_mfg:
                 log(f"      multi-frame generation skipped: {why_mfg}")
                 rep.warnings.append(f"multi-frame generation not enabled: {why_mfg}")
@@ -4376,22 +5052,30 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             reshade_ini.write_preset(root, opt.provider)
             src = reshade_ini.carry_over(root, [Path(x) for x in prefs.installs()])
             if src is not None:
-                log(f"      your ReShade keys and overlay settings carried over "
-                    f"from {src.parent.name}")
-                rep.notes.append(f"ReShade key bindings and overlay settings "
-                                 f"carried over from {src.parent.name}")
+                log(
+                    f"      your ReShade keys and overlay settings carried over "
+                    f"from {src.parent.name}"
+                )
+                rep.notes.append(
+                    f"ReShade key bindings and overlay settings "
+                    f"carried over from {src.parent.name}"
+                )
             rep.written += ["ReShade.ini", "ReShadePreset.ini"]
             label, tech, _ = reshade_ini.PROVIDERS[opt.provider]
             log(f"      DLSS5_MV_PROVIDER={opt.provider} ({label})")
             if tech:
                 log(f"      technique order: {tech} -> {reshade_ini.FEED_TECHNIQUE}")
             elif opt.provider == reshade_ini.BUILTIN:
-                rep.notes.append("Motion vectors: DLSS5_Feed.fx's own, built in - "
-                                 "nothing else to install or enable.")
+                rep.notes.append(
+                    "Motion vectors: DLSS5_Feed.fx's own, built in - "
+                    "nothing else to install or enable."
+                )
             else:
-                rep.notes.append("You must install your chosen provider's shader "
-                                 "yourself, and place its technique ABOVE DLSS 5 "
-                                 "Feed in ReShade.")
+                rep.notes.append(
+                    "You must install your chosen provider's shader "
+                    "yourself, and place its technique ABOVE DLSS 5 "
+                    "Feed in ReShade."
+                )
         else:
             # Native and bridge hook the game's real NGX calls, so there is no
             # effect to compile and no technique order to get right. ReShade
@@ -4401,13 +5085,15 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             _ask_for_the_pass(root, opt, log)
             if opt.path == ROUTE_RENODX:
                 _held = reshade_ini.enable_renodx_dlss_nr(
-                    root, g.exe.name if g.exe else "")
+                    root, g.exe.name if g.exe else ""
+                )
                 log("      [RENODX-DLSS] NeuralRenderingEnabled=1")
                 if _held == "kept":
                     rep.notes.append(
                         f"DirectNeuralRenderingHookStage is already set in "
                         f"ReShade.ini and was left as it is - set it to 0 if "
-                        f"{g.exe.name} closes itself at start.")
+                        f"{g.exe.name} closes itself at start."
+                    )
                 elif _held:
                     log("      [RENODX-DLSS] DirectNeuralRenderingHookStage=0")
                     rep.notes.append(
@@ -4415,19 +5101,24 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                         f"hooked at start, so it starts with the hook off "
                         f"(DirectNeuralRenderingHookStage=0 in ReShade.ini). "
                         f"Start the game, open the ReShade overlay (Home) and "
-                        f"switch neural rendering on there.")
+                        f"switch neural rendering on there."
+                    )
             if opt.path == UPSTREAM:
-                rep.notes.append("neural-upstream is configured from its 'NR "
-                                 "Pre-Upscale' tab in the ReShade overlay. With "
-                                 "DLSS Frame Generation on, set its cadence to "
-                                 "Quality (every frame) or expect stutter.")
-                rep.notes.append("If the picture only gets darker, the add-on "
-                                 "is not reading the game's exposure buffer "
-                                 "(it normalises the frame against it, and "
-                                 "some games do not expose one). There is no "
-                                 "setting for that: switch the route to "
-                                 "native, which runs after the game's own "
-                                 "tone mapping.")
+                rep.notes.append(
+                    "neural-upstream is configured from its 'NR "
+                    "Pre-Upscale' tab in the ReShade overlay. With "
+                    "DLSS Frame Generation on, set its cadence to "
+                    "Quality (every frame) or expect stutter."
+                )
+                rep.notes.append(
+                    "If the picture only gets darker, the add-on "
+                    "is not reading the game's exposure buffer "
+                    "(it normalises the frame against it, and "
+                    "some games do not expose one). There is no "
+                    "setting for that: switch the route to "
+                    "native, which runs after the game's own "
+                    "tone mapping."
+                )
             rep.written.append("ReShade.ini")
             if opt.path == UPLIFT:
                 # Uplift.fx has to compile for the add-on's technique and
@@ -4439,36 +5130,45 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                     f"ReShade ({reshade_ini.overlay_key_name()}), go to the GITC "
                     f"Uplift tab and tick Enable. The card at the top of that tab "
                     f"says whether it is working and what to do if not; its "
-                    f"lines in ReShade.log start with [Uplift].")
+                    f"lines in ReShade.log start with [Uplift]."
+                )
             elif opt.path == STANDALONE:
                 # Search paths so ReShade can compile the two shaders; no
                 # technique in any preset - the add-on schedules them itself
                 # inside its Present callback, in the order it needs.
                 reshade_ini.write_shader_paths(root)
-                log("      shader search paths set, no technique enabled - the "
-                    "add-on runs DLSS5_AIO_Feed and VORT itself")
+                log(
+                    "      shader search paths set, no technique enabled - the "
+                    "add-on runs DLSS5_AIO_Feed and VORT itself"
+                )
                 # "F10 compares, F10 opens ReShade" is what this line read
                 # when the person picked F10 anyway, after being warned.
                 # One key with two jobs is worth a sentence, not a
                 # contradiction (gate 1.9.1).
                 _ovl = reshade_ini.overlay_key_name()
-                _keys = ("F10 compares and also opens ReShade - you picked it "
-                         "for the overlay, so one of the two will win"
-                         if _ovl == "F10" else
-                         f"F10 compares, {_ovl} opens ReShade")
-                rep.notes.append("standalone-dlssnr: turn the game's own DLSS, "
-                                 "frame generation and anti-aliasing OFF. Game "
-                                 "resolution = the monitor's gives DLAA, a lower "
-                                 f"one gives DLSS Super Resolution. {_keys}"
-                                 "; leave DLSS5_AIO_Feed and "
-                                 "vort_MotionEffects unticked, the add-on runs "
-                                 "them. Its log is outside the game folder: "
-                                 "%LOCALAPPDATA%\\RHI\\Logs\\standalone-dlssnr.log")
+                _keys = (
+                    "F10 compares and also opens ReShade - you picked it "
+                    "for the overlay, so one of the two will win"
+                    if _ovl == "F10"
+                    else f"F10 compares, {_ovl} opens ReShade"
+                )
+                rep.notes.append(
+                    "standalone-dlssnr: turn the game's own DLSS, "
+                    "frame generation and anti-aliasing OFF. Game "
+                    "resolution = the monitor's gives DLAA, a lower "
+                    f"one gives DLSS Super Resolution. {_keys}"
+                    "; leave DLSS5_AIO_Feed and "
+                    "vort_MotionEffects unticked, the add-on runs "
+                    "them. Its log is outside the game folder: "
+                    "%LOCALAPPDATA%\\RHI\\Logs\\standalone-dlssnr.log"
+                )
             else:
                 log("      add-on loading enabled (no shaders needed on this path)")
-                rep.notes.append("ReShade's overlay will report 'no .fx files found' "
-                                 "on this route - normal, no shaders are used; the "
-                                 "add-on tab is what matters")
+                rep.notes.append(
+                    "ReShade's overlay will report 'no .fx files found' "
+                    "on this route - normal, no shaders are used; the "
+                    "add-on tab is what matters"
+                )
 
         # The overlay key, last: carry_over above copies the [INPUT] section
         # from another game and would otherwise put the old binding back.
@@ -4484,16 +5184,21 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 # manifest: an unwritable ReShade.ini here would have left a
                 # fully set-up folder with no record of it. And having said
                 # it could not be written, it must not then announce a key.
-                log(f"      could not write the overlay key ({e}) - "
-                    f"ReShade keeps its own")
+                log(
+                    f"      could not write the overlay key ({e}) - "
+                    f"ReShade keeps its own"
+                )
                 written = False
-            name = next((k for k, v in reshade_ini.OVERLAY_KEYS.items()
-                         if v == _key), f"0x{_key:02X}")
+            name = next(
+                (k for k, v in reshade_ini.OVERLAY_KEYS.items() if v == _key),
+                f"0x{_key:02X}",
+            )
             if written:
                 log(f"      ReShade overlay opens on {name}")
                 rep.notes.append(
                     f"ReShade's overlay opens on {name}"
-                    + ("" if name == "Home" else ", not Home"))
+                    + ("" if name == "Home" else ", not Home")
+                )
 
         # --- 10) dlss5-feed.cfg ----------------------------------------------
         if opt.path == FEEDER:
@@ -4511,7 +5216,7 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
         elif opt.path == BRIDGE:
             begin("dlss5-bridge.cfg")
             cfg = feedcfg.bridge_defaults(opt.native_dlss)
-            cfg.update(opt.feed)          # user overrides (ofa_grid, ofa_perf)
+            cfg.update(opt.feed)  # user overrides (ofa_grid, ofa_perf)
             if (root / feedcfg.BRIDGE_NAME).is_file():
                 log("      merging into the existing dlss5-bridge.cfg")
             _backup(root / feedcfg.BRIDGE_NAME, rep, root)
@@ -4521,16 +5226,22 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 log(f"      {line}")
                 rep.notes.append(line)
             if not opt.native_dlss:
-                log("      the bridge will build a synthetic contract from the "
-                    "driver's optical flow engine")
+                log(
+                    "      the bridge will build a synthetic contract from the "
+                    "driver's optical flow engine"
+                )
 
     except PermissionError as e:
         note_failure(root, e)
-        recorded = _write_manifest(root, g, opt, rep, oproxy or proxy, level, complete=False)
+        recorded = _write_manifest(
+            root, g, opt, rep, oproxy or proxy, level, complete=False
+        )
         # A fresh install is taken back out here too (gate 2.0.6): a locked
         # file stopped it just as surely as a failed download. _roll_back
         # says so itself when the lock also keeps the clean-up from finishing.
-        left = _roll_back(g, root, rep, fresh, log, replaced=switched, recorded=recorded)
+        left = _roll_back(
+            g, root, rep, fresh, log, replaced=switched, recorded=recorded
+        )
         log("")
         log(f"Windows refused to write a file: {e}")
         # The cause after what was taken out: the result card shows all
@@ -4541,14 +5252,21 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             f"{left}\n\nWindows refused to write a file:\n{e}\n\n"
             f"Almost always this means the game (or its launcher) is running "
             f"and holding the file open. "
-            + ("Close the game first, then delete and rename the files listed "
-               "above, and install again."
-               if left.startswith(NO_RECORD_HEAD) else
-               "Close it and run the install again.")) from e
+            + (
+                "Close the game first, then delete and rename the files listed "
+                "above, and install again."
+                if left.startswith(NO_RECORD_HEAD)
+                else "Close it and run the install again."
+            )
+        ) from e
     except (sources.RateLimited, sources.Unavailable) as e:
         note_failure(root, e)
-        recorded = _write_manifest(root, g, opt, rep, oproxy or proxy, level, complete=False)
-        left = _roll_back(g, root, rep, fresh, log, replaced=switched, recorded=recorded)
+        recorded = _write_manifest(
+            root, g, opt, rep, oproxy or proxy, level, complete=False
+        )
+        left = _roll_back(
+            g, root, rep, fresh, log, replaced=switched, recorded=recorded
+        )
         log("")
         log(str(e))
         # The cause last: the window's result card shows the last line.
@@ -4572,22 +5290,38 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
                 note = net.STOP_NOTE + said[:400]
         if note:
             rep.notes.append(note)
-        recorded = _write_manifest(root, g, opt, rep, oproxy or proxy, level, complete=False)
-        left = _roll_back(g, root, rep, fresh, log, keep_note=note, replaced=switched,
-                          recorded=recorded,
-                          rewrite=lambda: _write_manifest(
-                              root, g, opt, rep, oproxy or proxy, level,
-                              complete=False))
+        recorded = _write_manifest(
+            root, g, opt, rep, oproxy or proxy, level, complete=False
+        )
+        left = _roll_back(
+            g,
+            root,
+            rep,
+            fresh,
+            log,
+            keep_note=note,
+            replaced=switched,
+            recorded=recorded,
+            rewrite=lambda: _write_manifest(
+                root, g, opt, rep, oproxy or proxy, level, complete=False
+            ),
+        )
         if net.is_disk_full(e):
-            raise InstallError(f"{left}\n\n"
-                               + net.disk_full_message(e, root, net.CACHE)) from e
+            raise InstallError(
+                f"{left}\n\n" + net.disk_full_message(e, root, net.CACHE)
+            ) from e
         # A connection that failed for a reason with a name (#434's blocked
         # socket, #438's cut handshake): said in words with the host, not
         # as a traceback in the window.
         # Never on the install's own refusal: its words are its own, and one
         # that happened to say "timed out" is not a failed connection.
-        kind = (e.kind if isinstance(e, net.Unreachable)
-                else "" if isinstance(e, InstallError) else net.net_kind(e))
+        kind = (
+            e.kind
+            if isinstance(e, net.Unreachable)
+            else ""
+            if isinstance(e, InstallError)
+            else net.net_kind(e)
+        )
         if kind:
             if isinstance(e, net.Unreachable):
                 said = str(e)
@@ -4624,17 +5358,22 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
             f"scanners flag them; the detections are false positives on "
             f"software this tool downloads from its publishers, not on the "
             f"tool. Restore them from your antivirus quarantine and add this "
-            f"game folder to its exclusions, then install again.")
+            f"game folder to its exclusions, then install again."
+        )
         log("")
-        log(f"      !! {len(missing)} files vanished after being written "
-            f"- check your antivirus quarantine")
+        log(
+            f"      !! {len(missing)} files vanished after being written "
+            f"- check your antivirus quarantine"
+        )
         for m in missing[:8]:
             log(f"         {m}")
 
     # --- record -----------------------------------------------------------
-    clear_failure(root)     # this folder's last failure is history now
+    clear_failure(root)  # this folder's last failure is history now
     _set_gpu_pref(root, g, opt, rep, log)
-    _finish_record(_write_manifest(root, g, opt, rep, proxy, level, complete=True), rep, log)
+    _finish_record(
+        _write_manifest(root, g, opt, rep, proxy, level, complete=True), rep, log
+    )
     if not record_lost(rep):
         prefs.add_install(root)
     prog(100, "Done")
@@ -4643,17 +5382,20 @@ def install(g: games.Game, opt: Options, on_step=None, on_prog=None, on_log=None
 
 # ---------------------------------------------------------------- uninstall
 
+
 def machine_leftover_text(left) -> str:
     """What is still registered for all users, and the one thing that takes
     it off. One sentence for the uninstall log, the window and the CLI: after
     the last uninstall there is no game left to press a button on, so the
     step is starting the tool, which cleans up by itself (vulkan.
     cleanup_machine)."""
-    return (f"still registered for all users: ReShade's Vulkan layer "
-            f"({', '.join(left)} in {vulkan.machine_dir()}). It loads into "
-            f"every Vulkan program on this PC, and removing it needs "
-            f"administrator rights: start this tool once as administrator "
-            f"and it takes it off.")
+    return (
+        f"still registered for all users: ReShade's Vulkan layer "
+        f"({', '.join(left)} in {vulkan.machine_dir()}). It loads into "
+        f"every Vulkan program on this PC, and removing it needs "
+        f"administrator rights: start this tool once as administrator "
+        f"and it takes it off."
+    )
 
 
 def uninstall(g: games.Game, on_log=None) -> list[str]:
@@ -4675,24 +5417,39 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
             # v1.0/v1.1 used Turkish keys
             files = data.get("files") or data.get("dosyalar") or []
             if found_man != man:
-                log(f"found an install recorded by an older version "
-                    f"({found_man.name})")
+                log(f"found an install recorded by an older version ({found_man.name})")
         except (OSError, json.JSONDecodeError):
             files = []
             data = {}
     else:
-        files = [FEEDER_ADDON64, FEEDER_ADDON32, FEEDER_HELPER64, RENODX, RENODX_SF, UPSTREAM_ADDON,
-                 STANDALONE_ADDON, DLSSNR, DLSS, DLSSG,
-                 BRIDGE_ADDON, BRIDGE_CFG, feedcfg.NAME,
-                 # dgVoodoo2 was the DX9 translation until 1.6.0. Its files
-                 # stay on this list so an install made by an older release
-                 # still cleans up completely.
-                 "dgVoodoo.conf", "dgVoodooCpl.exe",
-                 "ReShade.ini", "ReShadePreset.ini",
-                 str(SHADERS / FEEDER_FX), str(SHADERS / STANDALONE_FX),
-                 str(SHADERS / VORT_FX), str(TEXTURES / VORT_TEXTURE),
-                 *mfg.FILES,
-                 *(f"{mfg.PLUGINS_DIR}/{n}" for n in mfg.PLUGIN_FILES)]
+        files = [
+            FEEDER_ADDON64,
+            FEEDER_ADDON32,
+            FEEDER_HELPER64,
+            RENODX,
+            RENODX_SF,
+            UPSTREAM_ADDON,
+            STANDALONE_ADDON,
+            DLSSNR,
+            DLSS,
+            DLSSG,
+            BRIDGE_ADDON,
+            BRIDGE_CFG,
+            feedcfg.NAME,
+            # dgVoodoo2 was the DX9 translation until 1.6.0. Its files
+            # stay on this list so an install made by an older release
+            # still cleans up completely.
+            "dgVoodoo.conf",
+            "dgVoodooCpl.exe",
+            "ReShade.ini",
+            "ReShadePreset.ini",
+            str(SHADERS / FEEDER_FX),
+            str(SHADERS / STANDALONE_FX),
+            str(SHADERS / VORT_FX),
+            str(TEXTURES / VORT_TEXTURE),
+            *mfg.FILES,
+            *(f"{mfg.PLUGINS_DIR}/{n}" for n in mfg.PLUGIN_FILES),
+        ]
         # A d3d9.dll here is ours (DXVK, or dgVoodoo2 from an older release)
         # UNLESS the folder is a Remix game, where that name belongs to the
         # Remix bridge client. With no manifest to tell them apart the Remix
@@ -4722,27 +5479,33 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
         if (root / STANDALONE_ADDON).is_file():
             files.append(STANDALONE_BRIDGE)
         try:
-            files += [str(VORT_INCLUDE / f.name)
-                      for f in (root / VORT_INCLUDE).glob("vort_*.fxh")]
+            files += [
+                str(VORT_INCLUDE / f.name)
+                for f in (root / VORT_INCLUDE).glob("vort_*.fxh")
+            ]
         except OSError:
             pass
         files += [str(SHADERS / h) for h in sources.RESHADE_HEADERS]
         # LumeniteFX shaders/includes/texture we may have dropped in
         for d_ in (SHADERS, INCLUDE):
             try:
-                files += [str(Path(d_) / f.name)
-                          for f in (root / d_).glob("lumenite_*")]
+                files += [
+                    str(Path(d_) / f.name) for f in (root / d_).glob("lumenite_*")
+                ]
             except OSError:
                 pass
         try:
-            files += [str(Path(TEXTURES) / f.name)
-                      for f in (root / TEXTURES).glob("lumenite_*")]
+            files += [
+                str(Path(TEXTURES) / f.name)
+                for f in (root / TEXTURES).glob("lumenite_*")
+            ]
         except OSError:
             pass
         # ReShade under any of the other names it can load as - only when
         # the file really is ReShade, a game's own d3d11.dll stays.
-        files += [n for n in RESHADE_PROXIES
-                  if n not in files and _is_reshade(root / n)]
+        files += [
+            n for n in RESHADE_PROXIES if n not in files and _is_reshade(root / n)
+        ]
         # REFramework's dinput8.dll, same reasoning: a real one the person
         # put there themselves - or is still using for something else -
         # stays untouched unless it is confirmed to be ours by content.
@@ -4751,7 +5514,9 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
         # A runtime the dlss page updated sits beside the game's own under
         # dlssupdate's suffix: it is the game's runtime, not a file of ours
         # to delete by name.
-        files = [f for f in files if not (root / (f + ".dlss5-dlss-original")).is_file()]
+        files = [
+            f for f in files if not (root / (f + ".dlss5-dlss-original")).is_file()
+        ]
         log("No install record found; cleaning up by known filenames.")
 
     # The manifest is a file in the game folder, and anything can write it -
@@ -4785,8 +5550,10 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
             if not _permitted(rel):
                 raise net.OutsideError(rel)
         except net.OutsideError:
-            log(f"ignored an install record entry that points outside the "
-                f"game folder: {rel}")
+            log(
+                f"ignored an install record entry that points outside the "
+                f"game folder: {rel}"
+            )
             continue
         safe.append(rel)
     files = safe
@@ -4820,11 +5587,12 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
                 p = gf / h
                 if root in p.parents or str(p) in files:
                     continue
-                twin = str(p)[:-len(BACKUP_SUFFIX)].replace("\\", "/").lower()
+                twin = str(p)[: -len(BACKUP_SUFFIX)].replace("\\", "/").lower()
                 rel_twin = ""
                 try:
-                    rel_twin = str(Path(twin).relative_to(gf)).replace(
-                        "\\", "/").lower()
+                    rel_twin = (
+                        str(Path(twin).relative_to(gf)).replace("\\", "/").lower()
+                    )
                 except ValueError:
                     pass
                 claimed = twin in mine or (rel_twin and rel_twin in mine)
@@ -4842,7 +5610,7 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
         if suffix is None:
             continue
         bak = root / rel
-        orig = bak.with_name(bak.name[:-len(suffix)])
+        orig = bak.with_name(bak.name[: -len(suffix)])
         try:
             if bak.is_file():
                 shutil.copy2(bak, orig)
@@ -4874,16 +5642,20 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
             if conf_p is None:
                 raise net.OutsideError(str(rx["conf"]))
         except net.OutsideError:
-            log(f"ignored a Remix configuration path outside the game "
-                f"folder: {rx['conf']}")
+            log(
+                f"ignored a Remix configuration path outside the game "
+                f"folder: {rx['conf']}"
+            )
             conf_p = None
         try:
             if conf_p is not None and remix.remove_option(
-                    conf_p, rx["key"],
-                    bool(rx.get("conf_final_newline", True))):
+                conf_p, rx["key"], bool(rx.get("conf_final_newline", True))
+            ):
                 removed.append(f"{rx['conf']} ({rx['key']})")
-                log(f"removed: {rx['key']} from {rx['conf']} "
-                    f"(nothing else in the file was touched)")
+                log(
+                    f"removed: {rx['key']} from {rx['conf']} "
+                    f"(nothing else in the file was touched)"
+                )
         except OSError as e:
             log(f"could not edit {rx['conf']}: {e}")
 
@@ -4907,7 +5679,7 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
     for rel in files:
         s = next((s for s in all_suffixes if rel.endswith(s)), None)
         if s:
-            restored.add(_key(rel[:-len(s)]))
+            restored.add(_key(rel[: -len(s)]))
     stuck: list[str] = []
     for rel in files:
         if any(rel.endswith(s) for s in all_suffixes) or _key(rel) in restored:
@@ -4920,8 +5692,10 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
             log(f"removed: {rel}")
         else:
             stuck.append(rel)
-            log(f"could not remove: {rel} (locked - is the game or its "
-                f"launcher still running?)")
+            log(
+                f"could not remove: {rel} (locked - is the game or its "
+                f"launcher still running?)"
+            )
 
     hostdir = root / HOST_DIR
     if hostdir.is_dir():
@@ -4959,8 +5733,10 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
     try:
         if logs.is_dir():
             for f in list(logs.glob("*")):
-                if f.is_file() and (f.name.lower().startswith("optiscaler")
-                                    or f.suffix.lower() == ".log"):
+                if f.is_file() and (
+                    f.name.lower().startswith("optiscaler")
+                    or f.suffix.lower() == ".log"
+                ):
                     f.unlink()
                     removed.append(f"{OPTI_LOG_DIR}/{f.name}")
             if not any(logs.iterdir()):
@@ -4984,6 +5760,7 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
     # for every folder the tool has ever touched.
     try:
         from . import autotune
+
         autotune.forget(root)
     except Exception:
         pass
@@ -5003,14 +5780,16 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
     try:
         if str(root) in prefs.openxr_games():
             from . import openxr
+
             still_xr = prefs.drop_openxr_game(root)
             if still_xr:
-                log(f"kept the OpenXR layer: {len(still_xr)} other VR "
-                    f"install(s) still use it")
+                log(
+                    f"kept the OpenXR layer: {len(still_xr)} other VR "
+                    f"install(s) still use it"
+                )
             elif openxr.unregister():
                 removed.append("OpenXR layer registration")
-                log("removed: our ReShade OpenXR layer registration "
-                    "(no VR games left)")
+                log("removed: our ReShade OpenXR layer registration (no VR games left)")
     except Exception:
         pass
     try:
@@ -5018,12 +5797,16 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
         if was_vulkan:
             still = prefs.drop_vulkan_game(root)
             if still:
-                log(f"kept the Vulkan layer: {len(still)} other Vulkan "
-                    f"install(s) still use it")
+                log(
+                    f"kept the Vulkan layer: {len(still)} other Vulkan "
+                    f"install(s) still use it"
+                )
             elif vulkan.unregister():
                 removed.append("Vulkan layer registration")
-                log("removed: our ReShade Vulkan layer registration "
-                    "(no Vulkan games left)")
+                log(
+                    "removed: our ReShade Vulkan layer registration "
+                    "(no Vulkan games left)"
+                )
     except Exception:
         pass
     # The machine's list: written by an install that ran as administrator,
@@ -5047,8 +5830,13 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
     # OptiScaler's zip alone brings D3D12_Optiscaler, DlssOverrides and
     # Licenses; deleting the files and leaving the folders looked like an
     # uninstall that "does not remove everything".
-    dirs: set[Path] = {root / INCLUDE, root / VORT_INCLUDE, root / SHADERS,
-                       root / TEXTURES, root / "reshade-shaders"}
+    dirs: set[Path] = {
+        root / INCLUDE,
+        root / VORT_INCLUDE,
+        root / SHADERS,
+        root / TEXTURES,
+        root / "reshade-shaders",
+    }
     for rel in files + removed:
         p = root / rel
         for parent in p.parents:
@@ -5072,15 +5860,20 @@ def uninstall(g: games.Game, on_log=None) -> list[str]:
             data = {}
         data["files"] = stuck
         data["complete"] = False
-        data["notes"] = [f"uninstall left {len(stuck)} locked file(s); run it "
-                         f"again with the game closed"]
+        data["notes"] = [
+            f"uninstall left {len(stuck)} locked file(s); run it "
+            f"again with the game closed"
+        ]
         try:
-            man.write_text(json.dumps(data, ensure_ascii=False, indent=2),
-                           encoding="utf8")
+            man.write_text(
+                json.dumps(data, ensure_ascii=False, indent=2), encoding="utf8"
+            )
         except OSError:
             pass
-        log(f"Removed {len(removed)} items; {len(stuck)} could not be removed. "
-            f"Close the game and its launcher, then uninstall again.")
+        log(
+            f"Removed {len(removed)} items; {len(stuck)} could not be removed. "
+            f"Close the game and its launcher, then uninstall again."
+        )
         _forget_walk(g, root)
         return removed
     man.unlink(missing_ok=True)
@@ -5111,6 +5904,7 @@ def _delete(p: Path, attempts: int = 4) -> bool:
     game exits; a single failed unlink used to count as "cannot delete".
     """
     import time
+
     for i in range(attempts):
         try:
             p.unlink()
@@ -5126,6 +5920,7 @@ def _delete(p: Path, attempts: int = 4) -> bool:
     # Read-only attribute set by a game updater? Clear it and try once more.
     try:
         import stat
+
         p.chmod(p.stat().st_mode | stat.S_IWRITE)
         p.unlink()
         return True

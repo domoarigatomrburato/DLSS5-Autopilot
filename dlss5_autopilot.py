@@ -51,6 +51,7 @@ the dll the first time; the tool keeps a copy, and after that its name is
 enough: sm86, sm86-winmm, sm86-dxgi, sm86-d3d12, sm86-dbghelp or enabler.
 Experimental, and out again on --remove.
 """
+
 from __future__ import annotations
 
 import sys
@@ -59,8 +60,17 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core import (community, dlss, games, gpu, installer,  # noqa: E402
-                  optiscaler, prefs, reshade_ini, update)
+from core import (
+    community,
+    dlss,
+    games,
+    gpu,
+    installer,  # noqa: E402
+    optiscaler,
+    prefs,
+    reshade_ini,
+    update,
+)
 
 
 def _console() -> None:
@@ -68,12 +78,15 @@ def _console() -> None:
     terminal when run from one - otherwise CLI output goes nowhere."""
     try:
         import ctypes
+
         ATTACH_PARENT = -1
         if ctypes.windll.kernel32.AttachConsole(ATTACH_PARENT):
-            sys.stdout = open("CONOUT$", "w", encoding="utf-8", errors="replace",
-                              buffering=1)
-            sys.stderr = open("CONOUT$", "w", encoding="utf-8", errors="replace",
-                              buffering=1)
+            sys.stdout = open(
+                "CONOUT$", "w", encoding="utf-8", errors="replace", buffering=1
+            )
+            sys.stderr = open(
+                "CONOUT$", "w", encoding="utf-8", errors="replace", buffering=1
+            )
             return
     except Exception:
         pass
@@ -84,10 +97,20 @@ def _console() -> None:
         pass
 
 
-def cli(target: Path, remove: bool, check: bool, route: str = "",
-        dxvk: bool | None = None, game=None, remix_swap: bool = False,
-        vr: bool = False, opti_build: str = "", gpu_pref: bool = True,
-        own_fg: str = "", feed_helper: bool = False) -> int:
+def cli(
+    target: Path,
+    remove: bool,
+    check: bool,
+    route: str = "",
+    dxvk: bool | None = None,
+    game=None,
+    remix_swap: bool = False,
+    vr: bool = False,
+    opti_build: str = "",
+    gpu_pref: bool = True,
+    own_fg: str = "",
+    feed_helper: bool = False,
+) -> int:
     g = game or games.manual(target)
     if not g.exe:
         print(f"error: no executable found in {target}", file=sys.stderr)
@@ -95,14 +118,23 @@ def cli(target: Path, remove: bool, check: bool, route: str = "",
     need = installer.wants_dxvk(g)
     use_dxvk = bool(need) if dxvk is None else dxvk
     card, sm = gpu.detect()
-    sup = dlss.detect(g.install_dir, g.folder, g.api, g.bitness or 0, sm,
-                      driver=gpu.driver_version(), shared=community.cached(),
-                      exe=g.exe)
+    sup = dlss.detect(
+        g.install_dir,
+        g.folder,
+        g.api,
+        g.bitness or 0,
+        sm,
+        driver=gpu.driver_version(),
+        shared=community.cached(),
+        exe=g.exe,
+    )
     level, why_rel = installer.reliability(g, sup.recommended)
     print(f"game    : {g.name}")
     if card:
         drv = gpu.driver_version()
-        print(f"gpu     : {card} ({gpu.label(sm)})" + (f"  driver {drv}" if drv else ""))
+        print(
+            f"gpu     : {card} ({gpu.label(sm)})" + (f"  driver {drv}" if drv else "")
+        )
         # ...the warning itself is printed after --route has had its say,
         # a few lines below: it depends on which route is actually used.
     else:
@@ -117,8 +149,11 @@ def cli(target: Path, remove: bool, check: bool, route: str = "",
     print(f"arch    : {g.bit_label}   API: {g.api} ({g.api_why})")
     if route:
         if route not in sup.options:
-            print(f"error: route '{route}' is not available for this game "
-                  f"(options: {', '.join(sup.options)})", file=sys.stderr)
+            print(
+                f"error: route '{route}' is not available for this game "
+                f"(options: {', '.join(sup.options)})",
+                file=sys.stderr,
+            )
             return 1
         sup.recommended = route
         # An explicit --route is the answer; the reason and the outlook
@@ -130,33 +165,39 @@ def cli(target: Path, remove: bool, check: bool, route: str = "",
         # The same warning the install page shows, for the route that will
         # actually be installed. A command-line install on a driver that
         # cannot run any of this used to proceed in silence.
-        warn = dlss.driver_warning(sup.recommended, gpu.driver_version(),
-                                   offered=sup.options)
+        warn = dlss.driver_warning(
+            sup.recommended, gpu.driver_version(), offered=sup.options
+        )
         if warn:
             print(f"driver  : {warn}")
-        said = community.driver_note(community.cached(), gpu.driver_version() or "",
-                                     sup.recommended)
+        said = community.driver_note(
+            community.cached(), gpu.driver_version() or "", sup.recommended
+        )
         if said:
             print(f"shared  : {said}")
     print(f"route   : {dlss.LABELS[sup.recommended]}")
     for o in sup.options:
-        usable, note = dlss.fit(o, g.api, sup.native_dlss, sm,
-                                upscaler=sup.upscaler)
-        print(f"          {'*' if o == sup.recommended else ' '} {o:<11}"
-              f"{'' if usable else 'NOT FOR THIS PC - '}{note}")
+        usable, note = dlss.fit(o, g.api, sup.native_dlss, sm, upscaler=sup.upscaler)
+        print(
+            f"          {'*' if o == sup.recommended else ' '} {o:<11}"
+            f"{'' if usable else 'NOT FOR THIS PC - '}{note}"
+        )
     if sup.native_dlss:
-        print(f"          this game ships its own DLSS "
-              f"({', '.join(sup.evidence[:3])})")
+        print(f"          this game ships its own DLSS ({', '.join(sup.evidence[:3])})")
     elif sup.upscaler:
-        print(f"          this game ships {dlss.UPSCALER_NAMES[sup.upscaler]} "
-              f"and no DLSS ({', '.join(sup.upscaler_evidence[:3])})")
+        print(
+            f"          this game ships {dlss.UPSCALER_NAMES[sup.upscaler]} "
+            f"and no DLSS ({', '.join(sup.upscaler_evidence[:3])})"
+        )
     if sup.reason:
         print(f"          {sup.reason}")
     print(f"outlook : {level} - {why_rel}")
     if use_dxvk:
-        print(f"dxvk    : yes - {need + ' closes itself when ReShade hooks it; ' if need else ''}"
-              f"the game will render on Vulkan and ReShade loads as a Vulkan "
-              f"layer (--no-dxvk to turn this off)")
+        print(
+            f"dxvk    : yes - {need + ' closes itself when ReShade hooks it; ' if need else ''}"
+            f"the game will render on Vulkan and ReShade loads as a Vulkan "
+            f"layer (--no-dxvk to turn this off)"
+        )
 
     if own_fg and sup.recommended != installer.OPTI:
         print("note    : --own-fg applies to --route optiscaler only; ignored here")
@@ -168,23 +209,31 @@ def cli(target: Path, remove: bool, check: bool, route: str = "",
         own_fg = ""
     elif own_fg:
         from core import ownfg as _ofg
-        print(f"fg files: {_ofg.label(own_fg)} - {', '.join(_ofg.dests(own_fg))} "
-              f"({_ofg.UNTRIED})")
+
+        print(
+            f"fg files: {_ofg.label(own_fg)} - {', '.join(_ofg.dests(own_fg))} "
+            f"({_ofg.UNTRIED})"
+        )
 
     ok, why = installer.check_supported(g)
     if check:
         # The RTX 40 MFG package on another card is refused by install()
         # before a file is written; --check said "ready" over it (gate
         # 2.0.5). The same check, the same words.
-        refused = (optiscaler.card_refusal(opti_build, sm)
-                   if ok and sup.recommended == installer.OPTI else "")
+        refused = (
+            optiscaler.card_refusal(opti_build, sm)
+            if ok and sup.recommended == installer.OPTI
+            else ""
+        )
         if ok and not refused:
             # the card no route runs on (#770), refused by install() too
             from core import gpu as _gpu
+
             refused = _gpu.no_dlss_here() or ""
         if ok and not refused and own_fg:
-            refused = installer._own_fg_refusal(g.install_dir, installer.Options(
-                path=sup.recommended, own_fg=own_fg))
+            refused = installer._own_fg_refusal(
+                g.install_dir, installer.Options(path=sup.recommended, own_fg=own_fg)
+            )
         print(f"installed: {'yes' if g.installed else 'no'}")
         print(f"status   : {refused or ('ready' if ok else why)}")
         # The one mode whose whole job is "look, write nothing" was the one
@@ -197,11 +246,18 @@ def cli(target: Path, remove: bool, check: bool, route: str = "",
         local, _ = prefs.find_renodx()
         print(f"renodx   : {local.name if local else 'will download from the mirror'}")
         if ok:
-            popt = installer.Options(path=sup.recommended,
-                                     native_dlss=sup.native_dlss, dxvk=use_dxvk, vr=vr, opti_build=opti_build,
-                                     upscaler=sup.upscaler,
-                                     remix_swap=remix_swap, gpu_pref=gpu_pref, own_fg=own_fg,
-                                     feed_helper=feed_helper)
+            popt = installer.Options(
+                path=sup.recommended,
+                native_dlss=sup.native_dlss,
+                dxvk=use_dxvk,
+                vr=vr,
+                opti_build=opti_build,
+                upscaler=sup.upscaler,
+                remix_swap=remix_swap,
+                gpu_pref=gpu_pref,
+                own_fg=own_fg,
+                feed_helper=feed_helper,
+            )
             print(f"plan     : {' -> '.join(installer.plan(g, popt))}")
             # ...and what the MFG package needs from the game, which only
             # the finished install used to say.
@@ -223,17 +279,29 @@ def cli(target: Path, remove: bool, check: bool, route: str = "",
 
     try:
         rep = installer.install(
-            g, installer.Options(path=sup.recommended, native_dlss=sup.native_dlss,
-                                 dxvk=use_dxvk, vr=vr, opti_build=opti_build, upscaler=sup.upscaler,
-                                 remix_swap=remix_swap, gpu_pref=gpu_pref, own_fg=own_fg,
-                                 feed_helper=feed_helper),
+            g,
+            installer.Options(
+                path=sup.recommended,
+                native_dlss=sup.native_dlss,
+                dxvk=use_dxvk,
+                vr=vr,
+                opti_build=opti_build,
+                upscaler=sup.upscaler,
+                remix_swap=remix_swap,
+                gpu_pref=gpu_pref,
+                own_fg=own_fg,
+                feed_helper=feed_helper,
+            ),
             on_log=print,
-            on_prog=lambda p, m: print(f"\r  {p:3d}%  {m:<60}", end="", flush=True))
+            on_prog=lambda p, m: print(f"\r  {p:3d}%  {m:<60}", end="", flush=True),
+        )
     except installer.InstallError as e:
         print(f"\nerror: {e}", file=sys.stderr)
         return 1
     if installer.record_lost(rep):
-        print(f"\n\nInstalled, but no record was saved - {len(rep.written)} files written.")
+        print(
+            f"\n\nInstalled, but no record was saved - {len(rep.written)} files written."
+        )
     else:
         print(f"\n\nDone - {len(rep.written)} files written.")
     for w in rep.warnings:
@@ -242,31 +310,38 @@ def cli(target: Path, remove: bool, check: bool, route: str = "",
     # the Remix menu, so the usual advice would send people to a key that
     # does nothing there.
     if sup.recommended == dlss.REMIX or route == dlss.REMIX:
-        print("In game: press Alt+X, then 'Developer Settings Menu', then the "
-              "Post-Processing tab: 'Enable Neural Uplift (DLSS-NR)'.")
+        print(
+            "In game: press Alt+X, then 'Developer Settings Menu', then the "
+            "Post-Processing tab: 'Enable Neural Uplift (DLSS-NR)'."
+        )
     elif route == dlss.UPLIFT:
-        print(f"In game: press {reshade_ini.overlay_key_name()}, open the GITC "
-              f"Uplift tab and tick Enable - it starts switched off. The card "
-              f"at the top of the tab says whether it is working.")
+        print(
+            f"In game: press {reshade_ini.overlay_key_name()}, open the GITC "
+            f"Uplift tab and tick Enable - it starts switched off. The card "
+            f"at the top of the tab says whether it is working."
+        )
     elif sup.recommended == dlss.FEEDER and g.bitness == 32:
         # See the matching note in gui.py: the DLSS 5 page is in the game's
         # own overlay and drives the 64-bit helper; the helper's separate
         # window must NOT be alt-tabbed to while playing.
-        print(f"In game: press {reshade_ini.overlay_key_name()}, then turn on "
-              f"neural rendering in the "
-              "DLSS 5 page (F6 toggles it) - it drives the 64-bit helper for "
-              "you. Play BORDERLESS or true fullscreen at your display's own "
-              "resolution: in a bordered window the game presents a few "
-              "pixels short and the result never lands on screen. Do NOT "
-              "alt-tab to the helper's window while playing. Turn the game's "
-              "own MSAA/SSAA off.")
+        print(
+            f"In game: press {reshade_ini.overlay_key_name()}, then turn on "
+            f"neural rendering in the "
+            "DLSS 5 page (F6 toggles it) - it drives the 64-bit helper for "
+            "you. Play BORDERLESS or true fullscreen at your display's own "
+            "resolution: in a bordered window the game presents a few "
+            "pixels short and the result never lands on screen. Do NOT "
+            "alt-tab to the helper's window while playing. Turn the game's "
+            "own MSAA/SSAA off."
+        )
     else:
         # The route's own key, not ReShade's: OptiScaler opens on Insert.
-        _dflt = (optiscaler.OVERLAY_KEY if sup.recommended == dlss.OPTI
-                 else "Home")
-        print(f"In game: press {reshade_ini.overlay_key_name(_dflt)}, then "
-              f"enable neural rendering in the DLSS 5 panel. Turn the game's "
-              f"own MSAA/SSAA off.")
+        _dflt = optiscaler.OVERLAY_KEY if sup.recommended == dlss.OPTI else "Home"
+        print(
+            f"In game: press {reshade_ini.overlay_key_name(_dflt)}, then "
+            f"enable neural rendering in the DLSS 5 panel. Turn the game's "
+            f"own MSAA/SSAA off."
+        )
     return 0
 
 
@@ -279,10 +354,13 @@ def main() -> int:
     if "--remove" in args:
         try:
             from core import prefs, vulkan
+
             if vulkan.cleanup_machine(prefs.vulkan_games_or_none()):
                 _console()
-                print("removed: our ReShade Vulkan layer from the all-users "
-                      "list (no Vulkan install left)")
+                print(
+                    "removed: our ReShade Vulkan layer from the all-users "
+                    "list (no Vulkan install left)"
+                )
         except Exception:
             pass
     route = ""
@@ -291,23 +369,32 @@ def main() -> int:
         args.remove(route)
     opti_build = ""
     if "--opti-build" in args and args.index("--opti-build") + 1 < len(args):
-        _console()      # the exe has no console of its own; errors below need one
+        _console()  # the exe has no console of its own; errors below need one
         opti_build = args[args.index("--opti-build") + 1]
         args.remove(opti_build)
         from core import optiscaler as _opti
+
         if opti_build not in _opti.BUILDS:
-            print(f"error: --opti-build takes one of: "
-                  f"{', '.join(k for k in _opti.BUILDS if k)}", file=sys.stderr)
+            print(
+                f"error: --opti-build takes one of: "
+                f"{', '.join(k for k in _opti.BUILDS if k)}",
+                file=sys.stderr,
+            )
             return 2
         if route and route != "optiscaler":
-            print("note: --opti-build applies to --route optiscaler only; "
-                  "ignored here", file=sys.stderr)
+            print(
+                "note: --opti-build applies to --route optiscaler only; ignored here",
+                file=sys.stderr,
+            )
     own_fg = ""
     if "--own-fg" in args:
         _console()
         if args.index("--own-fg") + 1 >= len(args):
-            print("error: --own-fg takes the path of the .dll you downloaded, or a name "
-                  "you used before", file=sys.stderr)
+            print(
+                "error: --own-fg takes the path of the .dll you downloaded, or a name "
+                "you used before",
+                file=sys.stderr,
+            )
             return 2
         picked = args[args.index("--own-fg") + 1]
         args.remove(picked)
@@ -315,12 +402,14 @@ def main() -> int:
         if picked.lower() in __import__("core.ownfg", fromlist=["RECIPES"]).RECIPES:
             picked = picked.lower()
         from core import ownfg as _ofg
+
         try:
             if picked in _ofg.RECIPES:
                 if not _ofg.stored(picked):
                     raise _ofg.OwnFgError(
                         f"no copy of {_ofg.label(picked).split(' (')[0]} is stored yet - give the "
-                        f"path of the .dll you downloaded")
+                        f"path of the .dll you downloaded"
+                    )
                 own_fg = picked
             else:
                 own_fg, files = _ofg.identify([Path(picked)])
@@ -332,32 +421,42 @@ def main() -> int:
     if "--video" in args:
         _console()
         from core import video
+
         folder = Path(positional[0]) if positional else video.default_dir()
         print(f"video player -> {folder}")
         try:
-            g = video.prepare(folder, on_log=print,
-                              on_prog=lambda p, m: print(f"\r  {p:3d}%  {m:<60}",
-                                                         end="", flush=True))
+            g = video.prepare(
+                folder,
+                on_log=print,
+                on_prog=lambda p, m: print(f"\r  {p:3d}%  {m:<60}", end="", flush=True),
+            )
         except Exception as e:
             print(f"\nerror: {e}", file=sys.stderr)
             return 1
         print()
-        return cli(g.exe, remove="--remove" in args, check="--check" in args,
-                   route=route or "feeder", dxvk=False, game=g)
+        return cli(
+            g.exe,
+            remove="--remove" in args,
+            check="--check" in args,
+            route=route or "feeder",
+            dxvk=False,
+            game=g,
+        )
     if positional:
         _console()
-        return cli(Path(positional[0]),
-                   remove="--remove" in args,
-                   check="--check" in args,
-                   route=route,
-                   vr="--vr" in args,
-                   opti_build=opti_build,
-                   own_fg=own_fg,
-                   dxvk=(True if "--dxvk" in args
-                         else False if "--no-dxvk" in args else None),
-                   remix_swap="--remix-swap" in args,
-                   gpu_pref="--no-gpu-pref" not in args,
-                   feed_helper="--feed-helper" in args)
+        return cli(
+            Path(positional[0]),
+            remove="--remove" in args,
+            check="--check" in args,
+            route=route,
+            vr="--vr" in args,
+            opti_build=opti_build,
+            own_fg=own_fg,
+            dxvk=(True if "--dxvk" in args else False if "--no-dxvk" in args else None),
+            remix_swap="--remix-swap" in args,
+            gpu_pref="--no-gpu-pref" not in args,
+            feed_helper="--feed-helper" in args,
+        )
     if "--help" in args or "-h" in args:
         _console()
         print(__doc__)
@@ -367,6 +466,7 @@ def main() -> int:
         print(update.VERSION)
         return 0
     from core.ui import app
+
     return app.run()
 
 

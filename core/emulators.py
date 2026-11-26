@@ -17,6 +17,7 @@ The feeder needs a depth buffer. Emulators often expose several and ReShade
 may latch onto the wrong one. If the image looks broken, pick the correct
 buffer manually from ReShade's DX11/DX12 tab.
 """
+
 from __future__ import annotations
 
 import os
@@ -55,86 +56,162 @@ class Profile:
 
 
 PROFILES: tuple[Profile, ...] = (
-    Profile("duckstation", "DuckStation", "PlayStation 1",
-            ("duckstation-qt-x64.exe", "duckstation-nogui-x64.exe", "duckstation.exe"),
-            True,
-            "Settings -> Graphics -> Renderer = Direct3D 11 (or 12)",
-            "Raise the internal resolution scale to 2x-4x so DLAA has detail to work with."),
-    Profile("pcsx2", "PCSX2", "PlayStation 2",
-            ("pcsx2-qt.exe", "pcsx2x64.exe", "pcsx2x64-avx2.exe", "pcsx2.exe"),
-            True,
-            "Settings -> Graphics -> Renderer = Direct3D 11 (or 12)",
-            "An upscale multiplier of 2x or more is recommended."),
-    Profile("dolphin", "Dolphin", "GameCube / Wii",
-            ("Dolphin.exe", "DolphinQt.exe"),
-            True,
-            "Graphics -> Backend = Direct3D 11 (or 12)"),
-    Profile("ppsspp", "PPSSPP", "PSP",
-            ("PPSSPPWindows64.exe", "PPSSPPWindows.exe"),
-            True,
-            "Settings -> Graphics -> Backend = Direct3D 11"),
-    Profile("xenia", "Xenia", "Xbox 360",
-            ("xenia.exe", "xenia_canary.exe"),
-            True,
-            "D3D12 is the default backend"),
-    Profile("cemu", "Cemu", "Wii U",
-            ("Cemu.exe",),
-            False,
-            "Cemu offers Vulkan/OpenGL - set Vulkan (beta path)",
-            "Vulkan goes through ReShade's layer registration; OpenGL "
-            "installs as opengl32.dll and is the least reliable."),
-    Profile("rpcs3", "RPCS3", "PlayStation 3",
-            ("rpcs3.exe",),
-            False,
-            "RPCS3 offers Vulkan/OpenGL - set Vulkan (beta path)"),
-    Profile("ryujinx", "Ryujinx", "Switch",
-            ("Ryujinx.exe", "Ryujinx.Ava.exe", "Ryujinx.Headless.SDL2.exe"),
-            False,
-            "Vulkan/OpenGL only - set Vulkan (beta path)"),
-    Profile("yuzu", "yuzu / suyu / Eden / Citron", "Switch",
-            ("yuzu.exe", "suyu.exe", "eden.exe", "citron.exe", "sudachi.exe"),
-            False,
-            "Vulkan/OpenGL only - set Vulkan (beta path)"),
-    Profile("shadps4", "shadPS4", "PlayStation 4",
-            ("shadPS4.exe", "shadps4.exe"),
-            False,
-            "Vulkan only (beta path)"),
-    Profile("azahar", "Azahar / Citra / Lime3DS", "3DS",
-            ("azahar.exe", "citra.exe", "citra-qt.exe", "lime3ds.exe"),
-            False,
-            "Vulkan/OpenGL - set Vulkan (beta path)"),
-    Profile("melonds", "melonDS", "DS",
-            ("melonDS.exe",),
-            False,
-            "OpenGL only - the least reliable path"),
-    Profile("flycast", "Flycast", "Dreamcast",
-            ("flycast.exe",),
-            True,
-            "Set the renderer to DirectX 11"),
-    Profile("xemu", "xemu", "Xbox",
-            ("xemu.exe",),
-            False,
-            "Vulkan/OpenGL - set Vulkan (beta path)"),
-    Profile("vita3k", "Vita3K", "PS Vita",
-            ("Vita3K.exe",),
-            False,
-            "Vulkan/OpenGL - set Vulkan (beta path)"),
-    Profile("retroarch", "RetroArch", "multi-system",
-            ("retroarch.exe",),
-            True,
-            "Set the video driver to d3d11 or d3d12"),
-    Profile("mgba", "mGBA", "Game Boy Advance",
-            ("mGBA.exe",),
-            False,
-            "OpenGL only - the least reliable path"),
-    Profile("snes9x", "Snes9x", "SNES",
-            ("snes9x-x64.exe", "snes9x.exe"),
-            True,
-            "Set the output method to Direct3D"),
-    Profile("play", "Play!", "PlayStation 2",
-            ("Play.exe",),
-            False,
-            "Vulkan/OpenGL - set Vulkan (beta path)"),
+    Profile(
+        "duckstation",
+        "DuckStation",
+        "PlayStation 1",
+        ("duckstation-qt-x64.exe", "duckstation-nogui-x64.exe", "duckstation.exe"),
+        True,
+        "Settings -> Graphics -> Renderer = Direct3D 11 (or 12)",
+        "Raise the internal resolution scale to 2x-4x so DLAA has detail to work with.",
+    ),
+    Profile(
+        "pcsx2",
+        "PCSX2",
+        "PlayStation 2",
+        ("pcsx2-qt.exe", "pcsx2x64.exe", "pcsx2x64-avx2.exe", "pcsx2.exe"),
+        True,
+        "Settings -> Graphics -> Renderer = Direct3D 11 (or 12)",
+        "An upscale multiplier of 2x or more is recommended.",
+    ),
+    Profile(
+        "dolphin",
+        "Dolphin",
+        "GameCube / Wii",
+        ("Dolphin.exe", "DolphinQt.exe"),
+        True,
+        "Graphics -> Backend = Direct3D 11 (or 12)",
+    ),
+    Profile(
+        "ppsspp",
+        "PPSSPP",
+        "PSP",
+        ("PPSSPPWindows64.exe", "PPSSPPWindows.exe"),
+        True,
+        "Settings -> Graphics -> Backend = Direct3D 11",
+    ),
+    Profile(
+        "xenia",
+        "Xenia",
+        "Xbox 360",
+        ("xenia.exe", "xenia_canary.exe"),
+        True,
+        "D3D12 is the default backend",
+    ),
+    Profile(
+        "cemu",
+        "Cemu",
+        "Wii U",
+        ("Cemu.exe",),
+        False,
+        "Cemu offers Vulkan/OpenGL - set Vulkan (beta path)",
+        "Vulkan goes through ReShade's layer registration; OpenGL "
+        "installs as opengl32.dll and is the least reliable.",
+    ),
+    Profile(
+        "rpcs3",
+        "RPCS3",
+        "PlayStation 3",
+        ("rpcs3.exe",),
+        False,
+        "RPCS3 offers Vulkan/OpenGL - set Vulkan (beta path)",
+    ),
+    Profile(
+        "ryujinx",
+        "Ryujinx",
+        "Switch",
+        ("Ryujinx.exe", "Ryujinx.Ava.exe", "Ryujinx.Headless.SDL2.exe"),
+        False,
+        "Vulkan/OpenGL only - set Vulkan (beta path)",
+    ),
+    Profile(
+        "yuzu",
+        "yuzu / suyu / Eden / Citron",
+        "Switch",
+        ("yuzu.exe", "suyu.exe", "eden.exe", "citron.exe", "sudachi.exe"),
+        False,
+        "Vulkan/OpenGL only - set Vulkan (beta path)",
+    ),
+    Profile(
+        "shadps4",
+        "shadPS4",
+        "PlayStation 4",
+        ("shadPS4.exe", "shadps4.exe"),
+        False,
+        "Vulkan only (beta path)",
+    ),
+    Profile(
+        "azahar",
+        "Azahar / Citra / Lime3DS",
+        "3DS",
+        ("azahar.exe", "citra.exe", "citra-qt.exe", "lime3ds.exe"),
+        False,
+        "Vulkan/OpenGL - set Vulkan (beta path)",
+    ),
+    Profile(
+        "melonds",
+        "melonDS",
+        "DS",
+        ("melonDS.exe",),
+        False,
+        "OpenGL only - the least reliable path",
+    ),
+    Profile(
+        "flycast",
+        "Flycast",
+        "Dreamcast",
+        ("flycast.exe",),
+        True,
+        "Set the renderer to DirectX 11",
+    ),
+    Profile(
+        "xemu",
+        "xemu",
+        "Xbox",
+        ("xemu.exe",),
+        False,
+        "Vulkan/OpenGL - set Vulkan (beta path)",
+    ),
+    Profile(
+        "vita3k",
+        "Vita3K",
+        "PS Vita",
+        ("Vita3K.exe",),
+        False,
+        "Vulkan/OpenGL - set Vulkan (beta path)",
+    ),
+    Profile(
+        "retroarch",
+        "RetroArch",
+        "multi-system",
+        ("retroarch.exe",),
+        True,
+        "Set the video driver to d3d11 or d3d12",
+    ),
+    Profile(
+        "mgba",
+        "mGBA",
+        "Game Boy Advance",
+        ("mGBA.exe",),
+        False,
+        "OpenGL only - the least reliable path",
+    ),
+    Profile(
+        "snes9x",
+        "Snes9x",
+        "SNES",
+        ("snes9x-x64.exe", "snes9x.exe"),
+        True,
+        "Set the output method to Direct3D",
+    ),
+    Profile(
+        "play",
+        "Play!",
+        "PlayStation 2",
+        ("Play.exe",),
+        False,
+        "Vulkan/OpenGL - set Vulkan (beta path)",
+    ),
 )
 
 _BY_EXE = {e.lower(): p for p in PROFILES for e in p.exes}
@@ -158,10 +235,25 @@ def _search_roots() -> list[Path]:
         base = Path(f"{drive}:/")
         if not _isdir(base):
             continue
-        for name in ("Emulators", "Emulator", "Games", "Emu", "RetroArch",
-                     "PS2", "PS1", "Emulation", "Roms", "Apps", "Programs",
-                     "Oyunlar", "Tools", "Portable",
-                     "EmuDeck", "Emulators_Portable", "LaunchBox"):
+        for name in (
+            "Emulators",
+            "Emulator",
+            "Games",
+            "Emu",
+            "RetroArch",
+            "PS2",
+            "PS1",
+            "Emulation",
+            "Roms",
+            "Apps",
+            "Programs",
+            "Oyunlar",
+            "Tools",
+            "Portable",
+            "EmuDeck",
+            "Emulators_Portable",
+            "LaunchBox",
+        ):
             d = base / name
             if _isdir(d):
                 roots.append(d)
@@ -175,6 +267,7 @@ def _search_roots() -> list[Path]:
     # a Steam library is rarely in any of the folders above.
     try:
         from . import games as _games
+
         steam = _games._steam_root()
         if steam:
             for lib in _games._steam_libraries(steam):
@@ -204,9 +297,20 @@ def _registry_locations() -> list[Path]:
     except ImportError:
         return out
     names = {p.name.lower() for p in PROFILES}
-    for hive, key in ((winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
-                      (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),
-                      (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")):
+    for hive, key in (
+        (
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        ),
+        (
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+        ),
+        (
+            winreg.HKEY_CURRENT_USER,
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        ),
+    ):
         try:
             with winreg.OpenKey(hive, key) as root:
                 i = 0
@@ -296,15 +400,16 @@ _BOM = "\ufeff"
 @dataclass(frozen=True)
 class _Backend:
     """How one emulator stores its render backend."""
-    fmt: str                     # "ini" (section + key), "kv" (key = "value", no sections)
-    section: str                 # "" for kv
+
+    fmt: str  # "ini" (section + key), "kv" (key = "value", no sections)
+    section: str  # "" for kv
     key: str
-    target: str                  # the raw value we write
-    target_name: str             # human name of that value
-    names: dict[str, str]        # raw value -> human name, for status
-    dxgi: tuple[str, ...]        # raw values that already present through DXGI
-    locate: Callable[[Path], list[Path]]   # candidate config files, best first
-    quoted: bool = False         # value written as "..." (TOML / RetroArch cfg)
+    target: str  # the raw value we write
+    target_name: str  # human name of that value
+    names: dict[str, str]  # raw value -> human name, for status
+    dxgi: tuple[str, ...]  # raw values that already present through DXGI
+    locate: Callable[[Path], list[Path]]  # candidate config files, best first
+    quoted: bool = False  # value written as "..." (TOML / RetroArch cfg)
 
 
 def _documents() -> Path:
@@ -366,7 +471,9 @@ def _loc_ppsspp(exe: Path) -> list[Path]:
     inst = d / "installed.txt"
     if inst.is_file():
         try:
-            text = inst.read_text(encoding="utf8", errors="replace").strip().lstrip(_BOM)
+            text = (
+                inst.read_text(encoding="utf8", errors="replace").strip().lstrip(_BOM)
+            )
         except OSError:
             text = ""
         if text and Path(text).is_dir():
@@ -415,46 +522,126 @@ def _loc_cemu(exe: Path) -> list[Path]:
     return out
 
 
-_PCSX2_NAMES = {"-1": "Automatic", "3": "D3D11", "15": "D3D12", "12": "OpenGL",
-                "14": "Vulkan", "13": "Software", "11": "Null"}
+_PCSX2_NAMES = {
+    "-1": "Automatic",
+    "3": "D3D11",
+    "15": "D3D12",
+    "12": "OpenGL",
+    "14": "Vulkan",
+    "13": "Software",
+    "11": "Null",
+}
 _PPSSPP_NAMES = {"0": "OpenGL", "2": "D3D11", "3": "Vulkan"}
 
 _BACKENDS: dict[str, _Backend] = {
     # settings.cpp: [GPU] Renderer = Automatic|D3D11|D3D12|Vulkan|OpenGL|Software
-    "duckstation": _Backend("ini", "GPU", "Renderer", "D3D12", "D3D12",
-                            {"D3D11": "D3D11", "D3D12": "D3D12", "Vulkan": "Vulkan",
-                             "OpenGL": "OpenGL", "Automatic": "Automatic", "Software": "Software"},
-                            ("D3D11", "D3D12"), _loc_duckstation),
+    "duckstation": _Backend(
+        "ini",
+        "GPU",
+        "Renderer",
+        "D3D12",
+        "D3D12",
+        {
+            "D3D11": "D3D11",
+            "D3D12": "D3D12",
+            "Vulkan": "Vulkan",
+            "OpenGL": "OpenGL",
+            "Automatic": "Automatic",
+            "Software": "Software",
+        },
+        ("D3D11", "D3D12"),
+        _loc_duckstation,
+    ),
     # Config.h GSRendererType: DX11 = 3, DX12 = 15, OGL = 12, VK = 14, Auto = -1
-    "pcsx2": _Backend("ini", "EmuCore/GS", "Renderer", "15", "D3D12", _PCSX2_NAMES,
-                      ("3", "15"), _loc_pcsx2),
+    "pcsx2": _Backend(
+        "ini",
+        "EmuCore/GS",
+        "Renderer",
+        "15",
+        "D3D12",
+        _PCSX2_NAMES,
+        ("3", "15"),
+        _loc_pcsx2,
+    ),
     # MainSettings.cpp: [Core] GFXBackend; CONFIG_NAME "D3D" (11) / "D3D12"
-    "dolphin": _Backend("ini", "Core", "GFXBackend", "D3D12", "D3D12",
-                        {"D3D": "D3D11", "D3D12": "D3D12", "Vulkan": "Vulkan",
-                         "OGL": "OpenGL", "Software Renderer": "Software", "Null": "Null"},
-                        ("D3D", "D3D12"), _loc_dolphin),
+    "dolphin": _Backend(
+        "ini",
+        "Core",
+        "GFXBackend",
+        "D3D12",
+        "D3D12",
+        {
+            "D3D": "D3D11",
+            "D3D12": "D3D12",
+            "Vulkan": "Vulkan",
+            "OGL": "OpenGL",
+            "Software Renderer": "Software",
+            "Null": "Null",
+        },
+        ("D3D", "D3D12"),
+        _loc_dolphin,
+    ),
     # Config.cpp: [Graphics] GraphicsBackend = "<n> (<NAME>)"; DIRECT3D11 = 2
-    "ppsspp": _Backend("ini", "Graphics", "GraphicsBackend", "2 (DIRECT3D11)", "D3D11",
-                       _PPSSPP_NAMES, ("2", "2 (DIRECT3D11)", "DIRECT3D11"), _loc_ppsspp),
+    "ppsspp": _Backend(
+        "ini",
+        "Graphics",
+        "GraphicsBackend",
+        "2 (DIRECT3D11)",
+        "D3D11",
+        _PPSSPP_NAMES,
+        ("2", "2 (DIRECT3D11)", "DIRECT3D11"),
+        _loc_ppsspp,
+    ),
     # xenia_main.cc: DEFINE_string(gpu, "any", ..., "GPU") -> [GPU] gpu = "d3d12"
-    "xenia": _Backend("ini", "GPU", "gpu", "d3d12", "D3D12",
-                      {"d3d12": "D3D12", "vulkan": "Vulkan", "any": "Automatic", "null": "Null"},
-                      ("d3d12",), _loc_xenia, quoted=True),
+    "xenia": _Backend(
+        "ini",
+        "GPU",
+        "gpu",
+        "d3d12",
+        "D3D12",
+        {"d3d12": "D3D12", "vulkan": "Vulkan", "any": "Automatic", "null": "Null"},
+        ("d3d12",),
+        _loc_xenia,
+        quoted=True,
+    ),
     # retroarch.cfg: video_driver = "d3d11". d3d11 rather than d3d12: the
     # d3d12 driver still lacks features some cores rely on.
-    "retroarch": _Backend("kv", "", "video_driver", "d3d11", "D3D11",
-                          {"d3d11": "D3D11", "d3d12": "D3D12", "gl": "OpenGL", "glcore": "OpenGL",
-                           "vulkan": "Vulkan", "d3d9": "D3D9", "sdl2": "SDL", "gdi": "GDI"},
-                          ("d3d11", "d3d12"), _loc_retroarch, quoted=True),
+    "retroarch": _Backend(
+        "kv",
+        "",
+        "video_driver",
+        "d3d11",
+        "D3D11",
+        {
+            "d3d11": "D3D11",
+            "d3d12": "D3D12",
+            "gl": "OpenGL",
+            "glcore": "OpenGL",
+            "vulkan": "Vulkan",
+            "d3d9": "D3D9",
+            "sdl2": "SDL",
+            "gdi": "GDI",
+        },
+        ("d3d11", "d3d12"),
+        _loc_retroarch,
+        quoted=True,
+    ),
 }
 
 # Emulators whose backend we only read: they have no DXGI path at all.
 # rpcs3: system_config_types.h video_renderer = null|opengl|vulkan.
 # cemu: CemuConfig.h GraphicAPI kOpenGL = 0, kVulkan = 1, stored as <Graphic><api>.
 _READ_ONLY: dict[str, tuple[str, Callable[[Path], list[Path]], dict[str, str]]] = {
-    "rpcs3": (r"^\s*Renderer:\s*(\S+)", _loc_rpcs3,
-              {"vulkan": "Vulkan", "opengl": "OpenGL", "null": "Null"}),
-    "cemu": (r"<api>\s*(\d+)\s*</api>", _loc_cemu, {"0": "OpenGL", "1": "Vulkan", "2": "Metal"}),
+    "rpcs3": (
+        r"^\s*Renderer:\s*(\S+)",
+        _loc_rpcs3,
+        {"vulkan": "Vulkan", "opengl": "OpenGL", "null": "Null"},
+    ),
+    "cemu": (
+        r"<api>\s*(\d+)\s*</api>",
+        _loc_cemu,
+        {"0": "OpenGL", "1": "Vulkan", "2": "Metal"},
+    ),
 }
 
 
@@ -480,14 +667,20 @@ def _write(path: Path, text: str) -> None:
 
 def _is_header(line: str, section: str) -> bool:
     s = line.lstrip(_BOM).strip()
-    return s.startswith("[") and s.endswith("]") and s[1:-1].strip().lower() == section.lower()
+    return (
+        s.startswith("[")
+        and s.endswith("]")
+        and s[1:-1].strip().lower() == section.lower()
+    )
 
 
 def _key_re(key: str) -> re.Pattern[str]:
     # value group stops before a trailing comment or the line ending
-    return re.compile(r"^(\s*" + re.escape(key) + r"\s*=\s*)"
-                      r"(\"[^\"\r\n]*\"|[^\r\n#;]*?)(\s*(?:[#;][^\r\n]*)?)(\r?\n?)$",
-                      re.IGNORECASE)
+    return re.compile(
+        r"^(\s*" + re.escape(key) + r"\s*=\s*)"
+        r"(\"[^\"\r\n]*\"|[^\r\n#;]*?)(\s*(?:[#;][^\r\n]*)?)(\r?\n?)$",
+        re.IGNORECASE,
+    )
 
 
 def _find_line(lines: list[str], spec: _Backend) -> int | None:
@@ -590,18 +783,24 @@ def set_backend(profile: Profile, exe: Path) -> list[str]:
     spec = _BACKENDS.get(profile.key)
     if not spec:
         if not profile.d3d:
-            return [f"{profile.name}: no DXGI backend, leave Vulkan/OpenGL "
-                    f"({profile.renderer_hint})"]
+            return [
+                f"{profile.name}: no DXGI backend, leave Vulkan/OpenGL "
+                f"({profile.renderer_hint})"
+            ]
         return [f"{profile.name}: set the backend by hand: {profile.renderer_hint}"]
     cfg = _first_existing(spec.locate(exe))
     if not cfg:
-        return [f"{profile.name}: config file not found (run the emulator once first). "
-                f"Set the backend by hand: {profile.renderer_hint}"]
+        return [
+            f"{profile.name}: config file not found (run the emulator once first). "
+            f"Set the backend by hand: {profile.renderer_hint}"
+        ]
     try:
         text = _read(cfg)
     except OSError as e:
-        return [f"{profile.name}: could not read {cfg} ({e}). "
-                f"Set the backend by hand: {profile.renderer_hint}"]
+        return [
+            f"{profile.name}: could not read {cfg} ({e}). "
+            f"Set the backend by hand: {profile.renderer_hint}"
+        ]
     lines = text.splitlines(keepends=True)
     raw = _raw_value(lines, spec)
     if raw is not None and (raw in spec.dxgi or raw.lower() in spec.dxgi):
@@ -612,8 +811,10 @@ def set_backend(profile: Profile, exe: Path) -> list[str]:
     _write(cfg, "".join(_set_value(lines, spec, spec.target)))
     old = _human(spec, raw) if raw is not None else "(not set)"
     where = f"[{spec.section}] {spec.key}" if spec.section else spec.key
-    return [f"{profile.name}: {cfg}: {where}: {old} -> {spec.target_name}",
-            f"backup: {backup}"]
+    return [
+        f"{profile.name}: {cfg}: {where}: {old} -> {spec.target_name}",
+        f"backup: {backup}",
+    ]
 
 
 def restore_backend(profile: Profile, exe: Path) -> list[str]:

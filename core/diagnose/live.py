@@ -14,6 +14,7 @@ times.
 
 Part of core/diagnose; see __init__.py.
 """
+
 from __future__ import annotations
 import re
 from dataclasses import dataclass, field
@@ -23,12 +24,23 @@ from .model import *  # noqa: F401,F403
 from .helper import _clock
 
 
-__all__ = ["BridgeRun", "bridge_run", "read_bridge", "_bridge_excerpt",
-           "_bridge_session", "_bridge_text", "_bridge_verdict"]
+__all__ = [
+    "BridgeRun",
+    "bridge_run",
+    "read_bridge",
+    "_bridge_excerpt",
+    "_bridge_session",
+    "_bridge_text",
+    "_bridge_verdict",
+]
 
 # BridgeFail's one word for what failed, three times in a row, in words.
-_FAIL_WORDS = {"evaluate": "evaluates", "command list": "command lists",
-               "resource build": "resource builds", "HDR10 decode": "HDR10 decodes"}
+_FAIL_WORDS = {
+    "evaluate": "evaluates",
+    "command list": "command lists",
+    "resource build": "resource builds",
+    "HDR10 decode": "HDR10 decodes",
+}
 
 # How far after ReShade's "Registered add-on" line the bridge may write
 # "attached.": it registers inside DllMain and writes the line a moment
@@ -40,28 +52,30 @@ _TIE_BEFORE, _TIE_AFTER = 5.0, 120.0
 _BRIDGE_ASKED_NONE = re.compile(r"CreateFeature calls: 0, EvaluateFeature calls: 0")
 # The Vulkan mirror's note when ReShade's effect runtime is a D3D12 one
 # (#1014): the game draws with Direct3D 12, where the bridge takes no call.
-_BRIDGE_ON_D3D12 = re.compile(r"\[vkmirror\] ReShade created an effect runtime on D3D12")
+_BRIDGE_ON_D3D12 = re.compile(
+    r"\[vkmirror\] ReShade created an effect runtime on D3D12"
+)
 
 
 @dataclass
 class BridgeRun:
     version: str = ""
-    attached: str = ""            # the "attached." line itself
-    frames: int = 0               # the highest count the log carries
-    first: str = ""               # the first "delivered" line
-    fps: str = ""                 # from the last frame-rate line
-    unfocused: bool = False       # that line says the window was not in focus
-    stop: str = ""                # why it stopped after its last frame, or ""
+    attached: str = ""  # the "attached." line itself
+    frames: int = 0  # the highest count the log carries
+    first: str = ""  # the first "delivered" line
+    fps: str = ""  # from the last frame-rate line
+    unfocused: bool = False  # that line says the window was not in focus
+    stop: str = ""  # why it stopped after its last frame, or ""
     stop_line: str = ""
-    module: str = ""              # "it faulted in <module>" beside the stop
-    path: str = "bridge"          # the stop's own tag: bridge, synth or vkmirror
-    crashed: bool = False         # the crash handler's block is the stop
-    called: bool = False          # the log shows the game calling DLSS
-    asked_none: bool = False      # the bridge counted no call at all
-    on_d3d12: bool = False        # ReShade's runtime was on D3D12 (vkmirror says so)
-    recorded: int = 0             # Vulkan mirror frames recorded, not yet delivered
-    refused: str = ""             # NGX's answer to CreateFeature, when it refused
-    failed: list = field(default_factory=list)   # evaluate failures after it
+    module: str = ""  # "it faulted in <module>" beside the stop
+    path: str = "bridge"  # the stop's own tag: bridge, synth or vkmirror
+    crashed: bool = False  # the crash handler's block is the stop
+    called: bool = False  # the log shows the game calling DLSS
+    asked_none: bool = False  # the bridge counted no call at all
+    on_d3d12: bool = False  # ReShade's runtime was on D3D12 (vkmirror says so)
+    recorded: int = 0  # Vulkan mirror frames recorded, not yet delivered
+    refused: str = ""  # NGX's answer to CreateFeature, when it refused
+    failed: list = field(default_factory=list)  # evaluate failures after it
 
 
 def _bridge_text(path: Path, head: int = 65_536, tail: int = 1_000_000) -> str:
@@ -85,7 +99,7 @@ def _bridge_session(text: str) -> str:
     last = None
     for last in _BRIDGE_ATTACHED.finditer(text or ""):
         pass
-    return text[last.start():] if last is not None else ""
+    return text[last.start() :] if last is not None else ""
 
 
 def read_bridge(text: str) -> BridgeRun | None:
@@ -114,14 +128,16 @@ def read_bridge(text: str) -> BridgeRun | None:
         if not run.first and m.group(1):
             s = text.rfind("\n", 0, m.start()) + 1
             e = text.find("\n", m.end())
-            run.first = text[s:e if e >= 0 else None].strip()
+            run.first = text[s : e if e >= 0 else None].strip()
     stats = list(_BRIDGE_STATS.finditer(text))
     if stats:
         run.fps = stats[-1].group(2).replace(",", ".")
         e = text.find("\n", stats[-1].end())
-        run.unfocused = "WINDOW NOT IN FOCUS" in text[stats[-1].end():e if e >= 0 else None]
+        run.unfocused = (
+            "WINDOW NOT IN FOCUS" in text[stats[-1].end() : e if e >= 0 else None]
+        )
     # After the last frame line - or, with none, after the attached line.
-    after = text[last_end if last_end >= 0 else att.end():]
+    after = text[last_end if last_end >= 0 else att.end() :]
     first_stop = None
     hits = [m for m in (pat.search(after) for pat in _BRIDGE_STOPS) if m]
     # BridgeDisable's own "stopped: <why>" names the reason in words; the
@@ -131,17 +147,21 @@ def read_bridge(text: str) -> BridgeRun | None:
         # Only this launch's own lines: the next launch reprints the last
         # crash under "The previous run crashed", and its code is not this
         # stop's (gate 2.0.7).
-        codes = re.findall(r"exception (0x[0-9A-Fa-f]{8})", _own(after[:words.start()]))
+        codes = re.findall(
+            r"exception (0x[0-9A-Fa-f]{8})", _own(after[: words.start()])
+        )
         code = codes[-1] if codes else ""
         why = words.group(1)
         # BridgeFail passes one word ("evaluate", "command list"), and its
         # counter is shared by all four kinds: three failures of any of them
         # in a row turn it off, the last one named (gate 2.0.7).
         if why in _FAIL_WORDS:
-            fails = list(_BRIDGE_FAILED.finditer(after[:words.start()]))
-            why = (f"it failed three times in a row, the last in its {why}"
-                   + (f" ({fails[-1].group(1)}, {fails[-1].group(2).rstrip(',')})"
-                      if fails and why == "evaluate" else ""))
+            fails = list(_BRIDGE_FAILED.finditer(after[: words.start()]))
+            why = f"it failed three times in a row, the last in its {why}" + (
+                f" ({fails[-1].group(1)}, {fails[-1].group(2).rstrip(',')})"
+                if fails and why == "evaluate"
+                else ""
+            )
         first_stop = (words, why + (f" ({code})" if code and code not in why else ""))
     elif hits:
         m = min(hits, key=lambda h: h.start())
@@ -150,23 +170,28 @@ def read_bridge(text: str) -> BridgeRun | None:
     if crash and (first_stop is None or crash.start() < first_stop[0].start()):
         who = (crash.group(2) or "").strip()
         who = re.split(r"[\\/]", who)[-1] if who else ""
-        first_stop = (crash, f"exception {crash.group(1)}" + (f" in {who}" if who else ""))
+        first_stop = (
+            crash,
+            f"exception {crash.group(1)}" + (f" in {who}" if who else ""),
+        )
         run.crashed = True
     if first_stop is not None:
         m, why = first_stop
         # the bridge's own pointers to lines above it mean nothing in a
         # headline of ours (gate 2.0.7 pass 3)
-        why = re.sub(r" -- the results are named above --|;? the lines above say why", "", why)
+        why = re.sub(
+            r" -- the results are named above --|;? the lines above say why", "", why
+        )
         run.stop = why.strip().rstrip(".")
         s = after.rfind("\n", 0, m.start()) + 1
         e = after.find("\n", m.start())
-        run.stop_line = after[s:e if e >= 0 else None].strip()
+        run.stop_line = after[s : e if e >= 0 else None].strip()
         tag = re.search(r"\[(bridge|synth|vkmirror)\]", run.stop_line)
         run.path = tag.group(1) if tag else "bridge"
         # The fault's owner: logged just before a BridgeDisable, just after
         # the synthetic path's own stop line (gate 2.0.7).
-        owners = list(_BRIDGE_FAULTED.finditer(after[:m.start()]))
-        near = _BRIDGE_FAULTED.search(after[m.end():m.end() + 600])
+        owners = list(_BRIDGE_FAULTED.finditer(after[: m.start()]))
+        near = _BRIDGE_FAULTED.search(after[m.end() : m.end() + 600])
         pick = owners[-1] if owners else near
         if pick is not None and not run.crashed:
             run.module = re.split(r"[\\/]", pick.group(1).strip())[-1]
@@ -175,8 +200,9 @@ def read_bridge(text: str) -> BridgeRun | None:
         cnt = re.search(r"after (\d+) delivered frames", run.stop_line)
         if cnt:
             run.frames = max(run.frames, int(cnt.group(1)))
-    run.failed = [f"{m.group(1)} {m.group(2)}".rstrip(",")
-                  for m in _BRIDGE_FAILED.finditer(after)]
+    run.failed = [
+        f"{m.group(1)} {m.group(2)}".rstrip(",") for m in _BRIDGE_FAILED.finditer(after)
+    ]
     return run
 
 
@@ -188,30 +214,44 @@ def _drop_carried(text: str) -> str:
     # Line by line: a regex for "up to the first blank line" backtracked
     # without end on a log with no blank line after the block.
     lines = (text or "").split("\n")
-    start = next((i for i, ln in enumerate(lines) if "The previous run crashed" in ln), None)
+    start = next(
+        (i for i, ln in enumerate(lines) if "The previous run crashed" in ln), None
+    )
     if start is None:
         return text or ""
-    end = next((i for i in range(start + 1, min(len(lines) - 1, start + 62))
-                if not lines[i].strip()), None)
+    end = next(
+        (
+            i
+            for i in range(start + 1, min(len(lines) - 1, start + 62))
+            if not lines[i].strip()
+        ),
+        None,
+    )
     if end is None:
         return text or ""
-    return "\n".join(lines[:start] + lines[end + 1:])
+    return "\n".join(lines[:start] + lines[end + 1 :])
 
 
 def _own(text: str) -> str:
     """The lines this launch wrote: a reprinted line from the previous run
     carries that run's clock after this one's."""
-    return "\n".join(ln for ln in (text or "").splitlines()
-                     if not re.match(r"^\S+\s+\d\d:\d\d:\d\d\.\d{3}\s", ln)
-                     and "The previous run crashed" not in ln)
+    return "\n".join(
+        ln
+        for ln in (text or "").splitlines()
+        if not re.match(r"^\S+\s+\d\d:\d\d:\d\d\.\d{3}\s", ln)
+        and "The previous run crashed" not in ln
+    )
 
 
 def _quote(line: str, width: int = 160) -> str:
     """The bridge's own line, without its clock and the sentence it adds to
     every stop, and marked when cut."""
     said = re.sub(r"^[\d:.]+\s+", "", line or "")
-    said = re.split(r"\. (?:The game renders normally|This backend stops here|The game keeps"
-                    r"|The game's own DLSS was forwarded)", said)[0].rstrip(".")
+    said = re.split(
+        r"\. (?:The game renders normally|This backend stops here|The game keeps"
+        r"|The game's own DLSS was forwarded)",
+        said,
+    )[0].rstrip(".")
     return said if len(said) <= width else said[:width].rsplit(" ", 1)[0] + "..."
 
 
@@ -231,7 +271,7 @@ def _tied(att: str, rtext: str) -> bool:
     if t is None or r is None:
         return False
     if t < r - 43200:
-        t += 86400                          # past midnight
+        t += 86400  # past midnight
     elif t > r + 43200:
         t -= 86400
     return r - _TIE_BEFORE <= t <= r + _TIE_AFTER
@@ -246,8 +286,9 @@ def bridge_run(install_dir: Path, rtext: str) -> BridgeRun | None:
     return run
 
 
-def _bridge_verdict(rep: Report, run: BridgeRun, panel: str, rtext: str,
-                    synthetic: bool = False) -> bool:
+def _bridge_verdict(
+    rep: Report, run: BridgeRun, panel: str, rtext: str, synthetic: bool = False
+) -> bool:
     """Say what the bridge's log says; True when that is the verdict.
 
     Delivered frames are not "Working.": the bridge hands each one to
@@ -259,118 +300,167 @@ def _bridge_verdict(rep: Report, run: BridgeRun, panel: str, rtext: str,
     frames = f"at least {n} frame{'' if n == 1 else 's'}"
     own_panel = "DLSS 5 Bridge panel in the overlay"
     if n:
-        rep.add(OK, f"The bridge delivered {frames} in this launch"
-                    + (f", {run.fps} fps at its last count" if run.fps else "") + ".",
-                f"Read from {BRIDGE_LOG} (dlss5-bridge {run.version}). The "
-                f"bridge began that file when ReShade loaded it, in the launch "
-                f"of ReShade.log's last session."
-                + (" The last frame-rate line was taken with the game window "
-                   "out of focus." if run.unfocused else ""))
+        rep.add(
+            OK,
+            f"The bridge delivered {frames} in this launch"
+            + (f", {run.fps} fps at its last count" if run.fps else "")
+            + ".",
+            f"Read from {BRIDGE_LOG} (dlss5-bridge {run.version}). The "
+            f"bridge began that file when ReShade loaded it, in the launch "
+            f"of ReShade.log's last session."
+            + (
+                " The last frame-rate line was taken with the game window out of focus."
+                if run.unfocused
+                else ""
+            ),
+        )
     else:
-        rep.add(INFO, f"The bridge attached in this launch (dlss5-bridge "
-                      f"{run.version}); its log has no delivered-frame line.",
-                "It writes a line at the first frame it delivers (on the "
-                "Vulkan mirror, at the first frame it records), so none went "
-                "through it in this launch.")
+        rep.add(
+            INFO,
+            f"The bridge attached in this launch (dlss5-bridge "
+            f"{run.version}); its log has no delivered-frame line.",
+            "It writes a line at the first frame it delivers (on the "
+            "Vulkan mirror, at the first frame it records), so none went "
+            "through it in this launch.",
+        )
     if run.crashed:
-        rep.add(BAD, (f"The game crashed after the bridge delivered {frames}: {run.stop}." if n else
-                      f"The game crashed before the bridge delivered a frame: {run.stop}."),
-                f"The bridge's crash handler wrote this in {BRIDGE_LOG}. It "
-                f"records any crash in the game's process, and the module "
-                f"named is where the fault was - not always the bridge. "
-                f"'report a bug' carries the lines.")
-        rep.verdict = ("It started, then the game crashed - see below." if n else
-                       "The game crashed before the bridge delivered a frame - see below.")
+        rep.add(
+            BAD,
+            (
+                f"The game crashed after the bridge delivered {frames}: {run.stop}."
+                if n
+                else f"The game crashed before the bridge delivered a frame: {run.stop}."
+            ),
+            f"The bridge's crash handler wrote this in {BRIDGE_LOG}. It "
+            f"records any crash in the game's process, and the module "
+            f"named is where the fault was - not always the bridge. "
+            f"'report a bug' carries the lines.",
+        )
+        rep.verdict = (
+            "It started, then the game crashed - see below."
+            if n
+            else "The game crashed before the bridge delivered a frame - see below."
+        )
         return True
     if run.stop:
-        after = {"synth": "The bridge's substitute stopped delivering there, and "
-                          "the game draws on without the pass.",
-                 "vkmirror": "The Vulkan mirror stood down there for the rest of "
-                             "the session; the game's own DLSS is what is on screen."
-                 }.get(run.path, "The bridge turned itself off there, and the game "
-                                 "draws without the pass from then on.")
-        rep.add(BAD, (f"The bridge stopped after delivering {frames}: {run.stop}." if n else
-                      f"The bridge stopped before it delivered a frame: {run.stop}."),
-                f"Its own line: '{_quote(run.stop_line)}'. {after}"
-                + (f" It faulted in {run.module}." if run.module else "")
-                + f" 'report a bug' carries the last lines of {BRIDGE_LOG}. The "
-                  f"feeder route does not go through the bridge.")
-        rep.verdict = ("It started, then the bridge stopped - see why below."
-                       if n else
-                       "The bridge stopped before it delivered a frame - see why below.")
+        after = {
+            "synth": "The bridge's substitute stopped delivering there, and "
+            "the game draws on without the pass.",
+            "vkmirror": "The Vulkan mirror stood down there for the rest of "
+            "the session; the game's own DLSS is what is on screen.",
+        }.get(
+            run.path,
+            "The bridge turned itself off there, and the game "
+            "draws without the pass from then on.",
+        )
+        rep.add(
+            BAD,
+            (
+                f"The bridge stopped after delivering {frames}: {run.stop}."
+                if n
+                else f"The bridge stopped before it delivered a frame: {run.stop}."
+            ),
+            f"Its own line: '{_quote(run.stop_line)}'. {after}"
+            + (f" It faulted in {run.module}." if run.module else "")
+            + f" 'report a bug' carries the last lines of {BRIDGE_LOG}. The "
+            f"feeder route does not go through the bridge.",
+        )
+        rep.verdict = (
+            "It started, then the bridge stopped - see why below."
+            if n
+            else "The bridge stopped before it delivered a frame - see why below."
+        )
         return True
     if run.failed:
         last = run.failed[-1].split(" ", 1)
-        rep.add(WARN, f"The bridge's evaluate failed {len(run.failed)} "
-                      f"time{'s' if len(run.failed) > 1 else ''} "
-                      + ("after its last frame line" if n else "in this launch")
-                      + f" ({', '.join(last)}).",
-                "Three failures in a row turn the bridge off; this log has no "
-                "such stop, so it kept running. A frame whose evaluate failed "
-                "gets no neural output.")
+        rep.add(
+            WARN,
+            f"The bridge's evaluate failed {len(run.failed)} "
+            f"time{'s' if len(run.failed) > 1 else ''} "
+            + ("after its last frame line" if n else "in this launch")
+            + f" ({', '.join(last)}).",
+            "Three failures in a row turn the bridge off; this log has no "
+            "such stop, so it kept running. A frame whose evaluate failed "
+            "gets no neural output.",
+        )
     if not n and run.refused:
-        rep.add(BAD, f"NVIDIA's runtime would not create the game's DLSS feature ({run.refused}).",
-                "The bridge asks NGX for the feature the game asked for and has "
-                "nothing to deliver into without it. The DLSS 5 add-on is not "
-                "involved yet at that point; the driver and the nvngx_dlss build "
-                "the game loads are.")
+        rep.add(
+            BAD,
+            f"NVIDIA's runtime would not create the game's DLSS feature ({run.refused}).",
+            "The bridge asks NGX for the feature the game asked for and has "
+            "nothing to deliver into without it. The DLSS 5 add-on is not "
+            "involved yet at that point; the driver and the nvngx_dlss build "
+            "the game loads are.",
+        )
     if not n and run.recorded:
-        rep.add(INFO, f"The Vulkan mirror recorded at least {run.recorded} "
-                      f"frame{'' if run.recorded == 1 else 's'}; none is counted as "
-                      f"delivered yet.",
-                "It counts delivered frames every 600, after their evaluate "
-                "finished.")
+        rep.add(
+            INFO,
+            f"The Vulkan mirror recorded at least {run.recorded} "
+            f"frame{'' if run.recorded == 1 else 's'}; none is counted as "
+            f"delivered yet.",
+            "It counts delivered frames every 600, after their evaluate finished.",
+        )
     if not n and run.on_d3d12 and not run.called and not synthetic:
         # #1014 (Atomic Heart, read as DX11 from its d3d11 import): the game
         # drew with D3D12, the bridge counted no call, and the person saw
         # the pass switch with F6. On D3D12 the DLSS 5 add-on hooks the
         # game's own DLSS call itself - the native route - and the bridge,
         # which carries a DirectX 11 game's call, has nothing to take.
-        rep.add(INFO, "The game drew with Direct3D 12 in this launch.",
-                f"{BRIDGE_LOG} says ReShade's effect runtime was on D3D12 and "
-                f"the bridge counted no DLSS call. The bridge carries a "
-                f"DirectX 11 game's DLSS call; on Direct3D 12 the DLSS 5 "
-                f"add-on takes the game's own call by itself, with no bridge. "
-                f"That is the native route.")
-        rep.verdict = ("The game ran on Direct3D 12, where the DLSS 5 add-on "
-                       "takes the game's own DLSS call without the bridge - "
-                       "install the native route for this game; if F6 already "
-                       "switches the pass, the add-on is doing it.")
+        rep.add(
+            INFO,
+            "The game drew with Direct3D 12 in this launch.",
+            f"{BRIDGE_LOG} says ReShade's effect runtime was on D3D12 and "
+            f"the bridge counted no DLSS call. The bridge carries a "
+            f"DirectX 11 game's DLSS call; on Direct3D 12 the DLSS 5 "
+            f"add-on takes the game's own call by itself, with no bridge. "
+            f"That is the native route.",
+        )
+        rep.verdict = (
+            "The game ran on Direct3D 12, where the DLSS 5 add-on "
+            "takes the game's own DLSS call without the bridge - "
+            "install the native route for this game; if F6 already "
+            "switches the pass, the add-on is doing it."
+        )
         return True
     if not n:
         # The "no frame log" line is gone for this launch, so the verdict
         # cannot say the route logs none (gate 2.0.7).
-        rep.verdict = (f"The game called DLSS and the bridge delivered no frame - "
-                       f"the {own_panel} says why, and 'report a bug' carries "
-                       f"{BRIDGE_LOG}."
-                       if run.called else
-                       # A synthetic contract is for games that make no
-                       # call, so "no call" alone does not blame the game
-                       # (gate 2.1.0); the feeder needs no call at all.
-                       f"The bridge counted no DLSS call and delivered no "
-                       f"frame - the {own_panel} says why. The feeder route "
-                       f"draws its own frame and needs no call."
-                       if synthetic and run.asked_none else
-                       f"The bridge attached and delivered no frame from the "
-                       f"driver's optical flow - the {own_panel} says why."
-                       if synthetic else
-                       # Not "turn DLSS on": it was on for #637, with Ray
-                       # Reconstruction - which replaces Super Resolution,
-                       # the one call the bridge takes over.
-                       f"The bridge attached and delivered no frame - its log "
-                       f"shows no DLSS Super Resolution call from the game. In "
-                       f"the game's menu turn DLSS on and, if it has Ray "
-                       f"Reconstruction, turn that off, then check the "
-                       f"{own_panel}.")
+        rep.verdict = (
+            f"The game called DLSS and the bridge delivered no frame - "
+            f"the {own_panel} says why, and 'report a bug' carries "
+            f"{BRIDGE_LOG}."
+            if run.called
+            # A synthetic contract is for games that make no
+            # call, so "no call" alone does not blame the game
+            # (gate 2.1.0); the feeder needs no call at all.
+            else f"The bridge counted no DLSS call and delivered no "
+            f"frame - the {own_panel} says why. The feeder route "
+            f"draws its own frame and needs no call."
+            if synthetic and run.asked_none
+            else f"The bridge attached and delivered no frame from the "
+            f"driver's optical flow - the {own_panel} says why."
+            if synthetic
+            # Not "turn DLSS on": it was on for #637, with Ray
+            # Reconstruction - which replaces Super Resolution,
+            # the one call the bridge takes over.
+            else f"The bridge attached and delivered no frame - its log "
+            f"shows no DLSS Super Resolution call from the game. In "
+            f"the game's menu turn DLSS on and, if it has Ray "
+            f"Reconstruction, turn that off, then check the "
+            f"{own_panel}."
+        )
         return True
-    rep.verdict = (f"The bridge delivered {frames}; whether the neural pass "
-                   f"drew them is in no log - switch the pass off and on in "
-                   f"the {panel} and compare the picture.")
+    rep.verdict = (
+        f"The bridge delivered {frames}; whether the neural pass "
+        f"drew them is in no log - switch the pass off and on in "
+        f"the {panel} and compare the picture."
+    )
     return True
 
 
-def _bridge_excerpt(text: str, n: int = 6, budget: int = 900,
-                    width: int = 200) -> list[str]:
+def _bridge_excerpt(
+    text: str, n: int = 6, budget: int = 900, width: int = 200
+) -> list[str]:
     """The lines a report carries: the "attached." line, the first and last
     frame lines, the last three frame-rate lines, every stop, failure and
     crash line, and the tail - in the log's order, inside the budget. The
@@ -380,21 +470,32 @@ def _bridge_excerpt(text: str, n: int = 6, budget: int = 900,
     if not lines:
         # A file with no "attached." line is still a file: its last lines,
         # rather than "(none)", which reads as no log at all (#155).
-        return [ln.rstrip()[:width] for ln in (text or "").splitlines()
-                if ln.strip()][-8:]
+        return [ln.rstrip()[:width] for ln in (text or "").splitlines() if ln.strip()][
+            -8:
+        ]
     found = [(i, _BRIDGE_FRAME.search(ln)) for i, ln in enumerate(lines)]
     frames = [i for i, m in found if m and (m.group(1) or m.group(3))]
     so_far = [i for i, m in found if m and m.group(2)]
     stats = [i for i, ln in enumerate(lines) if _BRIDGE_STATS.search(ln)]
-    stops = [i for i, ln in enumerate(lines)
-             if any(p.search(ln) for p in _BRIDGE_STOPS) or _BRIDGE_FAULTED.search(ln)]
+    stops = [
+        i
+        for i, ln in enumerate(lines)
+        if any(p.search(ln) for p in _BRIDGE_STOPS) or _BRIDGE_FAULTED.search(ln)
+    ]
     failed = [i for i, ln in enumerate(lines) if _BRIDGE_FAILED.search(ln)]
     # what made "the game called DLSS" true, or the replay says "turn it on"
-    called = [i for i, ln in enumerate(lines)
-              if _BRIDGE_CALLED.search(ln) and not _BRIDGE_FAILED.search(ln)]
+    called = [
+        i
+        for i, ln in enumerate(lines)
+        if _BRIDGE_CALLED.search(ln) and not _BRIDGE_FAILED.search(ln)
+    ]
     asked = [i for i, ln in enumerate(lines) if _BRIDGE_ASKED_NONE.search(ln)]
-    crash = [j for i, ln in enumerate(lines) if "### CRASH RECORDED ###" in ln
-             for j in range(i, min(i + 4, len(lines)))]
+    crash = [
+        j
+        for i, ln in enumerate(lines)
+        if "### CRASH RECORDED ###" in ln
+        for j in range(i, min(i + 4, len(lines)))
+    ]
     # Most important first: what is dropped over budget is the end of this,
     # so the oldest tail lines go first and the attached line last. The
     # crash block and the stop lines come before the failures: six failure
@@ -402,13 +503,29 @@ def _bridge_excerpt(text: str, n: int = 6, budget: int = 900,
     # "delivered" where the machine read "stopped" (gate 2.0.7).
     # The highest frame count goes before them, or a long stop line pushed
     # it out and the replay read "before it delivered a frame".
-    firm = ([0] + frames[-1:] + so_far[-1:] + crash[:4] + stops[-4:] + frames[:1]
-            + called[-1:] + asked[-1:] + failed[-2:] + stats[-1:])
-    keep = list(dict.fromkeys(firm + stats[-3:-1]
-                              + list(range(len(lines) - 1, max(0, len(lines) - n) - 1, -1))))
+    firm = (
+        [0]
+        + frames[-1:]
+        + so_far[-1:]
+        + crash[:4]
+        + stops[-4:]
+        + frames[:1]
+        + called[-1:]
+        + asked[-1:]
+        + failed[-2:]
+        + stats[-1:]
+    )
+    keep = list(
+        dict.fromkeys(
+            firm
+            + stats[-3:-1]
+            + list(range(len(lines) - 1, max(0, len(lines) - n) - 1, -1))
+        )
+    )
 
     def size(idx):
         return len("\n".join(lines[i][:width] for i in idx))
+
     while len(keep) > 1 and size(sorted(keep)) > budget:
         keep.pop()
     return [lines[i][:width] for i in sorted(keep)]

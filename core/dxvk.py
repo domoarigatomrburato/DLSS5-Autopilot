@@ -21,6 +21,7 @@ DXVK 3.1, DLSS5-Feeder 0.7.0): the DLAA feature builds and frames flow.
 
 DXVK is MIT-licensed; releases are at github.com/doitsujin/dxvk.
 """
+
 from __future__ import annotations
 
 import shutil
@@ -78,7 +79,8 @@ def target_dir(exe_dir: Path, x64: bool, api: str) -> str:
     if api != "DX9":
         return ""
     from . import pe
-    for sub in (("bin/win64", "bin") if x64 else ("bin",)):
+
+    for sub in ("bin/win64", "bin") if x64 else ("bin",):
         dll = Path(exe_dir) / sub / SOURCE_RENDERER
         if not dll.is_file():
             continue
@@ -89,6 +91,7 @@ def target_dir(exe_dir: Path, x64: bool, api: str) -> str:
             continue
         return sub
     return ""
+
 
 BACKUP_SUFFIX = ".dlss5-autopilot-backup"
 
@@ -105,13 +108,18 @@ def logs_for(exe: Path | None) -> tuple[str, ...]:
     if exe is None:
         return ()
     stem = exe.stem
-    return (f"{stem}_dxgi.log", f"{stem}_d3d11.log", f"{stem}_d3d9.log",
-            f"{stem}_d3d8.log")
+    return (
+        f"{stem}_dxgi.log",
+        f"{stem}_d3d11.log",
+        f"{stem}_d3d9.log",
+        f"{stem}_d3d8.log",
+    )
 
 
 def resolve() -> tuple[str, str]:
     """(version, download_url) of the latest DXVK release archive."""
     from . import sources
+
     rel = sources.json_or_html(API)
     for a in rel.get("assets", []):
         n = a["name"].lower()
@@ -122,9 +130,14 @@ def resolve() -> tuple[str, str]:
 
 def _extract(tgz: Path, member_suffix: str, dest: Path) -> None:
     with tarfile.open(tgz, "r:gz") as t:
-        hit = next((m for m in t.getmembers()
-                    if m.isfile() and m.name.lower().endswith(member_suffix.lower())),
-                   None)
+        hit = next(
+            (
+                m
+                for m in t.getmembers()
+                if m.isfile() and m.name.lower().endswith(member_suffix.lower())
+            ),
+            None,
+        )
         if hit is None:
             raise RuntimeError(f"{tgz.name} does not contain {member_suffix}.")
         src = t.extractfile(hit)
@@ -150,7 +163,9 @@ def is_dxvk(path: Path) -> bool:
         return False
 
 
-def install(exe_dir: Path, x64: bool, log=None, api: str = "DX11") -> tuple[str, list[str]]:
+def install(
+    exe_dir: Path, x64: bool, log=None, api: str = "DX11"
+) -> tuple[str, list[str]]:
     """Put DXVK beside the game. Returns (version, files written).
 
     Anything already sitting under one of DXVK's names - an ENB, a game's own
@@ -192,8 +207,12 @@ def install(exe_dir: Path, x64: bool, log=None, api: str = "DX11") -> tuple[str,
         _extract(tgz, f"{arch}/{name}", dest)
         written.append(pre + name)
     if sub:
-        log(f"      into {sub}\\ - a Source engine game loads its d3d9.dll "
-            f"from there ({SOURCE_RENDERER}), never from beside the exe")
-    log(f"      {', '.join(names)} ({arch} build) - the game now renders "
-        f"through Vulkan; ReShade loads as a Vulkan layer, nothing hooks the game")
+        log(
+            f"      into {sub}\\ - a Source engine game loads its d3d9.dll "
+            f"from there ({SOURCE_RENDERER}), never from beside the exe"
+        )
+    log(
+        f"      {', '.join(names)} ({arch} build) - the game now renders "
+        f"through Vulkan; ReShade loads as a Vulkan layer, nothing hooks the game"
+    )
     return ver, written

@@ -5,6 +5,7 @@ so a slow frame makes the motion skip ahead rather than run long. Starting an
 animation under a key that is already moving replaces it - hovering from one
 cover to the next never leaves two fades fighting over the same item.
 """
+
 from __future__ import annotations
 
 import time
@@ -19,14 +20,19 @@ def mix(a: str, b: str, k: float) -> str:
     k = max(0.0, min(1.0, k))
     ra, ga, ba = int(a[1:3], 16), int(a[3:5], 16), int(a[5:7], 16)
     rb, gb, bb = int(b[1:3], 16), int(b[3:5], 16), int(b[5:7], 16)
-    return "#%02x%02x%02x" % (round(ra + (rb - ra) * k), round(ga + (gb - ga) * k),
-                              round(ba + (bb - ba) * k))
+    return "#%02x%02x%02x" % (
+        round(ra + (rb - ra) * k),
+        round(ga + (gb - ga) * k),
+        round(ba + (bb - ba) * k),
+    )
 
 
 def ink_on(bg: str) -> str:
     """Dark or light text, whichever reads on this background."""
     r, g, b = int(bg[1:3], 16), int(bg[3:5], 16), int(bg[5:7], 16)
-    return "#111111" if (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.5 else "#ffffff"
+    return (
+        "#111111" if (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.5 else "#ffffff"
+    )
 
 
 class Motion:
@@ -49,9 +55,11 @@ class Motion:
                 # goes to the log rather than vanishing with the frame.
                 self.jobs.pop(key, None)
                 import tkinter as _tk
+
                 if not isinstance(e, _tk.TclError):
                     try:
                         from .. import log
+
                         log.exception(f"animation '{key}'", e)
                     except Exception:
                         pass
@@ -62,6 +70,7 @@ class Motion:
                 self.jobs.pop(key, None)
                 if done:
                     done()
+
         tick()
 
     def stop(self, key: str) -> None:

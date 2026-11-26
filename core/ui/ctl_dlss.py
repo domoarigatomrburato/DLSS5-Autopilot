@@ -5,6 +5,7 @@ Every folder walk, download and file swap runs on a worker; the page reads
 the last scan from %LOCALAPPDATA%\\dlss5-autopilot\\dlss-scan.json, so it opens
 with its rows at once and is usable while a new scan runs.
 """
+
 from __future__ import annotations
 
 import os
@@ -27,20 +28,24 @@ def _first_line(text: str) -> str:
 class DlssControl:
     # ------------------------------------------------------------ state
     def _dlss_init(self) -> None:
-        self.dlss_data: dict | None = None     # the last scan, loaded on first use
+        self.dlss_data: dict | None = None  # the last scan, loaded on first use
         self.dlss_scanning = False
-        self.dlss_seen = (0, 0, "")            # (games read, of, the one being read)
-        self.dlss_job: str | None = None       # folder being updated or restored
-        self.dlss_pct = -1                     # download progress of that job
-        self.dlss_queue: list[str] = []        # folders "update all" still has to do
+        self.dlss_seen = (0, 0, "")  # (games read, of, the one being read)
+        self.dlss_job: str | None = None  # folder being updated or restored
+        self.dlss_pct = -1  # download progress of that job
+        self.dlss_queue: list[str] = []  # folders "update all" still has to do
         self.dlss_results: dict[str, tuple[bool, str]] = {}
-        self.dlss_pending: str | None = None    # a game page's update waiting for a scan to end
-        self.dlss_batch: dict | None = None     # what "update all" did so far
-        self.dlss_reread_q: list = []           # games dlss_reread still has to read
-        self._dlss_rereading = False            # the one worker draining that queue
+        self.dlss_pending: str | None = (
+            None  # a game page's update waiting for a scan to end
+        )
+        self.dlss_batch: dict | None = None  # what "update all" did so far
+        self.dlss_reread_q: list = []  # games dlss_reread still has to read
+        self._dlss_rereading = False  # the one worker draining that queue
         self._dlss_rq_lock = threading.Lock()
-        self._dlss_late: dict[str, dict] = {}   # rows re-read while a scan of every game ran
-        self._dlss_waiting = False              # a read waits for the library scan to end
+        self._dlss_late: dict[
+            str, dict
+        ] = {}  # rows re-read while a scan of every game ran
+        self._dlss_waiting = False  # a read waits for the library scan to end
         self._dlss_wait_fresh = False
 
     def dlss_state(self) -> dict:
@@ -55,8 +60,13 @@ class DlssControl:
             hid = self.hidden()
         except Exception:
             hid = set()
-        return [g for g in self.all_games if getattr(g, "kind", "game") != "video" and g.exe
-                and str(g.folder) not in hid]
+        return [
+            g
+            for g in self.all_games
+            if getattr(g, "kind", "game") != "video"
+            and g.exe
+            and str(g.folder) not in hid
+        ]
 
     @staticmethod
     def _dlss_stamp(g) -> float:
@@ -75,11 +85,16 @@ class DlssControl:
 
     @staticmethod
     def _dlss_entry(folder: str, d: dict) -> du.Entry:
-        return du.Entry(path=Path(folder) / str(d.get("rel", "")), rel=str(d.get("rel", "")),
-                        family=d.get("family") if d.get("family") in du.FILE_OF else "dlss",
-                        version=str(d.get("version") or ""), state=str(d.get("state") or du.ORIGINAL),
-                        original=str(d.get("original") or ""), label=str(d.get("label") or ""),
-                        backup=Path("backup") if d.get("backup") else None)
+        return du.Entry(
+            path=Path(folder) / str(d.get("rel", "")),
+            rel=str(d.get("rel", "")),
+            family=d.get("family") if d.get("family") in du.FILE_OF else "dlss",
+            version=str(d.get("version") or ""),
+            state=str(d.get("state") or du.ORIGINAL),
+            original=str(d.get("original") or ""),
+            label=str(d.get("label") or ""),
+            backup=Path("backup") if d.get("backup") else None,
+        )
 
     def dlss_newest(self) -> dict:
         n = self.dlss_state().get("newest")
@@ -91,40 +106,67 @@ class DlssControl:
         if not isinstance(info, dict) or not info.get("entries"):
             return None
         news = self.dlss_newest()
-        entries = [self._dlss_entry(str(g.folder), d) for d in info["entries"] if isinstance(d, dict)]
+        entries = [
+            self._dlss_entry(str(g.folder), d)
+            for d in info["entries"]
+            if isinstance(d, dict)
+        ]
         behind = [e for e in entries if du.outdated(e, news.get(e.family))]
-        return {"g": g, "entries": entries, "behind": behind, "news": news,
-                "anticheat": str(info.get("anticheat") or ""), "running": str(info.get("running") or ""),
-                "anticheat_found": str(info.get("anticheat_found") or ""),
-                "held": du.held(g),
-                "restorable": any(e.backup is not None or e.state == du.UPDATED for e in entries)}
+        return {
+            "g": g,
+            "entries": entries,
+            "behind": behind,
+            "news": news,
+            "anticheat": str(info.get("anticheat") or ""),
+            "running": str(info.get("running") or ""),
+            "anticheat_found": str(info.get("anticheat_found") or ""),
+            "held": du.held(g),
+            "restorable": any(
+                e.backup is not None or e.state == du.UPDATED for e in entries
+            ),
+        }
 
     @staticmethod
     def _dlss_rank(r) -> tuple:
         # what can be updated now first, then what is behind but needs a look
         # (anti-cheat, running), then the rest
-        now = bool(r["behind"] and not r["anticheat"] and not r["held"] and not r["running"])
+        now = bool(
+            r["behind"] and not r["anticheat"] and not r["held"] and not r["running"]
+        )
         return (not now, not r["behind"], r["g"].name.lower())
 
     def dlss_rows(self) -> list[dict]:
-        rows = [r for r in (self.dlss_row(g) for g in self._dlss_games()) if r is not None]
+        rows = [
+            r for r in (self.dlss_row(g) for g in self._dlss_games()) if r is not None
+        ]
         # Ordered once per scan, then kept: a row that jumps down the moment
         # its update ends (and again for every game of "update all") loses
         # the person's place. New rows go after the ordered ones.
         order = {f: i for i, f in enumerate(self.dlss_state().get("order") or [])}
-        rows.sort(key=lambda r: (order.get(str(r["g"].folder), len(order)), self._dlss_rank(r)))
+        rows.sort(
+            key=lambda r: (
+                order.get(str(r["g"].folder), len(order)),
+                self._dlss_rank(r),
+            )
+        )
         return rows
 
     def dlss_todo(self) -> list[dict]:
         """What "update all" takes: behind, no anti-cheat, not kept, not running."""
-        return [r for r in self.dlss_rows()
-                if r["behind"] and not r["anticheat"] and not r["held"] and not r["running"]]
+        return [
+            r
+            for r in self.dlss_rows()
+            if r["behind"] and not r["anticheat"] and not r["held"] and not r["running"]
+        ]
 
     def dlss_toggle_hold(self, g) -> None:
-        """"keep its own" / "allow updates" on a game's row (#856)."""
+        """ "keep its own" / "allow updates" on a game's row (#856)."""
         on = not du.held(g)
         du.set_held(g, on)
-        self.shell.status(f"{g.name}: update all will " + ("leave it as it is" if on else "update it again"))
+        self.shell.status(
+            f"{g.name}: update all will "
+            + ("leave it as it is" if on else "update it again")
+        )
         self.refresh("dlss")
         self.refresh("game")
 
@@ -140,9 +182,18 @@ class DlssControl:
         new = r["news"].get(e.family, {}).get("version", "")
         n = len({x.family for x in r["behind"]}) - 1
         more = f" and {n} more" if n > 0 else ""
-        name = {"dlss": "dlss", "dlssg": "frame generation", "dlssd": "ray reconstruction"}[e.family]
-        held = (f" - {r['anticheat'].lower()}" if r["anticheat"]
-                else " - kept as it is" if r["held"] else "")
+        name = {
+            "dlss": "dlss",
+            "dlssg": "frame generation",
+            "dlssd": "ray reconstruction",
+        }[e.family]
+        held = (
+            f" - {r['anticheat'].lower()}"
+            if r["anticheat"]
+            else " - kept as it is"
+            if r["held"]
+            else ""
+        )
         return f"{name} {e.version} -> {new}{more}{held}"
 
     def dlss_line_quiet(self, g) -> bool:
@@ -176,6 +227,7 @@ class DlssControl:
             except Exception:
                 return
             self.q.put(("dlssrunning", now))
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_dlssrunning(self, now: dict) -> None:
@@ -194,13 +246,19 @@ class DlssControl:
         if self.dlss_scanning or not self.have_library():
             return False
         data = self.dlss_state()
-        if not data.get("at") or time.time() - float(data.get("at") or 0) > RESCAN_AFTER:
+        if (
+            not data.get("at")
+            or time.time() - float(data.get("at") or 0) > RESCAN_AFTER
+        ):
             return True
         seen = set(data.get("seen") or [])
         # A game whose bitness is not read yet (the library is enriching it)
         # cannot be read either; it becomes due once it is known.
-        return any(str(g.folder) not in seen for g in self._dlss_games()
-                   if getattr(g, "bitness", None) is not None)
+        return any(
+            str(g.folder) not in seen
+            for g in self._dlss_games()
+            if getattr(g, "bitness", None) is not None
+        )
 
     # ------------------------------------------------------------ scan
     def _dlss_read(self, g, fresh: bool, procs=None) -> dict:
@@ -210,9 +268,16 @@ class DlssControl:
         stamp = self._dlss_stamp(g)
         entries = du.scan(g, fresh=fresh)
         ac, found = du.anticheat_info(g) if entries else ("", "")
-        return {"name": g.name, "at": time.time(), "entries": [e.to_json() for e in entries],
-                "anticheat": ac, "anticheat_found": found, "stamp": stamp,
-                "running": du.running(g, procs) if entries else "", "notes": notes}
+        return {
+            "name": g.name,
+            "at": time.time(),
+            "entries": [e.to_json() for e in entries],
+            "anticheat": ac,
+            "anticheat_found": found,
+            "stamp": stamp,
+            "running": du.running(g, procs) if entries else "",
+            "notes": notes,
+        }
 
     def dlss_reread(self, g) -> None:
         """One game read again after something changed its files (a DLSS 5
@@ -222,7 +287,11 @@ class DlssControl:
         Called for many games in a row: they queue, and one worker reads them
         one after another instead of a thread and a walk per call at once. A
         game already queued is not queued twice."""
-        if g is None or getattr(g, "bitness", None) != 64 or not self.dlss_state().get("games"):
+        if (
+            g is None
+            or getattr(g, "bitness", None) != 64
+            or not self.dlss_state().get("games")
+        ):
             return
         with self._dlss_rq_lock:
             if any(str(x.folder) == str(g.folder) for x in self.dlss_reread_q):
@@ -247,6 +316,7 @@ class DlssControl:
                     log.exception(f"reading the DLSS files of {one.name} again")
                     continue
                 self.q.put(("dlssone", (str(one.folder), row)))
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_dlssone(self, payload) -> None:
@@ -270,13 +340,17 @@ class DlssControl:
         if self.dlss_scanning or self.dlss_job:
             return
         if self.busy:
-            self.shell.status("another job is running - the games are read when it ends")
+            self.shell.status(
+                "another job is running - the games are read when it ends"
+            )
             return
         if getattr(self, "scanning", False):
             # The library scan re-reads games while this would read them: a
             # game mid-enrich has no bitness yet, and was counted "32-bit
             # skipped" for a day. Read once the library is done.
-            self.shell.status("the library is being read - the dlss files are read when it ends")
+            self.shell.status(
+                "the library is being read - the dlss files are read when it ends"
+            )
             self._dlss_after_library(fresh)
             return
         gs = self._dlss_games()
@@ -286,11 +360,21 @@ class DlssControl:
         # Only the day-old read and "check again" read every game. A read
         # started because the library has new games reads those, and the
         # games whose folder changed since their last read.
-        partial = (not fresh and bool(data.get("at")) and isinstance(data.get("games"), dict)
-                   and time.time() - float(data.get("at") or 0) <= RESCAN_AFTER)
+        partial = (
+            not fresh
+            and bool(data.get("at"))
+            and isinstance(data.get("games"), dict)
+            and time.time() - float(data.get("at") or 0) <= RESCAN_AFTER
+        )
         seen_before = set(data.get("seen") or []) if partial else set()
-        stamps = {f: (v.get("stamp") if isinstance(v, dict) else None)
-                  for f, v in (data.get("games") or {}).items()} if partial else {}
+        stamps = (
+            {
+                f: (v.get("stamp") if isinstance(v, dict) else None)
+                for f, v in (data.get("games") or {}).items()
+            }
+            if partial
+            else {}
+        )
         self.dlss_scanning = True
         self._dlss_late = {}
         self.dlss_seen = (0, len(gs), "")
@@ -299,8 +383,10 @@ class DlssControl:
         def work():
             news = {}
             try:
-                news = {f: {"label": e.get("label", ""), "version": e.get("version", "")}
-                        for f, e in du.newest(refresh=fresh).items()}
+                news = {
+                    f: {"label": e.get("label", ""), "version": e.get("version", "")}
+                    for f, e in du.newest(refresh=fresh).items()
+                }
             except Exception:
                 log.exception("reading NVIDIA's newest DLSS builds")
             try:
@@ -311,8 +397,12 @@ class DlssControl:
             x86 = len([g for g in known if g.bitness != 64])
             todo = [g for g in known if g.bitness == 64]
             if partial:
-                todo = [g for g in todo if str(g.folder) not in seen_before
-                        or stamps.get(str(g.folder)) != self._dlss_stamp(g)]
+                todo = [
+                    g
+                    for g in todo
+                    if str(g.folder) not in seen_before
+                    or stamps.get(str(g.folder)) != self._dlss_stamp(g)
+                ]
             out = {}
             for i, g in enumerate(todo, 1):
                 self.q.put(("dlssseen", (i - 1, len(todo), g.name)))
@@ -322,8 +412,20 @@ class DlssControl:
                     log.exception(f"reading the DLSS files of {g.name}")
             # an unread bitness is neither checked nor skipped: not in `seen`,
             # so the game is read once the library knows it
-            self.q.put(("dlssscanned", {"at": time.time(), "newest": news, "games": out, "x86": x86,
-                                        "seen": [str(g.folder) for g in known], "partial": partial}))
+            self.q.put(
+                (
+                    "dlssscanned",
+                    {
+                        "at": time.time(),
+                        "newest": news,
+                        "games": out,
+                        "x86": x86,
+                        "seen": [str(g.folder) for g in known],
+                        "partial": partial,
+                    },
+                )
+            )
+
         threading.Thread(target=work, daemon=True).start()
 
     def _dlss_after_library(self, fresh: bool) -> None:
@@ -344,6 +446,7 @@ class DlssControl:
                     self.dlss_scan(fresh=f)
             except Exception:
                 log.exception("reading the dlss files after the library scan")
+
         self.root.after(2000, again)
 
     def _on_dlssseen(self, payload) -> None:
@@ -371,17 +474,25 @@ class DlssControl:
         self.dlss_data = data
         self.dlss_scanning = False
         data["order"] = []
-        data["order"] = [str(r["g"].folder) for r in sorted(self.dlss_rows(), key=self._dlss_rank)]
+        data["order"] = [
+            str(r["g"].folder) for r in sorted(self.dlss_rows(), key=self._dlss_rank)
+        ]
         du.save_cache(data)
         n = len([1 for v in data["games"].values() if v.get("entries")])
         behind = len([r for r in self.dlss_rows() if r["behind"]])
-        self.shell.status(f"dlss: {n} game{'s' if n != 1 else ''} ship it"
-                          + (f", {behind} behind nvidia's newest" if behind else ""))
+        self.shell.status(
+            f"dlss: {n} game{'s' if n != 1 else ''} ship it"
+            + (f", {behind} behind nvidia's newest" if behind else "")
+        )
         self.refresh("dlss")
         self.refresh("game")
         # a game page's "update" pressed while this read was running
         pending, self.dlss_pending = self.dlss_pending, None
-        g = next((x for x in self._dlss_games() if str(x.folder) == pending), None) if pending else None
+        g = (
+            next((x for x in self._dlss_games() if str(x.folder) == pending), None)
+            if pending
+            else None
+        )
         if g is not None:
             self.dlss_update(g)
 
@@ -401,12 +512,15 @@ class DlssControl:
         allow = False
         if r.get("anticheat"):
             if not self.shell.ask(
-                    f"{r['anticheat']} - update anyway?",
-                    f"{g.name} ships {r['anticheat']}"
-                    + (f" ({r['anticheat_found']})" if r.get("anticheat_found") else "")
-                    + ". An anti-cheat can read a changed DLSS file as "
-                    f"tampering, and online that can mean a ban. The game's own files are kept either way.",
-                    "update anyway", "cancel", danger=True):
+                f"{r['anticheat']} - update anyway?",
+                f"{g.name} ships {r['anticheat']}"
+                + (f" ({r['anticheat_found']})" if r.get("anticheat_found") else "")
+                + ". An anti-cheat can read a changed DLSS file as "
+                f"tampering, and online that can mean a ban. The game's own files are kept either way.",
+                "update anyway",
+                "cancel",
+                danger=True,
+            ):
                 return
             allow = True
             # the question is modal, but timers are not: a job may have begun meanwhile
@@ -414,10 +528,12 @@ class DlssControl:
                 return
         elif r.get("held"):
             if not self.shell.ask(
-                    f"{g.name} is kept as it is - update anyway?",
-                    "You marked this game to keep its own DLSS files, so update all leaves it out. "
-                    "The game's own files are kept beside the new ones either way.",
-                    "update anyway", "cancel"):
+                f"{g.name} is kept as it is - update anyway?",
+                "You marked this game to keep its own DLSS files, so update all leaves it out. "
+                "The game's own files are kept beside the new ones either way.",
+                "update anyway",
+                "cancel",
+            ):
                 return
             if not self._dlss_can_start():
                 return
@@ -447,10 +563,16 @@ class DlssControl:
         todo = self.dlss_todo()
         if not todo:
             return
-        names = ", ".join(r["g"].name for r in todo[:4]) + (f" and {len(todo) - 4} more" if len(todo) > 4 else "")
-        if not self.shell.ask(f"update dlss in {len(todo)} game{'s' if len(todo) != 1 else ''}?",
-                              f"{names}.\n\nEach game's own files are kept beside the new ones; "
-                              f"restore original puts them back.", "update", "cancel"):
+        names = ", ".join(r["g"].name for r in todo[:4]) + (
+            f" and {len(todo) - 4} more" if len(todo) > 4 else ""
+        )
+        if not self.shell.ask(
+            f"update dlss in {len(todo)} game{'s' if len(todo) != 1 else ''}?",
+            f"{names}.\n\nEach game's own files are kept beside the new ones; "
+            f"restore original puts them back.",
+            "update",
+            "cancel",
+        ):
             return
         if not self._dlss_can_start():
             return
@@ -465,7 +587,9 @@ class DlssControl:
         # of one runtime at once is how the game's own file gets lost.
         self.busy, self.action = True, "dlss"
         self.dlss_results.pop(folder, None)
-        self.shell.busy(f"{'updating' if what == 'update' else 'restoring'} dlss in {g.name}...")
+        self.shell.busy(
+            f"{'updating' if what == 'update' else 'restoring'} dlss in {g.name}..."
+        )
         self.refresh("dlss")
         last = [0.0]
 
@@ -489,6 +613,7 @@ class DlssControl:
             except Exception:
                 row = None
             self.q.put(("dlssdone", (folder, what, rep, row)))
+
         threading.Thread(target=work, daemon=True).start()
 
     def _on_dlssprog(self, payload) -> None:
@@ -505,7 +630,12 @@ class DlssControl:
         except Exception:
             # whatever went wrong drawing the answer, the job is over: a
             # "working" row and a stuck flag would block every later job
-            self.dlss_job, self.dlss_pct, self.dlss_queue, self.dlss_batch = None, -1, [], None
+            self.dlss_job, self.dlss_pct, self.dlss_queue, self.dlss_batch = (
+                None,
+                -1,
+                [],
+                None,
+            )
             self.busy, self.action = False, ""
             self.shell.busy("")
             raise
@@ -520,25 +650,39 @@ class DlssControl:
             du.save_cache(data)
         name = (row or {}).get("name") or Path(folder).name
         g_ = getattr(self, "game", None)
-        if rep.done and g_ is not None and str(getattr(g_, "folder", "")) == str(folder) \
-                and hasattr(self, "forget_diagnosis"):
+        if (
+            rep.done
+            and g_ is not None
+            and str(getattr(g_, "folder", "")) == str(folder)
+            and hasattr(self, "forget_diagnosis")
+        ):
             # a runtime was swapped or put back: the last answer read the old one (#761's class)
             self.forget_diagnosis()
         if rep.ok:
             # The row's own lines already show the versions; what the row adds
             # is a note the person has to know (a launcher put its file back,
             # a backup was gone), else one word.
-            done = ("updated" if what == "update" else "the game's own files are back") if rep.done else ""
+            done = (
+                ("updated" if what == "update" else "the game's own files are back")
+                if rep.done
+                else ""
+            )
             if done:
                 text = done
             elif rep.notes:
                 text = rep.notes[0]
             else:
                 text = (rep.skipped or ["nothing to change"])[0]
-            self.write(f"{name}: " + "; ".join(rep.done + rep.notes + rep.skipped), "ok")
+            self.write(
+                f"{name}: " + "; ".join(rep.done + rep.notes + rep.skipped), "ok"
+            )
         else:
             # the row names the file inside the game; the log keeps the whole path
-            text = rep.error.replace(folder + os.sep, "").replace(folder + "/", "").replace(folder, "the game folder")
+            text = (
+                rep.error.replace(folder + os.sep, "")
+                .replace(folder + "/", "")
+                .replace(folder, "the game folder")
+            )
             if rep.done:
                 # part of it went through: say so, above the part that did not
                 moved = ", ".join(line.split("  ")[0] for line in rep.done)
@@ -563,8 +707,14 @@ class DlssControl:
         batch, self.dlss_batch = self.dlss_batch, None
         if batch is not None:
             failed = batch["failed"]
-            self.shell.status(f"dlss: {batch['done']} updated"
-                              + (f", {len(failed)} failed - {', '.join(failed[:3])}" if failed else ""))
+            self.shell.status(
+                f"dlss: {batch['done']} updated"
+                + (
+                    f", {len(failed)} failed - {', '.join(failed[:3])}"
+                    if failed
+                    else ""
+                )
+            )
         else:
             self.shell.status(f"{name}: {_first_line(text)}")
         self.refresh("dlss")

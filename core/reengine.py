@@ -16,6 +16,7 @@ Detection is by the engine's own marker file rather than a name list, so it
 covers a title nobody has told us about yet - the same reasoning as
 anticheat.py.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

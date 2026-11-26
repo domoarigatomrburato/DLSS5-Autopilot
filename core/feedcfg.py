@@ -15,6 +15,7 @@ ABOUT "DLSS Performance mode":
     The real performance knob is work_resolution (below): it shrinks the area
     the neural pass runs over, between 50% and 100%.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,9 +27,9 @@ NAME = "dlss5-feed.cfg"
 PRESETS = {
     # Feeder 2.0.0: "preset=0 now means DLSS preset L" (it was the DLL's own
     # pick, K, before). The number written is the same either way.
-    0:  "Default (preset L from feeder 2.0.0, K before)",
-    5:  "Preset E - legacy CNN (helps with flame/transparency warping)",
-    6:  "Preset F - legacy CNN",
+    0: "Default (preset L from feeder 2.0.0, K before)",
+    5: "Preset E - legacy CNN (helps with flame/transparency warping)",
+    6: "Preset F - legacy CNN",
     10: "Preset J - transformer",
     11: "Preset K - transformer",
     12: "Preset L - 2nd-gen transformer",
@@ -95,11 +96,13 @@ def read(path: Path) -> dict:
     return out
 
 
-def write(dir_: Path, settings: dict | None = None, host_window: bool | None = None) -> Path:
+def write(
+    dir_: Path, settings: dict | None = None, host_window: bool | None = None
+) -> Path:
     """Create/update dlss5-feed.cfg, preserving keys we do not manage."""
     p = dir_ / NAME
     cur = defaults()
-    cur.update({k: v for k, v in read(p).items()})      # the user's existing values
+    cur.update({k: v for k, v in read(p).items()})  # the user's existing values
     if settings:
         cur.update(settings)
     if host_window is not None:
@@ -123,8 +126,10 @@ def describe(settings: dict) -> list[str]:
     # so none of them is trusted to be a number this locale can parse (#69).
     wr = int(number(settings.get("work_resolution", 100), 100))
     if wr != 100:
-        out.append(f"work_resolution={wr}% (smaller neural work area - "
-                   f"higher fps, slightly less detail)")
+        out.append(
+            f"work_resolution={wr}% (smaller neural work area - "
+            f"higher fps, slightly less detail)"
+        )
     pr = int(number(settings.get("preset", 0)))
     if pr:
         out.append(f"preset={pr} ({PRESETS.get(pr, '?')})")
@@ -158,7 +163,7 @@ OFA_GRID = {
 OFA_PERF = {
     20: "fast - default",
     10: "medium",
-    5:  "slow - best quality, most expensive",
+    5: "slow - best quality, most expensive",
 }
 
 
@@ -194,11 +199,19 @@ BRIDGE_STAMP = "# dlss5-bridge keep"
 # Carried only when they differ from the bridge's own default: a dump
 # holds every one of them, and a default carried under "keep" is a default
 # frozen.
-BRIDGE_CARRY = {"ofa_grid": "2", "ofa_perf": "20", "mv_sign_x": "0",
-                "mv_sign_y": "0", "source": "auto", "synth": "0",
-                # set by hand, and the bridge's README names unwrap=2 as the
-                # value to try when a session that should work does not
-                "unwrap": "1", "vk_sync": "0", "vk_present": "0"}
+BRIDGE_CARRY = {
+    "ofa_grid": "2",
+    "ofa_perf": "20",
+    "mv_sign_x": "0",
+    "mv_sign_y": "0",
+    "source": "auto",
+    "synth": "0",
+    # set by hand, and the bridge's README names unwrap=2 as the
+    # value to try when a session that should work does not
+    "unwrap": "1",
+    "vk_sync": "0",
+    "vk_present": "0",
+}
 
 
 def _chosen(k: str, v) -> bool:
@@ -219,24 +232,27 @@ def write_bridge(dir_: Path, settings: dict | None = None) -> Path:
     except OSError:
         first = ""
     if first.startswith("# dlss5-bridge ") and first != BRIDGE_STAMP:
-        old = {k: v for k, v in old.items()
-               if k in BRIDGE_CARRY and _chosen(k, v)}
+        old = {k: v for k, v in old.items() if k in BRIDGE_CARRY and _chosen(k, v)}
     cur.update(old)
     if settings:
         cur.update(settings)
-    p.write_text(BRIDGE_STAMP + "\n"
-                 + "# written by dlss5-autopilot; the line above keeps it "
-                   "across bridge versions\n"
-                 + "\n".join(f"{k}={v}" for k, v in cur.items()) + "\n",
-                 encoding="utf8")
+    p.write_text(
+        BRIDGE_STAMP + "\n" + "# written by dlss5-autopilot; the line above keeps it "
+        "across bridge versions\n"
+        + "\n".join(f"{k}={v}" for k, v in cur.items())
+        + "\n",
+        encoding="utf8",
+    )
     return p
 
 
 def describe_bridge(settings: dict) -> list[str]:
     out = []
     if int(number(settings.get("synth", 0))):
-        out.append(f"synth=1, synth_after={settings.get('synth_after', 0)} (substitute "
-                   f"contract on - the game has no DLSS of its own)")
+        out.append(
+            f"synth=1, synth_after={settings.get('synth_after', 0)} (substitute "
+            f"contract on - the game has no DLSS of its own)"
+        )
     g = settings.get("ofa_grid")
     if g is not None and int(number(g, 2)) != 2:
         out.append(f"ofa_grid={g} ({OFA_GRID.get(int(number(g, 2)), '?')})")

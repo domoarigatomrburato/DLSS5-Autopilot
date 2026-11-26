@@ -39,6 +39,7 @@ Counts only. No user names, no issue numbers, nothing that ties a row back
 to a person - the whole point of the file is that it can be published
 without anyone having agreed to be published.
 """
+
 from __future__ import annotations
 
 import json
@@ -53,8 +54,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from core.community import parse            # noqa: E402  the one parser
-from core.community import counts           # noqa: E402  and what it cannot see
+from core.community import parse  # noqa: E402  the one parser
+from core.community import counts  # noqa: E402  and what it cannot see
 
 # The repository this one was forked from, read as well as REPO.
 UPSTREAM = "Kizzuwatnaa/DLSS5-Autopilot"
@@ -67,13 +68,22 @@ UPSTREAM = "Kizzuwatnaa/DLSS5-Autopilot"
 # issue number: the numbers below are upstream's, and a result filed here
 # under the same number is somebody else's.
 SAID_IN_WORDS = {
-    (UPSTREAM, 414): "worked",      # "It Did Work." / "WORKED FINE" - Arkham Knight, renodx
-    (UPSTREAM, 388): "worked",      # "God of War -working" - bridge
-    (UPSTREAM, 307): "worked",      # "work, set to 100% only" - Venus Vacation PRISM, renodx
-    (UPSTREAM, 257): "worked",      # "It Did Work" - DragonSword, native
-    (UPSTREAM, 242): "worked",      # "did work but charges me to update" - No Man's Sky, bridge
-    (UPSTREAM, 222): "worked",      # "inZOI - worked perfectly" - optiscaler
-    (UPSTREAM, 437): "worked",      # "It appeared to work in game" - Red Dead Redemption 2, upstream
+    (UPSTREAM, 414): "worked",  # "It Did Work." / "WORKED FINE" - Arkham Knight, renodx
+    (UPSTREAM, 388): "worked",  # "God of War -working" - bridge
+    (
+        UPSTREAM,
+        307,
+    ): "worked",  # "work, set to 100% only" - Venus Vacation PRISM, renodx
+    (UPSTREAM, 257): "worked",  # "It Did Work" - DragonSword, native
+    (
+        UPSTREAM,
+        242,
+    ): "worked",  # "did work but charges me to update" - No Man's Sky, bridge
+    (UPSTREAM, 222): "worked",  # "inZOI - worked perfectly" - optiscaler
+    (
+        UPSTREAM,
+        437,
+    ): "worked",  # "It appeared to work in game" - Red Dead Redemption 2, upstream
 }
 
 
@@ -112,6 +122,7 @@ def number(value, low: float, high: float) -> float | None:
         return None
     return value
 
+
 API = "https://api.github.com/repos/{repo}/issues"
 # The published file is downloaded by every copy of the tool. Anybody can
 # open an issue, so the number of games in it is bounded here too.
@@ -139,17 +150,20 @@ def bump(table: dict, key: str, route: str, result: str) -> None:
 def issues(repo: str, token: str) -> list[dict]:
     out: list[dict] = []
     page = 1
-    while page <= 50:                        # 5000 issues is plenty of head room
+    while page <= 50:  # 5000 issues is plenty of head room
         # No label filter: GitHub silently drops ?labels= from a
         # prefilled new-issue URL for anyone without triage rights on the
         # repository, so most results arrive unlabelled. parse() is the
         # filter that matters - it ignores anything without a valid record.
-        url = (f"{API.format(repo=repo)}?state=all"
-               f"&per_page=100&page={page}")
-        req = urllib.request.Request(url, headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "dlss5-autopilot-compatibility",
-            "Authorization": f"Bearer {token}"})
+        url = f"{API.format(repo=repo)}?state=all&per_page=100&page={page}"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "User-Agent": "dlss5-autopilot-compatibility",
+                "Authorization": f"Bearer {token}",
+            },
+        )
         with urllib.request.urlopen(req, timeout=60) as r:
             batch = json.load(r)
         if not batch:
@@ -165,8 +179,11 @@ def main() -> int:
     repo = os.environ.get("REPO")
     page_dir = os.environ.get("PAGE_DIR")
     if not repo or not page_dir:
-        print("REPO (owner/name) and PAGE_DIR (where the page and the "
-              "feed are written) are both required", file=sys.stderr)
+        print(
+            "REPO (owner/name) and PAGE_DIR (where the page and the "
+            "feed are written) are both required",
+            file=sys.stderr,
+        )
         return 2
     repos = [repo] + ([UPSTREAM] if repo != UPSTREAM else [])
     token = os.environ.get("GH_TOKEN") or ""
@@ -200,8 +217,9 @@ def main() -> int:
         if not exe or not route or len(games) >= MAX_GAMES and exe not in games:
             continue
         seen += 1
-        g = games.setdefault(exe, {"name": "", "routes": {}, "drivers": {},
-                                   "measured": {}})
+        g = games.setdefault(
+            exe, {"name": "", "routes": {}, "drivers": {}, "measured": {}}
+        )
         if not g["name"]:
             g["name"] = text(rec.get("game"), 80)
         for key, bucket in (("route", "routes"), ("driver", "drivers")):
@@ -221,9 +239,16 @@ def main() -> int:
         drv = text(rec.get("driver"), 20)
         if DRIVER.match(drv):
             bump(by_driver, drv, route, rec["result"])
-        key = (exe, route, text(rec.get("build"), 60), text(rec.get("api"), 12).upper(),
-               text(rec.get("sm"), 12).lower(), text(rec.get("gpu"), 40),
-               text(rec.get("driver"), 40), text(rec.get("tool"), 20))
+        key = (
+            exe,
+            route,
+            text(rec.get("build"), 60),
+            text(rec.get("api"), 12).upper(),
+            text(rec.get("sm"), 12).lower(),
+            text(rec.get("gpu"), 40),
+            text(rec.get("driver"), 40),
+            text(rec.get("tool"), 20),
+        )
         row = configs.setdefault(key, {"worked": 0, "failed": 0, "last": ""})
         row[rec["result"]] += 1
         # The day only, from GitHub's own clock: when this configuration was
@@ -236,15 +261,21 @@ def main() -> int:
         res = number(rec.get("res"), 1, 100)
         if rec["result"] == "worked" and res is not None:
             seen_ms.setdefault(exe, {}).setdefault(route, []).append(
-                (res, number(rec.get("ms"), 0, 10_000),
-                 number(rec.get("fps"), 0, 10_000)))
+                (
+                    res,
+                    number(rec.get("ms"), 0, 10_000),
+                    number(rec.get("fps"), 0, 10_000),
+                )
+            )
 
     for exe, routes in seen_ms.items():
         for route, samples in routes.items():
             if not samples:
                 continue
-            row = {"n": len(samples),
-                   "res": int(round(median([s[0] for s in samples])))}
+            row = {
+                "n": len(samples),
+                "res": int(round(median([s[0] for s in samples]))),
+            }
             for i, key in ((1, "ms"), (2, "fps")):
                 vals = [s[i] for s in samples if s[i] is not None]
                 if vals:
@@ -253,7 +284,7 @@ def main() -> int:
 
     for g in games.values():
         if not g.get("measured"):
-            g.pop("measured", None)   # a game nobody measured says nothing
+            g.pop("measured", None)  # a game nobody measured says nothing
 
     payload = {
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -264,12 +295,15 @@ def main() -> int:
     }
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import compat_page
+
     rows = [dict(zip(compat_page.KEYS, k), **v) for k, v in configs.items()]
     # Writes the page and compatibility.json beside it.
     out = compat_page.write(payload, rows, Path(page_dir))
     print(f"{len(rows)} configurations -> {out}")
-    print(f"{seen} results across {len(games)} games from {', '.join(repos)}"
-          f" ({unseen} left out: the tool could not see their outcome)")
+    print(
+        f"{seen} results across {len(games)} games from {', '.join(repos)}"
+        f" ({unseen} left out: the tool could not see their outcome)"
+    )
     return 0
 
 

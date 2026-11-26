@@ -25,6 +25,7 @@ Research software, in its author's words: higher multipliers and Vulkan may
 give artifacts, a frozen picture or a crash. Off by default, RTX 40 only,
 and only offered when the game itself ships a DLSS Frame Generation runtime.
 """
+
 from __future__ import annotations
 
 import json
@@ -49,8 +50,9 @@ PIN_TAG = "v1.2.1"
 PIN_API = f"https://api.github.com/repos/dashdogy/MFG-Unlocker/releases/tags/{PIN_TAG}"
 # Pinned to the release this route was last run against. v10.0.0 (2026-10-21)
 # is a major step nobody has run it with; move the pin once someone has.
-LOADER_API = ("https://api.github.com/repos/ThirteenAG/Ultimate-ASI-Loader/"
-              "releases/tags/v9.7.4")
+LOADER_API = (
+    "https://api.github.com/repos/ThirteenAG/Ultimate-ASI-Loader/releases/tags/v9.7.4"
+)
 LOADER_ASSET = "Ultimate-ASI-Loader_x64.zip"
 # What the release zip carries and where it goes: beside the executable.
 FILES = ("RTX40MFGCore.dll", "RTX40MFG.asi", "RTX40MFG-UI.addon64")
@@ -72,7 +74,7 @@ GLOBAL_SETS = {
 }
 BACKUP_SUFFIX = ".dlss5-autopilot-backup"
 MANIFEST = "dlss5-autopilot.json"
-ADA = 89                      # sm_89, the RTX 40 architecture
+ADA = 89  # sm_89, the RTX 40 architecture
 
 # Files a game ships when it has DLSS Frame Generation: the NGX runtime and
 # Streamline's frame-generation plugin. Either one is enough evidence.
@@ -88,14 +90,16 @@ def _ours(install_dir: Path) -> set[str]:
     """
     try:
         man = json.loads((install_dir / MANIFEST).read_text(encoding="utf8"))
-        return {str(f).replace("\\", "/").rsplit("/", 1)[-1].lower()
-                for f in man.get("files") or [] if isinstance(f, str)}
+        return {
+            str(f).replace("\\", "/").rsplit("/", 1)[-1].lower()
+            for f in man.get("files") or []
+            if isinstance(f, str)
+        }
     except (OSError, ValueError, AttributeError):
         return set()
 
 
-def has_dlssg(game_dir: Path, install_dir: Path | None = None,
-              written=()) -> str:
+def has_dlssg(game_dir: Path, install_dir: Path | None = None, written=()) -> str:
     """The frame-generation file the GAME ships, relative to game_dir, or "".
 
     Searched the way the DLSS files are (dlss.find_dlss_files): Unreal keeps
@@ -107,26 +111,34 @@ def has_dlssg(game_dir: Path, install_dir: Path | None = None,
     wrote is not the game's (gate 2.0.5).
     """
     from . import dlss
+
     ours = _ours(install_dir) if install_dir is not None else set()
-    ours |= {str(f).replace("\\", "/").rsplit("/", 1)[-1].lower()
-             for f in written or () if isinstance(f, str)}
+    ours |= {
+        str(f).replace("\\", "/").rsplit("/", 1)[-1].lower()
+        for f in written or ()
+        if isinstance(f, str)
+    }
     try:
         hits = dlss.find_dlss_files(Path(game_dir), names=DLSSG_FILES)
     except Exception:
         hits = []
     from .installer import BACKUP_SUFFIX
+
     for rel in hits:
         # An install of ours that replaced the game's own copy kept it
         # beside ours as a backup: the game does ship frame generation
         # (gate 2.0.6, the exception dlss._ours already makes).
-        if rel.replace("\\", "/").rsplit("/", 1)[-1].lower() not in ours \
-                or (Path(game_dir) / (rel + BACKUP_SUFFIX)).is_file():
+        if (
+            rel.replace("\\", "/").rsplit("/", 1)[-1].lower() not in ours
+            or (Path(game_dir) / (rel + BACKUP_SUFFIX)).is_file()
+        ):
             return rel
     return ""
 
 
-def applies(sm: int | None, api: str, install_dir: Path,
-            game_dir: Path | None = None) -> tuple[bool, str]:
+def applies(
+    sm: int | None, api: str, install_dir: Path, game_dir: Path | None = None
+) -> tuple[bool, str]:
     """(offer it?, why not) for this card, API and game."""
     if sm != ADA:
         return False, "RTX 40 only - RTX 50 has multi-frame generation natively"
@@ -149,8 +161,7 @@ PLUGINS_DIR = "plugins"
 PLUGIN_FILES = ("RTX40MFGCore.dll", "RTX40MFG.asi")
 
 
-def free_for_loader(exe_dir: Path, name: str,
-                    ours: set[str] = frozenset()) -> bool:
+def free_for_loader(exe_dir: Path, name: str, ours: set[str] = frozenset()) -> bool:
     """May the loader be written under this name here?
 
     Yes when nothing has that name, when an earlier install of ours wrote
@@ -164,9 +175,12 @@ def free_for_loader(exe_dir: Path, name: str,
     return is_loader(p)
 
 
-def loader_name(exe: Path | None, taken: set[str] = frozenset(),
-                exe_dir: Path | None = None,
-                ours: set[str] = frozenset()) -> str | None:
+def loader_name(
+    exe: Path | None,
+    taken: set[str] = frozenset(),
+    exe_dir: Path | None = None,
+    ours: set[str] = frozenset(),
+) -> str | None:
     """The proxy name the loader goes in as: one the executable really
     imports and nothing else in the folder already uses - or None when the
     import table names none of them (a guessed name would never load).
@@ -249,26 +263,36 @@ def resolve() -> tuple[str, str]:
         pin = None
     for a in (pin.get("assets") or []) if isinstance(pin, dict) else []:
         n = str(a.get("name", "")).lower()
-        if (n.startswith(ASSET_PREFIX) and n.endswith(".zip")
-                and a.get("browser_download_url")):
+        if (
+            n.startswith(ASSET_PREFIX)
+            and n.endswith(".zip")
+            and a.get("browser_download_url")
+        ):
             return pin.get("tag_name", PIN_TAG), a["browser_download_url"]
     rels = net.json_get(API)
     if not isinstance(rels, list):
         rels = [rels] if isinstance(rels, dict) else []
-    rels = [r for r in rels if isinstance(r, dict)
-            and not r.get("draft") and not r.get("prerelease")]
+    rels = [
+        r
+        for r in rels
+        if isinstance(r, dict) and not r.get("draft") and not r.get("prerelease")
+    ]
     rels.sort(key=lambda r: r.get("published_at") or "", reverse=True)
     for r in rels:
         for a in r.get("assets") or []:
             n = str(a.get("name", "")).lower()
-            if (n.startswith(ASSET_PREFIX) and n.endswith(".zip")
-                    and a.get("browser_download_url")):
+            if (
+                n.startswith(ASSET_PREFIX)
+                and n.endswith(".zip")
+                and a.get("browser_download_url")
+            ):
                 return r.get("tag_name", "?"), a["browser_download_url"]
     newest = rels[0].get("tag_name", "?") if rels else "none"
     raise ShapeChanged(
         f"no RTX40MFG-Unlock release carries the Universal-RTX-40-MFG-Unlock "
         f"zip this tool knows how to place (newest: {newest}) - the project "
-        f"changed its layout; the rest of the install is unaffected")
+        f"changed its layout; the rest of the install is unaffected"
+    )
 
 
 def resolve_loader() -> tuple[str, str]:
@@ -278,7 +302,9 @@ def resolve_loader() -> tuple[str, str]:
     for a in r.get("assets", []):
         if a.get("name", "") == LOADER_ASSET:
             return tag, a["browser_download_url"]
-    raise RuntimeError(f"Could not find {LOADER_ASSET} in Ultimate ASI Loader's release.")
+    raise RuntimeError(
+        f"Could not find {LOADER_ASSET} in Ultimate ASI Loader's release."
+    )
 
 
 def is_loader(path: Path) -> bool:
@@ -294,6 +320,7 @@ def is_loader(path: Path) -> bool:
 def _merge_ini(path: Path) -> None:
     """Put GLOBAL_SETS into [GlobalSets] of the loader's ini, keeping the rest."""
     from .optiscaler import _ini_set
+
     text = path.read_text(encoding="utf8", errors="replace") if path.is_file() else ""
     path.write_text(_ini_set(text, "GlobalSets", GLOBAL_SETS), encoding="utf8")
 
@@ -309,22 +336,26 @@ def _check_zip(zpath: Path, names, what: str) -> None:
     ends with the wanted one, case-insensitive.
     """
     try:
-        members = [m.lower() for m in net.zip_members(zpath)
-                   if not m.endswith("/")]
+        members = [m.lower() for m in net.zip_members(zpath) if not m.endswith("/")]
     except (OSError, zipfile.BadZipFile) as e:
-        raise ShapeChanged(f"{what}: {zpath.name} is not a readable zip "
-                           f"({e}) - nothing was placed") from e
-    missing = [n for n in names
-               if not any(m.endswith(n.lower()) for m in members)]
+        raise ShapeChanged(
+            f"{what}: {zpath.name} is not a readable zip ({e}) - nothing was placed"
+        ) from e
+    missing = [n for n in names if not any(m.endswith(n.lower()) for m in members)]
     if missing:
         raise ShapeChanged(
             f"{what} does not carry {', '.join(missing)} - the release "
-            f"changed its layout; nothing was placed")
+            f"changed its layout; nothing was placed"
+        )
 
 
-def install(exe_dir: Path, exe: Path | None, log=None,
-            taken: set[str] = frozenset(),
-            preinstalled=()) -> tuple[str, list[str]]:
+def install(
+    exe_dir: Path,
+    exe: Path | None,
+    log=None,
+    taken: set[str] = frozenset(),
+    preinstalled=(),
+) -> tuple[str, list[str]]:
     """Put the unlock and its loader beside the game. Returns (tag, files).
 
     A file already under the loader's name is backed up once so uninstall
@@ -334,8 +365,9 @@ def install(exe_dir: Path, exe: Path | None, log=None,
     any other file, whatever it contains.
     """
     log = log or (lambda *_: None)
-    ours_now = {str(p).replace("\\", "/").rsplit("/", 1)[-1].lower()
-                for p in preinstalled}
+    ours_now = {
+        str(p).replace("\\", "/").rsplit("/", 1)[-1].lower() for p in preinstalled
+    }
     name = loader_name(exe, taken, exe_dir, ours_now)
     plug = None
     if name is None:
@@ -344,18 +376,23 @@ def install(exe_dir: Path, exe: Path | None, log=None,
         # way in - no second loader, no name taken off anyone (#137).
         plug = existing_plugins(exe_dir)
         if plug is None:
-            taken_here = [n for n in LOADER_NAMES
-                          if (exe_dir / n).is_file()
-                          and not free_for_loader(exe_dir, n, ours_now)]
-            why = (f"{', '.join(taken_here)} beside the executable belongs to "
-                   f"the game or another mod, and this does not overwrite it"
-                   if taken_here else
-                   f"{exe.name if exe else 'the executable'} imports none of "
-                   f"{', '.join(LOADER_NAMES)}")
+            taken_here = [
+                n
+                for n in LOADER_NAMES
+                if (exe_dir / n).is_file() and not free_for_loader(exe_dir, n, ours_now)
+            ]
+            why = (
+                f"{', '.join(taken_here)} beside the executable belongs to "
+                f"the game or another mod, and this does not overwrite it"
+                if taken_here
+                else f"{exe.name if exe else 'the executable'} imports none of "
+                f"{', '.join(LOADER_NAMES)}"
+            )
             raise NoLoaderName(
                 f"{why}, so Ultimate ASI Loader has no name it would be "
                 f"loaded under - the unlock cannot be placed here. Everything "
-                f"else in the install is unaffected.")
+                f"else in the install is unaffected."
+            )
     tag, url = resolve()
     log(f"      RTX40MFG-Unlock {tag}")
     z = net.download(url, f"RTX40MFG-Unlock-{tag}.zip")
@@ -367,11 +404,15 @@ def install(exe_dir: Path, exe: Path | None, log=None,
             written.append(f"{PLUGINS_DIR}/{n}")
         net.extract_one(z, UI_ADDON, exe_dir / UI_ADDON)
         written.append(UI_ADDON)
-        log(f"      a loader is already here: {', '.join(PLUGIN_FILES)} into "
+        log(
+            f"      a loader is already here: {', '.join(PLUGIN_FILES)} into "
             f"{PLUGINS_DIR}/, {UI_ADDON} beside the game - its own loader "
-            f"picks the .asi up, and nothing of anyone else's is replaced")
-        log("      in game: ReShade overlay -> DLSS MFG tab -> Follow game, a "
-            "fixed multiplier, or Dynamic")
+            f"picks the .asi up, and nothing of anyone else's is replaced"
+        )
+        log(
+            "      in game: ReShade overlay -> DLSS MFG tab -> Follow game, a "
+            "fixed multiplier, or Dynamic"
+        )
         return tag, written
     ltag, lurl = resolve_loader()
     lz = net.download(lurl, f"Ultimate-ASI-Loader-{ltag}_x64.zip")
@@ -415,10 +456,14 @@ def install(exe_dir: Path, exe: Path | None, log=None,
     _merge_ini(ini)
     if not existed:
         written.append(ini.name)
-    log(f"      Ultimate ASI Loader {ltag} as {name} + {ini.name} "
-        f"([GlobalSets] LoadExtraPlugins=RTX40MFG.asi)")
-    log("      in game: ReShade overlay -> DLSS MFG tab -> Follow game, a "
-        "fixed multiplier, or Dynamic")
+    log(
+        f"      Ultimate ASI Loader {ltag} as {name} + {ini.name} "
+        f"([GlobalSets] LoadExtraPlugins=RTX40MFG.asi)"
+    )
+    log(
+        "      in game: ReShade overlay -> DLSS MFG tab -> Follow game, a "
+        "fixed multiplier, or Dynamic"
+    )
     return tag, written
 
 
@@ -433,8 +478,10 @@ def remove_leftovers(exe_dir: Path, preinstalled, log=None) -> list[str]:
     log = log or (lambda *_: None)
     ours = {str(p).replace("\\", "/") for p in preinstalled}
     lowers = {p.lower() for p in ours}
-    if not any(f.lower() in lowers for f in
-               [*FILES] + [f"{PLUGINS_DIR}/{x}" for x in PLUGIN_FILES]):
+    if not any(
+        f.lower() in lowers
+        for f in [*FILES] + [f"{PLUGINS_DIR}/{x}" for x in PLUGIN_FILES]
+    ):
         return []
     gone: list[str] = []
     for n in [*FILES] + [f"{PLUGINS_DIR}/{x}" for x in PLUGIN_FILES]:

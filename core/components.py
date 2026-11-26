@@ -10,6 +10,7 @@ This compares the versions recorded in a game's manifest against what the
 sources offer now. It only reports - the fix is to install again, which
 already pulls the newest of everything.
 """
+
 from __future__ import annotations
 
 import json
@@ -22,18 +23,18 @@ from . import log, optiscaler, sources
 MANIFEST = "dlss5-autopilot.json"
 
 LABELS = {
-    "reshade":    "ReShade",
-    "renodx":     "DLSS 5 add-on (renodx-dlss5)",
-    "renodx_sf":  "DLSS 5 add-on (renodx-dlss SF)",
-    "dlssnr":     "nvngx_dlssnr",
-    "dlss":       "nvngx_dlss",
-    "dlssd":      "nvngx_dlssd",
-    "dlssg":      "nvngx_dlssg",
-    "bridge":     "dlss5-bridge",
-    "upstream":   "neural-upstream",
+    "reshade": "ReShade",
+    "renodx": "DLSS 5 add-on (renodx-dlss5)",
+    "renodx_sf": "DLSS 5 add-on (renodx-dlss SF)",
+    "dlssnr": "nvngx_dlssnr",
+    "dlss": "nvngx_dlss",
+    "dlssd": "nvngx_dlssd",
+    "dlssg": "nvngx_dlssg",
+    "bridge": "dlss5-bridge",
+    "upstream": "neural-upstream",
     "standalone": "standalone-dlssnr (DLSS5-Reshade-AIO)",
-    "uplift":     "GITC-Uplift",
-    "feeder":     "DLSS5-Feeder",
+    "uplift": "GITC-Uplift",
+    "feeder": "DLSS5-Feeder",
     "optiscaler": "OptiScaler",
     "remix_runtime": "RTX Remix runtime (dxvk-remix-plus-dlssnr)",
 }
@@ -156,16 +157,25 @@ def files_gone(root: Path, man: dict) -> list[str]:
     switched off (its name with '.off' on the end).
     """
     from . import installer, net
+
     if not man or not man.get("complete", True):
         return []
     if net.ROLLED_BACK_NOTE in (man.get("notes") or []):
         return []
-    skip = _REGENERATED + (installer.BACKUP_SUFFIX,
-                           installer.SIDELINE_SUFFIX) + installer.LEGACY_BACKUP_SUFFIXES
+    skip = (
+        _REGENERATED
+        + (installer.BACKUP_SUFFIX, installer.SIDELINE_SUFFIX)
+        + installer.LEGACY_BACKUP_SUFFIXES
+    )
     out = []
     listed = man.get("files")
     for rel in listed if isinstance(listed, list) else []:
-        if not isinstance(rel, str) or not rel or rel.endswith(("/", "\\")) or rel.lower().endswith(skip):
+        if (
+            not isinstance(rel, str)
+            or not rel
+            or rel.endswith(("/", "\\"))
+            or rel.lower().endswith(skip)
+        ):
             continue
         try:
             if (root / rel).exists() or (root / (rel + ".off")).exists():
@@ -177,9 +187,16 @@ def files_gone(root: Path, man: dict) -> list[str]:
 
 
 def _gone_item(gone: list[str]) -> Item:
-    names = ", ".join(gone[:3]) + (f" and {len(gone) - 3} more" if len(gone) > 3 else "")
-    return Item("files in the game folder", f"{len(gone)} missing", "install again", True,
-                note=f"the folder no longer has {names} - install again")
+    names = ", ".join(gone[:3]) + (
+        f" and {len(gone) - 3} more" if len(gone) > 3 else ""
+    )
+    return Item(
+        "files in the game folder",
+        f"{len(gone)} missing",
+        "install again",
+        True,
+        note=f"the folder no longer has {names} - install again",
+    )
 
 
 def check(root: Path) -> list[Item]:
@@ -221,8 +238,11 @@ def check(root: Path) -> list[Item]:
         # either.
         if name == "dlssnr":
             outdated = False
-        elif name == "feeder" and not man.get("feeder_tag") \
-                and not man.get("feeder_prerelease"):
+        elif (
+            name == "feeder"
+            and not man.get("feeder_tag")
+            and not man.get("feeder_prerelease")
+        ):
             # Asked for "newest release" and got a test build: until 2.0.4
             # that setting followed GitHub's pre-release flag, which this
             # project publishes with turned off (#325, #348). The numbers go
@@ -233,14 +253,22 @@ def check(root: Path) -> list[Item]:
             # release either, the resolver's last resort hands back this
             # very build, and a mark that installing again cannot clear is
             # worse than no mark at all.
-            if latest != installed \
-                    and sources._is_prerelease({"tag_name": installed}):
-                out.append(Item(LABELS.get(name, name), installed, installed,
-                                True, note=("this is a test build - 'newest "
-                                            "release' no longer picks one; "
-                                            "install again")))
+            if latest != installed and sources._is_prerelease({"tag_name": installed}):
+                out.append(
+                    Item(
+                        LABELS.get(name, name),
+                        installed,
+                        installed,
+                        True,
+                        note=(
+                            "this is a test build - 'newest "
+                            "release' no longer picks one; "
+                            "install again"
+                        ),
+                    )
+                )
                 continue
-            outdated = (latest != installed and _key(latest) > _key(installed))
+            outdated = latest != installed and _key(latest) > _key(installed)
         elif name == "optiscaler" and _proxy_gone(root, man):
             # #364: the fork published a package that was not OptiScaler,
             # this folder got it, and no proxy was ever written. The version
@@ -251,9 +279,18 @@ def check(root: Path) -> list[Item]:
             # (nothing written, antivirus, somebody tidying up), the answer
             # is the same, and nothing else here would ever say it: the
             # version number on the record is perfectly current.
-            out.append(Item(LABELS.get(name, name), installed, installed, True,
-                            note=("the proxy this install wrote is not in "
-                                  "the folder - install again")))
+            out.append(
+                Item(
+                    LABELS.get(name, name),
+                    installed,
+                    installed,
+                    True,
+                    note=(
+                        "the proxy this install wrote is not in "
+                        "the folder - install again"
+                    ),
+                )
+            )
             continue
         elif name == "optiscaler" and man.get("opti_build"):
             # A fork publishes its own numbers on its own release page;
@@ -266,14 +303,24 @@ def check(root: Path) -> list[Item]:
             # 1.9.1 took the RTX 40 MFG one whatever the card (#196, #231).
             # The number on disk is right and the files are wrong, so
             # nothing else here would ever say so.
-            if man.get("opti_build") == optiscaler.PRESR \
-                    and _before_191(man.get("tool")):
+            if man.get("opti_build") == optiscaler.PRESR and _before_191(
+                man.get("tool")
+            ):
                 outdated = True
                 latest = installed
-                out.append(Item(LABELS.get(name, name), installed, latest,
-                                True, note=("this is the RTX 40 MFG package"
-                                            " - install again for the"
-                                            " standard one")))
+                out.append(
+                    Item(
+                        LABELS.get(name, name),
+                        installed,
+                        latest,
+                        True,
+                        note=(
+                            "this is the RTX 40 MFG package"
+                            " - install again for the"
+                            " standard one"
+                        ),
+                    )
+                )
                 continue
         elif name == "renodx":
             # The add-on is pinned on purpose in two cases, and the pin is
@@ -285,6 +332,7 @@ def check(root: Path) -> list[Item]:
             # too made it a local of this whole function, and the branch
             # above that reads it raised UnboundLocalError.
             from . import gpu
+
             cap = None
             if gpu.driver_at_least(sources.DRIVER_FAULT_MIN):
                 cap = sources.DRIVER_FAULT_RENODX_PIN
@@ -292,9 +340,9 @@ def check(root: Path) -> list[Item]:
                 cap = sources.OPENGL_RENODX_PIN
             if cap and _key(latest) > _key(cap):
                 latest = cap
-            outdated = (latest != installed and _key(latest) > _key(installed))
+            outdated = latest != installed and _key(latest) > _key(installed)
         else:
-            outdated = (latest != installed and _key(latest) > _key(installed))
+            outdated = latest != installed and _key(latest) > _key(installed)
         out.append(Item(LABELS.get(name, name), installed, latest, outdated))
     # The proxy has its own line above; do not count the same file twice.
     if any(i.note.startswith("the proxy this install wrote") for i in out):

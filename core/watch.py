@@ -24,6 +24,7 @@ some store builds) refuses the module list: that is reported as refused,
 never as "nothing of ours is loaded" - absence of evidence has cost this
 project three wrong verdicts already.
 """
+
 from __future__ import annotations
 
 import ctypes
@@ -41,23 +42,28 @@ _PROCESS_VM_READ = 0x0010
 _LIST_MODULES_ALL = 0x03
 _TH32CS_SNAPPROCESS = 0x00000002
 _ERROR_ACCESS_DENIED = 5
-_ERROR_PARTIAL_COPY = 299          # the process is starting, or is 32-bit
+_ERROR_PARTIAL_COPY = 299  # the process is starting, or is 32-bit
 _MAX_MODULES = 4096
 
 _WINDOWS = os.name == "nt"
 
 
 class _PROCESSENTRY32(ctypes.Structure):
-    _fields_ = [("dwSize", w.DWORD), ("cntUsage", w.DWORD),
-                ("th32ProcessID", w.DWORD),
-                ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)),
-                ("th32ModuleID", w.DWORD), ("cntThreads", w.DWORD),
-                ("th32ParentProcessID", w.DWORD),
-                ("pcPriClassBase", ctypes.c_long), ("dwFlags", w.DWORD),
-                ("szExeFile", ctypes.c_wchar * 260)]
+    _fields_ = [
+        ("dwSize", w.DWORD),
+        ("cntUsage", w.DWORD),
+        ("th32ProcessID", w.DWORD),
+        ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)),
+        ("th32ModuleID", w.DWORD),
+        ("cntThreads", w.DWORD),
+        ("th32ParentProcessID", w.DWORD),
+        ("pcPriClassBase", ctypes.c_long),
+        ("dwFlags", w.DWORD),
+        ("szExeFile", ctypes.c_wchar * 260),
+    ]
 
 
-_API = None                    # built once: see _api()
+_API = None  # built once: see _api()
 
 
 def _api():
@@ -84,10 +90,19 @@ def _api():
     k32.CreateToolhelp32Snapshot.argtypes = [w.DWORD, w.DWORD]
     k32.Process32FirstW.argtypes = [w.HANDLE, ctypes.POINTER(_PROCESSENTRY32)]
     k32.Process32NextW.argtypes = [w.HANDLE, ctypes.POINTER(_PROCESSENTRY32)]
-    k32.QueryFullProcessImageNameW.argtypes = [w.HANDLE, w.DWORD, w.LPWSTR,
-                                               ctypes.POINTER(w.DWORD)]
-    psapi.EnumProcessModulesEx.argtypes = [w.HANDLE, ctypes.c_void_p, w.DWORD,
-                                           ctypes.POINTER(w.DWORD), w.DWORD]
+    k32.QueryFullProcessImageNameW.argtypes = [
+        w.HANDLE,
+        w.DWORD,
+        w.LPWSTR,
+        ctypes.POINTER(w.DWORD),
+    ]
+    psapi.EnumProcessModulesEx.argtypes = [
+        w.HANDLE,
+        ctypes.c_void_p,
+        w.DWORD,
+        ctypes.POINTER(w.DWORD),
+        w.DWORD,
+    ]
     psapi.GetModuleFileNameExW.argtypes = [w.HANDLE, w.LPVOID, w.LPWSTR, w.DWORD]
     _API = (k32, psapi)
     return _API
@@ -98,16 +113,17 @@ class Proc:
     pid: int
     ppid: int
     name: str
-    path: str = ""             # "" when the executable's path cannot be read
+    path: str = ""  # "" when the executable's path cannot be read
 
 
 @dataclass
 class Loaded:
     """The DLLs one running process has mapped in - or why they are unknown."""
+
     pid: int
     exe: str = ""
     paths: list[str] = field(default_factory=list)
-    refused: str = ""          # non-empty means the list is UNKNOWN, not empty
+    refused: str = ""  # non-empty means the list is UNKNOWN, not empty
 
     @property
     def known(self) -> bool:
@@ -133,8 +149,9 @@ def procs() -> list[Proc]:
         if not k32.Process32FirstW(snap, ctypes.byref(e)):
             return []
         while True:
-            out.append(Proc(int(e.th32ProcessID), int(e.th32ParentProcessID),
-                            str(e.szExeFile)))
+            out.append(
+                Proc(int(e.th32ProcessID), int(e.th32ParentProcessID), str(e.szExeFile))
+            )
             if not k32.Process32NextW(snap, ctypes.byref(e)):
                 break
     finally:
@@ -175,23 +192,28 @@ def modules(pid: int) -> Loaded:
     h = k32.OpenProcess(_PROCESS_QUERY_INFORMATION | _PROCESS_VM_READ, False, pid)
     if not h:
         err = ctypes.get_last_error()
-        got.refused = ("the process is protected (anti-cheat, or a store "
-                       "build) and will not be opened"
-                       if err == _ERROR_ACCESS_DENIED else
-                       f"could not open the process (error {err})")
+        got.refused = (
+            "the process is protected (anti-cheat, or a store "
+            "build) and will not be opened"
+            if err == _ERROR_ACCESS_DENIED
+            else f"could not open the process (error {err})"
+        )
         return got
     try:
         arr = (ctypes.c_void_p * _MAX_MODULES)()
         need = w.DWORD()
-        if not psapi.EnumProcessModulesEx(h, arr, ctypes.sizeof(arr),
-                                          ctypes.byref(need), _LIST_MODULES_ALL):
+        if not psapi.EnumProcessModulesEx(
+            h, arr, ctypes.sizeof(arr), ctypes.byref(need), _LIST_MODULES_ALL
+        ):
             err = ctypes.get_last_error()
             got.refused = (
                 "the process is protected (anti-cheat, or a store build) "
-                "and will not list its DLLs" if err == _ERROR_ACCESS_DENIED
+                "and will not list its DLLs"
+                if err == _ERROR_ACCESS_DENIED
                 else "the process was still starting - try again in a moment"
                 if err == _ERROR_PARTIAL_COPY
-                else f"the DLL list could not be read (error {err})")
+                else f"the DLL list could not be read (error {err})"
+            )
             return got
         buf = ctypes.create_unicode_buffer(1024)
         count = min(need.value // ctypes.sizeof(ctypes.c_void_p), _MAX_MODULES)
@@ -211,8 +233,9 @@ def _under(path: str, folder: Path) -> bool:
         return False
 
 
-def from_folder(folder: Path, all_procs: list[Proc] | None = None,
-                exe: str = "") -> list[Proc]:
+def from_folder(
+    folder: Path, all_procs: list[Proc] | None = None, exe: str = ""
+) -> list[Proc]:
     """The processes running out of this game folder, the game first.
 
     Also the children of anything in it: a launcher in the folder starting
@@ -233,24 +256,27 @@ def from_folder(folder: Path, all_procs: list[Proc] | None = None,
             pids.add(p.pid)
     try:
         from . import pe
+
         helper = lambda p: not pe.looks_like_game(Path(p.path))
-    except Exception:                                   # pragma: no cover
+    except Exception:  # pragma: no cover
         helper = lambda p: False
     want = os.path.basename(exe).lower() if exe else ""
-    mine.sort(key=lambda p: (p.name.lower() != want, helper(p),
-                             -len(Path(p.path).parts)))
+    mine.sort(
+        key=lambda p: (p.name.lower() != want, helper(p), -len(Path(p.path).parts))
+    )
     return mine
 
 
 @dataclass
 class Sighting:
     """What one running game says about an install beside it."""
+
     proc: Proc
     loaded: Loaded
-    ours: list[str] = field(default_factory=list)      # loaded from our folder
+    ours: list[str] = field(default_factory=list)  # loaded from our folder
     elsewhere: list[str] = field(default_factory=list)  # same name, other folder
-    missing: list[str] = field(default_factory=list)    # ours, not loaded
-    graphics: list[str] = field(default_factory=list)   # GRAPHICS names loaded
+    missing: list[str] = field(default_factory=list)  # ours, not loaded
+    graphics: list[str] = field(default_factory=list)  # GRAPHICS names loaded
 
 
 # The graphics runtimes a process can draw with, by the name Windows loads
@@ -258,8 +284,17 @@ class Sighting:
 # its renderer that is not read off a file: a game set up as DirectX 11
 # whose process holds opengl32.dll and no dxgi.dll at all was never going to
 # load a dxgi proxy under any name (#682).
-GRAPHICS = ("d3d12.dll", "d3d11.dll", "d3d10.dll", "dxgi.dll", "d3d9.dll",
-            "d3d8.dll", "ddraw.dll", "opengl32.dll", "vulkan-1.dll")
+GRAPHICS = (
+    "d3d12.dll",
+    "d3d11.dll",
+    "d3d10.dll",
+    "dxgi.dll",
+    "d3d9.dll",
+    "d3d8.dll",
+    "ddraw.dll",
+    "opengl32.dll",
+    "vulkan-1.dll",
+)
 
 
 def graphics_of(got: "Loaded") -> list[str]:
@@ -288,10 +323,12 @@ def inspect(folder: Path, ours: list[str], exe: str = "") -> list[Sighting]:
         # A list per name: an install can hold two copies of one runtime
         # (nvngx_dlss.dll beside the exe and the game's own, swapped, under
         # Plugins - #225), and either one loaded is ours.
-        if isinstance(rel, str) and os.path.basename(rel).lower() in names \
-                and not _other_process(rel):
-            want.setdefault(os.path.basename(rel).lower(), []).append(
-                folder / rel)
+        if (
+            isinstance(rel, str)
+            and os.path.basename(rel).lower() in names
+            and not _other_process(rel)
+        ):
+            want.setdefault(os.path.basename(rel).lower(), []).append(folder / rel)
     out: list[Sighting] = []
     for p in from_folder(folder, exe=exe):
         got = modules(p.pid)
@@ -300,8 +337,7 @@ def inspect(folder: Path, ours: list[str], exe: str = "") -> list[Sighting]:
             s.graphics = graphics_of(got)
             for name, mine in want.items():
                 hits = got.by_name(name)
-                mine_hits = [h for h in hits
-                             if any(_same_file(h, m) for m in mine)]
+                mine_hits = [h for h in hits if any(_same_file(h, m) for m in mine)]
                 if mine_hits:
                     # Ours is in. A same-named copy beside it is the one ours
                     # forwards to - ReShade's dxgi.dll loads System32's - and
@@ -323,7 +359,11 @@ def inspect(folder: Path, ours: list[str], exe: str = "") -> list[Sighting]:
                     # .dll, an Unreal plugin's copy outside Binaries): NGX
                     # loads it by path, so it never "got there first" - #740
                     # was told to remove it. Only System32's could.
-                    hits = [h for h in hits if "\\system32\\" in str(h).replace("/", "\\").lower()]
+                    hits = [
+                        h
+                        for h in hits
+                        if "\\system32\\" in str(h).replace("/", "\\").lower()
+                    ]
                     if not hits:
                         continue
                 if hits:
@@ -356,11 +396,11 @@ def _other_process(rel: str) -> bool:
 
 
 def _windows_file(path: str) -> bool:
-    win = os.environ.get("SystemRoot") or os.environ.get("windir") \
-        or r"C:\Windows"
+    win = os.environ.get("SystemRoot") or os.environ.get("windir") or r"C:\Windows"
     try:
         return os.path.normcase(str(path)).startswith(
-            os.path.normcase(win.rstrip("\\/")) + os.sep)
+            os.path.normcase(win.rstrip("\\/")) + os.sep
+        )
     except Exception:
         return False
 
@@ -374,9 +414,11 @@ def process_names(files) -> tuple[set, set]:
     names: set[str] = set()
     root: set[str] = set()
     for rel in files if isinstance(files, (list, tuple)) else []:
-        if not isinstance(rel, str) \
-                or not rel.lower().endswith((".dll", ".addon64", ".addon32")) \
-                or _other_process(rel):
+        if (
+            not isinstance(rel, str)
+            or not rel.lower().endswith((".dll", ".addon64", ".addon32"))
+            or _other_process(rel)
+        ):
             continue
         norm = rel.replace("\\", "/").strip("/")
         name = os.path.basename(norm).lower()
@@ -394,9 +436,12 @@ def essential(name: str, proxy: str = "", also=()) -> bool:
     DXVK's DLLs on a DXVK install, where the proxy is a Vulkan layer and
     DXVK not loading is the fault itself (#224)."""
     low = str(name).lower()
-    return low in ESSENTIAL or low.endswith((".addon64", ".addon32")) \
-        or (bool(proxy) and low == str(proxy).lower()) \
+    return (
+        low in ESSENTIAL
+        or low.endswith((".addon64", ".addon32"))
+        or (bool(proxy) and low == str(proxy).lower())
         or low in {str(a).lower() for a in also or ()}
+    )
 
 
 def settle(rec: dict, files) -> dict:
@@ -427,19 +472,23 @@ def settle(rec: dict, files) -> dict:
     have = {os.path.basename(n).lower() for n in ours}
     out["ours"] = ours
     out["elsewhere"] = [
-        p for p in strs("elsewhere")
+        p
+        for p in strs("elsewhere")
         if os.path.basename(p).lower() in names
         and os.path.basename(p).lower() not in have
-        and not (os.path.basename(p).lower() in sub and _windows_file(p))]
-    out["missing"] = [n for n in strs("missing")
-                      if n.lower() in names and n.lower() not in have]
+        and not (os.path.basename(p).lower() in sub and _windows_file(p))
+    ]
+    out["missing"] = [
+        n for n in strs("missing") if n.lower() in names and n.lower() not in have
+    ]
     return out
 
 
 def _same_file(a: str, b: Path) -> bool:
     try:
-        return os.path.normcase(os.path.realpath(a)) == \
-            os.path.normcase(os.path.realpath(str(b)))
+        return os.path.normcase(os.path.realpath(a)) == os.path.normcase(
+            os.path.realpath(str(b))
+        )
     except OSError:
         return os.path.normcase(str(a)) == os.path.normcase(str(b))
 
@@ -448,14 +497,18 @@ def _same_file(a: str, b: Path) -> bool:
 # the tool's own log, never in the game folder: this is our record, and a
 # file written into a game folder is one more thing an uninstall has to take
 # back out and one more thing a launcher's file check can object to.
-RECORD = Path(os.environ.get("LOCALAPPDATA", Path.home())) \
-    / "dlss5-autopilot" / "sightings.json"
+RECORD = (
+    Path(os.environ.get("LOCALAPPDATA", Path.home()))
+    / "dlss5-autopilot"
+    / "sightings.json"
+)
 _RECORD_KEEP = 40
 
 
 def _load_records() -> dict:
     try:
         import json
+
         data = json.loads(RECORD.read_text(encoding="utf8"))
         return data if isinstance(data, dict) else {}
     except Exception:
@@ -471,6 +524,7 @@ def remember(folder: Path, s: "Sighting") -> None:
     being a guess, so the answer is written down at the moment it is true.
     """
     import json
+
     rec = _load_records()
     rec[os.path.normcase(str(Path(folder)))] = {
         "at": time.time(),
@@ -530,28 +584,32 @@ class Recorder:
         self._stop = False
         self._seen: dict[str, float] = {}
 
-    def add(self, folder: Path, ours: list[str] | None = None,
-            exe: str = "") -> None:
+    def add(self, folder: Path, ours: list[str] | None = None, exe: str = "") -> None:
         """Watch this folder from now on (an install just finished here)."""
         key = os.path.normcase(str(Path(folder)))
-        self._want[key] = {"folder": Path(folder), "ours": list(ours or []),
-                           "exe": exe or ""}
+        self._want[key] = {
+            "folder": Path(folder),
+            "ours": list(ours or []),
+            "exe": exe or "",
+        }
         self.start()
 
     def start(self) -> None:
         if self._thread is not None and self._thread.is_alive():
             return
         import threading
+
         self._stop = False
-        self._thread = threading.Thread(target=self._run, name="dlss5-watch",
-                                        daemon=True)
+        self._thread = threading.Thread(
+            target=self._run, name="dlss5-watch", daemon=True
+        )
         self._thread.start()
 
     def stop(self) -> None:
         self._stop = True
 
     def _run(self) -> None:
-        pending: dict[str, float] = {}          # folder -> when to read it
+        pending: dict[str, float] = {}  # folder -> when to read it
         while not self._stop and self._want:
             try:
                 ps = procs()
@@ -562,8 +620,7 @@ class Recorder:
                             continue
                         pending.pop(key)
                         # Settled: read it, write it down, stop watching it.
-                        found = inspect(job["folder"], job["ours"],
-                                        exe=job["exe"])
+                        found = inspect(job["folder"], job["ours"], exe=job["exe"])
                         if found:
                             remember(job["folder"], found[0])
                             self._seen[key] = time.time()
@@ -584,9 +641,14 @@ class Recorder:
         return self._seen.get(os.path.normcase(str(Path(folder))), 0.0)
 
 
-def wait_for(folder: Path, ours: list[str] | None = None, exe: str = "",
-             seconds: float = 300.0, settle: float = 6.0,
-             tick=None) -> list[Sighting]:
+def wait_for(
+    folder: Path,
+    ours: list[str] | None = None,
+    exe: str = "",
+    seconds: float = 300.0,
+    settle: float = 6.0,
+    tick=None,
+) -> list[Sighting]:
     """Wait for this game to start, let it settle, then read it.
 
     `settle` because the module list of a process three seconds old is not

@@ -15,6 +15,7 @@ This table is NOT hard-coded: we read the fatbin records inside the downloaded
 file and detect which architectures it actually carries code for, so new
 releases work correctly too.
 """
+
 from __future__ import annotations
 
 import collections
@@ -24,12 +25,12 @@ from pathlib import Path
 
 # CUDA compute capability -> human-readable card family
 SM_NAMES = {
-    75:  "RTX 20 / GTX 16 (Turing)",
-    80:  "A100 (Ampere DC)",
-    86:  "RTX 30 (Ampere)",
-    87:  "Orin",
-    89:  "RTX 40 (Ada Lovelace)",
-    90:  "H100 (Hopper)",
+    75: "RTX 20 / GTX 16 (Turing)",
+    80: "A100 (Ampere DC)",
+    86: "RTX 30 (Ampere)",
+    87: "Orin",
+    89: "RTX 40 (Ada Lovelace)",
+    90: "H100 (Hopper)",
     100: "Blackwell (data centre)",
     120: "RTX 50 (Blackwell)",
     121: "Blackwell",
@@ -41,11 +42,13 @@ _FATBIN_MAGIC = struct.pack("<I", 0xBA55ED50)
 
 # ------------------------------------------------------------ card detection
 
+
 def _adapters() -> list[str]:
     """Display adapter names from the registry (no third-party dependency)."""
     names: list[str] = []
     try:
         import winreg
+
         key = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key) as root:
             i = 0
@@ -70,7 +73,12 @@ def _adapters() -> list[str]:
 def sm_for_name(name: str) -> int | None:
     """Derive the CUDA architecture number from a card name."""
     n = name.upper()
-    if "NVIDIA" not in n and "GEFORCE" not in n and "RTX" not in n and "QUADRO" not in n:
+    if (
+        "NVIDIA" not in n
+        and "GEFORCE" not in n
+        and "RTX" not in n
+        and "QUADRO" not in n
+    ):
         return None
     # Workstation cards name the architecture, and their model numbers are
     # not GeForce series: "RTX 2000 Ada" is Ada (sm_89), not Turing, and
@@ -80,9 +88,9 @@ def sm_for_name(name: str) -> int | None:
     if "BLACKWELL" in n:
         return 120
     if re.search(r"RTX\s*A\d{3,4}\b", n):
-        return 86                  # RTX A2000-A6000: Ampere
+        return 86  # RTX A2000-A6000: Ampere
     if "QUADRO RTX" in n or "TITAN RTX" in n:
-        return 75                  # Quadro RTX 3000-8000, TITAN RTX: Turing
+        return 75  # Quadro RTX 3000-8000, TITAN RTX: Turing
     m = re.search(r"(?:RTX|GTX)\s*(\d{3,4})", n)
     if m:
         num = int(m.group(1))
@@ -95,7 +103,7 @@ def sm_for_name(name: str) -> int | None:
         if 2000 <= num <= 2999 or 1600 <= num <= 1699:
             return 75
         if 1000 <= num <= 1099:
-            return 61          # Pascal - DLSS 5 will not run anyway
+            return 61  # Pascal - DLSS 5 will not run anyway
     return None
 
 
@@ -107,9 +115,15 @@ def detect() -> tuple[str | None, int | None]:
         if sm is not None:
             # Prefer the newest architecture (laptops list iGPU + dGPU), and
             # of two Turing cards the one with tensor cores.
-            if best[1] is None or sm > best[1] or (
-                    sm == best[1] and no_tensor_cores(best[0])
-                    and not no_tensor_cores(name)):
+            if (
+                best[1] is None
+                or sm > best[1]
+                or (
+                    sm == best[1]
+                    and no_tensor_cores(best[0])
+                    and not no_tensor_cores(name)
+                )
+            ):
                 best = (name, sm)
     return best
 
@@ -120,9 +134,11 @@ def no_tensor_cores(name: str | None) -> bool:
     cards. The driver offers no DLSS on them at all. Nothing told a GTX 1650
     that before the install (#770)."""
     n = (name or "").upper()
-    return bool(re.search(r"\bGTX\s*16\d{2}\b", n)
-                or re.search(r"\bMX\s*[45]50\b", n)
-                or re.search(r"(?:NVIDIA|QUADRO)\s+T(?:400|500|550|600|1000|1200|2000)\b", n))
+    return bool(
+        re.search(r"\bGTX\s*16\d{2}\b", n)
+        or re.search(r"\bMX\s*[45]50\b", n)
+        or re.search(r"(?:NVIDIA|QUADRO)\s+T(?:400|500|550|600|1000|1200|2000)\b", n)
+    )
 
 
 def no_dlss_here() -> str | None:
@@ -147,17 +163,21 @@ def no_dlss(name: str | None, sm: int | None) -> str | None:
     decides there, and refusing a card nothing can name would refuse the
     people the detection got wrong."""
     if no_tensor_cores(name):
-        return (f"{name} has no tensor cores - NVIDIA's driver does not offer "
-                f"DLSS on it, so DLSS 5 cannot run on it with any route. It "
-                f"needs an RTX card (RTX 20 or newer).")
+        return (
+            f"{name} has no tensor cores - NVIDIA's driver does not offer "
+            f"DLSS on it, so DLSS 5 cannot run on it with any route. It "
+            f"needs an RTX card (RTX 20 or newer)."
+        )
     if sm is not None and sm < 75:
-        return (f"{name or 'This card'} is older than RTX 20 and has no "
-                f"tensor cores - DLSS 5 cannot run on it with any route.")
+        return (
+            f"{name or 'This card'} is older than RTX 20 and has no "
+            f"tensor cores - DLSS 5 cannot run on it with any route."
+        )
     return None
 
 
 def other_vendor() -> str | None:
-    """"AMD" / "Intel" when there is one and no NVIDIA card, else None.
+    """ "AMD" / "Intel" when there is one and no NVIDIA card, else None.
 
     Worth telling apart because "no NVIDIA card detected" is not an answer
     to "does this work on my RX 7600" (issue #53), and the answer for AMD is
@@ -212,7 +232,7 @@ def label(sm: int | None) -> str:
 
 
 def _marketing(raw: str) -> str:
-    """"32.0.16.1692" -> "616.92"; anything else comes back as it was."""
+    """ "32.0.16.1692" -> "616.92"; anything else comes back as it was."""
     parts = str(raw).split(".")
     if len(parts) == 4 and parts[3].isdigit():
         digits = (parts[2][-1:] if parts[2] else "") + parts[3]
@@ -248,7 +268,12 @@ def driver_version() -> str | None:
     try:
         import os
         from . import pe
-        dll = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "nvapi64.dll"
+
+        dll = (
+            Path(os.environ.get("SystemRoot", r"C:\Windows"))
+            / "System32"
+            / "nvapi64.dll"
+        )
         if dll.is_file():
             v = _marketing(pe.file_version(dll) or "")
             if _as_number(v):
@@ -259,6 +284,7 @@ def driver_version() -> str | None:
         best = None
         try:
             import winreg
+
             key = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key) as root:
                 i = 0
@@ -275,7 +301,9 @@ def driver_version() -> str | None:
                             desc = str(winreg.QueryValueEx(k, "DriverDesc")[0])
                             if "NVIDIA" not in desc.upper():
                                 continue
-                            v = _marketing(str(winreg.QueryValueEx(k, "DriverVersion")[0]))
+                            v = _marketing(
+                                str(winreg.QueryValueEx(k, "DriverVersion")[0])
+                            )
                     except OSError:
                         continue
                     if best is None or _as_number(v) > _as_number(best):
@@ -299,6 +327,7 @@ def hdr_on() -> bool | None:
     """
     import ctypes
     from ctypes import wintypes
+
     try:
         user32 = ctypes.WinDLL("user32", use_last_error=True)
     except OSError:
@@ -308,28 +337,38 @@ def hdr_on() -> bool | None:
         _fields_ = [("LowPart", wintypes.DWORD), ("HighPart", wintypes.LONG)]
 
     class PATH_SOURCE(ctypes.Structure):
-        _fields_ = [("adapterId", LUID), ("id", wintypes.UINT),
-                    ("modeInfoIdx", wintypes.UINT),
-                    ("statusFlags", wintypes.UINT)]
+        _fields_ = [
+            ("adapterId", LUID),
+            ("id", wintypes.UINT),
+            ("modeInfoIdx", wintypes.UINT),
+            ("statusFlags", wintypes.UINT),
+        ]
 
     class PATH_TARGET(ctypes.Structure):
-        _fields_ = [("adapterId", LUID), ("id", wintypes.UINT),
-                    ("modeInfoIdx", wintypes.UINT),
-                    ("outputTechnology", wintypes.UINT),
-                    ("rotation", wintypes.UINT), ("scaling", wintypes.UINT),
-                    # DISPLAYCONFIG_RATIONAL: two 32-bit fields. A single
-                    # 64-bit member is the same width but makes ctypes align
-                    # the struct to 8, which moves everything after it and
-                    # hands the API a target id it rejects (error 87).
-                    ("refreshRateNum", wintypes.DWORD),
-                    ("refreshRateDen", wintypes.DWORD),
-                    ("scanLineOrdering", wintypes.UINT),
-                    ("targetAvailable", wintypes.BOOL),
-                    ("statusFlags", wintypes.UINT)]
+        _fields_ = [
+            ("adapterId", LUID),
+            ("id", wintypes.UINT),
+            ("modeInfoIdx", wintypes.UINT),
+            ("outputTechnology", wintypes.UINT),
+            ("rotation", wintypes.UINT),
+            ("scaling", wintypes.UINT),
+            # DISPLAYCONFIG_RATIONAL: two 32-bit fields. A single
+            # 64-bit member is the same width but makes ctypes align
+            # the struct to 8, which moves everything after it and
+            # hands the API a target id it rejects (error 87).
+            ("refreshRateNum", wintypes.DWORD),
+            ("refreshRateDen", wintypes.DWORD),
+            ("scanLineOrdering", wintypes.UINT),
+            ("targetAvailable", wintypes.BOOL),
+            ("statusFlags", wintypes.UINT),
+        ]
 
     class PATH_INFO(ctypes.Structure):
-        _fields_ = [("sourceInfo", PATH_SOURCE), ("targetInfo", PATH_TARGET),
-                    ("flags", wintypes.UINT)]
+        _fields_ = [
+            ("sourceInfo", PATH_SOURCE),
+            ("targetInfo", PATH_TARGET),
+            ("flags", wintypes.UINT),
+        ]
 
     class MODE_INFO(ctypes.Structure):
         # Only the size matters here: the modes are never read, but
@@ -337,27 +376,39 @@ def hdr_on() -> bool | None:
         _fields_ = [("pad", ctypes.c_byte * 64)]
 
     class HEADER(ctypes.Structure):
-        _fields_ = [("type", wintypes.UINT), ("size", wintypes.UINT),
-                    ("adapterId", LUID), ("id", wintypes.UINT)]
+        _fields_ = [
+            ("type", wintypes.UINT),
+            ("size", wintypes.UINT),
+            ("adapterId", LUID),
+            ("id", wintypes.UINT),
+        ]
 
     class ADVANCED_COLOR(ctypes.Structure):
-        _fields_ = [("header", HEADER), ("value", wintypes.UINT),
-                    ("colorEncoding", wintypes.UINT),
-                    ("bitsPerColorChannel", wintypes.UINT)]
+        _fields_ = [
+            ("header", HEADER),
+            ("value", wintypes.UINT),
+            ("colorEncoding", wintypes.UINT),
+            ("bitsPerColorChannel", wintypes.UINT),
+        ]
 
     QDC_ONLY_ACTIVE_PATHS = 0x2
     GET_ADVANCED_COLOR_INFO = 9
     try:
         n_path, n_mode = wintypes.UINT(0), wintypes.UINT(0)
-        if user32.GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS,
-                                              ctypes.byref(n_path),
-                                              ctypes.byref(n_mode)):
+        if user32.GetDisplayConfigBufferSizes(
+            QDC_ONLY_ACTIVE_PATHS, ctypes.byref(n_path), ctypes.byref(n_mode)
+        ):
             return None
         paths = (PATH_INFO * n_path.value)()
         modes = (MODE_INFO * n_mode.value)()
-        if user32.QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS,
-                                     ctypes.byref(n_path), paths,
-                                     ctypes.byref(n_mode), modes, None):
+        if user32.QueryDisplayConfig(
+            QDC_ONLY_ACTIVE_PATHS,
+            ctypes.byref(n_path),
+            paths,
+            ctypes.byref(n_mode),
+            modes,
+            None,
+        ):
             return None
         for i in range(n_path.value):
             info = ADVANCED_COLOR()
@@ -410,6 +461,7 @@ def driver_at_least(want: str, have: str | None = None) -> bool | None:
 # ORDER builds are tried in, so an RTX 50 gets the original rather than a
 # patched build that also happens to list sm_120.
 
+
 def order_dlssnr(entries: list[dict], sm: int | None) -> list[dict]:
     """Reorder the mirror's dlssnr builds so this card's best fit comes first."""
     if not entries:
@@ -432,21 +484,28 @@ def tier_note(sm: int | None, chosen: str = "") -> str | None:
     if sm is None:
         return None
     if sm >= 120:
-        return ("RTX 50: this is NVIDIA's own FP8 build, full speed. The "
-                "3 September Game Ready driver ships the same runtime, but a "
-                "game still needs the add-on to ask for neural rendering - "
-                "swapping DLSS DLLs alone does nothing.")
+        return (
+            "RTX 50: this is NVIDIA's own FP8 build, full speed. The "
+            "3 September Game Ready driver ships the same runtime, but a "
+            "game still needs the add-on to ask for neural rendering - "
+            "swapping DLSS DLLs alone does nothing."
+        )
     if sm == 89:
-        return ("RTX 40: a community build with kernels re-targeted to your "
-                "card. Works; expect a moderate frame-time cost.")
+        return (
+            "RTX 40: a community build with kernels re-targeted to your "
+            "card. Works; expect a moderate frame-time cost."
+        )
     if sm in (75, 86):
-        return ("RTX 20/30: a community FP16 build - your card has no FP8 "
-                "tensor path. Works, but heavy: roughly half your fps at full "
-                "model resolution. Lower the work area / model resolution.")
+        return (
+            "RTX 20/30: a community FP16 build - your card has no FP8 "
+            "tensor path. Works, but heavy: roughly half your fps at full "
+            "model resolution. Lower the work area / model resolution."
+        )
     return "This card is below RTX 20; DLSS 5 will not run on it."
 
 
 # ------------------------------------------------- file architecture scanning
+
 
 def dll_architectures(path: Path) -> set[int]:
     """Supported sm versions, from the CUDA fatbin records inside the DLL.
@@ -458,6 +517,7 @@ def dll_architectures(path: Path) -> set[int]:
         # Memory-map instead of loading 165 MB at once; the OS only pages in
         # what we actually touch.
         import mmap
+
         fh = open(path, "rb")
     except OSError:
         return set()
@@ -516,5 +576,7 @@ def check(path: Path, sm: int | None) -> tuple[bool | None, str]:
         return None, f"card not detected; file supports: {listed}"
     if sm in archs:
         return True, f"compatible with your card (file supports: {listed})"
-    return False, (f"THIS BUILD WILL NOT RUN ON YOUR CARD. It contains no code for "
-                   f"{label(sm)}. File supports: {listed}")
+    return False, (
+        f"THIS BUILD WILL NOT RUN ON YOUR CARD. It contains no code for "
+        f"{label(sm)}. File supports: {listed}"
+    )
