@@ -48,12 +48,15 @@ section current. Any coding agent picking the work up starts here.
 
 ### 0. Critical installer fixes (upstream pull requests)
 
-- [ ] A route or mode switch re-reads ownership after uninstalling the
+- [x] A route or mode switch re-reads ownership after uninstalling the
       previous route, so the user's restored files are backed up again and
       never recorded as ours (`installer.install`, `rep.preinstalled`).
-- [ ] A failed backup stops the overwrite or delete instead of being
-      swallowed (`installer._backup`, `dxvk`, `refw`, `mfg`).
-- [ ] Both merged into this fork's `main`; both offered upstream.
+- [x] A failed backup stops the overwrite or delete instead of being
+      swallowed (`installer._backup`, `dxvk`, `refw`, `mfg`); a partial
+      backup is removed before the error is raised.
+- [x] Both merged into this fork's `main`.
+- [ ] Both offered upstream (branches `fix/route-switch-keeps-user-files`,
+      `fix/failed-backup-stops-overwrite`, based on upstream `1736a20`).
 
 ### 1. Identity
 
