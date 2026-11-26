@@ -104,6 +104,8 @@ The caller says which kind applies:
 - A kind the caller named that cannot be completed refuses the file. A sums
   file that cannot be read is a refusal, never a silent "none": a network
   that blocks one small file must not turn the check off.
+- A sums file is an API answer: cached for 6 hours, used at any age when the
+  network fails.
 - A refused file is deleted and never enters the cache.
 - A cached file is verified again before use when the kind is a signer, and
   its digest is part of its cache key otherwise (below).
