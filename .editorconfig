@@ -36,6 +36,8 @@ dotnet_diagnostic.IDE0046.severity = none
 # CS1591: GenerateDocumentationFile is on only so the build reports unused usings (IDE0005 needs it);
 # this is an application, so its public types do not each need an XML comment.
 dotnet_diagnostic.CS1591.severity = none
+# CA1032: an application's exceptions carry the data their handlers need; the standard constructors would build ones without it.
+dotnet_diagnostic.CA1032.severity = none
 # IDE0010, IDE0072: forcing every enum case into a switch hides the cases that fall to the default on purpose.
 dotnet_diagnostic.IDE0010.severity = none
 dotnet_diagnostic.IDE0072.severity = none

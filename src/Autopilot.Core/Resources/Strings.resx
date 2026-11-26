@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- Network failures: {0} is the host; {1} is the HTTP status or the time the server answers again. -->
+  <data name="NetBlocked" xml:space="preserve">
+    <value>Windows would not let this tool connect to {0}: a firewall or security program is blocking dlss5-autopilot.exe. Allow it in Windows Firewall, and in the antivirus's own firewall if it has one, then try again.</value>
+  </data>
+  <data name="NetDns" xml:space="preserve">
+    <value>This PC could not look up {0}. Check that the PC is online, or set its DNS to 1.1.1.1, then try again.</value>
+  </data>
+  <data name="NetRefused" xml:space="preserve">
+    <value>The connection to {0} was refused, usually by a proxy or VPN in the way rather than by the server. Turn it off or try another network, then try again.</value>
+  </data>
+  <data name="NetTimeout" xml:space="preserve">
+    <value>There was no answer from {0} in time. The connection is slow or filtered: try again in a few minutes or from another network.</value>
+  </data>
+  <data name="NetCut" xml:space="preserve">
+    <value>The connection to {0} was cut off before the transfer finished. A VPN, a proxy, an antivirus that scans HTTPS or a filtering network keeps closing it: try another network, such as a phone hotspot, then try again.</value>
+  </data>
+  <data name="NetCertificateNameMismatch" xml:space="preserve">
+    <value>Something on this network answered for {0} with a certificate issued to another name, so the connection never reached {0}. The usual causes are a DNS or family filter, a router block page, a wifi login page or a VPN: try a phone hotspot or set this PC's DNS to 1.1.1.1, then try again.</value>
+  </data>
+  <data name="NetCertificateClock" xml:space="preserve">
+    <value>The certificate for {0} is outside its dates as far as this PC is concerned, which almost always means the PC's clock is wrong. Turn on "Set time automatically" in Windows settings, then try again.</value>
+  </data>
+  <data name="NetCertificateInterception" xml:space="preserve">
+    <value>The certificate for {0} was signed by something on this PC rather than by a public authority: an antivirus, a VPN or a company proxy is inspecting HTTPS. Exclude this tool from HTTPS scanning, or turn the scanning off, then try again.</value>
+  </data>
+  <data name="NetCertificateMissingRoot" xml:space="preserve">
+    <value>Windows is missing the root certificate that {0} needs. Open https://{0} once in Edge, which lets Windows fetch the root, then try again.</value>
+  </data>
+  <data name="NetCertificateUnknown" xml:space="preserve">
+    <value>Windows does not trust the certificate for {0}. Open https://{0} once in Edge, and exclude this tool from any antivirus that inspects HTTPS, then try again.</value>
+  </data>
+  <data name="NetRateLimited" xml:space="preserve">
+    <value>Requests to {0} are being limited for this connection. Wait a while and try again, or use another network; downloads already in the cache still work.</value>
+  </data>
+  <data name="NetRateLimitedUntil" xml:space="preserve">
+    <value>Requests to {0} are being limited for this connection until {1}. Try again after that, or use another network; downloads already in the cache still work.</value>
+  </data>
+  <data name="NetRedirectRefusedScheme" xml:space="preserve">
+    <value>A request was redirected to {0} without encryption, so it was refused. Try again later, and report it if it keeps happening.</value>
+  </data>
+  <data name="NetRedirectRefusedHost" xml:space="preserve">
+    <value>A request was redirected to {0}, a server this tool does not download from, so it was refused. Try again later, and report it if it keeps happening.</value>
+  </data>
+  <data name="NetRedirectRefusedTooManyHops" xml:space="preserve">
+    <value>The server kept redirecting the request, last to {0}, so the tool gave up. Try again later, and report it if it keeps happening.</value>
+  </data>
+  <data name="NetHostNotAllowed" xml:space="preserve">
+    <value>The address points to {0}, a server this tool does not download from, so it was refused. Report it if it keeps happening.</value>
+  </data>
+  <data name="NetSchemeRefused" xml:space="preserve">
+    <value>The address on {0} is not an https one, so it was refused. Report it if it keeps happening.</value>
+  </data>
+  <data name="NetTooLarge" xml:space="preserve">
+    <value>The answer from {0} is larger than expected, so it was refused. Try again later, and report it if it keeps happening.</value>
+  </data>
+  <data name="NetHttpStatus" xml:space="preserve">
+    <value>The server {0} answered HTTP {1}. Wait a few minutes and try again; anything already downloaded is kept.</value>
+  </data>
+</root>

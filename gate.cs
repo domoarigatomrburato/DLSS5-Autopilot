@@ -115,6 +115,8 @@ internal static class Gate
             "--coverage",
             "--coverage-output-format",
             "cobertura",
+            "--coverage-settings",
+            Path.GetFullPath("coverage.config"),
             "--results-directory",
             ResultsDirectory);
     }
