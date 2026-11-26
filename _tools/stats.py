@@ -44,7 +44,7 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SRC))
 
-REPO = "Kizzuwatnaa/DLSS5-Autopilot"
+REPO = "domoarigatomrburato/DLSS5-Autopilot"
 CACHE = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "dlss5-autopilot"
 HISTORY = CACHE / "stats-history.jsonl"
 

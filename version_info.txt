@@ -21,7 +21,7 @@ VSVersionInfo(
     StringFileInfo([
       StringTable(
         '040904B0',
-        [StringStruct('CompanyName', 'Kizzuwatnaa'),
+        [StringStruct('CompanyName', 'domoarigatomrburato'),
          StringStruct('FileDescription', 'DLSS 5 Autopilot - installs DLSS 5 neural rendering into your games'),
          StringStruct('FileVersion', '2.1.1.0'),
          StringStruct('InternalName', 'dlss5-autopilot'),
@@ -29,7 +29,7 @@ VSVersionInfo(
          StringStruct('OriginalFilename', 'dlss5-autopilot.exe'),
          StringStruct('ProductName', 'DLSS 5 Autopilot'),
          StringStruct('ProductVersion', '2.1.1.0'),
-         StringStruct('Comments', 'https://github.com/Kizzuwatnaa/DLSS5-Autopilot')])
+         StringStruct('Comments', 'https://github.com/domoarigatomrburato/DLSS5-Autopilot')])
     ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
   ]
