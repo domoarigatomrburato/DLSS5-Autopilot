@@ -107,7 +107,10 @@
         "contentHash": "2d9suQBg9VeZ9pAStOXLz6l7Co9olPnrb6PpMBadiOZ6ggQpDkKxYXV1Z86Z/7xRij/3/QnzmBEUJ5YgtR6WeQ=="
       },
       "autopilot.core": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "SharpCompress": "[0.50.12, )"
+        }
       },
       "autopilot.viewmodels": {
         "type": "Project",
@@ -121,6 +124,12 @@
         "requested": "[8.4.2, )",
         "resolved": "8.4.2",
         "contentHash": "WadCzGEc2U+3e20avRLng4qNtt4zoOGWrdUISqJWrHe3/FSnrYjuM5Sb4yQb09LhkBXrrI4Zt3dLKgRMbItsrg=="
+      },
+      "SharpCompress": {
+        "type": "CentralTransitive",
+        "requested": "[0.50.12, )",
+        "resolved": "0.50.12",
+        "contentHash": "mWQN8nU4VTF0LMJSQsKLpMScgWzVuF9OE17r9y/kiXb6ssW2JIgWaCjWeNmD1Jt6N5u6Hs1aksJoRdLbb7jTcw=="
       }
     }
   }

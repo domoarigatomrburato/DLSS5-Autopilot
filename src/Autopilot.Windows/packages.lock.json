@@ -9,7 +9,16 @@
         "contentHash": "Kcobt3pnOdO0A+6CKiMHZdTEluJpsfxiV20axtZdmfBQnDmiWTKPJADlgAfdTuKNAnVarrkJa0UEGwuOo91muw=="
       },
       "autopilot.core": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "SharpCompress": "[0.50.12, )"
+        }
+      },
+      "SharpCompress": {
+        "type": "CentralTransitive",
+        "requested": "[0.50.12, )",
+        "resolved": "0.50.12",
+        "contentHash": "mWQN8nU4VTF0LMJSQsKLpMScgWzVuF9OE17r9y/kiXb6ssW2JIgWaCjWeNmD1Jt6N5u6Hs1aksJoRdLbb7jTcw=="
       }
     }
   }

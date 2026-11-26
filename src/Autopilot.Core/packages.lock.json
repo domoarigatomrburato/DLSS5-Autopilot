@@ -7,6 +7,12 @@
         "requested": "[5.6.0, )",
         "resolved": "5.6.0",
         "contentHash": "Kcobt3pnOdO0A+6CKiMHZdTEluJpsfxiV20axtZdmfBQnDmiWTKPJADlgAfdTuKNAnVarrkJa0UEGwuOo91muw=="
+      },
+      "SharpCompress": {
+        "type": "Direct",
+        "requested": "[0.50.12, )",
+        "resolved": "0.50.12",
+        "contentHash": "mWQN8nU4VTF0LMJSQsKLpMScgWzVuF9OE17r9y/kiXb6ssW2JIgWaCjWeNmD1Jt6N5u6Hs1aksJoRdLbb7jTcw=="
       }
     }
   }
