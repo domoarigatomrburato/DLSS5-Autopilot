@@ -29,6 +29,8 @@ build = [
 # The only entry points: `uv run poe <task>`; AGENTS.md says when each is needed.
 [tool.poe.tasks.fix]
 help = "Autofix: ruff check --fix, then ruff format"
+# Format still runs when findings remain that no autofix can clear.
+ignore_fail = "return_non_zero"
 sequence = [
     { cmd = "ruff check --fix" },
     { cmd = "ruff format" },
@@ -105,6 +107,9 @@ ignore = [
     # Conflicts with the formatter (ruff's formatter docs).
     "ISC001",
 ]
+# Still reported, never applied by `fix`: in core/ui/art.py the list() it
+# drops is a snapshot against another thread mutating the list.
+unfixable = ["PERF101"]
 
 [tool.ruff.lint.per-file-ignores]
 # pytest tests are plain asserts.
