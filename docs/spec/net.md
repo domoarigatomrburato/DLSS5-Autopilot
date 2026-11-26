@@ -189,7 +189,10 @@ started for it:
     then Windows' `tar.exe`, then fetched and ran `7zr.exe`
     (`optiscaler.py`). A program found on the PATH runs with the tool's
     rights.
-- Extract one member by its ending, ignoring case, or a tree.
+- Extract one member by its ending, ignoring case and matched on whole path
+  parts, or a tree.
+  - Changed from the reference: it took the first match. More than one match
+    is refused; the caller passes a longer ending.
 - Extracting a tree can flatten one folder level and filter by extension or
   name, ignoring case.
 - Returned paths keep the caller's spelling of the destination. A
@@ -207,6 +210,9 @@ may lower:
 | total expanded size | 16 GiB |
 | one entry's expansion | 200 times its compressed size, for an entry over 1 MiB; for a solid 7z block, the block's ratio |
 
+- A tar.gz has no index, so its limits are enforced in one streaming pass
+  into the `.part` folder, with the ratio taken over the whole archive
+  (expanded size to `.tar.gz` size); a refusal deletes the `.part`.
 - A tar symbolic link or hard link is refused.
 
 **Names.** Member names and cache file names are read the way Windows reads
