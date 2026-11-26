@@ -44,6 +44,25 @@ section current. Any coding agent picking the work up starts here.
 | Tests and coverage | pytest, pytest-cov | failures; coverage floor that only rises |
 | CI | GitHub Actions on push and pull request: lint on Ubuntu, tests on Windows and Ubuntu; actions pinned by SHA; Dependabot for actions and uv | required checks |
 
+## Running the current suite before phase 3
+
+Until the pytest migration, `test_all.py` needs a 64-bit PE fixture and
+downloads real components (about 700 MB) into a cache under `HOME`. Keep
+both out of the repository and point the suite at them:
+
+```
+python3.12 -I -c "import sys; sys.path.insert(0, '_tools'); import fake_pe; open('<lab>/fake-host64.exe', 'wb').write(fake_pe.dll('1.0.0'))"
+env HOME=<lab>/home DLSS5_TEST_X64=<lab>/fake-host64.exe python3.12 test_all.py > <lab>/run.log 2>&1
+```
+
+On macOS it takes about 2.5 minutes and stops in section 31 (it needs
+`C:\Windows\System32\where.exe`). After the phase 0 fixes the 40 sections
+before that give 728 PASS and 24 FAIL. All 24 are Windows-only APIs
+(`winreg`, `ctypes.WINFUNCTYPE`, Windows paths): compare the sorted
+`  FAIL  ` lines with a baseline run, never the exit code. On Windows the
+whole suite should run; that has not been checked yet.
+`test_reshade_ini.py` and `python -m unittest test_scan` pass everywhere.
+
 ## Phases
 
 ### 0. Critical installer fixes (upstream pull requests)
