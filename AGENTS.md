@@ -53,6 +53,12 @@ for a focused run (`uv run poe test -k diagnose`, a path, `-m network`);
   real internet (deselected by default, `-m network` runs only those).
 - Every test has 10 seconds; a hung one fails with its stack. One that needs
   longer takes `@pytest.mark.timeout(n)` with the reason on the line above.
+- Fixtures in `tests/conftest.py`: `home` (a user profile under `tmp_path`:
+  HOME, USERPROFILE, LOCALAPPDATA, APPDATA, PROGRAMDATA and the settings,
+  cache and log paths the app computes at import), `x64_exe` (a 64-bit PE
+  from `tests/fake_pe.py`, never a file from the machine) and `game_folder`
+  (a factory: a folder with a named exe and optional extra files). Any test
+  that makes the app read or write its own files takes `home`.
 - `python _tools/verdict_check.py` (the report corpus through the diagnosis)
   opens no window and runs anywhere.
 

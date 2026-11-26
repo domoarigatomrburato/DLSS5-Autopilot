@@ -163,7 +163,7 @@ complexity limits.
       test fails with its stack instead of stopping the suite.
 - [x] Unit tests cannot reach the network or open a window: an unexpected
       socket or Tk root fails the test.
-- [ ] Fixtures for an isolated HOME and cache and a game folder; the
+- [x] Fixtures for an isolated HOME and cache and a game folder; the
       64-bit PE fixture built by `fake_pe.py`, never a file on someone's
       disk.
 - [ ] First test: every module imports, with warnings as errors.
