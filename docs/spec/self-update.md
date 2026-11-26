@@ -51,8 +51,9 @@ version is ignored (no notice) and logged.
 ### What the user sees
 
 - **Running as the built executable**, with updating left on (the settings
-  key `auto_update`, true by default; `false` keeps it manual,
-  `app.py:515`): when a newer release exists, a banner says "version `<new>`
+  key `auto_update`, true by default, because a download costs nothing until
+  it is applied and the apply is gated on verified sums; `false` keeps it
+  manual, `app.py:515`): when a newer release exists, a banner says "version `<new>`
   is out (you are on `<current>`) - downloading..." and the build is
   downloaded in the background. When the download and verification finish,
   the banner says "version `<new>` downloaded and verified" with a "restart
@@ -104,14 +105,20 @@ version is ignored (no notice) and logged.
    signature, machine 0x8664); "The downloaded file is not a 64-bit Windows
    executable - refusing to install it." and its size is not implausibly
    small (the reference refuses anything under 4 MiB in total, because a
-   real build is about 11 MB, `selfupdate.py:40`, `:184-187`). The size
-   floor is a property of the release layout (open question 1).
+   real build is about 11 MB, `selfupdate.py:40`, `:184-187`). The release
+   is a single-file, self-contained publish: one executable is simpler to
+   replace and to verify than a folder, so the size floor is a constant of the
+   build.
 7. **Verification** (below).
 
 ### Verification: what the takeover requires
 
 These replace the reference's behaviour; its rule is "check the hash when a
-sums file happens to be present" (`selfupdate.py:193-217`).
+sums file happens to be present" (`selfupdate.py:193-217`). They are the
+[net](net.md) spec's verifier contract applied to the tool's own release: the
+**sums-file** kind for the archive and the executable, and the **Authenticode
+signer** kind once releases are signed. This section says what each requires
+here; [app](app.md) points to the same contract.
 
 - **A release without `SHA256SUMS.txt` is refused.** The reference
   installs it after the shape checks alone (`:197`: "When it is missing ...
@@ -155,7 +162,7 @@ sums file happens to be present" (`selfupdate.py:193-217`).
     staging is trusted.
   - **Build attestation.** The release carries a signed provenance
     attestation (`actions/attest-build-provenance`, README "Is it safe").
-    Verifying it in the app is open question 3; the sums file's hash is
+    Verifying it in the app is open question 2; the sums file's hash is
     what can be verified offline today.
 - **Re-verify before replacing.** The staged executable is checked again,
   hash against the value verified at fetch time, immediately before it is
@@ -190,9 +197,10 @@ Behaviour to specify, in this order:
 1. **Preconditions.** Running as the built executable; the staged build
    exists ("The downloaded update is no longer there - press update again to
    fetch it." otherwise); the folder of the running executable is writable
-   (a probe, as for the DLSS files; otherwise say that the tool is installed
-   where it cannot replace itself and open the release page); no job is
-   running.
+   (a probe, as for the DLSS files); no job is running. A tool installed
+   where it cannot replace itself (an administrator-only folder) says so and
+   opens the release page: it never offers an elevated update, which would
+   run a downloaded build with administrator rights.
 2. **Save state:** window placement, settings written and flushed, logs
    flushed, tray icon removed.
 3. **Swap with rollback.**
@@ -228,7 +236,7 @@ known. Reasons:
   a path, and non-ASCII text through code pages) (`:253-254`, `:268-289`).
 - The one-folder layout's `xcopy` and `rmdir /s` rollback logic exists only
   for PyInstaller's `_internal` folder, an antivirus accommodation with no
-  meaning for the C# build; the release layout is open question 1.
+  meaning for the single-file C# build.
 
 The in-process rename depends on Windows allowing a running image to be
 renamed on the same volume (to verify). If it did not hold on some set-up
@@ -238,8 +246,7 @@ visibly. Decide only if verification says so.
 
 ### Cleanup of old files
 
-- **The previous build.** `<name>.old.exe` (and, for a folder layout, its
-  `.old` folder) left by a swap is removed on a **later** start, not the
+- **The previous build.** `<name>.old.exe` left by a swap is removed on a **later** start, not the
   first start of the new build, so a broken build can be gone back from
   (#450; `selfupdate.py:339-376`).
   - A few seconds after the main window is up (3 s in the reference,
@@ -248,9 +255,7 @@ visibly. Decide only if verification says so.
   - If it is not equal to the running version: record the running version and
     remove nothing. This is the new build's first run; the old build is
     there for the whole of it.
-  - If it is equal: remove the previous executable. For a folder layout,
-    remove the old folder only when the old executable is gone (an old build
-    somebody went back to and is running needs it). A file that cannot be
+  - If it is equal: remove the previous executable. A file that cannot be
     removed (held by a scanner, or running) is left, and the next start tries
     again. Each removal is logged ("removed the previous build: `<path>`").
   - A new update starts the count again (the version differs).
@@ -270,7 +275,7 @@ visibly. Decide only if verification says so.
 ### Manual rollback
 
 The previous build is a file the user can rename back by hand, as the
-confirmation text says. Nothing automatic goes back (open question 4).
+confirmation text says. Nothing automatic goes back (open question 3).
 
 ## What must never happen
 
@@ -356,9 +361,8 @@ confirmation text says. Nothing automatic goes back (open question 4).
 - **A fake PE builder** (as in [dlss-updates](dlss-updates.md)): a 64-bit and a
   32-bit executable.
 - **Cleanup:** a temp folder with `dlss5-autopilot-update-*` folders of
-  different ages and other folders; an executable folder with `.old.exe`
-  (and a `.old` folder), a settings file with and without the settled
-  version, and an `.old.exe` that cannot be removed (a directory of that
+  different ages and other folders; an executable folder with `.old.exe`;
+  a settings file with and without the settled version, and an `.old.exe` that cannot be removed (a directory of that
   name stands in for a running file, as the old test does, section for #450).
 - **Replacement:** a temporary folder as the "install folder", an interface
   fake for the rename and start, to exercise success, a failing copy and a
@@ -366,26 +370,16 @@ confirmation text says. Nothing automatic goes back (open question 4).
 
 ## Open questions
 
-1. **Release layout.** One self-contained single-file executable (the
-   reference's choice, and the simplest to replace) or an executable with a
-   folder? Recommendation: single file, which removes every folder rule above
-   and makes the sanity floor a constant of the build.
-2. **Asset names and the sums entries.** Fix them in the release workflow
+1. **Asset names and the sums entries.** Fix them in the release workflow
    (archive name, executable name, the sums file listing both), since the
    verifier matches them exactly.
-3. **Verify the build attestation in the app,** or leave it to the user's
+2. **Verify the build attestation in the app,** or leave it to the user's
    `gh attestation verify`? It is the only check that proves the release came
    from the project's workflow, but needs a Sigstore verifier.
    Recommendation: verify Authenticode once signing exists, document the
    attestation for users, and revisit.
-4. **Automatic rollback** when the new build fails to start (a start-up
+3. **Automatic rollback** when the new build fails to start (a start-up
    marker that the old build checks and acts on), or hand rollback only?
-5. **Auto-download on by default** (the reference's choice, a background
-   download of about the build's size on every machine on each release):
-   keep, or default to notify-only?
-6. **Restart while a game watcher, autopilot or an install is running:**
+4. **Restart while a game watcher, autopilot or an install is running:**
    today only the busy flag stops it; should an active watcher block or
    postpone the restart?
-7. **A tool installed where it cannot replace itself** (an administrator-only
-   folder): open the release page, or offer an elevated update? Recommendation:
-   open the release page and say why.

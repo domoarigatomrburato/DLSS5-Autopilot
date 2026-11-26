@@ -36,7 +36,7 @@ depends on them it says what it needs.
 ### Which games and which files are listed
 
 - **Games.** Every library game that has an executable, is not hidden, is
-  not a video player entry, and is 64-bit. A game whose bitness is not read
+  and is 64-bit. A game whose bitness is not read
   yet is neither checked nor skipped: it is read once the library knows it.
   32-bit games are counted ("N 32-bit games skipped") and never listed or
   updated, because NVIDIA publishes these runtimes for 64-bit Windows only
@@ -71,8 +71,10 @@ properties from it:
 
 - File names, case-insensitive: the three above (detection also looks for
   `sl.interposer.dll` and `sl.dlss.dll`; this area filters to the three).
-- Depth 9 below the game folder, at most 6000 folders, at most 6 seconds
-  (`dlss.py:162-164`).
+- Depth 9 below the game folder, at most 6000 folders, and a cancellation
+  token; never a wall clock, so what is found does not depend on the disk's
+  speed (`dlss.py:162-164` had a 6 s limit; aligned with
+  [library](library.md)'s walk).
 - Folders that never hold DLLs are skipped by name (`content`, `paks`,
   `saved`, `logs`, `movies`, `sounds`, `music`, `videos`, `localization`,
   `shadercache`, `derivedcache`, `cache`, `textures`, `maps`, `levels`,
@@ -95,7 +97,7 @@ detection shortcut ("one hit is enough to know the game has DLSS") and must
 not apply to this area: ask for every match, bounded by the folder and time
 budgets only.
 
-Changed from the reference: when the budget (folders or time) ends the
+Changed from the reference: when the folder budget ends the
 walk, the game's row says "search stopped early: more files may exist"; the
 reference only logs it (`dlss.py:301-307`). A read that may be incomplete
 must say so, because "every game is on NVIDIA's newest" would otherwise be
@@ -169,8 +171,11 @@ number, not with the version of the file NVIDIA publishes for that family.
 Rule 4 patches the symptom for files this tool wrote; a file copied by
 another tool (or by the game's own patch), whose stamp reads below the tag
 though it is NVIDIA's current file, is offered an update again and again.
-Compare with the published file's own stamped version per family
-(open question 1 for how to get it cheaply).
+Compare with the published file's own stamped version per family. The
+stamp is read once per NVIDIA tag: the three files of a new tag are
+downloaded once (they are needed for the update anyway), their versions are
+read, and the result is cached by tag in the per-user cache ([net](net.md)),
+so a check makes no further download until NVIDIA publishes a new tag.
 
 ### Update, one game
 
@@ -326,10 +331,10 @@ the game's own  ->  DLSS update  ->  DLSS 5 install swap
 
 Kept from the reference, with its reasoning (`dlssupdate.py:16-26`). The
 install area must therefore never treat `.dlss5-dlss-original`,
-`.dlss5-dlss-displaced-*` or `dlss5-dlss-update.json` as its own, and must
-read the legacy backup suffixes (`.dlss5kur-yedek`,
-`.dlss5-installer-backup`) as install backups too
-(`installer.py:307`, `:349-350`).
+`.dlss5-dlss-displaced-*` or `dlss5-dlss-update.json` as its own
+(`installer.py:307`). This area reads the DLSS 5 install only through
+[install](install.md)'s contract, and never reads legacy record names or
+suffixes.
 
 ### The states of a file
 
@@ -381,9 +386,7 @@ Per target, in order of family then path:
 
 | Disk | Action | Report |
 | --- | --- | --- |
-| a DLSS 5 install backup is beside it, our backup there, and the install's backup is the build this tool wrote (hash equals the record) | move our backup over the install's backup, drop the entry | note: "DLSS 5 is installed over it - the game's own `<version>` comes back when DLSS 5 is uninstalled" |
-| a DLSS 5 install backup is beside it, our backup there, but the install's backup is not our build | nothing moves; keep entry and backup | note: "DLSS 5 was installed over a file that changed since the update - uninstall DLSS 5 first, then restore original" |
-| a DLSS 5 install backup is beside it, no backup of ours | drop the entry | note: "set by the DLSS 5 install; nothing of ours is left under it" |
+| a DLSS 5 install covers it (its backup is beside it, or its record lists the path) | refused for this file; nothing moves; keep entry and backup | "DLSS 5 is installed over `<name>` - remove DLSS 5 first, then restore original" |
 | no backup of ours, file there | file stays; drop the entry | note: "the backup of the game's own `<name>` is gone - the `<version>` stays. Verify the game's files in its launcher to get the original back." |
 | no backup, no file | drop the entry | note: "`<name>` and its backup are both gone. Verify the game's files in its launcher to get it back." |
 | backup there | if a file is there that is neither ours nor identical to the backup, set it aside as `.dlss5-dlss-displaced-<time>`; copy the backup over the file atomically; delete the backup; drop the entry | done: `<family>  <was or missing> -> <restored version>`; note when a file was set aside: "the `<version>` that was there is kept as `<name>`" |
@@ -403,9 +406,9 @@ backs up "what was there", whoever wrote it.
 | --- | --- |
 | update, then DLSS 5 install over the file | the install backs up our build as its backup; our backup still holds the game's own; the file reads "install" and is not updated here |
 | ...then DLSS 5 uninstall | the install's backup (our build) is restored: the update stays in place; the file reads "updated" again, and restore original then brings the game's own |
-| ...instead, restore here while DLSS 5 is installed on top | our backup is moved over the install's backup (when that is our build), so the DLSS 5 uninstall restores the game's own; if it is not our build, nothing moves and the page says to uninstall DLSS 5 first |
+| ...instead, restore here while DLSS 5 is installed on top | refused: "remove DLSS 5 first". The install recorded the hash of the file it found (our build) and its uninstall puts that file back, so restore original works afterwards |
 | DLSS 5 install swapped the file first (the game's own is its backup), then an update is pressed | refused for that file: "set by the DLSS 5 install"; after the DLSS 5 uninstall it can be updated here |
-| DLSS 5 install of the same build over a page update | still reads "install"; a later restore hands the game's own to the install's backup |
+| DLSS 5 install of the same build over a page update | still reads "install"; restore here is refused until DLSS 5 is removed |
 | DLSS 5 uninstall with no install record at all | restores only backups of its own suffix, so it leaves a runtime this page updated |
 | DLSS 5 install adds a runtime the game never had | not listed here (ours) |
 
@@ -419,13 +422,14 @@ Both a changed DLSS file and a swap by a launcher's verify can trip an
 anti-cheat; for anything played online the README's advice is to leave the
 game's own files alone (README "Keeping a game's DLSS up to date").
 
-- **Detection** is by files in and around the game and install folders, as
-  the anti-cheat markers of the diagnosis area define them (BattlEye, Easy
-  Anti-Cheat, Riot Vanguard, GameGuard, XIGNCODE3, Denuvo Anti-Cheat,
-  PunkBuster, FACEIT AC, Ricochet including Call of Duty's `cod.exe`, EA
-  Javelin, ...). It returns the product name and the files it found
-  (`dlssupdate.py:666-679`, `anticheat.py:20-60`). A detection failure reads
-  as no anti-cheat.
+- **Detection** is [library](library.md)'s one detector, by files in and
+  around the game and install folders (BattlEye, Easy Anti-Cheat, Riot
+  Vanguard, GameGuard, XIGNCODE3, Denuvo Anti-Cheat, PunkBuster, FACEIT AC,
+  Ricochet including Call of Duty's `cod.exe`, EA Javelin, ...). It returns
+  the product name and the files it found. It **fails closed**: a folder it
+  cannot read is treated as an anti-cheat present, as in
+  [watch](watch.md). Changed from the reference: a detection failure read as
+  no anti-cheat (`dlssupdate.py:666-679`).
 - **update all never takes** a game with an anti-cheat.
 - **Updating one game by hand** asks first, naming the product and the files
   it rests on: "`<product>` - update anyway?" / "`<game>` ships `<product>`
@@ -454,17 +458,19 @@ game's own files alone (README "Keeping a game's DLSS up to date").
 
 `dlss_todo` = rows that are behind, with no anti-cheat, not kept, not
 running (as of the last process snapshot), not hidden
-(`ctl_dlss.py:153-159`). Behaviour:
+(`ctl_dlss.py:153-159`). Update all stays opt-out (every game behind, unless
+kept), because the anti-cheat detector fails closed: a game whose folder
+cannot be read is left out like one with an anti-cheat. Behaviour:
 
 - The button reads "update all (N)" and is absent when N is 0.
 - A confirmation lists up to four names and "and N more": "update dlss in N
   games?" / "`<names>`. Each game's own files are kept beside the new ones;
   restore original puts them back." with "update" and "cancel".
 - Games are updated one after another, never in parallel, under the same
-  busy flag installs, autopilot and uninstall wait for: two writers of one
-  runtime at once is how the game's own file gets lost. A job that cannot
-  start because another runs says so in the status line ("another job is
-  running - the dlss files wait for it").
+  job queue installs, autopilot and uninstall wait in ([platform](platform.md),
+  "Jobs"): two writers of one runtime at once is how the game's own file gets
+  lost. A job that waits for another says so in the status line ("waiting:
+  update all").
 - Each game runs the whole single-game update above, so every guard
   applies again at that moment: a game that started running meanwhile is
   refused and counted as failed.
@@ -598,8 +604,11 @@ API fallbacks. No game name or path is sent anywhere.
   shape only, and `size` is always unknown (zero) for these files, so even
   the published-size check never runs (`sources.py:1150`,
   `dlssupdate.py:826-831`).
-- **A size ceiling** for these files (largest runtime plus margin;
-  open question 4), enforced while streaming (see [net](net.md)).
+- **A size ceiling** of 256 MiB for one runtime (the largest published
+  runtime plus a wide margin), enforced while streaming (see [net](net.md)).
+- **Unsigned is refused.** A runtime not signed by NVIDIA Corporation never
+  reaches a game folder, with: "`<file>` is not signed by NVIDIA - refusing
+  to install it." A warning would still put an unverified DLL into a game.
 - **Pin to the commit.** The file URL uses the tag the redirect named; a
   moved tag would change what a build means. Resolve the tag once and use
   that value for all three files of one answer (as the reference does) and
@@ -623,7 +632,8 @@ API fallbacks. No game name or path is sent anywhere.
   (`:579`). One owner, one cache, one refresh.
 - `dlssupdate.py:989-1000`: the update can take a specific older build
   (`build`), but nothing in the reference calls it with one. Dead: not
-  ported unless Ale wants "step back one build" (open question 7).
+  ported. There is no "step back one build": restore original is the way
+  back, and one way back is easier to keep correct.
 - `dlssupdate.py:943-950`: `update` takes a `catalog` argument only so tests
   can pass one; the C# takes NVIDIA's list through an interface.
 - `dlssupdate.py:160-161`: the "Nothing was changed" sentence is removed
@@ -631,8 +641,8 @@ API fallbacks. No game name or path is sent anywhere.
   error from parts.
 - `dlssupdate.py:1010`: after the first refused runtime of a game the other
   runtimes are not tried. Kept deliberately (the usual cause, a running
-  game or a locked folder, is shared), but it should be said on the row:
-  "the other runtimes were not tried" (open question 6).
+  game or a locked folder, is shared), and said on the row: "`<reason>`;
+  the other runtimes were not tried".
 - `dlssupdate.py:837`, `:846-849`: two of the failures raise with no refusal
   kind, so the page cannot draw them as their own state; give every refusal a
   kind.
@@ -694,32 +704,9 @@ API fallbacks. No game name or path is sent anywhere.
 
 ## Open questions
 
-1. **What is "NVIDIA's newest" per family?** Compare with the version
-   stamped in each published file (needs the version without downloading
-   three files each time: a ranged read, a version list in the repository, or
-   a cache keyed by tag that downloads once per tag), or keep the tag number
-   and the label rule. Recommendation: stamp of the published file, read
-   once per tag and cached.
-2. **Frame generation and ray reconstruction:** offer them by default or
+1. **Frame generation and ray reconstruction:** offer them by default or
    only super resolution by default, with the others behind a confirmation
    naming the risk, until the Streamline compatibility rule is verified?
-3. **Authenticode on NVIDIA's files:** is "signed by NVIDIA Corporation"
-   (refuse otherwise) acceptable, or warn only? Recommendation: refuse.
-4. **A size ceiling** for one runtime (the reference has none; the shared
-   default is 1 GiB). Recommendation: 256 MiB.
-5. **Stacking with the DLSS 5 install.** When a DLSS 5 install wants the
-   newest build of a runtime the game has a page-updated copy of, should it
-   reuse that file (and not add a layer) or keep the reference's stacking?
-   Decide with the install spec.
-6. **After a refused runtime**, stop the game's update (reference) or try
-   the remaining runtimes in other folders? Recommendation: stop, and say so.
-7. **Step back one build** ("the newest broke this game"): offer an older
-   NVIDIA tag per game (the dead `build` parameter was meant for this), or
-   leave restore original as the only way back?
-8. **Opt-out or opt-in for update all.** The reference takes every game that
-   is behind unless it has an anti-cheat file or is marked kept. Online
-   games without recognisable files are exposed. Alternative: update all
-   takes only games marked "allow updates", with a first-run explanation.
-9. **Scan scope:** include folders the user added by hand and emulator
+2. **Scan scope:** include folders the user added by hand and emulator
    entries? (The reference lists whatever the library holds with an
    executable.)

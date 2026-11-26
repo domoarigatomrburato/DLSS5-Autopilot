@@ -44,7 +44,7 @@ of the file format.
 
 The detection step reads three facts from the game folder: whether the game
 ships DLSS of its own, whether it ships an FSR 2/3 or XeSS runtime, and which
-files make that so ([detection of the game itself](app.md) is another area).
+files make that so ([detection of the game itself](library.md) is another area).
 This spec takes them as inputs:
 
 - **Own DLSS** (`native_dlss`): any Streamline file (`sl.interposer.dll`,
@@ -72,27 +72,30 @@ which is recommended:
 | 5 | Vulkan without | feeder, bridge | feeder |
 | 6 | OpenGL | feeder | feeder |
 | 7 | D3D11, own DLSS | bridge, optiscaler, feeder, standalone, renodx | bridge |
-| 8 | D3D12 or unknown API, own DLSS | native, upstream, optiscaler, bridge, feeder, standalone, renodx | native |
-| 9 | D3D11 or D3D12, no DLSS, FSR 2/3 or XeSS shipped | feeder, optiscaler, bridge, standalone, renodx | feeder |
-| 10 | D3D11 or D3D12, nothing | feeder, bridge, standalone, renodx | feeder |
+| 8 | D3D12, own DLSS | native, upstream, optiscaler, bridge, feeder, standalone, renodx | native |
+| 8a | DXGI ([pe](pe.md)'s label for "11 or 12 not settled") or unknown API, own DLSS | optiscaler, bridge, feeder, standalone, renodx: what fits both D3D11 and D3D12 | none: the person is asked for the API, shown pe's DXGI evidence and its confidence; the install refuses an unknown API anyway. Changed from the reference: it assumed D3D12 and recommended native |
+| 9 | D3D11, D3D12 or DXGI, no DLSS, FSR 2/3 or XeSS shipped | feeder, optiscaler, bridge, standalone, renodx | feeder |
+| 10 | D3D11, D3D12 or DXGI, nothing | feeder, bridge, standalone, renodx | feeder |
 
 Then, in this order:
 
 1. **uplift** is appended to the options of every game it fits: D3D9, D3D10,
    D3D11, D3D12, Vulkan, OpenGL or unknown API, and a bitness that is known
-   to be 32 or 64. Not D3D8. It is **never recommended**, not by the rules,
+   to be 32 or 64. Not D3D8. It is **never recommended** (the routes stay
+   conservative: it is single-player only and the least proven), not by the rules,
    not by the shared results, not as an "autopilot" next try (it is
    "offered, never chosen for the person").
 2. **remix**. A game with a `.trex` runtime found in the install or game
    folder gets remix first in the list and recommended, supported, whatever
    else was decided. The other routes stay listed for completeness; none can
    be recommended, and installing any of them is refused (below).
-3. **Own DLSS on D3D12 and a card of RTX 20 or newer** (sm 75 or more, or a
-   card not known): recommended becomes optiscaler, with the reason "the
-   model-resolution dial: 75% costs about half of full size; the native route
-   is the simpler, more proven alternative". On a card below RTX 50 the
-   reason adds that the author tested RTX 50 only and that it runs on the
-   community runtime this tool installs.
+3. **Own DLSS on D3D12 and an RTX 50 card** (sm 120 or more): recommended
+   becomes optiscaler, with the reason "the model-resolution dial: 75% costs
+   about half of full size; the native route is the simpler, more proven
+   alternative". Below RTX 50, or on a card not known, native stays the
+   recommendation and optiscaler is offered with its note: its author tested
+   RTX 50 only. Changed from the reference: it recommended optiscaler from
+   RTX 20 up; the routes stay conservative where nobody has tested.
 4. **FSR or XeSS and no DLSS, D3D12, RTX 50 only** (sm 120 or more):
    recommended becomes optiscaler. Other cards keep the feeder, with
    optiscaler as an option, because it is a step further from what its author
@@ -107,15 +110,15 @@ Then, in this order:
    results moved it and which route the tool would have picked. A remix game
    is never moved. Any failure in reading the list leaves the recommendation
    as it was.
-6. **Driver steer**. When the driver is 616.64 or newer and the recommendation
-   is native, bridge, feeder or renodx (the routes that load `renodx-dlss5`;
-   renodx loads ShortFuse's own build but is in the list), and standalone is
-   on offer, and the game has no DLSS of its own, and no
-   NEEDS_DXVK executable (`mgsvtpp.exe`, `mgsvmgo.exe`, `mgsgzs.exe`) is
-   in the folder: the recommendation becomes standalone, with a reason that
-   names the driver, says what the fault is, says the evidence is a handful of
-   reports, and names the route it replaced and rolling the driver back to
-   616.56 as the other answers.
+6. **Driver warning**. When the driver is 616.64 or newer and the
+   recommendation is native, bridge, feeder or renodx (the routes that load
+   `renodx-dlss5`; renodx loads ShortFuse's own build but is in the list), the
+   recommendation stays and a warning names the driver, says what the fault
+   is, says the evidence is a handful of reports, and names standalone (when
+   offered) and rolling the driver back to 616.56 as the other answers.
+   Changed from the reference: it moved the recommendation to standalone, an
+   experimental route that presents through a window of its own, on a few
+   reports.
 
 Every route in the list carries a short note ("fit") the dropdown shows,
 whether it is usable on this card and why not:
@@ -142,7 +145,7 @@ route resets the settings that route does not read (see "Settings").
 | Route | the route dropdown; the command-line route flag | any of the offered routes; the recommendation is a default only. A route that is not offered for the game cannot be chosen |
 | Graphics API and architecture | the game's settings | replace the detected values; asked when the executable is protected and unreadable. D3D8 with 64-bit is refused |
 | Executable | when the folder has several | the one that draws |
-| ReShade loads as | ReShade routes, D3D9 to D3D12 and OpenGL, not Vulkan and not through DXVK | one of `dxgi.dll` `d3d11.dll` `d3d12.dll` `d3d10.dll` `d3d9.dll` `opengl32.dll`; blank means by API |
+| ReShade loads as | ReShade routes, D3D10 to D3D12 and OpenGL; not D3D8 or D3D9 (a D3D9 game not through DXVK always loads it as `d3d9.dll`), not Vulkan and not through DXVK (`ctl_game.py:897-901`) | one of `dxgi.dll` `d3d11.dll` `d3d12.dll` `d3d10.dll` `opengl32.dll`; blank means by API |
 | OptiScaler loads as | optiscaler | one of `dxgi.dll` `winmm.dll` `version.dll` `dbghelp.dll` `d3d12.dll` `wininet.dll` `winhttp.dll`; blank means the first free name (below) |
 | OptiScaler build | optiscaler | the six builds of [components](components.md); blank is the default build |
 | Motion-vector provider | feeder | 3 LumeniteFX Kernel (default), 4 LumeniteFX QuantMotion, 2 VORT, 5 built in (feeder 2.0.0 or newer), 0 generic `texMotionVectors`, 1 iMMERSE Launchpad (0 and 1: the person installs the shader) |
@@ -173,7 +176,7 @@ when the route changes. The reference's table (`ctl_game.py:862`), as rules:
 | route | always |
 | bits (architecture) | the executable could not be read |
 | executable | the folder holds several candidates |
-| graphics API | the game is not a video |
+| graphics API | always |
 | OptiScaler loads as, OptiScaler build | optiscaler |
 | OptiScaler preset, style | optiscaler |
 | OptiScaler passes | optiscaler with a pre-super-resolution build (`wilsjo2`, `wilsjo2-mfg`, `janblade`, `jlrouzies`) |
@@ -209,15 +212,16 @@ person owns that is replaced is backed up first (mechanics: install spec).
   Vulkan layer instead and no proxy. Proxy name: the person's choice if on the
   list; else `d3d9.dll` for a D3D9 game not translated by DXVK; else
   `opengl32.dll` for OpenGL; else `dxgi.dll`.
-- Any other ReShade under another name is moved aside first: two copies abort
-  each other. One of ours goes aside as an orphan; one that is not on the
+- Any other ReShade under another name is taken out first: two copies abort
+  each other. One of ours is held until commit and then deleted, by
+  [install](install.md)'s hold-until-commit rule; one that is not on the
   record is backed up. When the name asked for is taken by something that is
   not ReShade (DXVK, Special K, another injector) the install is refused,
   except a hand-installed OptiScaler, which is backed up and moved aside with
   its ini and forwarder.
-- Add-ons of every other route are moved aside (below). A game's own
-  `d3dcompiler_47.dll` in the folder is renamed to `d3dcompiler_47.dll.dlss5-off`
-  (below).
+- Add-ons of every other route are taken out (below). A game's own
+  `d3dcompiler_47.dll` older than Windows' is moved aside by
+  [install](install.md)'s one mechanism (below).
 - `ReShade.ini`: add-on loading (`[ADDON] AddonPath=.\`); the add-on's own
   switch (`[RenoDX.DLSS5] NeuralUplift=1`) set only when the key is absent, so a
   deliberate off survives; the search paths for feeder, standalone and uplift;
@@ -266,8 +270,9 @@ add-ons of the other routes, whatever the record says, with these sets:
 | uplift | `gitc-uplift.addon64`, `.addon32`, `gitc-uplift-helper64.exe` |
 
 and `renodx-dlss5.addon64` too, on renodx, upstream, standalone, uplift and
-remix. A file of ours goes aside under the orphan suffix (never put back); one
-not on our record is backed up so uninstall restores it. A hand-placed ReShade
+remix. A file of ours is held until commit and then deleted ([install](install.md),
+"Switching routes"); one not on our record is backed up so uninstall restores
+it. A hand-placed ReShade
 add-on of somebody else's is not removed; it is warned about (below).
 
 **The OptiScaler proxy name.** The person's choice; blank is the first of
@@ -365,17 +370,13 @@ as an implicit layer. The tool:
 - reuses an active registration of ReShade's own (HKCU or HKLM) that this
   game's architecture can load, rather than adding a second; rewrites ours
   when it still carries the old shared name;
-- when this tool runs as administrator, extracts the layer again from the
-  setup into the machine's own folder under Program Files and adds that to
-  the machine's list (HKLM), the only list an elevated game reads, unless a
-  foreign layer already holds the machine list for that architecture;
+- registers for this user only. A game started as administrator reads only
+  the machine's list and does not get the layer; the preview says so.
+  Changed from the reference: no all-users registration in v1
+  ([install](install.md), which owns registrations and their dependents);
 - says before it registers that the layer is **global**: it loads into every
-  Vulkan application of this account (of every account, for the machine's
-  list), that uninstalling the last Vulkan install removes the per-user value
-  and that taking the machine's value off needs administrator rights;
-- on uninstall of the last Vulkan install, removes the per-user value; the
-  machine's value is removed only when the tool runs elevated, and any left
-  over is cleaned at start-up when elevated.
+  Vulkan application of this account, and uninstalling the last Vulkan
+  install removes it.
 
 ### Frame generation
 
@@ -466,7 +467,8 @@ add-on hooks neural rendering (the install sets the hook stage to 0);
 `forspoken.exe` checks the signature of `dxgi.dll` and closes on ReShade's
 (set "ReShade loads as" to `d3d12.dll`, or use optiscaler loaded as
 `winmm.dll`). Any OpenGL game: motion vectors from VORT, never LumeniteFX
-(it reads none), and `renodx-dlss5` 4.60, applied whatever the dropdowns say.
+(it reads none), and `renodx-dlss5` 4.60 unless the person chose a build of
+their own (their pin wins, as in [components](components.md)).
 
 What must not sit in the folder beside each route, and the in-game
 settings to say, as shown with the route:
@@ -485,13 +487,13 @@ settings to say, as shown with the route:
 **Windows' Direct3D compiler.** A `d3dcompiler_47.dll` beside the executable
 that is older than Windows' own rejects the `cs_5_1` target the add-on
 compiles with: frames are delivered and the neural pass silently does
-nothing. A file with that name is renamed to `d3dcompiler_47.dll.dlss5-off`,
-recorded under its own key (never in the list of files uninstall deletes) and
-put back on uninstall; on ReShade routes only.
+nothing. On ReShade routes, [install](install.md) moves it aside after a
+version check and puts it back on uninstall; this spec only says where it
+applies.
 
 **Emulators.** For a game run by a known emulator on a render backend that
-never creates a DXGI swap chain, the tool switches the emulator's backend in
-its own config, says so, and uninstall puts it back.
+never creates a DXGI swap chain, v1 tells the person which backend to set;
+the automatic edit is [install](install.md)'s and arrives in M8.
 
 ## What must never happen
 
@@ -513,8 +515,7 @@ its own config, says so, and uninstall puts it back.
 - **Overwriting the person's own settings that the tool does not manage**:
   `OptiScaler.ini` keys outside the table, `ReShade.ini` keys, `rtx.conf`
   lines, a deliberate `NeuralUplift=0`.
-- **An all-users registration built from a file a normal process could have
-  replaced** (see the bugs below).
+- **An all-users registration of any kind** (see the bugs below).
 - **A global layer registered without saying it is global.**
 - **A third-party download run, or its ini obeyed, as the tool's own
   configuration.**
@@ -541,7 +542,7 @@ its own config, says so, and uninstall puts it back.
     and the command line render the same plan.
 - **The route list for an unknown API is assumed D3D12** (`dlss.py:968`
   "DX12 or unknown -> assume DXGI/D3D12") and a game with own DLSS then
-  gets native recommended with no question asked. See Q1.
+  gets native recommended with no question asked. Rule 8a asks instead.
 - **The refused pin installs the newest build** (`installer.py:4769`): a
   warning, and `renodx-dlss5` 5.2.1 goes in when the pin 4.55 is missing, "the
   kind of build that pin exists to avoid" (see [components](components.md)).
@@ -563,15 +564,15 @@ its own config, says so, and uninstall puts it back.
   Program Files from it carries whatever was put there. The same applies to
   the per-user folder itself, in a lower degree (it loads into every Vulkan
   application of the user).
-  - Changed from the reference: verify the setup (the publisher's hash or
-    signature, see [components](components.md)) immediately before extraction
-    for an all-users registration, or refuse to make one.
+  - Changed from the reference: no all-users registration in v1
+    ([install](install.md)).
 - **`d3dcompiler_47.dll` is renamed unconditionally** (`installer.py:3499`),
   with a note that the game's copy "is older than Windows'", which is never
   checked. A game's current copy is moved for nothing, and the game's own
   folder is altered on a guess.
-  - Changed from the reference: compare the file's version with the system's
-    first; rename only a copy that is older; say the versions.
+  - Changed from the reference: [install](install.md) owns the one
+    mechanism: compare the file's version with System32's first, move aside
+    only a copy that is older, say the versions.
 - **`_shared_steer` swallows every error** (`dlss.py:520`, `except Exception:
   pass`) so a malformed community list silently changes nothing and no one can
   tell why a recommendation differs between machines. Log it.
@@ -590,9 +591,11 @@ its own config, says so, and uninstall puts it back.
   a dataclass that every route shares; fields that mean nothing on a route are
   still carried and recorded. Options are per route in the rewrite; a route's
   options contain only what it reads.
-- **The OptiScaler.ini update notice is switched off** on every install and the
-  person cannot undo that from the tool (`optiscaler.py:823`). See Q5 of
-  [components](components.md).
+- **The OptiScaler.ini update notice is switched off** on every install
+  (`optiscaler.py:823`) without saying so. Kept off (the tool, not
+  OptiScaler, decides which build is installed), and the install report now
+  says "OptiScaler's own update notice is switched off: this tool keeps the
+  build current".
 - **`write_preset` and the technique order** are written for the provider the
   person picked, but a provider that is not installed (0 and 1 need the person's
   own shader) leaves a technique list that names nothing; a red error in
@@ -604,9 +607,12 @@ its own config, says so, and uninstall puts it back.
   line per name. Name the import table the game really uses instead (the
   RTX 40 route already reads it, `mfg.py:178`) and offer the names the game
   imports first.
-- **The Vulkan layer's per-user manifest** names the layer DLL by the path of
-  the cache: moving the tool's data folder breaks every registered layer
-  silently. The record must carry the path and a repair.
+- **The Vulkan layer's registration** names the manifest by its full path
+  in the registry. The manifest itself names its DLL relative to itself
+  (`.\<dll>`: `vulkan.py:176-196` rewrites `library_path`), so the files
+  stay consistent; a moved data folder leaves only the registry value
+  dangling. The record carries the value's path, and uninstall removes it by
+  enumerating values, not by building the name.
 - **DXVK is offered as a tick on D3D11 only for native, bridge and feeder**
   but forced for D3D9 and D3D8, with a settings rule that re-reads the
   executable list in three places (`installer.py:687`, `:724`,
@@ -675,36 +681,16 @@ its own config, says so, and uninstall puts it back.
 
 ## Open questions
 
-- **Q1.** A game with own DLSS and an API that could not be read: the reference
-  recommends native (D3D12 assumed). Better: no recommendation, ask the
-  person for the API (the install refuses an unknown architecture anyway),
-  and list only what fits every API. Keep the assumption, or ask?
-- **Q2.** OptiScaler is recommended for every own-DLSS D3D12 game on RTX 20 or
-  newer, although its author tested RTX 50 only and the reference text says
-  so. Is "OptiScaler first" still right, or should native stay the
-  recommendation below RTX 50, with OptiScaler offered with its note?
-- **Q3.** Driver steer to standalone on 616.64 and newer, for games with no
-  DLSS of their own: the evidence is a handful of reports, standalone is
-  labelled experimental and presents through a window of its own, and the
-  driver is the current one for most users. Keep recommending it, or only
-  warn and keep the feeder as the recommendation?
-- **Q4.** The shared compatibility list can move the recommendation. It is
+- **Q1.** The shared compatibility list can move the recommendation. It is
   fetched; who runs it, and may the rewrite keep reading it? (It is a
   community result list with no integrity guarantee; a poisoned list could
   steer people to a bad route, though never to an unlisted one.)
-- **Q5.** Uplift is never recommended. Keep that, or let a measured per-game
-  result in the shared list recommend it?
-- **Q6.** The `renodx` (ShortFuse) route is listed for most games although
+- **Q2.** The `renodx` (ShortFuse) route is listed for most games although
   "reported not working in many games". Keep it listed everywhere, or only
   where it is the sole way in (64-bit D3D9) and behind a disclosure elsewhere?
-- **Q7.** `d3dcompiler_47.dll` rename: keep (with the version check), or only
-  warn and leave the game's folder alone?
-- **Q8.** An all-users Vulkan layer (when the tool is elevated): keep making
-  one at all? It exists for games started as administrator. Refusing it
-  removes the trust problem above and costs those games.
-- **Q9.** The per-route "reliability" levels are measured on the author's
+- **Q3.** The per-route "reliability" levels are measured on the author's
   games. Show them as the reference does, or drop them for the shared list's
   own numbers?
-- **Q10.** The tool's own default of 75 percent for the model-resolution dial:
+- **Q4.** The tool's own default of 75 percent for the model-resolution dial:
   is it still the right start on RTX 20 and 30 cards, where the pass is
   heaviest?

@@ -20,6 +20,18 @@ they are called and what the person sees. The install itself, the route list
 and what a "game" and its install record are come from the install and
 game-reading specs.
 
+**Scope.** Autopilot is the product's core: install, start the game, read
+the logs when it closes, and move to the next route if the route failed.
+
+| Part | Milestone |
+| --- | --- |
+| watching installed games, the sighting (with its repeated module-list reads), the answer after a session, the session card, "try another route", autopilot | v1 (M7) |
+| keeping watch in the tray, "aim for", compare | deferred to M8 |
+
+The repeated module-list reads stay in v1 although the scope list for M8
+named them: one read at 8 s reads a late-loading proxy as missing and blames
+the install, and autopilot then moves on from a route that worked.
+
 ## What the user gets
 
 ### Watching installed games
@@ -37,13 +49,15 @@ per poll, never one watcher per game):
 | --- | --- | --- |
 | poll | 4 s (1 s while a start is waiting to be read) | process snapshot interval |
 | settle | 8 s | after a game is first seen, before its module list is read: the graphics DLLs are loaded when the device is created, and a proxy read at 3 s reads as missing when it is merely late |
-| minimum play | 20 s | a close shorter than this and never read is a crash at launch or a launcher hop and gives no answer |
+| minimum play | 20 s | a close shorter than this and never read is a crash at launch or a launcher hop: no verdict, and the answer is "it closed within 20 s" |
 
 (`lookout.py:29-31`.)
 
 **What counts as "the game is up"**: a process whose executable image sits
 **under the install folder** (any depth), or a child of one that has an image
-path. They are ordered: the install's recorded exe first, then anything that
+path. A process is never matched by its exe name outside the install folder:
+a same-named exe of another game would be a false start, and its module list
+would be read for nothing. They are ordered: the install's recorded exe first, then anything that
 looks like a game (the game-reading spec's exe test), then helpers, deeper
 paths last. The first is the game; the rest are its children and our own
 helpers (the 32-bit feeder's `host64\dlss5-feed-host64.exe` outlives the game
@@ -58,7 +72,9 @@ game and is not counted as "still running" for any purpose.
    sighting then says why).
 2. `closed(folder, playedSeconds)` when no process of the folder is left, if
    the play was at least 20 s **or** the module list was read (a start that
-   settled).
+   settled). A shorter close that was never read gives no verdict; the status
+   line and the card say "<game> closed within 20 s", the sentence a crash at
+   launch needs.
 
 The **answer** to a `closed` event is skipped for a game whose folder an
 install, uninstall, autopilot pass or a DLSS update is rewriting right now
@@ -68,7 +84,7 @@ is still shown.)
 
 **Settings**: two switches, "watch installed games while the app is open"
 (default on) and "keep watching in the tray when the window is closed"
-(default off). Turning the first off stops the watcher, clears every "running"
+(default off; deferred to M8 with the tray). Turning the first off stops the watcher, clears every "running"
 state (a card left on "is running" would stay over every later result) and
 says "watch off". With the second on and at least one game watched, closing the
 window hides it to the tray with the notice "still watching: N installed games
@@ -77,7 +93,7 @@ on the game with the same answer and offer. If the tray cannot be shown, the
 app quits.
 
 **What the watcher reads and never writes**: it reads the process table and,
-once per start, one game's module list; it writes nothing in any game folder
+up to six times per start, one game's module list; it writes nothing in any game folder
 and opens a process for nothing but reading.
 
 Changed from the reference: **one watcher**. The reference has two:
@@ -151,12 +167,13 @@ A refusal is recorded as `refused` and never as "nothing loaded".
 Changed from the reference: **read the list more than once**, and keep the
 union. One read at 8 s misses a game that creates its device late (a splash,
 a launcher, a menu, a map load): the proxy then reads as missing and the
-verdict blames the install. The proposed rule: read at 8 s, then every 20 s
-while the process lives, at most 6 reads (about 2 minutes); keep every name
-ever seen in `ours`, the latest `graphics`, a `refused` only when **no** read
-succeeded, and `elsewhere` only for names that were never seen from ours.
-It costs a handful of reads per start. The diagnosis needs a rule for a
-sighting that changes between reads: see Open questions.
+verdict blames the install. Read at 8 s, then every 20 s while the process
+lives, at most 6 reads (about 2 minutes); keep every name ever seen in
+`ours`, the latest `graphics`, a `refused` only when **no** read succeeded,
+and `elsewhere` only for names that were never seen from ours. It costs a
+handful of reads per start. A failure seen in any read wins over a later
+read that shows nothing ([diagnosis](diagnosis.md), "Conflicting
+readings").
 
 Where it is kept: the tool's own data folder (never a game folder: one more
 file for an uninstall to take back out and for a launcher's file check to
@@ -273,11 +290,11 @@ the person is told what to press themselves (it is what they would have done).
 | Refused when | Why it matters |
 | --- | --- |
 | no exe picked | nothing to start |
-| the folder cannot be read to look for an anti-cheat | the cost of a wrong guess is a ban against one button press |
+| the folder cannot be read to look for an anti-cheat | the cost of a wrong guess is a ban against one button press; [library](library.md)'s one detector fails closed |
 | an anti-cheat is present (names it and the evidence) | a game started by another program can be read as tampering |
 | the game is already running (the same exe, or any exe in the folder that looks like a game, excluding `host64\`) | never a second copy |
 | the exe is a launcher, not the game | it would start the wrong thing |
-| this tool runs elevated, the route reaches the game through a per-user Vulkan layer, and no layer is on the machine's list | a game it starts is elevated too and gets none of the per-user layers: DXVK would run, ReShade not, and the route would be recorded as failed |
+| this tool runs elevated | a game it starts is elevated too and gets none of the per-user layers: DXVK would run, ReShade not, and the route would be recorded as failed. The tool never starts a game with a de-elevated token: starting a process on behalf of an elevated one is a security design v1 does not take on ([platform](platform.md), "Elevation") |
 
 Otherwise the game is started from its exe, working directory its folder
 (a store or launcher game gets one more line: "if <store> wants to own the
@@ -293,9 +310,10 @@ added by hand or an emulator does not).
    (up to **600 s**, checking every 2 s, saying "close the game and this
    carries on with the next route" once); if it never closes the pass stops
    with "the game is still running - the files it has open cannot be replaced
-   while it is up". An install that left **no record** stops the pass at once,
-   with the message that says how to undo it by hand (the next route would
-   take the files for the game's own and back them up).
+   while it is up". An install whose rollback did not finish (install's
+   reader answers `Removing` or `Installing`, [install](install.md)) stops
+   the pass at once, with the install's message: the next route would meet
+   the files of a half-removed install.
 2. Start the game (above) or say "start the game now - watching for it".
 3. Wait for the process, up to **300 s** (a cold start from a hard disk with a
    launcher in front is slow), then let it settle and read the module list
@@ -341,7 +359,7 @@ reinstalls all night is not autopilot, it is a fault"); write into a game
 folder itself (the install does; the watching only reads).
 
 Changed from the reference: the pass takes **typed outcomes from the install**
-(cause: network, file in use, disk full, no record), not substrings of the
+(the failure note's kind and outcome), not substrings of the
 failure text (`autopilot.py:478-481` matched `"refused to write"`,
 `"is running"`, `"being used by another process"`). A reworded exception
 message must not change what the pass does.
@@ -361,7 +379,9 @@ watcher's 8 s).
 
 ### "Aim for"
 
-A setting, "aim for" (frames per second, 20 to 480, empty = off; anything else,
+Deferred to M8.
+
+A setting, "aim for" (frames per second, 30 to 240, empty = off; anything else,
 including a hand-edited value that does not parse, is "off"). It turns what a
 session cost into a work-area setting for the **next** session. Nothing is
 changed during a game: both add-ons read their config at start-up, so between
@@ -412,16 +432,19 @@ result at two points; same plausibility rules (`k > 0.05`, `base > 0`; a fit
 that fails them is "step, not calculation"). The spread rule is the fit's range,
 not the endpoints'.
 
-Changed from the reference: **the history belongs with the install**, not in
-the tool's settings file: it is read and written whole on every diagnosis, and
-60 games of it is the file's biggest part. A record under the app data folder
-keyed by the game's id. Uninstalling a game forgets its history.
+Changed from the reference: **the history lives in the per-game state
+store** ([platform](platform.md)), not in the tool's settings file: it was read
+and written whole on every diagnosis, and 60 games of it was the file's biggest
+part. It is keyed by the game's identity, its normalised install folder.
+Uninstalling a game forgets its history.
 
 Changed from the reference: **the OptiScaler suggestion is labelled an
 estimate in the control itself** ("rule of thumb"), and the quarter is a named
 setting with that default. The reference printed the rule only in a log line.
 
 ### Compare
+
+Deferred to M8.
 
 "DLSS 5 on vs off": two screenshots made by ReShade become one side-by-side
 picture to look at and to post.
@@ -458,17 +481,15 @@ PNG. The reference opened only PNG (`is_png`) because its toolkit's codec was
 the limit, so a BMP or JPEG pair could be shown and not exported. Avalonia's
 image stack reads all four.
 
-Changed from the reference: **do not write the export into the game folder**
-(`compare.py:267-269`). The game folder is the one place a tool's file is
-one more thing for an uninstall to remove and a launcher to verify (the
-reference says exactly that about its own sightings). Default to a folder
-named after the tool under the person's Pictures, with a save dialog that
-remembers the last place. The "ours" prefix is still excluded when scanning
-the screenshot folder.
+- **Where the export goes**: next to the screenshots, in the folder the pair
+  came from, so the person finds it where ReShade put the shots
+  (`compare.py:267-269`); the window says "saved <name> next to the
+  screenshots". The "ours" prefix is excluded when scanning that folder. The
+  [app](app.md) spec says the same.
 
 Changed from the reference: the per-side size cap (1 920 px wide, a limit of a
 pixel-copy loop in a toolkit that "feels like a hang" above it) is **not a
-product rule**; keep a cap that bounds memory (the value is open, below), and
+product rule**; keep a cap that bounds memory (the value is open question 8), and
 say in the window when an image was scaled down.
 
 ## What must never happen
@@ -491,9 +512,9 @@ say in the window when an image was scaled down.
   confirm.**
 - **Looping**: more than 3 routes, an unbounded wait, or an install repeated
   after a refusal that cannot change.
-- **Writing into a game folder from the watcher, compare or aim-for reading**
-  (the install writes; apply writes the add-on's own config, which is the
-  install's file).
+- **Writing into a game folder from the watcher or aim-for reading** (the
+  install writes; apply writes the add-on's own config, which is the
+  install's file). Compare writes only its export, next to the screenshots.
 - **Changing a setting during a game** (aim-for applies at the next start).
 - **A toast or notification that names a route the plan does not hold**, or
   keeps offering a route already tried.
@@ -528,8 +549,8 @@ say in the window when an image was scaled down.
 - **Plan memory as a dict of lists in a settings file, keyed by the str of a
   path** (`prefs["autopilot_plans"]`, `["last_verdicts"]`,
   `["autotune"]`): "a hand-edited entry that is not a plan is dropped, not
-  raised on" is a symptom. Typed records in the app's data store keyed by game
-  id.
+  raised on" is a symptom. Typed records in the per-game state store
+  ([platform](platform.md)), keyed by the game's normalised install folder.
 - **`full_plan = list(dict.fromkeys(kept + planned)) if not ask else list(planned)`**
   (`ctl_game.py:1647`): a continued pass merges the stored plan with a fresh
   one, so the order the person was shown can change between two presses.
@@ -577,8 +598,7 @@ say in the window when an image was scaled down.
    game" rests on it.
 7. **Starting a game from a .NET process** (`Process.Start` with the working
    directory, `UseShellExecute`) and the token the child inherits (an
-   elevated tool starts an elevated game): see Open questions for a
-   de-elevated start.
+   elevated tool starts an elevated game, which is why it refuses).
 8. **ReShade's screenshot settings**: the `[SCREENSHOT]` keys, the default
    file name pattern and its time stamp, the formats ReShade can write
    (PNG, BMP, JPEG, and anything newer), `KeyScreenshot`'s encoding
@@ -627,7 +647,7 @@ fixtures and guards), so everything below is new work, in this order of value.
   measurement shape: model ms only, fps with frames, unconfirmed area).
 - **Autopilot** (fake hooks for install, start, wait, closed): the refusal
   table, one case each; an install that stops (next route); a file in use
-  (wait for close; never closes); no record (stop at once); never seen (stop);
+  (wait for close; never closes); a rollback that did not finish (stop at once); never seen (stop);
   loaded; loaded but shadowed (next route); three routes then "every route
   tried"; stop pressed; the summary text for each end; the plan order with an
   empty shared list (offered order) and with a ranking.
@@ -637,7 +657,7 @@ fixtures and guards), so everything below is new work, in this order of value.
   the suggestion table above, every row; the cost table rows; `shared()` (the
   15 % spread rule, unconfirmed area gives nothing); the history limits (8
   samples, 60 games, newest wins per (route, area)); the target parsing
-  (empty, 19, 20, 480, 481, 1e999, "abc").
+  (empty, 29, 30, 240, 241, 1e999, "abc").
 - **Compare**: file-name stamps (valid, impossible date, `_2` suffix), the pair
   rule (two within 5 minutes, two 6 minutes apart, ours excluded, a screenshot
   folder outside the game folder, only top level), `SavePath` forms (empty,
@@ -650,52 +670,30 @@ fixtures and guards), so everything below is new work, in this order of value.
 
 ## Open questions
 
-1. **Several reads of the module list** (proposed above): is the 8 s + every
-   20 s up to six reads right, and what should the diagnosis do with
-   disagreeing reads (a name loaded in one read and gone in the next is
-   evidence the game unloaded it; a late-loaded name is evidence the first read
-   was early)? The proposal is "ever seen wins" for `ours`; confirm.
-2. **Process visibility**: should the watcher also match a game by **exe name
-   anywhere** (a launcher that copies or starts the game from another folder)?
-   The reference sees only images under the install folder and children of such
-   a process, and the diagnosis has a separate verdict for "the same exe ran from
-   another folder". Matching by name would cost false positives (a same-named
-   exe of another game) and a module-list read of an unrelated process.
-3. **De-elevated start**: when the tool runs elevated and the route goes
-   through a per-user layer, the reference refuses to start the game. A start
-   with the shell's normal token (the Explorer token, or a scheduled task)
-   would make it unnecessary. It is a security-relevant design (starting a
-   process on behalf of an elevated one); not specified here. Ale to decide.
-4. **The minimum play (20 s) and the 8 s settle** are the reference's, from a
-   few cases (a launcher hop, a crash at launch). Measure on real games; and is
-   "a close under 20 s and never read gives no answer" the right call, or
-   should it say "it closed within 20 seconds" (a more useful sentence for
-   a crash at launch)?
-5. **Notifications**: the toast is in-app, the tray notice only when the window
+1. **Notifications**: the toast is in-app, the tray notice only when the window
    is hidden to the tray. Should a Windows toast show when the window is
    minimised or behind the game? (The person is in a full-screen game when the
    close arrives; the card is waiting when they come back.) Wording and
    whether to ask permission.
-6. **The history store** (move out of settings): per game id, or per folder?
-   A game moved to another drive would lose its history under the folder key.
-7. **A quarter of the frame** (OptiScaler suggestion) is a rule of thumb the
-   reference chose. Keep, make it a setting, or drop the suggestion and print
-   only the cost table?
-8. **The step size of 15 points** and the 97 % / 115 % bands for a first
+2. **The 8 s settle and the 20 s minimum play** are the reference's, from a
+   few cases (a launcher hop, a crash at launch). Measure on real games.
+3. **Autopilot's early exit** after the first loaded route is a reference
+   choice: the person plays, and the watcher's close gives the next
+   suggestion if it did not work. The alternative is a pass that continues
+   after a close, reads the logs, and tries the next route itself. The
+   reference's choice is the cheaper and the safer (no unattended
+   reinstalls); confirm it stays.
+4. **Whether the compatibility list's per-game route ranking is available**
+   when this ships: until then the plan is the offered order
+   ([diagnosis](diagnosis.md)), and the "why" lines are not produced.
+5. (M8) **A quarter of the frame** (OptiScaler suggestion) is a rule of thumb
+   the reference chose. Keep, make it a setting, or drop the suggestion and
+   print only the cost table?
+6. (M8) **The step size of 15 points** and the 97 % / 115 % bands for a first
    suggestion: keep, or derive?
-9. **Compare's pair rule** cannot know which shot is "on": the order of two
-   shots 20 s apart is the person's habit. The reference offers a swap. Is
+7. (M8) **Compare's pair rule** cannot know which shot is "on": the order of
+   two shots 20 s apart is the person's habit. The reference offers a swap. Is
    that enough, or should the tool ask the add-on (a toggle marker in its log
-   with the time) so the labels are known? That needs the add-ons' own
-   output; not specified.
-10. **Compare's memory cap** per side (the reference's 1 920 px was a toolkit
-    limit): choose one.
-11. **Autopilot's early exit** after the first loaded route is a reference
-    choice: the person plays, and the watcher's close gives the next
-    suggestion if it did not work. The alternative is a pass that continues
-    after a close, reads the logs, and tries the next route itself. The
-    reference's choice is the cheaper and the safer (no unattended
-    reinstalls); confirm it stays.
-12. **Whether the compatibility list's per-game route ranking is available**
-    when this ships: until then the plan is the offered order
-    ([diagnosis](diagnosis.md)), and the "why" lines are not produced.
+   with the time) so the labels are known?
+8. (M8) **Compare's memory cap** per side (the reference's 1 920 px was a
+   toolkit limit): choose one.

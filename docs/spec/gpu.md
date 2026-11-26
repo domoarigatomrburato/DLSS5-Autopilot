@@ -65,13 +65,21 @@ runtime comes from is in [components](components.md).
     route. It needs an RTX card (RTX 20 or newer)";
   - a card with sm below 75: "<name> is older than RTX 20 and has no tensor
     cores - DLSS 5 cannot run on it with any route";
-  - the user can override this (a setting called "ignore GPU mismatch" in the
-    reference; `Options.ignore_gpu_mismatch`).
-- **An unnameable card is never refused** (`gpu.py:144`). While any NVIDIA
-  adapter has a name the table cannot read, nothing is refused, so a wrong
-  table never blocks someone whose card is newer than the table. With no
-  NVIDIA adapter at all nothing is refused either (the install then proceeds
-  and warns, see Open questions Q3).
+  - a PC with **no NVIDIA adapter at all** (AMD or Intel only): "No NVIDIA
+    graphics card found - DLSS 5 runs only on an NVIDIA RTX card", with the
+    vendor text below;
+  - the person can override every refusal here with "install anyway" (the
+    setting "ignore GPU mismatch" in the reference,
+    `Options.ignore_gpu_mismatch`); an overridden install says so in its
+    result and in the log.
+  - Changed from the reference: a PC with no NVIDIA adapter was not refused;
+    the install went ahead, the runtime check could not decide, and the
+    OptiScaler steer treated the unknown card as RTX-capable (`dlss.py:480`).
+    Why: an install that cannot run is the outcome the refusal exists to
+    prevent, and the override keeps the way open.
+- **An unnameable NVIDIA card is never refused** (`gpu.py:144`). While any
+  NVIDIA adapter has a name the table cannot read, nothing is refused, so a
+  wrong table never blocks someone whose card is newer than the table.
 - **No NVIDIA card, AMD or Intel present:** the tool names the vendor and
   says why nothing is installed from here. The AMD text (`gpu.py:210`) says:
   neural rendering runs inside NVIDIA's `nvngx_dlssnr.dll`, so there is no
@@ -322,8 +330,8 @@ sets this by hand; the tool sets it for them, only when it makes sense.
   "NVIDIA GeForce GTX 1080 Ti", "NVIDIA GeForce GTX 980", "AMD Radeon RX 7600",
   "Intel(R) Arc(TM) A770", "Microsoft Basic Display Adapter".
 - **Driver versions:** file versions `32.0.15.6094`, `32.0.16.1664`,
-  `32.0.16.1692`, `32.0.15.5612` and their marketing forms (616.64, 616.92,
-  561.12); an unparsable string; a registry list with an old 581.80 entry and
+  `32.0.16.1692`, `32.0.15.5612` and their marketing forms (560.94, 616.64,
+  616.92, 556.12); an unparsable string; a registry list with an old 581.80 entry and
   a current 616.92.
 - **Fatbin files:** synthetic buffers with one fatbin carrying sm 75/86/89/120
   in each offset variant (20, 24, 28), a corrupt size, a buffer with no
@@ -354,10 +362,5 @@ sets this by hand; the tool sets it for them, only when it makes sense.
   the reference picks the newest architecture and the driver of System32's
   `nvapi64.dll`. Should the tool pick the adapter the game's preference
   points at, or let the person choose in settings?
-- **Q3.** A PC with no NVIDIA adapter at all (AMD or Intel only) is not
-  refused: the install proceeds and the runtime check cannot decide, and the
-  optiscaler steer treats an unknown card as RTX-capable (`dlss.py:480`).
-  Refuse with a way past it ("install anyway"), or keep warning only?
-- **Q4.** Should the graphics preference also offer pinning to a named GPU
+- **Q3.** Should the graphics preference also offer pinning to a named GPU
   on a PC with two NVIDIA GPUs, or stay "High performance" only?
-- **Q5.** Pre-Turing GTX refusal (changed above): accept?

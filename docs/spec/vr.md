@@ -46,9 +46,10 @@ SteamVR, nothing here applies.
 
    Value `0` is "enabled" for the OpenXR loader. The layer's name is
    `XR_APILAYER_reshade`.
-4. Records the install folder in the user's list of VR installs (the settings
-   key `openxr_games`), so the last uninstall is the one that removes the
-   registration; and notes in the install record `vr: true`.
+4. Notes the registration in the install record (`vr: true` and the
+   registration among its registrations). [install](install.md) owns the
+   registration and derives its dependents from the install records, so the
+   last uninstall is the one that removes it; no list is kept in settings.
 
 Decision table at install time (`openxr.py:79-112`):
 
@@ -86,16 +87,20 @@ a disabled value (non-zero) or a missing file does not count.
 
 ### Uninstall
 
-When a game with `openxr_games` membership is uninstalled, its folder leaves the
-list. If the list is then empty and the registration is **ours**, its value is
-deleted ("removed: our ReShade OpenXR layer registration (no VR games left)");
-if other VR installs remain: "kept the OpenXR layer: N other VR install(s)
-still use it". A registration that is not ours is never touched. The layer
+When a game whose record lists the OpenXR registration is uninstalled,
+install counts the other records that list it ([install](install.md),
+"Shared registrations"). If none is left and the registration is **ours**, its
+value is deleted ("removed: our ReShade OpenXR layer registration (no VR games
+left)"); if others remain: "kept the OpenXR layer: N other VR install(s) still
+use it"; if a record could not be read, the registration is kept and the log
+says why. A registration that is not ours is never touched. The layer
 files stay in the layer folder (the Vulkan layer may share the DLL).
 
 ### The vr page
 
-Three blocks and a note (`vrpage.py`):
+Hidden until M8: nothing on it is proven in a headset, and the VR box on a
+game's settings does the work. When it comes, it has three blocks and a note
+(`vrpage.py`):
 
 - **The OpenXR layer** card, read once per visit and after anything that
   changes it, never on every redraw:
@@ -168,11 +173,9 @@ The report body adds the line `ReShade OpenXR layer (VR): registered` or
   lost settings file, a game folder deleted by hand, an uninstall from a record
   alone, or a failed install (the entry is added before the install is known to
   have finished) leave it wrong: the registration lingers, or is removed while
-  another VR game needs it. Changed from the reference: before deciding, prune
-  entries whose folder or install record no longer exists and whose `vr` flag is
-  gone, and add the entry only when the install completes; the plan's "uninstall
-  from the record alone" then holds. The page's **remove the layer** also clears
-  the list.
+  another VR game needs it. Changed from the reference: there is no list; the
+  dependents are the install records that list the registration, read by
+  [install](install.md), so the plan's "uninstall from the record alone" holds.
 - `openxr.py:79-86`: a *disabled* registration of our own manifest (value
   non-zero, perhaps disabled by the user on purpose) is invisible to
   `existing_registration`, so an install writes the value again as 0 and
@@ -213,8 +216,8 @@ The report body adds the line `ReShade OpenXR layer (VR): registered` or
 - Registry states, behind the interface of the plan's Windows layer: none; one
   of ours enabled; one of ours with value 1; one foreign enabled with the file
   present; one foreign whose file is gone; HKLM versus HKCU.
-- Settings with `openxr_games` listing two folders, one of which no longer
-  exists.
+- Two install records listing the registration, one in a folder that no
+  longer exists, and one record that cannot be read.
 - The diagnosis lines (`body.py:379-386`) for an install record with `vr` true
   and the registry empty.
 - Library trees with `openxr_loader.dll` at different depths, and one tree too
@@ -232,5 +235,3 @@ The report body adds the line `ReShade OpenXR layer (VR): registered` or
 3. **How to learn the unknown.** Should "share the result" carry a `vr` flag so
    the first headset reports are countable, without waiting for free text?
 4. **A disabled registration** (above): leave alone and warn, or re-enable?
-5. **Is this page worth its own screen** while nothing is proven, or does it fold
-   into the game's settings and the help text until a report exists?

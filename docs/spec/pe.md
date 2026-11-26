@@ -25,8 +25,10 @@ written against them.
 - **Build on the BCL, write only the missing piece.** The runtime's own PE
   reader (`System.Reflection.PortableExecutable`) gives the headers, sections
   and data directories on every host. The import, delay-import, export and
-  version-resource parsers are the part to write, over ranged reads. See
-  Open questions for the alternative package.
+  version-resource parsers are the part to write, over ranged reads (about
+  150 lines). No PeNet or other PE package: none is shown to read large
+  files lazily and to be safe on hostile input, and the missing piece is
+  small.
 - **Unparsable is not the same as empty.** A file that is not a PE, that
   has no PE header, or that cannot be read is an error with a stated cause. A
   PE that simply has no graphics import is a normal answer, "no static
@@ -154,10 +156,26 @@ can be made.
 The result is three things: a **label**, a **reason code**, and the reason
 in words that names the evidence.
 
-- Labels: `DX8`, `DX9`, `DX10`, `DX11`, `DX12`, `Vulkan`, `OpenGL`, and
-  `Unknown`. The same seven are what a person may pick by hand
-  (`core/games.py:888`). `DX12` is also what a game that imports only
-  `dxgi.dll` gets; see Open questions.
+- Labels: `DX8`, `DX9`, `DX10`, `DX11`, `DX12`, `DXGI`, `Vulkan`, `OpenGL`,
+  and `Unknown`. `DXGI` means "Direct3D 11 or 12, not settled": a game that
+  imports only `dxgi.dll`, an Unreal 4/5 layout with no import, a run-time
+  `dxgi` name. All but `DXGI` and `Unknown` are what a person may pick by
+  hand (`core/games.py:888`); the person settles a `DXGI` game as DX11 or
+  DX12, and the [routes](routes.md) spec says what each label is offered.
+  - Changed from the reference: these games were labelled DX12, although
+    DX11 is common (UE4 defaults to D3D11), so the recommended route took
+    D3D12-only routes for games that may draw with D3D11.
+- **Confidence**, one of four, read from the reason code:
+
+  | Confidence | Reason codes |
+  | --- | --- |
+  | `read`: a graphics DLL in the executable's own tables | `static-import`, `delay-load` |
+  | `inferred`: files beside it decide | `agility-sdk`, `unreal-plugin`, `dlss-files`, `sibling-import` |
+  | `guessed`: an engine layout or a name in the bytes | `unity`, `unreal`, `unreal-3`, `unreal-classic`, `run-time-name`, `sibling-string` |
+  | `none` | `none` |
+
+  The UI says "a guess" for `guessed` and offers the API choice first; the
+  routes spec shows it when it asks the person.
 - Changed from the reference: it returned only the label and a free-text
   reason, and other code took decisions on the label alone. The reason code
   (for example `static-import`, `agility-sdk`, `dlss-files`, `delay-load`,
@@ -194,7 +212,7 @@ defined after the table.
 | 3 | as 2, and an Unreal plugin folder ships `nvngx_dlssg.dll` or `nvngx_dlssd.dll` | DX12 | unreal-plugin | `core/pe.py:469-476` |
 | 4 | statically imports `d3d11.dll`, none of the above | DX11 | static-import | `core/pe.py:477` |
 | 5 | statically imports `d3d10.dll`, `d3d10_1.dll` or `d3d10core.dll` | DX10 | static-import | `core/pe.py:478-482` |
-| 6 | statically imports `dxgi.dll` (no d3d11/12/10) | DX12 | static-import | `core/pe.py:484-485` |
+| 6 | statically imports `dxgi.dll` (no d3d11/12/10) | DXGI | static-import | `core/pe.py:484-485` |
 | 7 | statically imports `vulkan-1.dll` | Vulkan | static-import | `core/pe.py:487-488` |
 | 8 | statically imports `opengl32.dll` | an engine rule if one applies, else OpenGL | engine or static-import | `core/pe.py:489-493` |
 | 9 | statically imports `d3d9.dll` | the d3d9 sequence below | per step | `core/pe.py:494-571` |
@@ -311,7 +329,7 @@ inside the d3d9 sequence step 5 where they may only say DX11 or DX12. Order:
 | Unity | `UnityPlayer.dll` beside the executable | DX11, "unless the game is started with -force-d3d12, -force-vulkan or -force-glcore" | `core/pe.py:719-733` |
 | Unreal Engine 1 / 2 | executable's folder is named `System` (any case) with `Core.dll` and `Engine.dll` beside it; the renderer comes from the game's ini | per device; see below | `core/pe.py:836-945` |
 | Unreal Engine 3, 32-bit | `Binaries\Win32\<game>.exe` with a `CookedPC*` folder inside a sibling project folder | DX9, DX11 only if the game's config says so | `core/pe.py:983-1062` |
-| Unreal Engine 4 / 5 | the Unreal layout above | DX12, "Direct3D 12 or 11" | `core/pe.py:970-979` |
+| Unreal Engine 4 / 5 | the Unreal layout above | DXGI, "Direct3D 12 or 11" | `core/pe.py:970-979` |
 
 - Unity names every backend it can drive (d3d11, d3d12, opengl32, vulkan-1)
   in `UnityPlayer.dll` and in older players in the executable; taking
@@ -384,7 +402,7 @@ beside it. In order (`core/pe.py:1065-1125`):
    outranks OpenGL or Vulkan, because an engine that names all of them draws
    with Direct3D on Windows.
 
-Labels for those names: `d3d12` DX12, `d3d11` DX11, `d3d10` DX10, `dxgi` DX12,
+Labels for those names: `d3d12` DX12, `d3d11` DX11, `d3d10` DX10, `dxgi` DXGI,
 `vulkan-1` Vulkan, `opengl32` OpenGL, `d3d9` DX9, `d3d8` DX8. The last one
 was missing at first, so Unreal Engine 2's only record (`System\D3DDrv.dll`
 imports d3d8.dll) was thrown away (#403). A run-time `d3d9.dll` with the
@@ -468,7 +486,7 @@ game):
 - `core/pe.py:484-485`, `:970-979`: a game that imports only `dxgi.dll`, and
   every Unreal 4/5 game with no import, are labelled DX12 although DX11 is
   common (UE4 defaults to D3D11). The text says "DX11/DX12" but the label,
-  and so the recommended route, says DX12. See Open questions.
+  and so the recommended route, says DX12. Labelled `DXGI` here.
 - `core/pe.py:697-716`: the string search matches the name anywhere in the
   bytes, including inside a longer name (`xd3d11.dll`, `libd3d11.dll`).
 
@@ -530,41 +548,29 @@ files:
   - The Outer Worlds: 64-bit, Unknown;
   - frequencies across the corpus: DX12 about 73, DX11 about 30, DX9 about
     30, Vulkan about 13, OpenGL about 7, Unknown about 10.
-- **Real DLL stamps**: three or four real `nvngx_dlss.dll` files (with their
-  known versions) for the version parser, and a copy of a real DLL carrying
-  two language blocks. Take them from a Windows machine, store once.
+- **No real NVIDIA or game binaries** in the repository. Tests build
+  synthetic PE files (headers, imports, delay imports, exports, resources)
+  in code. For the version parser, where a real stamp matters (three or four
+  `nvngx_dlss.dll` versions, a DLL carrying two language blocks), commit only
+  the extracted version-resource bytes with the expected values beside them,
+  taken once from a Windows machine.
 - **Agility**: an executable exporting version 4 and path `.\` against a
   stubbed `System32\D3D12Core.dll` exporting 3 and 600 (the system root is
   injectable, not `%SystemRoot%`).
 
 ## Open questions
 
-1. **A label for "DXGI, 11 or 12 not settled".** Rule 6 and the Unreal 4/5
-   rule say DX12 for what may be D3D11, and the route choice reads DX12 to
-   offer D3D12-only routes. A fourth outcome (DXGI) would make the routes
-   spec choose explicitly, at the price of changing every table that reads
-   `DX12`. Recommendation: introduce it, and let the routes spec decide what
-   it offers.
-2. **Confidence.** Add a strength to the result (read from a table,
-   promoted from files, guessed from strings, none)? The UI could say "a
-   guess" and offer the API dropdown first. Recommendation: yes; it costs
-   one enum and the reason code already carries it.
-3. **Library for the PE reading.** The BCL's PE reader covers headers; a
-   maintained package (PeNet) also parses imports, delay imports, exports and
-   version info, but must be shown to read large files lazily and to be safe
-   on hostile input. Recommendation: BCL plus about 150 lines of ranged-read
-   parsers, unless PeNet is shown to meet both.
-4. **ARM64 and ARM64EC games.** Say "unsupported" with the architecture
+1. **ARM64 and ARM64EC games.** Say "unsupported" with the architecture
    named, or accept them as 64-bit? The tool targets NVIDIA GPUs on x64
    Windows, so unsupported seems right; Unreal's `WinARM64` folder is in the
    reference's layout list (`core/pe.py:753`).
-5. **Managed AnyCPU executables** report `Machine` 0x14C and run as 64-bit.
+2. **Managed AnyCPU executables** report `Machine` 0x14C and run as 64-bit.
    A launcher written in .NET would read as 32-bit. Out of scope unless a
    report shows it.
-6. **Unreal 4 default.** Should an Unreal 4 game with no static import be
-   DX11 (the engine default) rather than DX12, and what in a shipped game
-   settles it? Needs a check against several shipped games before changing
+3. **Unreal 4 default.** Should an Unreal 4 game with no static import be
+   narrowed from DXGI to DX11 (the engine default), and what in a shipped
+   game settles it? Needs a check against several shipped games before changing
    it.
-7. **Reading the Windows version of `D3D12Core.dll`.** Needs an
+4. **Reading the Windows version of `D3D12Core.dll`.** Needs an
    injectable system folder; confirm how the tool treats a non-Windows host
    (always "met").

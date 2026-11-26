@@ -1,7 +1,7 @@
 # The app: screens, states and flows
 
 What the person sees and does, screen by screen: the library, a game's page
-and its settings, the dlss page, the video, remix and vr pages, the report and
+and its settings, the dlss page, the remix and vr pages, the report and
 before/after views, the log drawer, the help menu, the tray and its
 notifications. Read from the reference's `core/ui/*` (`app.py`, `shell.py`,
 `libpage.py`, `gamepage.py`, `dlsspage.py`, `remixpage.py`, `vidpage.py`,
@@ -22,6 +22,21 @@ they reach the person. Wording quoted below is the reference's and is content,
 not law: the rewrite may improve it, but each message must still say what it
 says here.
 
+**Scope.** v1 (M7) is the library, the game page and its settings, the dlss
+page, the watcher with the answer after a session, "try another route",
+autopilot, the bug report and the help menu. Deferred to M8: the remix and vr
+pages, before/after (compare), "aim for", the tray, the shared results,
+and the log drawer's pop-out. Their sections stay below so M8 builds from
+them. Video, YouTube, webcam and screen capture are dropped from the product
+(out of scope: the tool is about games); the reference's video page and
+player card are not built.
+
+**Look.** Avalonia's Fluent theme, following the system's light or dark
+setting: the information never depends on colour, so either works. Every UI
+text is in **sentence case** ("Check again", "Restore original"); the
+reference's all-lowercase wording quoted below is content, not casing. Text
+lives in resources keyed by id ([platform](platform.md)).
+
 Where this spec departs from the reference on purpose it says
 **Changed from the reference:** with one line of why. Anything not settled is in
 "Open questions".
@@ -38,7 +53,7 @@ Where this spec departs from the reference on purpose it says
 | Restore limits | Saved size is used only while 200 <= w, h and it fits the desktop; saved position only while at least 120 px of the width and the title bar's strip are on a connected display (an unplugged monitor must not strand the window). With nothing saved, or a bad value, the window opens maximised. | `shell.py:58-80` |
 | Scaling | Per-monitor DPI aware. Layout follows the display scale (125 %, 150 %, 250 % all must be usable: the reference needed a fix for buttons hanging off the edge at 250 %). Text and controls never clip: a row that does not fit wraps or moves under, never off the right edge, and there is no sideways scroll. | `win.py:19-31`, `gamepage.py:463`, `libpage.py:101-106` |
 | Page width | The content scrolls vertically only. | `shell.py:131` |
-| One copy | A second launch does not open a second window: it brings the first to the front (restoring it if minimised, or showing it from the tray) and exits. If the mutex exists but no window does (still starting, or stuck) the second copy opens normally. Any failure of the check opens the window rather than nothing. | `app.py:619-676` |
+| One copy | [platform](platform.md)'s single instance: a named mutex plus a pipe. A second launch asks the first, over the pipe, to come to the front (restoring it if minimised, or showing it from the tray) and exits. If the first does not answer within 3 s (still starting, or stuck) the second opens normally; the job lock still keeps them from writing at once. The CLI is a separate executable and takes the same job lock around writes. | `app.py:619-676` |
 | Icon | The app icon in the title bar and taskbar. | `win.py:44-69` |
 
 Changed from the reference: the layout is Avalonia's own (resizable panels,
@@ -51,15 +66,17 @@ pages that do not fit go behind a "more" item (`shell.py:442-462`).
 ### 2. Navigation and the shell
 
 - **Left rail**, top to bottom: **games** (the logo above it also goes to games),
-  **dlss**, **video**, **remix**, **vr**; at the bottom the **watch** item
+  **dlss**, **remix**, **vr**; at the bottom the **watch** item
   (an eye, labelled "watching N" in green, or "watch off" in grey) and **help**
-  (`shell.py:388-397`, `ctl_watch.py:84-87`). The active page is marked.
-- **Hideable pages.** video, remix and vr can leave the rail; games and dlss
+  (`shell.py:388-397`, `ctl_watch.py:84-87`). The active page is marked. The
+  vr page is hidden until M8: nothing in it is proven in a headset, and the
+  VR box on a game's settings stays where it is.
+- **Hideable pages.** remix and vr can leave the rail; games and dlss
   cannot. Hide from a right-click on the rail item ("hide <page> from the
   sidebar", with a line saying where to bring it back) or from games > view >
   sidebar pages. Hiding the page that is open goes to games; back never lands on
   a hidden page. Stored as `rail_hidden` (`shell.py:395-432`).
-- **Pages**: games (library), game, dlss, video, remix, vr. The game page is
+- **Pages**: games (library), game, dlss, remix, vr. The game page is
   reached only by opening a game; it lights the games item.
 - **Back stack** of the last 10 pages. Back goes to the previous page that still
   exists and is not hidden, otherwise to games. The rail and the game page's
@@ -109,9 +126,10 @@ pages that do not fit go behind a "more" item (`shell.py:442-462`).
 
 ### 3. Start-up and first run
 
-1. The window opens on **games**. Before anything is drawn, a worker removes the
-   all-users Vulkan layer if the tool runs as administrator with no Vulkan
-   install left, and says so in the status line and log (`app.py:56-75, 107-114`).
+1. The window opens on **games**. Before anything is drawn, a worker calls
+   install's start-up cleanup of the old all-users Vulkan layer
+   ([install](install.md), "Shared registrations"), which says in the status
+   line and log what it did (`app.py:56-75, 107-114`).
 2. **Setting "read the library when the tool opens"** (games > view, default
    on). On: the saved library (`%LOCALAPPDATA%\dlss5-autopilot\library.json`) is
    shown at once; a game whose folder changed on disk since is re-read on a
@@ -132,8 +150,6 @@ pages that do not fit go behind a "more" item (`shell.py:442-462`).
    - while that first scan runs: "finding your games..." / "Steam, Epic, GOG,
      EA, Ubisoft, Xbox and the usual folders".
 
-   The video player alone in the library is not a library: the welcome still
-   shows (`libpage.py:315-399`, `ctl_library.py:149-152`).
 4. In the background, shortly after start: the **update check** (section 8, self-update), the
    **shared results list** is fetched (feeds the status lines and the "others"
    block), **watching** starts for installed games, and after 5 s the **dlss
@@ -244,7 +260,7 @@ carrier: the words are always there.
 | 7 | installed, last verdict worked | `working` (+ `. <fps> fps` when measured) with a dot | green | working |
 | 8 | installed, last verdict did not work | `needs a look` with a dot | warning | look |
 | 9 | installed, no verdict | `installed` | muted | installed |
-| 10 | not installed | the reliability of the recommended route: `` (reliable), `beta`, `experimental` (often fails); when people shared results and some worked, `N of M worked for others` replaces it, in the accent | dim / accent | ready |
+| 10 | not installed | the reliability of the recommended route: `` (reliable), `beta`, `experimental` (often fails); when the game has at least five shared results ([community](community.md)) and some worked, `N of M worked for others` replaces it, in the accent | dim / accent | ready |
 
 Rules behind it:
 
@@ -337,7 +353,6 @@ the same as a log warning the moment the setting changes (`gamepage.py:262-443`,
 | not installed | **install** (primary), **autopilot** (tooltip: "experimental: installs, starts the game, checks it really loaded - and if not, tries the next route and tells you"), **settings** |
 | installed | **play** (primary), **did it work?**, **install again**, **settings**, **uninstall** |
 | installed with stale parts | **update (n)** (primary; "installs again on the same route and settings, with the current parts"), **play**, **did it work?**, **settings**, **uninstall** |
-| video player card | installed: **open the player** (primary), **install again**, settings; not installed: **install** |
 | a job on this game | one disabled primary button naming the job and its percent (`installing . 42%`, `autopilot running`, `stopping after this install`, `reading the logs`, `uninstalling`, `working out the plan`, `asking for versions`, `updating dlss files`, `installing a remix mod`), a progress line under it (the current step or the download), and, for autopilot, **stop** |
 | a job on another game | one button "`<job>: <other game>`" that opens that game's page (and **stop** for autopilot) |
 
@@ -407,7 +422,7 @@ feeder, renodx, upstream, standalone, uplift are the "ReShade routes"):
 | route | always | every route the game allows, `(recommended)` on the pick, `(not for this pc)` on what the card cannot run; changing it resets what the new route cannot use to its default |
 | architecture | the executable is protected and unreadable | 64-bit / 32-bit / not set; remembered per folder |
 | target exe | the folder has more than one candidate executable | the tool says "selected <exe>" in the log when it picks |
-| graphics api | every game except the video player | auto / DirectX 8-12 / Vulkan / OpenGL; remembered per folder |
+| graphics api | every game | auto / DirectX 8-12 / Vulkan / OpenGL; remembered per folder |
 | loads as | optiscaler | proxy name; "try another if nothing loads" |
 | reshade loads as | ReShade routes, API not Vulkan, not DirectX 8/9, not through DXVK | |
 | motion vectors | feeder | the choices exclude LumeniteFX and VORT pairs that read 0 % on OpenGL, and the built-in estimator on DirectX 10 and Vulkan |
@@ -542,12 +557,16 @@ verdict on screen too (the two answers must never disagree) (`app.py:400-477`).
 "failed"; a verdict the logs cannot decide asks "The logs this report read cannot
 show whether DLSS 5 ran - you watched the game. Did the DLSS 5 picture show in
 the game?" **it showed / it did not**, and the result says the answer was the
-person's. A final question lists exactly what the browser tab will carry (game
-name and executable, route and build, API, whether the game ships DLSS/FSR/XeSS,
-card, driver, tool version, whether it worked, the one-line verdict, the work
-area/ms/fps when measured) and says "nothing is sent unless you post it. No
-paths, no user name, nothing else." **open it / cancel**. Nothing is sent by the
-tool (`ctl_game.py:2877-2976`).
+person's. A final question lists exactly what is sent (game name and
+executable, route and build, API, whether the game ships DLSS/FSR/XeSS, card,
+driver, tool version, whether it worked, the verdict's id, the work
+area/ms/fps when measured, and a random id of this installation) and says "No
+paths, no user name, no account, nothing else." **send / cancel**. On send the
+app posts the record to the project's server; no browser opens and no account
+is needed ([community](community.md), M8).
+- Changed from the reference: it opened a pre-filled GitHub issue in the
+  browser (`ctl_game.py:2877-2976`), because most players have no GitHub
+  account.
 
 **report a bug** (help menu, a failed result, the crash banner): a window "two
 questions, then the report opens" over the main window: "did <game> start?" with
@@ -565,7 +584,7 @@ report on the clipboard / no browser, clipboard / neither - use the zip) with
 selects it in Explorer). Works with no game open. Nothing is sent
 (`app.py:261-390`, `reportui.py`, `reportout.py`).
 
-**Self-update**: at start a worker asks for the newest release (a day's cache).
+**Self-update**: at start a worker asks for the newest release (a 6 hours' cache).
 Newer -> banner "version X is out (you are on Y)" with **update now** (+ " -
 downloading..." when it downloads by itself). When the downloaded build's hash
 checked out: "version X downloaded and verified", **restart into it**. **update
@@ -576,8 +595,10 @@ so you can go back; it is removed when the new version starts a second time."
 run from source, it opens the releases page. `"auto_update": false` makes the
 download manual. The window's place is saved before the restart. The download
 shows in the status line as "update - N.N MB" and counts as a job (it blocks
-installs while it runs) (`app.py:505-616`). The sums/verification rules are
-the net spec's.
+installs while it runs) (`app.py:505-616`). The release is verified by the
+[net](net.md) spec's verifier contract (the sums-file kind, plus the signer
+once releases are signed); [self-update](self-update.md) says what each
+requires.
 
 **Crash banner**: an unexpected exception in the UI or a worker logs the trace,
 writes "!! internal error - see the log file (<path>)" and shows once per
@@ -597,18 +618,18 @@ it** (`app.py:162-194, 494-503`).
   it posts a message that the UI thread applies, and an answer always carries the
   game it is about (the page may show another game by then) (`app.py:1-7`,
   `ctl_game.py:1461`).
-- **One writing job at a time.** The reference has a single flag that every
-  install, uninstall, autopilot pass, update-all (library and dlss), remix mod
-  install/removal, self-update download and "what will happen?" sets, and which
-  every start of another job checks. A request made while another job runs is
-  **refused with the reason**, never queued silently: the button is disabled and,
-  where it is a press that could not be disabled (a menu entry, a "try" from a
-  toast, the dlss page's scan), the status line says "another job is running -
-  the dlss files wait for it" / "busy with <job> - try <route> when it ends". A
-  game being written is never written by a second job: this includes the dlss
-  page's swaps, the remix mod, the library's "update all", the self-update and
-  an autopilot pass that waits for a game to close. Read-only work (scan reads,
-  the dlss read, "check versions" reads, covers) runs beside jobs.
+- **One writing job at a time**, queued ([platform](platform.md), "Jobs"):
+  installs, uninstalls, autopilot passes, update all (library and dlss), remix
+  mod install and removal, and the self-update download. A request made while
+  another job runs joins the queue, visibly: the status line says "waiting:
+  <job> on <game>", and a queued job can be taken out of the queue. A game
+  being written is never written by a second job. Read-only work (scan reads,
+  the dlss read, "check versions" reads, covers, "what will happen?") runs
+  beside jobs.
+  - Changed from the reference: it refused the request with the reason; a
+    queue keeps the person's press, and two jobs still never run at once.
+- **Closing during a job** cancels it and rolls it back, closing within at
+  most 10 s ([platform](platform.md)).
 - **A watcher answer waits for the job**: when a watched game closes while a job
   is rewriting its folder, no answer is read from half an install; the log says
   "`<game>` closed while `<job>` runs on it - that job gives the answer"
@@ -617,10 +638,9 @@ it** (`app.py:162-194, 494-503`).
   busy state (the reference needed a list of message kinds to guarantee it).
 
 Changed from the reference: the job state is explicit (which job, on which game,
-which folders it writes, how far it is), not a boolean plus a string. A
-pending request for a **busy game** is refused with the reason; the rewrite
-**must** serialise per game folder, and whether jobs on different games may
-run side by side is Open question 1 (the reference blocks everything at once).
+which folders it writes, how far it is), not a boolean plus a string. In v1
+jobs on different games do not run side by side either: the download cache,
+the per-user layer registration and the log would need care first.
 
 ### 10. The watcher, the tray and notifications
 
@@ -668,7 +688,7 @@ appear over a full-screen game only as Windows decides (`ctl_watch.py:519-575`,
 
 Keeps the three NVIDIA runtimes current for every 64-bit game in the library,
 with or without DLSS 5. Rail item 2. Everything below is for games that are not
-hidden and are not the video player; 32-bit games are counted and skipped.
+hidden; 32-bit games are counted and skipped.
 
 **Header**: title; a one-line purpose "NVIDIA's newest dlss files for your games;
 the game's own stay beside them." with "online games: keep their own." in amber;
@@ -801,11 +821,10 @@ say them:
   neither a build this page wrote nor the game's own, it is **kept** as
   `<name>.dlss5-dlss-displaced-<time>` and the result line names it - never
   deleted.
-- DLSS 5 is installed over an updated file: restore hands the game's own file to
-  the DLSS 5 install, which puts it back when DLSS 5 is uninstalled ("the game's
-  own X comes back when DLSS 5 is uninstalled"). If the file changed since the
-  update, nothing moves: "DLSS 5 was installed over a file that changed since the
-  update - uninstall DLSS 5 first, then restore original".
+- DLSS 5 is installed over an updated file: restore is refused for that file,
+  "DLSS 5 is installed over <name> - remove DLSS 5 first, then restore
+  original". The DLSS 5 install recorded the hash of the file it found and puts
+  it back when it is uninstalled ([dlss-updates](dlss-updates.md)).
 - The backup is gone: the updated file stays, the entry is dropped, and the
   line says "the backup of the game's own <name> is gone - the <version> stays.
   Verify the game's files in its launcher to get the original back."
@@ -836,36 +855,10 @@ disk at all times as the runtime, as the page's own backup, as the DLSS 5
 install's backup or set aside under the displaced suffix. Rules of the swap
 itself (hash, size, whole-file replace, record) are the dlss spec's.
 
-### 12. Video, remix and vr pages, before/after
+### 12. Remix and vr pages, before/after
 
-**video** (rail 3): header "video", "dlss 5 on a video file, a YouTube link, a
-webcam or your screen". With no player set up: four tiles (a video file, a
-YouTube link live or saved first for 4K, a webcam, your screen) and **set up the
-player**, with "a portable <player>, in a folder you choose . F6 turns dlss 5 on and
-off while it plays". The set-up question names the folder and says "Nothing is
-written anywhere else"; **use this folder** / **choose another** opens a folder
-picker. The player then appears as a card at the top of the library and installs
-like a game. With a player:
-
-- **open the player**, **neural rendering on/off (F6)** (says "The player is not
-  running - open it and start a video first. F6 inside the player does the same
-  thing." when it is not), **settings** (the player's game page); not installed:
-  **install**.
-- **a link**: a field ("the clipboard is used when empty"), **play**, **download,
-  then play**, a "4K when downloading" toggle, **downloads folder**.
-- **a file**: **open a video file...**.
-- **render a file through dlss 5**: size (native, 2x, 4K), style (default, natural,
-  cinematic), **pick a video and render it** (needs the player installed; says
-  "this runs the model on every frame ..."), **rendered folder**; the result opens
-  in the player.
-- **webcam and screen**: a dropdown each ("looking...", "none found"; the screen
-  list is every monitor and every visible window of at least 320x200 other than
-  this one), **start**, **stop**, **look again**. Ten seconds after a start the
-  tool reports whether the feed processed frames ("through DLSS 5: yes - N frames
-  processed so far, motion alive") or why not.
-- A job shows one busy button (`preparing`, `downloading`, `rendering` with a
-  percent) and its line; other video actions wait for it. A failure is an error
-  dialog with the last line, the log has the whole text.
+**video**: dropped from the product (out of scope: the tool is about games).
+[video](video.md) keeps the reference's behaviour as a record only.
 
 **remix** (rail 4): "remix", "path-traced classics . dlss 5 runs inside the mod's
 own renderer"; three steps (get the mod, rescan - the game comes up on the remix
@@ -973,9 +966,9 @@ the share (10-90 %) is stored as `log_share`. The log in the drawer is for this
 session; the file `%LOCALAPPDATA%\dlss5-autopilot\autopilot.log` is the record.
 Closing the drawer: its close link, Esc, a click on empty page.
 
-Changed from the reference: log entries carry a level and a section as data, not
-a text prefix, so the drawer, the bug report and the zip can each filter them
-(`shell.py:776-782, 881-891`). The drawer opens itself only for the log-first
+The log itself (file, rotation, levels and sections as data) is
+[platform](platform.md)'s; the drawer shows its entries and filters them by
+level and section (`shell.py:776-782, 881-891`). The pop-out is deferred to M8. The drawer opens itself only for the log-first
 actions above, never on its own for a result that already has a block on the
 page.
 
@@ -991,20 +984,19 @@ back to its default and never stops the window opening):
 | `hidden_games` | game folders set aside | none |
 | `manual_folders` | folders added by hand | none |
 | `online_art` | cover lookup consent (undecided / yes / no) | undecided |
-| `rail_hidden` | hidden rail pages (video, remix, vr only) | none |
+| `rail_hidden` | hidden rail pages (remix, vr only) | none |
 | `watch_games` | watcher on | on |
 | `watch_background` | keep watching in the tray | off |
 | `window` | `{w, h, x, y, zoomed}` | maximised |
 | `log_share` | the drawer's height share | auto |
-| `last_verdicts` | per install folder: worked/unsure/failed, what it said, fps, next route and why | none |
-| `autopilot_plans` | per install folder: routes and tried | none |
 | `dlss_hold` | folders "kept" on the dlss page | none |
 | `overlay_key`, `target_fps` | global dials | route default, off |
 | `bitness_override`, `api_override` | per folder, from the settings | none |
 | `auto_update`, `update_checked_at`, `update_latest` | the update check | auto, - |
 
-The library (`library.json`), the dlss read (`dlss-scan.json`) and the covers
-live beside it. The saved library is dropped on a new version and re-read.
+The last verdicts and the autopilot plans are per-game state, not settings
+([platform](platform.md)). The library (`library.json`), the dlss read
+(`dlss-scan.json`) and the covers live beside it. The saved library is dropped on a new version and re-read.
 
 ## What must never happen
 
@@ -1028,8 +1020,9 @@ live beside it. The saved library is dropped on a new version and re-read.
   dropped if the person is on another game's page.
 - **A colour-only state**, and a state with no words in the log.
 - **An action taken for the person**: nothing is sent to the network except the
-  fetches the person's use needs and the cover lookup after consent; reports and
-  shared results open in the browser and are sent only when the person posts them.
+  fetches the person's use needs and the cover lookup after consent; bug reports
+  open in the browser and are sent only when the person posts them; a shared
+  result is sent only after the person confirms what it carries.
 - **A secret or path in a shared result.** The shared result carries only what the
   confirmation lists.
 - **A window the person cannot reach**: restore position only while the title bar
@@ -1061,9 +1054,9 @@ live beside it. The saved library is dropped on a new version and re-read.
    games?", skips anti-cheat games and games with no record, but does **not** skip
    a running game and stops at the first lost record. Name them differently
    (reinstall outdated parts / update DLSS files) and skip running games in both.
-7. **A confusing question.** The video set-up question's cancel button is "choose
-   another", so Esc or a click outside opens a folder picker, and there is no way to
-   cancel (`ctl_video.py:35-48`).
+7. **A confusing question.** (Dropped with video.) The video set-up question's
+   cancel button was "choose another", so Esc opened a folder picker
+   (`ctl_video.py:35-48`).
 8. **The vr page never looks again.** `found` is read once per session and `shown`
    reads only when it is still None (`vrpage.py:shown`); a game installed later is
    not found until restart. Re-read when the library changes or the page opens
@@ -1150,36 +1143,17 @@ For view-model and headless UI tests; no window needed for the first four.
 
 ## Open questions
 
-1. **Parallel jobs on different games.** The reference allows exactly one writing
-   job in the whole app. Per-game serialisation is required; may two games install
-   or update side by side (the shared download cache, ReShade's per-user Vulkan
-   layer registration and the one log would need care)? Recommended: one at a time
-   until the engine's M4 is done, then revisit.
-2. **Closing during a job.** Ask ("an install is running - wait / close anyway")
-   only, or can an install be cancelled with the engine's rollback so closing
-   cancels it? Needs the engine spec's cancellation story.
-3. **Theme.** Follow the system's light or dark with Fluent, or ship dark only like
-   the reference? Recommended: follow the system, since the information does not
-   depend on colour.
-4. **Windows notifications** (see "To verify"): is a balloon-style notification
+1. **Windows notifications** (see "To verify"): is a balloon-style notification
    enough, or must clicking it open the game's page (which needs toast activation
    and an installed shortcut for an unpackaged exe)?
-5. **The anti-cheat mark on installed cards.** Add the badge (Changed, section 5)
+2. **The anti-cheat mark on installed cards.** Add the badge (Changed, section 5)
    or keep the reference's single line? And the wording for the "unsure" card line.
-6. **VR page and sidebar default.** vr is on the rail by default though it is
-   unproven in a headset; hide it by default (still reachable from view > sidebar
-   pages)?
-7. **Casing and wording.** The reference writes everything in lowercase; the Fluent
-   theme reads better in sentence case. Wording stays content, but this changes
-   every string.
-8. **Reinstall from the library.** Keep a library-level "reinstall outdated parts"
+3. **Reinstall from the library.** Keep a library-level "reinstall outdated parts"
    at all (the game page has its own update), or remove it and keep only the page
    button and the dlss page's update all?
-9. **Restore original has no question** in the reference. Keep (it only puts the
-   game's own file back) or ask when DLSS 5 is installed over the update?
-10. **Remembering the search, filter and last page across runs.** The reference
-    remembers sort and architecture but not the filter, search or page.
-11. **The compare window stays a separate window** (kept from the reference because
-    it is meant to stay open beside the game); confirm, or make it an in-app page.
-12. **Log persistence.** Keep the in-memory drawer plus the file, or show the
-    file's tail on open so a restart does not empty the drawer?
+4. **Remembering the search, filter and last page across runs.** The reference
+   remembers sort and architecture but not the filter, search or page.
+5. **The compare window stays a separate window** (kept from the reference because
+   it is meant to stay open beside the game); confirm, or make it an in-app page.
+6. **Log persistence.** Keep the in-memory drawer plus the file, or show the
+   file's tail on open so a restart does not empty the drawer?

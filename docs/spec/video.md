@@ -1,5 +1,7 @@
 # Video, YouTube, webcam and screen capture
 
+**Status:** Dropped from scope; kept only as a record of the reference's behaviour.
+
 The DLSS 5 feed does not care what draws the frame: a video player that
 renders through Direct3D 11 is, to ReShade and the feed, a game with no depth
 buffer. The tool sets up a portable MPC-HC in a folder of the user's choice,

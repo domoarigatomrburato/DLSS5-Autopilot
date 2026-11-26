@@ -43,24 +43,21 @@ those come from.
 | RTX40MFG-Unlock | `dashdogy/MFG-Unlocker`, tag `v1.2.1` | `Universal-RTX-40-MFG-Unlock-*.zip`: `RTX40MFGCore.dll`, `RTX40MFG.asi`, `RTX40MFG-UI.addon64` | RTX 40 multi-frame generation |
 | Ultimate ASI Loader | `ThirteenAG/Ultimate-ASI-Loader`, tag `v9.7.4` | `Ultimate-ASI-Loader_x64.zip` -> `dinput8.dll` | RTX 40 multi-frame generation |
 | Remix runtime | `lunks/dxvk-remix-plus-dlssnr`, newest release | `d3d9.dll`, `remix_nvngx.dll` | remix, only with "swap the Remix runtime" |
-| 7-Zip console | `ip7z/7zip` release 26.03 `7zr.exe`, pinned by hash | the one executable | opening a `.7z` when neither 7-Zip nor `tar.exe` can |
 | Frame generation files you downloaded | the person (see [routes](routes.md)) | files they pick | optiscaler |
 
-Nothing else is fetched for the routes. Videos, webcam, Remix mod downloads
-and the self-update are other areas.
+Nothing else is fetched for the routes. Remix mod downloads and the
+self-update are other areas; video and webcam are dropped from scope.
 
 ### Hosts
 
-Every URL stays on these hosts, redirects included: `reshade.me`,
-`api.github.com`, `github.com`, `codeload.github.com`,
-`raw.githubusercontent.com`, and GitHub's release-asset download hosts that
-`github.com` redirects to. No private server is ever contacted. A redirect to
-any other host is refused.
+Every URL stays on the hosts this area passes as its allowlist, redirects
+included; the list is in [net](net.md), with every other area's. No private
+server is ever contacted. A redirect to any other host is refused.
 
 - Changed from the reference: the reference promised these hosts
   (`sources.py:1`) but enforced nothing; any redirect was followed. The
-  allowlist is data in the HTTP layer, so a component can not move off the
-  list without a code review.
+  allowlist is data, so a component can not move off the list without a code
+  review.
 
 ### How a version is resolved
 
@@ -70,8 +67,8 @@ frozen except the pins below.
 **GitHub release data**
 
 1. `api.github.com/repos/<repo>/releases[/latest|/tags/<tag>]` is asked first.
-2. Answers are kept on disk in the cache's `api-cache` folder, one file per
-   URL, and **reused without a request for 6 hours** (`sources.py:435`).
+2. Answers are kept in the [net](net.md) cache, one entry per URL, and
+   **reused without a request for 6 hours** (`sources.py:435`).
 3. When the live request fails (rate limit, no connection, 5xx), a cached
    answer of **any age** is used and the install says so: "GitHub could not
    be reached (rate limit or no connection); using the version list cached <n>h
@@ -234,11 +231,10 @@ Package choice (`optiscaler.py:272`):
 - The cache name carries the tag and the asset's own name
   (`OptiScaler-DLSSNR-<tag>-<stem>.zip`), so the two zips of one release do
   not share an entry (#196).
-- A `.7z` is unpacked with an installed 7-Zip (`7z`, `7za`, `7zr` on the
-  path, or under Program Files); else Windows' `tar.exe`; else 7-Zip's
-  `7zr.exe` fetched and run only when its SHA-256 equals the pinned value.
-  Out-of-space output from either tool becomes the disk-full message.
-  Unpacking goes into a `.part` folder and is renamed whole.
+- A `.7z` is unpacked by [net](net.md)'s one extractor (SharpCompress), with
+  no program started. Unpacking goes into a `.part` folder and is renamed
+  whole. Changed from the reference: it ran an installed 7-Zip found on the
+  PATH, else Windows' `tar.exe`, else a downloaded `7zr.exe`.
 - The wilsjo2 package picked by builds before 1.9.1 was the RTX 40 MFG one;
   the staleness check says so (see below).
 
@@ -289,22 +285,19 @@ again already takes the newest of everything.
 
 ### What is cached
 
-| What | Where | Lifetime |
-| --- | --- | --- |
-| Downloads | `%LOCALAPPDATA%\dlss5-autopilot\cache\<name>` | until the file fails its checks, or is cleared; names below |
-| Unpacked OptiScaler archives | `cache\unpacked\<archive stem>`, written through a `.part` folder | with the archive |
-| GitHub API answers | `%LOCALAPPDATA%\dlss5-autopilot\api-cache\<sha256(url)[:32]>.json` | fresh 6 h; used at any age when the live call fails |
-| The mirror catalog, the NVIDIA runtime list, each component's latest | memory, per process | the run |
-| The person's own frame generation files | `%LOCALAPPDATA%\dlss5-autopilot\own-fg\<recipe>` | until "forget" |
+The cache's layout, keys and locking are [net](net.md)'s. This area caches:
 
-Cache names: `ReShade_Setup_<v>_Addon.exe`; `dlssnr-<label>.zip`;
-`renodx-<label>.zip`; `renodx-sf-<label>.zip`; `dlss-<label>.dll` (NVIDIA's)
-or `.zip` (the mirror's), `dlssd-`, `dlssg-` likewise; `<tag>-<asset>` for
-feeder files; `dlss5-bridge-<tag>.addon64`; `neural-upstream-<tag>.addon64`;
-`standalone-<tag>-<asset>`; `GITC-Uplift-<v>.zip`; `dxvk-<v>.tar.gz`;
-`REFramework_<tag>.zip`; `RTX40MFG-Unlock-<tag>.zip`;
-`Ultimate-ASI-Loader-<tag>_x64.zip`; `remix-runtime-<tag>-<asset>`;
-`LumeniteFX-mainline.zip`; `vort_Shaders-main.zip`; `7zr.exe`.
+| What | Lifetime |
+| --- | --- |
+| downloads | until the file fails its checks, or is cleared |
+| unpacked OptiScaler archives | with the archive |
+| GitHub API answers | fresh 6 h; used at any age when the live call fails |
+| the mirror catalog, the NVIDIA runtime list, each component's latest | memory, per process, for the run |
+| the person's own frame generation files, in `%LOCALAPPDATA%\dlss5-autopilot\own-fg\<recipe>` (not the cache: the person's files) | until "forget" |
+
+The readable part of each cached file's name is the asset's own name
+(`ReShade_Setup_<v>_Addon.exe`, `dxvk-<v>.tar.gz`, the mirror's zip); the
+identity is net's key, never a label.
 
 The preview ("what will happen?") promises not to make a single request. It
 reads the API cache of any age and the download cache, and knows less when
@@ -319,15 +312,16 @@ What the reference verifies, and what it does not:
 | any download | magic bytes for the extension (`.zip` also as a whole archive, `.7z`, `.exe`/`.dll`/`.addon64`/`.addon32` start with `MZ`); size against the declared length |
 | NVIDIA DLLs (raw) | 200,000 bytes or more, `MZ`, a `PE\0\0` signature at the offset in the header, machine `0x8664`; a failing file is deleted from the cache and not written |
 | GITC-Uplift | each extracted file against `SHA256SUMS.txt` of the same release; a mismatch deletes the file and the cached zip and refuses; sums that cannot be read, or name none of the files, install unchecked with a warning |
-| `7zr.exe` | SHA-256 equal to the pinned value, before it is run; otherwise deleted and never run |
 | the runtime DLL | the architectures inside it, against the card ([gpu](gpu.md)) |
 | OptiScaler | a root-level `OptiScaler.dll` in the package |
 | MFG unlock, ASI Loader | each zip holds every expected file, checked before the first file is placed |
 | everything else | nothing beyond the magic bytes |
 
 - Changed from the reference: verify more, where a publisher gives a way.
-  1. Where the release has a `SHA256SUMS` file or the API answers an asset
-     `digest`, the downloaded file must match it, and a mismatch refuses.
+  1. Every check is one of [net](net.md)'s verifier kinds, named per
+     component. Where the release has a `SHA256SUMS` file or the API answers
+     an asset `digest`, the downloaded file must match it, and a mismatch
+     refuses.
      When the release is known to publish sums (GITC-Uplift always has;
      jlrouzies' OptiScaler fork "a SHA256SUMS file per release",
      `optiscaler.py:108`) and they cannot be read, the install **stops**,
@@ -342,10 +336,20 @@ What the reference verifies, and what it does not:
   4. A component recorded with the digest or signer it was installed with, so
      the staleness check can say "the file in the folder is not the one this
      tool wrote".
-- Changed from the reference: the cache key carries what identifies the bytes
-  (the asset's digest or size and the release tag), not just a label. The
-  reference cached `dlssnr-<label>.zip` and similar by label: a publisher
-  that replaces an asset under the same tag is served the old one forever.
+- Changed from the reference: the cache key is [net](net.md)'s (the URL plus
+  the expected digest), not a label. The reference cached
+  `dlssnr-<label>.zip` and similar by label: a publisher that replaces an
+  asset under the same tag is served the old one forever.
+- **The mirror is accepted** as the single source of the neural-rendering
+  runtime and the RenoDX add-ons, because no publisher offers them elsewhere.
+  A `nvngx_dlssnr.dll` from it is placed only when it carries NVIDIA's
+  Authenticode signature (net's signer kind): the mirror republishes
+  NVIDIA's file, and the signature proves it was not changed on the way.
+- **Pins are data shipped with the release.** A pin changes with a release,
+  so it is reviewed like code; no pins document is fetched at run time,
+  which would add a trust root.
+- **The frame-generation files the person downloaded** are shown with their
+  SHA-256, so the person can compare it with the publisher's.
 
 ## What must never happen
 
@@ -358,7 +362,7 @@ What the reference verifies, and what it does not:
 - **Installing a known-faulting build silently** (the pins above).
 - **A moving branch installed with no record of what it was.** The reference
   installs LumeniteFX and VORT from the head of a branch (below).
-- **Running a downloaded executable that was not verified** (`7zr.exe`).
+- **Running a downloaded program to unpack an archive.**
 - **Treating the API's silence as "up to date".**
 - **Writing a recorded version of `latest` as if it were a version** and
   then comparing it.
@@ -405,9 +409,10 @@ What the reference verifies, and what it does not:
   LumeniteFX one is trimmed to the provider the feed reads, "because ReShade
   compiled all eight heavy effects at start-up and a 32-bit game crashed from
   the stall" (`installer.py:2889`). The same stall risk applies to VORT's
-  other effects; check the file list (see Q4).
-- **`OptiScaler.ini`'s own update notice** is switched off in the install
-  ([routes](routes.md)), which the user cannot undo from the tool.
+  other effects; check the file list (see Q1).
+- **`OptiScaler.ini`'s own update notice** was switched off in the install
+  without saying so. It stays off, because this tool keeps the build current,
+  and the install report now says so ([routes](routes.md)).
 
 ## To verify against primary sources
 
@@ -423,7 +428,8 @@ What the reference verifies, and what it does not:
 | That each fork still publishes releases in the shape the skip lists assume (package word `optiscaler`, `rtx40-mfg`, `-test-`, `with_dlss`) and which carry a SHA256SUMS | each fork's release page and licence (OptiScaler is GPL-3.0; the tool never bundles it) |
 | That `doitsujin/dxvk` assets are `dxvk-<v>.tar.gz` and `dxvk-native-<v>-*.tar.gz` and the archive layout `x64/`, `x32/`; that DXVK ships `d3d8.dll` | DXVK releases and README |
 | That `REFramework.zip` of the nightly repository carries one universal `dinput8.dll` | `praydog/REFramework-nightly` |
-| That 7-Zip 26.03's `7zr.exe` has the pinned SHA-256 (`ad4c82fadcbdf93c03b4fc440f300509c7d60c5c2f4d183e35d9d70d6957037d`) and that Windows' `tar.exe` lacks LZMA on some builds (#93, #87) | 7-Zip's release; a Windows 10/11 survey |
+| That SharpCompress opens the real OptiScaler `.7z` archives (BCJ2 filters) | see [net](net.md) |
+| That the mirror's `nvngx_dlssnr.dll` builds carry NVIDIA's Authenticode signature | `Get-AuthenticodeSignature` on each build |
 | Licence of each component, and that none is redistributed | each repository's licence; the tool's NOTICE |
 | That GITC-Uplift's SHA256SUMS.txt format is `<hash>  <name>` and names every file | a release |
 | Whether `RTX40MFG` / ASI Loader v10.x can replace the pins | the two projects' notes |
@@ -473,22 +479,6 @@ What the reference verifies, and what it does not:
 
 ## Open questions
 
-- **Q1.** Pin policy. Pins in the reference are code constants whose
-  evidence is a handful of reports on 2026-09 drivers. Keep them as data in
-  the app (a release is needed to change one), or fetch a small signed
-  "pins" document from this repository so a pin can lift without a release?
-  The second is more useful and adds a trust root.
-- **Q2.** The mirror (`RankFTW/rhi-repo`) is the single source of the
-  neural-rendering runtime and the RenoDX add-ons, and it is a third party
-  republishing others' builds. Accept that, or add the publishers' own pages
-  as the first source where they exist?
-- **Q3.** An optional GitHub token (the standard `GITHUB_TOKEN` variable, read
-  only, never stored by the tool) would lift the 60-an-hour limit for people
-  who set it. Add?
-- **Q4.** VORT full install versus a trimmed one (see above): is the
+- **Q1.** VORT full install versus a trimmed one (see above): is the
   compile-stall risk real for the standalone route's 64-bit games, and is the
   trim safe?
-- **Q5.** `OptiScaler.ini`'s update notice: leave switched off (reference), or
-  leave the person's own setting and warn instead?
-- **Q6.** Frame-generation files the person downloaded: should the tool also
-  show their SHA-256 so the person can compare it with the publisher's?

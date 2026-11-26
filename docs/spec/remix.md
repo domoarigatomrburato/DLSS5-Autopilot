@@ -155,7 +155,8 @@ the executable (`installer.py:28-36`):
   0xc0000005 before its window appeared. Every ReShade proxy (`dxgi`, `d3d9`,
   `d3d10`, `d3d11`, `d3d12`, `opengl32`, the reference's full list at
   `installer.py:631-`), under whatever name, goes: a proxy from our earlier
-  install is parked under the orphan suffix, a foreign one is backed up first.
+  install is held until commit and then deleted ([install](install.md),
+  "Switching routes"), a foreign one is backed up first.
   A `d3d9.dll` is touched **only if it is ReShade**: in a Remix game that name
   is the Remix bridge client (`installer.py:3020-3035,5462-5476`).
 - **Blockers** (preview and install refuse, nothing written):
@@ -205,21 +206,25 @@ the Remix console; its author reports it running in Portal with RTX on an RTX
   redirect resolves each asset by name; the recorded version is then the word
   `latest`. A release missing either asset: "The dxvk-remix-plus-dlssnr release
   is missing <names>."
-- **Whose runtime is it** (decides renew, skip, or replace). The record holds the
-  swapped `d3d9.dll`'s size and modification time:
+- **The expected hash** of each runtime file is GitHub's asset `digest`, passed
+  to the [net](net.md) verifier; a file that does not match never enters the
+  cache.
+- **Whose runtime is it** (decides renew, skip, or replace). The remix record
+  holds the SHA-256 of the swapped `d3d9.dll` and `remix_nvngx.dll`:
 
   | State | Outcome |
   | --- | --- |
   | swap on, runtime has no neural pass | swap |
-  | swap on, runtime has the pass, and it is the one we swapped in (recorded, size unchanged) | renew it ("update all") |
+  | swap on, runtime has the pass, and its hash equals the one we swapped in | renew it ("update all") |
   | swap on, runtime has the pass and is not ours | the mod's own runtime is never replaced |
-  | swap off, record says we swapped, and the runtime's size still matches | still ours: the record keeps saying so |
-  | swap off, record says we swapped, and the size differs | the mod has updated its own runtime since: it is the mod's again, so `d3d9.dll` and `remix_nvngx.dll` leave our ownership, and the old backup is moved to `.dlss5-autopilot-superseded` (not restored on uninstall, it would put the older runtime back), with a note to delete it |
-  | swap on, mod updated since our swap | the *current* runtime becomes the backup: copied beside as `.tmp` then renamed over the old backup, so a full drive leaves one of the two; failure: "Could not back up the mod's own runtime before replacing it (...). Nothing was replaced." |
+  | swap off, record says we swapped, and the hash still matches | still ours: the record keeps saying so |
+  | swap off, record says we swapped, and the hash differs | the mod has updated its own runtime since: it is the mod's again, so `d3d9.dll` and `remix_nvngx.dll` leave our ownership, and the old backup is moved to `.dlss5-autopilot-superseded` (not restored on uninstall, it would put the older runtime back), with a note to delete it |
+  | swap on, mod updated since our swap | the old backup is moved to `.dlss5-autopilot-superseded`, and the *current* runtime becomes the new backup, by [install](install.md)'s backup rule; a backup is never overwritten. A backup that cannot be made: "Could not back up the mod's own runtime before replacing it (...). Nothing was replaced." |
 
-  Judged by **size alone**: modification time moves without the file changing
-  (FAT32 across daylight saving, a moved folder), and a wrong "replaced" costs
-  the backup of the mod's original (`installer.py:1767-1784`).
+  Changed from the reference: judged by **SHA-256**, not by size alone
+  (`installer.py:1767-1784`). Two builds of a runtime can share a size, and a
+  wrong "ours" costs the backup of the mod's original. The reference also
+  overwrote the old backup through a `.tmp` rename, which this rules out.
 - After a swap the flavour is read again (default *neural*).
 
 ### Fetching a mod (GTA IV and NFS Underground 2 only)
@@ -255,6 +260,13 @@ and copies it into the game folder. Every other project stays a link.
   | Garry's Mod: `bin/x.dll`, `garrysmod/y`, confs | none | refused (needs its own launcher) |
   | Deus Ex: `IngestionHelper.exe`, `omniversehelper/a` | none | refused (a renderer plus dev tools) |
 
+- **The project list** is data shipped with each release (projects, pages,
+  installable asset patterns), so it is reviewed with the code and changing
+  it needs a release.
+- **The expected hash** of a mod zip is GitHub's asset `digest` from the
+  release answer, passed to the [net](net.md) verifier. A release read from
+  the github.com pages (no digest) is not fetched: "GitHub's API could not be
+  reached, so this mod cannot be verified - try again later".
 - **Which release and asset.** Up to the ten newest releases, newest first; the
   reference took the first `.zip` asset it met. Changed from the reference: each
   installable project carries the asset-name pattern of its install zip in the
@@ -269,8 +281,11 @@ and copies it into the game folder. Every other project stays a link.
 - **Copy and record.** For each member under the root: the destination is
   checked to stay inside the game folder ("The archive tries to write outside
   the game folder (<name>) - refused."); a file that already exists is first
-  backed up as `<name>.dlss5-autopilot-backup` (only if no backup is there
-  already); then written in 1 MiB chunks. Progress: download as (bytes, total),
+  backed up as `<name>.dlss5-autopilot-backup`; then written in 1 MiB chunks.
+  A backup is never overwritten: when one is already there (left by a
+  half-removed earlier mod), the fetch refuses before anything is written,
+  naming the file: "An older backup of <name> is still here; remove the
+  earlier mod first." Progress: download as (bytes, total),
   unpacking as a percentage with "unpacking i/n" when there are more than 50
   files, every 25 files. The log names the asset, tag and size, the root, and
   the first six top-level names written.
@@ -390,7 +405,7 @@ Failure phrases and what to tell the user (each maps to a next step):
   both slashes read the way Windows reads them (the net spec's rule).
 - `remixdl.py:232`: an existing file is backed up only when no backup is there
   yet; a stale backup from a half-removed earlier mod lets the file be
-  overwritten unsaved. Refuse, or keep numbered backups.
+  overwritten unsaved. The fetch refuses instead (above).
 - `remix.py:196-274`: lost original value of the key (above); non-atomic writes.
 - `remix.py:50-82`: the skip list contains plain words (`data`, `pc`, `common`,
   `update`, `mods`) a game may keep its `.trex` under; the match is by
@@ -401,11 +416,11 @@ Failure phrases and what to tell the user (each maps to a next step):
   compared later. Resolve the redirect to its tag (a HEAD on `/releases/latest`
   reads it from `Location`) and record that.
 - The runtime swap downloads two executables from one maintainer with no hash
-  or signer check and no size limit; the plan's rule for third-party
-  components applies (see verify).
+  or signer check and no size limit. Changed: each is checked against
+  GitHub's asset digest and the net spec's limits (above).
 - `remixlist.py:7-12`: the list says "every entry was checked on 2026-09-03";
   it ships inside the program, so a moved project is a stale link until a new
-  release. See open questions.
+  release. Kept: the list is shipped data and is checked at each release.
 - `remixlist.py:206-211`: the page states "anything after 2010
   will not work": unverified and contradicted by the list's own entries
   (Assassin's Creed II, Saints Row: The Third); say what NVIDIA's wiki says.
@@ -450,21 +465,15 @@ Failure phrases and what to tell the user (each maps to a next step):
 
 ## Open questions
 
-1. **Where the project list lives.** Inside the program it goes stale (a
-   project can move or stop). Keep it as a data file shipped with each release,
-   or fetch a small JSON from the repository at run time (signed or hashed)?
-2. **Verification of the runtime swap and mod zips.** Pin a hash per known
-   release, use GitHub's asset digest, or follow `latest` unverified (as the
-   reference does)? The swap puts a 150-230 MB third-party renderer into a game.
-3. **Should the remix route stay one route with an opt-in swap**, or split into
+1. **Should the remix route stay one route with an opt-in swap**, or split into
    two choices in the UI ("use the DLSS 5 runtime the mod has" / "replace the
    runtime")? The model today is one route and a checkbox.
-4. **Mod removal when DLSS 5 edited the same `rtx.conf`.** With the "keep files
+2. **Mod removal when DLSS 5 edited the same `rtx.conf`.** With the "keep files
    changed since install" rule above, removing a mod after installing DLSS 5
    keeps `rtx.conf` and says so. Acceptable, or take the DLSS 5 line out
    first, then remove the mod?
-5. **The skip list and the depth of three** in the runtime search: keep as is,
+3. **The skip list and the depth of three** in the runtime search: keep as is,
    or search from the executable's folder and its parent only?
-6. **More installable projects.** Only two are installable because the others
+4. **More installable projects.** Only two are installable because the others
    publish proxies. Add others when their release archives become complete, by
    a data change alone?

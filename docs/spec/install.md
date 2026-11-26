@@ -4,7 +4,8 @@ What happens to a game folder, and to the few places outside it, when the tool
 sets a game up, previews that, removes it again, or moves it to another route.
 This spec covers the mechanics: the record, backups, refusals, rollback,
 switching, shared registrations, the Windows graphics preference, config
-edits, disk-full handling, settings and atomic writes. Which files each route
+edits and disk-full handling. Settings, atomic writes and the log are
+[platform](platform.md)'s. Which files each route
 places, and why, is the routes spec; where the bytes come from is the net
 spec. Read from the reference's `core/installer.py` (all 5,936 lines),
 `core/prefs.py`, `core/gpupref.py`, `core/vulkan.py`, `core/openxr.py`,
@@ -38,7 +39,8 @@ Anything uncertain is under "Open questions", not stated as a decision.
 - The tool's data folder is `%LOCALAPPDATA%\dlss5-autopilot`
   (`prefs.py:22-26`, `log.py:26`, `vulkan.py:61-64`): `settings.json`,
   `autopilot.log`, the download cache (net spec), the per-user layer copy in
-  `reshade-vulkan\`, and the per-folder failure notes (below).
+  `reshade-vulkan\`, and the per-game state store, which holds the failure
+  notes (below; the store is [platform](platform.md)'s).
 
 ### The install record
 
@@ -47,6 +49,21 @@ A JSON file named `dlss5-autopilot.json` in the install folder
 done. It is written before the first change, kept current through the
 install, and deleted when the last thing it names is gone.
 
+**The contract.** This spec owns one typed contract for the record, and
+every other area consumes it by type, through install's reader, never by
+reading the file or its field names:
+
+- the record's **state**, an enum: `Installing`, `Installed`, `Removing`
+  (the lifecycle below);
+- the reader's answer for a folder: no record, a record in one of those
+  states, or `Unreadable` (damaged, the wrong shape, or a newer format),
+  with the reason;
+- the record's fields (below);
+- the **failure note** (below).
+
+[library](library.md), [diagnosis](diagnosis.md), [watch](watch.md),
+[dlss-updates](dlss-updates.md) and the app read only this contract.
+
 **Contents.** Format and names are the C# implementation's to fix; the
 contents are:
 
@@ -54,7 +71,7 @@ contents are:
 | --- | --- | --- |
 | format version | an integer; a newer one than the tool knows is never edited (below) | `"version": 1`, `installer.py:3165` |
 | tool version | which build wrote it | `:3170` |
-| state | `installing`, `installed`, `removing`; see the lifecycle | reference had only a boolean `complete`, `:3171` |
+| state | `Installing`, `Installed`, `Removing`; see the lifecycle | reference had only a boolean `complete`, `:3171` |
 | game facts | executable name, bitness, API, kind (store/emulator/...) | `:3172-3175`, `:3197` |
 | route and choices | the route and every choice needed to repeat the install with newer versions (provider, proxy name, OptiScaler build, DXVK, VR, MFG, keep-game-DLSS, feeder pin, helper mode, own frame-generation set, upscaler, dials). The route specs own the exact list. | `:3176-3195`, replayed by `options_from_manifest` `:3263-3342` |
 | components | component name to installed version, for "what has moved on" | `:3196` |
@@ -79,17 +96,37 @@ them apart by file-name suffix, which misclassifies; `installer.py:2976`,
 | original | present only when the path held a file the tool did not write: SHA-256, size, attributes and modified time of that file, and the name its backup has |
 
 Hashes are lowercase hex SHA-256. The reference recorded no hash anywhere.
+Every written file is hashed at commit and every file is hashed again at
+uninstall, whatever its size: it is local disk, and a size alone cannot tell
+our file from the game's.
+
+**The failure note.** When an install or an uninstall stops, the reason is
+kept in the game's per-game state ([platform](platform.md)), never in the
+game folder. It lasts until the next install or uninstall of that folder
+starts. Its fields:
+
+| Field | Holds |
+| --- | --- |
+| when | the time it stopped |
+| operation | install, uninstall, or the rollback of an install |
+| kind | `Refused`, `Network`, `DiskFull`, `Locked`, `Verification`, `Cancelled`, `Unexpected` |
+| cause | for `Network`, the net spec's kind (`blocked`, `dns`, `refused`, `timeout`, `cut`) and the host; for `DiskFull`, the drive and its free space; for `Locked`, the path |
+| text | the message the person was shown, up to 400 characters |
+| outcome | `NothingWritten`, `RolledBack`, `RollbackIncomplete` |
+| route and tool version | what was being installed, by which build |
+| exception | the last 4,000 characters of an unexpected exception, for the bug report only; nothing parses it |
+
 
 **Lifecycle.**
 
 | State | Meaning | Written when |
 | --- | --- | --- |
 | (no record) | nothing of ours is here | initial; also after a full uninstall or a rollback |
-| `installing` | a transaction is open; entries are `pending` or `written` | before the first change to the folder |
-| `installed` | the install committed | the last step of a successful install |
-| `removing` | an uninstall is part way, or ended with leftovers | before the first deletion; kept only if something is left |
+| `Installing` | a transaction is open; entries are `pending` or `written` | before the first change to the folder |
+| `Installed` | the install committed | the last step of a successful install |
+| `Removing` | an uninstall or a rollback is part way, or ended with leftovers | before the first deletion; kept only if something is left |
 
-A record found in `installing` or `removing` at the start of any later
+A record found in `Installing` or `Removing` at the start of any later
 operation on that folder means the previous run ended abnormally (power
 loss, killed process, forced close). The tool says so and completes the
 rollback or the removal from the record before doing anything else. It never
@@ -101,17 +138,27 @@ installs over a half-finished transaction.
   install and uninstall, with "this folder was set up by a newer version;
   update the tool". Editing a format the tool does not understand is how
   files get orphaned.
-- A record that cannot be parsed, or is the wrong shape, is **corrupt** and
-  is treated as no record: see "Uninstall without a record".
+- A record that cannot be parsed, or is the wrong shape, is **corrupt**:
+  the reader answers `Unreadable`. Install refuses it and explains ("this
+  folder's install record is damaged: uninstall first, then install"), with
+  an "uninstall, then install" button; it never guesses which files are
+  ours, since treating it as no record would back up our own old files as
+  the game's. Uninstall falls back to known names: see "Uninstall without a
+  record".
 - Entries naming a path that resolves outside the game folder are ignored
   with a line in the log, never followed (`installer.py:5530-5567`, SECURITY.md
   first bullet).
 - **Records from the Python release** (`"version": 1`, flat `files` list,
-  backups told by suffix) are read and uninstalled by the new tool, with no
-  hashes: the hash rules below fall back to "ours by name", exactly as the
-  reference decided. See open question 1 for the older name sets
-  (`dlss5kur-kurulum.json`, `dlss5-installer.json`, Turkish keys,
-  `installer.py:346-350`).
+  backups told by suffix) are read by install alone and converted once: the
+  reader gives the new contract in memory, and the first install or
+  uninstall on that folder writes the converted record. The converted
+  entries carry no hashes, so for them the hash rules below fall back to
+  "ours by name", exactly as the reference decided. Nobody else reads
+  version 1 names.
+- The older name sets (`dlss5kur-kurulum.json`, `dlss5-installer.json`,
+  Turkish keys, the `.dlss5kur-yedek` and `.dlss5-installer-backup`
+  suffixes, `installer.py:346-350`) are not read: they come from releases
+  up to 1.2.
 - **Two executables in one folder** (a game and its expansion launcher)
   share one record. Installing for the second one is a reinstall of the same
   folder, and the record names both executables; the report says "uninstalling
@@ -168,11 +215,11 @@ REFramework are written).
 | Remix only on the Remix route | a `.trex` runtime is in the folder and the route is not Remix; the message says why (ReShade crashes a Remix game before it draws; on DX9 it would overwrite the runtime) | `:3588-3596` |
 | a card DLSS can run on | no NVIDIA card any route can use, unless "ignore GPU mismatch" is set | `:3599-3605` |
 | install folder exists | "`<folder>` does not exist." | `:3461-3462` |
-| install folder writable | a probe file created and deleted; permission denied is worded for Xbox/Game Pass folders (the store owns them; elevation does not help) and for ordinary folders ("close the game, or run as administrator"); disk full is worded as disk full | `:3464-3489` |
-| game not running | a process whose executable image lies inside the install or game folder is running. Asked in phase 1 and again just before phase 3, since gathering can take minutes. | `:3491-3496` |
+| install folder writable | an access check for the current user, read-only; permission denied is worded for Xbox/Game Pass folders (the store owns them; elevation does not help) and for ordinary folders ("close the game, or run as administrator"). The reference created and deleted a probe file here; phase 1 writes nothing, and the first real write is the record in phase 3, whose failure is a refusal that touched nothing (see "Disk full") | `:3464-3489` |
+| game not running | a process whose executable image lies inside the install or game folder is running: its files are locked, and an install against locked files ends half-written. Asked in phase 1 and again just before phase 3, since gathering can take minutes. | `:3491-3496` |
 | nothing locked | each existing file the plan will overwrite, move or delete can be opened for writing; a locked one (a launcher holding the proxy DLL) is named now | new |
 | a non-ReShade file under the proxy name | refused ("`dxgi.dll` already exists but is not ReShade; DXVK, Special K or another injector? Remove it first"), except our own file from the recorded previous route and a hand-installed OptiScaler (backed up and moved, by the rules below) | `:3705-3737` |
-| the record is usable | newer format refused; corrupt record refused for install with "this folder's install record is damaged: uninstall first, then install" | new, see open question 2 |
+| the record is usable | the reader answers `Unreadable`: a newer format, or a damaged record ("this folder's install record is damaged: uninstall first, then install") | new |
 | free space | the game's drive has room for every byte to write, plus temporary copies, plus any backups made by copy, plus a margin for the record | new |
 | route-specific refusals | each route spec lists its own; they all run here. From the reference: a pinned feeder older than the D3D10 relay, the 64-bit helper mode and the built-in motion vectors (`:3759-3813`); GITC-Uplift on Vulkan/OpenGL needs ReShade 6.8 (`:3815-3830`); the RTX 40 MFG package on another card, the person's own frame-generation slot taken (`:3832-3843`); Remix with no runtime, or a runtime without the neural pass and no swap chosen (`:3953-3968`); a local add-on file missing or not 64-bit (`:4686-4696`) | |
 
@@ -227,9 +274,8 @@ network request.
 
 - **Effects outside the folder** are always listed, each with its scope and
   how it is undone: the Vulkan layer ("loads into EVERY Vulkan application
-  until 'uninstall' removes it"; reused when one exists; also registered for
-  all users when the tool runs as administrator, with the Program Files path
-  and that taking it off needs administrator rights); the OpenXR layer; the
+  until 'uninstall' removes it"; reused when one exists; per user only, so
+  programs started as administrator do not get it); the OpenXR layer; the
   Windows graphics setting (only on a machine with an NVIDIA card and
   another GPU, and only where the person has not already chosen); an
   emulator's config file and the key; a swapped runtime outside the install
@@ -287,6 +333,11 @@ network request.
   the first install is identical in content, attributes and modified time,
   except files the game or its store changed in the meantime. This is the
   headline test of the area.
+- **A runtime the DLSS page updated** is, for install, a file the tool did
+  not write: install records the hash of the DLL it found, backs it up, and
+  uninstall puts that file back. While the install covers it, the DLSS page
+  neither updates nor restores it ([dlss-updates](dlss-updates.md)), so the
+  recorded hash stays true.
 - **One mechanism.** Backup logic exists in five places in the reference
   (`installer.py:791-867`, `dxvk.py:153-193`, `refw.py:72-78`,
   `mfg.py:428-434` and `:499`, `optiscaler.py:724-727`), each with its own
@@ -299,7 +350,7 @@ Suffixes, all in the game's own folder, and what each means:
 | `.dlss5-autopilot-backup` | the game's own file the tool replaced or removed | yes |
 | `.dlss5-off` | the game's `d3dcompiler_47.dll`, renamed so Windows' newer one loads (the neural pass compiles for `cs_5_1`; route spec) (`installer.py:318-319`) | yes, as a backup (same rules) |
 | `.dlss5-autopilot-superseded` | an old original replaced by a newer one the game shipped | never; left for the person, named in the report |
-| `.dlss5-dlss-original` | the DLSS page's own backup of a runtime it updated (DLSS-files spec) | never touched by this spec; see open question 6 |
+| `.dlss5-dlss-original` | the DLSS page's own backup of a runtime it updated ([dlss-updates](dlss-updates.md)) | never touched by this spec |
 
 **Changed from the reference:** the `.dlss5-autopilot-orphan` suffix
 (`installer.py:323`, `:3036-3041`, `:3081-3086`) is dropped. It held our own
@@ -380,15 +431,13 @@ until commit (see "Switching routes") and the journal says what changed.
 
   Where a one-line reason is needed (the autopilot, "update all"), the cause
   paragraph is taken, not the opening sentence (`installer.py:1377-1389`).
-- **A failure leaves no file in the game folder.** The reason is kept in the
-  tool's own data folder, keyed by the folder's path, for an hour, so the
-  diagnosis can say why this folder's install stopped ("the drive ran out of
-  space", the install's own refusal text up to 400 characters, the
-  traceback's last 4,000 characters). **Changed from the reference:** it
-  left a record in the game folder holding only a "rolled back" note
-  (`installer.py:1275-1280`, `net.py:54`) and kept the traceback in memory
-  (`:1135-1188`), so a rolled-back folder still had a file of ours in it and
-  the reason was lost on restart.
+- **A failure leaves no file in the game folder.** The reason is kept as
+  the failure note (above), so the diagnosis can say why this folder's
+  install stopped. **Changed from the reference:** it left a record in the
+  game folder holding only a "rolled back" note (`installer.py:1275-1280`,
+  `net.py:54`) and kept the traceback in memory (`:1135-1188`), so a
+  rolled-back folder still had a file of ours in it and the reason was lost
+  on restart.
 - The message for a refused write ("Windows refused to write a file"): the
   rollback sentence, then the Windows error, then "Almost always this means
   the game (or its launcher) is running and holding the file open. Close it
@@ -455,10 +504,19 @@ in-process and helper mode, `installer.py:271-281`) leaves nothing of X.
 
 Files that stay out of the way of a route but are not ours:
 
-- **The game's `d3dcompiler_47.dll`** (and any other name the route list
-  names) is renamed to `<name>.dlss5-off` on the routes that need Windows'
-  copy (`installer.py:318-319`, `:3499-3537`). Recorded as `moved-aside`;
-  restored by the backup rules.
+- **The game's `d3dcompiler_47.dll`** is renamed to `<name>.dlss5-off` on
+  every ReShade route, because the neural pass compiles for `cs_5_1` and an
+  old bundled compiler rejects it while the feed still reports frames.
+  Install owns this one mechanism; the routes spec only says where it
+  applies (`installer.py:318-319`,
+  `:3499-3537`).
+  - **Version check first.** The game's copy is moved aside only when its
+    file version is older than System32's `d3dcompiler_47.dll`; the preview
+    and the report give both versions. A copy as new or newer stays.
+    **Changed from the reference:** it renamed unconditionally and said the
+    copy "is older than Windows'" without checking (`installer.py:3499`).
+  - Recorded as a `moved-aside` entry with its hash, restored by the backup
+    rules.
   **Changed from the reference:** when `.dlss5-off` already existed the
   reference deleted the current `d3dcompiler_47.dll` (`:3517-3518`), and at
   uninstall it swept every `*.dlss5-off` in the folder, unlinked whatever sat
@@ -545,9 +603,9 @@ Then, in this order:
    path plus a fixed set of shader folders (`:5841-5859`), which can remove
    an empty folder the person made.
 5. The graphics preference and the shared registrations (below).
-6. Per-folder data in the tool's own folder (the settings index, frame-rate
+6. The game's per-game state ([platform](platform.md): verdicts, frame-rate
    measurements, remembered plans, the failure note) is dropped
-   (`installer.py:5762-5773`).
+   (`installer.py:5762-5773`), unless the uninstall left something behind.
 7. The record, last: removed only when no entry is left. With leftovers it
    is rewritten, atomically, with state `removing`, **all entries not yet
    processed and every failed restore with its backup**, and the message
@@ -597,7 +655,7 @@ Rules of the fallback, stricter than the reference:
   says "restored from a backup with no record; if the game updated since,
   verify its files". The scan is bounded the way detection's is.
 - Shared registrations are left alone (there is no record of what this
-  install needed); the dependents list (below) decides.
+  install needed); the dependents (below) decide.
 - A `d3d9.dll` in a Remix game is the Remix runtime and is left alone
   (`installer.py:5466-5476`).
 
@@ -616,7 +674,18 @@ the last install that needs them.
 | Vulkan, 64-bit | `HKCU\Software\Khronos\Vulkan\ImplicitLayers` (`vulkan.py:32`) | `VK_LAYER_reshade` | `%LOCALAPPDATA%\dlss5-autopilot\reshade-vulkan\ReShade64.dll` and `ReShade64.json` |
 | Vulkan, 32-bit game | same key | **`VK_LAYER_reshade32`** (different on purpose: the loader de-duplicates by name and would drop the 32-bit one; `vulkan.py:36-58`) | `ReShade32.dll`, `ReShade32.json` |
 | OpenXR (VR, 64-bit games only) | `HKCU\Software\Khronos\OpenXR\1\ApiLayers\Implicit` (`openxr.py:28`) | `XR_APILAYER_reshade` | same folder, `ReShade64_XR.json` beside the shared `ReShade64.dll` |
-| Vulkan, all users | `HKLM\Software\Khronos\Vulkan\ImplicitLayers`, the 64-bit view for 64-bit, the 32-bit view for 32-bit (`vulkan.py:67-91`) | as above | a second copy under Program Files (path from the registry's `ProgramFilesDir`, never the environment variable, `vulkan.py:248-267`): `...\dlss5-autopilot\reshade-vulkan\` |
+
+Install owns every registration: what is registered, who depends on it, and
+when it goes. The routes and VR specs only say when a route needs one.
+
+**No all-users registration in v1.** **Changed from the reference:** it
+also registered the Vulkan layer under
+`HKLM\Software\Khronos\Vulkan\ImplicitLayers`, with a copy under Program
+Files, when it ran as administrator, for games started as administrator
+(`vulkan.py:67-91`, `:345-375`). That copy was built from the per-user cache,
+which any program of the user can replace (`installer.py:4453`, `:4493`), and
+a machine-wide registration cannot be counted from one user's records. Those
+games are told the layer does not reach them.
 
 All files come from the ReShade setup executable (it has the DLLs and
 manifests appended as a zip). The manifest's `library_path` is rewritten to
@@ -632,57 +701,56 @@ order, so it cannot promise what the install skips, `vulkan.py:378-403`):
 | it is a layer for the other architecture | not usable: register ours |
 | a registration exists but its value is not `0` | it is disabled and not reused |
 | our own 32-bit manifest still carries the 64-bit layer's name (an older release's) | rewrite it |
-| the tool runs elevated, the game is 64-bit, and the only layer is on the per-user list | register ours for all users too: an elevated process reads only the machine's list (the loader skips HKCU under a high-integrity token) |
-| elevated, and a foreign layer for that architecture is already on the machine's list | do not add ours beside it (two ReShades in one 32-bit process) |
-| the tool is not elevated | per-user registration only; the preview and the report say programs started as administrator will not get it |
+| always | per-user registration only; the preview and the report say programs started as administrator will not get it (the loader skips HKCU under a high-integrity token) |
 
 The machine's 32-bit view is deliberately not consulted when looking for a
 layer to reuse: a foreign 32-bit ReShade there calls itself
 `VK_LAYER_reshade` and would clash with ours (`vulkan.py:78-91`).
 
-**The all-users layer is never built from the per-user cache.** The copy under
-Program Files is extracted by the elevated process from a ReShade setup
-executable that the elevated process fetched or verified itself, into a
-location only administrators can write, and the setup is checked as the net
-spec's component verification requires. It is never taken from, or copied
-out of, `%LOCALAPPDATA%` (the download cache or the per-user layer folder):
-any program running as that user can replace those, and the next elevated
-install would put its file into every elevated Vulkan program on the PC.
-**Changed from the reference:** `vulkan.py:345-375` says it extracts again
-"from ReShade's setup, not copied from the per-user folder", but the setup
-path it receives is the download cache file (`installer.py:4453` and
-`:4493`, `:4464`), writable by the unelevated user. See open question 3.
+**Start-up cleanup of the old all-users layer.** Releases before the
+rewrite could leave our layer on the machine's list. Install owns one
+cleanup step, which the app calls at start and the CLI calls on every run:
+
+- It looks for values under the machine's `ImplicitLayers` (both registry
+  views) whose manifest path is our Program Files layer folder (the path
+  from the registry's `ProgramFilesDir`, never the environment variable,
+  `vulkan.py:248-267`), and nothing else.
+- Elevated, it deletes those values and then the folder, and says so in the
+  status line and the log: "removed our ReShade Vulkan layer from the
+  all-users list". No dependents are counted, because v1 never relies on it.
+- Not elevated, it says once: "an older version left ReShade's Vulkan layer
+  registered for all users. It loads into every Vulkan program on this PC;
+  start this tool once as administrator to take it off".
+- A failure is logged and never stops the start.
 
 **Bookkeeping: who depends on a layer.**
 
-- The set of install folders relying on each layer is kept **outside
-  `settings.json`**, in a small file beside the layer files (the layer folder
-  is the tool's own and the layer's lifetime is the list's).
-  **Changed from the reference:** it kept `vulkan_games` and `openxr_games` in
-  `settings.json` (`prefs.py:255-310`), where a damaged or locked file read
-  as an empty list (see the next rule) and one write of one key rewrote the
-  rest.
-- Entries are stored and compared as **resolved paths**: final path after
-  junctions, symbolic links and 8.3 names, case-insensitively, by whole
-  parts. The reference compared `str(root)` of whatever spelling the game
-  list gave (`prefs.py:275-288`, `installer.py:5789`, `:5804`), so a game
-  added once as `D:\Games\X` and once through a junction counted twice or
-  not at all, and the layer was never removed. The same comparison applies to
-  every "is this registration ours" test (`vulkan.py:171-175` resolved
-  paths, but `unregister` deleted by the string it built, `vulkan.py:509-525`,
-  `openxr.py:133-147`): removal enumerates the registry values and deletes
-  those whose resolved path is our manifest.
-- **The list is pruned against the disk.** An entry whose folder no longer
-  exists, or whose record no longer lists the layer, is dropped, at every
-  uninstall and at start. The reference never pruned: a game deleted from the
-  store stayed in the list forever and the global layer was never removed.
-- **Unknown is not empty.** If the list cannot be read (locked, damaged) the
-  layer is kept, the list file is not rewritten, and the log says why. Only a
-  list read successfully and found empty after pruning removes a registration.
-  The reference has this rule in one place (`prefs.py:260-272`,
-  `vulkan.py:539-559`) and violates it in the install and uninstall paths,
-  which read through the default reader that returns `[]` for an unreadable
-  file (`installer.py:5804-5806`, `prefs.py:255-258`).
+- **Dependents are derived from the install records**, never kept as a
+  list. A layer's dependents are the folders whose record lists that
+  registration. Install finds the candidates through the per-game state
+  store ([platform](platform.md)), which has an entry, naming its folder, for
+  every folder the tool has installed into, and reads each candidate's
+  record from disk.
+  **Changed from the reference:** it kept `vulkan_games` and
+  `openxr_games` lists in `settings.json` (`prefs.py:255-310`), where a
+  damaged or locked file read as an empty list, a failed install was added
+  before it finished, and a folder deleted by hand stayed forever.
+- Folders are compared as **resolved paths**: final path after junctions,
+  symbolic links and 8.3 names, case-insensitively, by whole parts (the
+  platform spec's game identity). The reference compared `str(root)` of
+  whatever spelling the game list gave (`prefs.py:275-288`,
+  `installer.py:5789`, `:5804`), so a game added once as `D:\Games\X` and
+  once through a junction counted twice or not at all. The same comparison
+  applies to every "is this registration ours" test (`vulkan.py:171-175`
+  resolved paths, but `unregister` deleted by the string it built,
+  `vulkan.py:509-525`, `openxr.py:133-147`): removal enumerates the registry
+  values and deletes those whose resolved path is our manifest.
+- A folder that no longer exists, or whose record no longer lists the
+  layer, is not a dependent.
+- **Unknown is not empty.** A candidate whose record cannot be read (a
+  locked file, an unplugged drive, `Unreadable`) counts as a dependent: the
+  layer is kept, and the log says why. Only when every candidate was read
+  and none lists the layer is the registration removed.
 - **Never remove a registration we did not create.** Removal deletes only
   values naming our own manifests. A reused foreign layer is left even when
   it is the last dependent.
@@ -694,14 +762,6 @@ path it receives is the download cache file (`installer.py:4453` and
   is shared). A DLL held by a running Vulkan or OpenXR program is left and
   tried again at the next start. **Changed from the reference:** it never
   deleted the layer files from the per-user folder.
-- The all-users registration and its Program Files copy are removed only by
-  an elevated run. Not elevated, the log says "still registered for all
-  users: ReShade's Vulkan layer (...). It loads into every Vulkan program on
-  this PC, and removing it needs administrator rights: start this tool once
-  as administrator and it takes it off" (`installer.py:5394-5406`). Started
-  elevated later, with no live dependents, it removes it
-  (`vulkan.py:539-559`). Other Windows users' lists are an open question
-  (4).
 - A layer file refresh is skipped when the file already has the content to be
   written, so a running Vulkan program holding the DLL does not fail the
   install. When it does differ and is held, the install says "ReShade64.dll
@@ -754,6 +814,11 @@ the other card, where NGX does not exist. The tool sets the program's
   `gpupref.py:73-90`).
 
 ### Emulator config edits
+
+**Deferred to M8.** In v1 the install shows each profile's hint (set the
+backend by hand) and edits nothing; the table below ships as data, so M8
+adds the edits without new research. [library](library.md) owns detection
+and the profiles; install owns the edits.
 
 For an emulator whose renderer is not one ReShade can reach, the tool edits
 the emulator's own config to a DXGI backend, so the install is one press
@@ -820,14 +885,16 @@ The install ran on a daemon thread (`ctl_game.py:1447`) and the close handler
 never looked at it (`ctl_watch.py:519-574`, `app.py:96`), so a close mid-install
 killed it between a backup and the write, with no record at all.
 
-- A close request while an install or uninstall is running **asks the
-  operation to stop and waits** for it to reach a safe point: between files,
-  and between chunks of a download or a copy. The install then rolls back
-  (an uninstall finishes the entry it is on and leaves the rest on the
-  record); the window shows "stopping, putting the folder back" meanwhile and
-  closes when done. A second close request while it waits does not kill it
-  but restates the line.
-- The command line handles the console close and Ctrl+C the same way.
+- A close request while an install or uninstall is running **cancels the
+  operation** ([platform](platform.md), "Jobs"). It stops at the next safe
+  point: between files, and between chunks of a download or a copy. The
+  install then rolls back (an uninstall finishes the entry it is on and
+  leaves the rest on the record); the window shows "stopping, putting the
+  folder back" meanwhile and closes when done, at most 10 s after the
+  request. Past 10 s the process exits anyway and the journal covers the
+  rest. A second close request while it waits restates the line.
+- The command line handles the console close and Ctrl+C the same way, and
+  exits with 130 ([cli](cli.md)).
 - A forced kill, a crash or a power loss is covered by the journal: the
   record names everything touched, and the next operation on the folder
   (or the next start of the tool, for folders it knows) completes the
@@ -853,63 +920,18 @@ Recognised through any chain of wrapped errors, by errno 28 and Windows codes
   this is a refusal at the start or before a group ("nothing was touched"),
   never a finished install with no list.
 
-### Settings: `settings.json` and atomic writes
+### Settings, atomic writes and the log
 
-`%LOCALAPPDATA%\dlss5-autopilot\settings.json` holds the tool's preferences
-(`prefs.py:22-26`). Other specs own the keys; this one owns how the file
-behaves. The reference's module also held a remembered local add-on file and
-the install, Vulkan and OpenXR lists; the lists are no longer settings
-(above).
+`settings.json`, the per-game state store, the atomic write every file of
+the tool goes through (the record included), and the log are
+[platform](platform.md)'s. This area relies on two of its rules:
 
-- **A missing file is empty defaults.** Unknown keys are kept on write, so
-  an older build never drops a newer one's keys.
-- **A value of the wrong type** (a hand-typed `"F10"` where a key code is
-  expected) is read as the default, per key, and never ends an install
-  (`installer.py:886-896`).
-- **One writer at a time**, across threads and across running copies of the
-  tool: a read-modify-write is done under a lock (a named mutex for the
-  copies), re-reading inside the lock. The reference's lock was in-process
-  only (`prefs.py:36-40`).
-- **Unreadable is not empty.**
-  - A file that cannot be read for a moment (locked by an antivirus or
-    another process) is retried briefly; if it stays so, the value is read
-    from the last good copy, and **the file is not written**: a write made
-    from an empty read would drop everything (`prefs.py:55-72`,
-    `:112-129`).
-  - A file that parses to something that is not an object, or does not
-    parse, is **corrupt**: it is moved aside to `settings.json.corrupt` (the
-    newest one kept, never deleted by the tool), the tool starts from
-    defaults, and says so once. Nothing safety-relevant lives here, so
-    defaults are safe: the install records, the layer dependents list and the
-    graphics-preference records are not in it.
-  - **Unreadable settings never drop the Vulkan games list**: that list is not
-    in `settings.json`, and no read or write of settings can alter it
-    (`prefs.py:255-272`, gate 2.0.9, defeated by `set_` writing a one-key file
-    when no good copy had been seen, `:112-129`).
-- **Atomic writes**, for the settings, the install record, the layer
-  manifests and every config the tool writes whole:
-  1. write the full content to a uniquely named temp file in the same folder
-     (process id plus a random part; the reference used one fixed `.tmp` name
-     for the record, `installer.py:3230`);
-  2. flush the data to the disk (`fsync`, `FlushFileBuffers`) **before** the
-     rename;
-  3. replace the target with a write-through rename, retried a few times
-     (100 ms apart, up to 3 to 6 tries) when an antivirus or indexer holds the
-     old file;
-  4. on failure remove the temp file and leave the old target whole. **Never
-     fall back to writing the target in place** (the reference did after
-     six failed renames, `prefs.py:98-102`).
-  Without the flush, a crash after the rename can leave an empty file under
-  the target's name on a journaling file system.
-- **The log** `autopilot.log` (`log.py`): one file, trimmed past 1 MiB to its
-  newest half with a "[earlier entries trimmed]" marker; only paths and
-  versions, never anything typed in; a failure to log is swallowed, because
-  logging is never the thing that breaks the tool; every unhandled exception
-  is recorded with a traceback and a label saying what was being done (also
-  from background threads), and the last one is available for a bug report.
-  **Changed from the reference:** the trim rewrote the file in place
-  (`log.py:63-70`); it now rotates to a second file by rename, which is safe
-  with two copies of the tool running.
+- the install record, the layer manifests and every config the tool writes
+  whole use the platform's atomic write, flushed before the rename;
+- nothing install depends on for safety lives in `settings.json`: not the
+  records, not the dependents of a registration, not the graphics-preference
+  records. **Changed from the reference:** the Vulkan games list lived there
+  and an unreadable file dropped it (`prefs.py:255-272`, gate 2.0.9).
 
 ### System tools
 
@@ -957,9 +979,9 @@ started `tasklist` (`installer.py:3438`), `cmd /c <bat>` (`selfupdate.py:399`),
   not restored.
 - **A failed restore that loses its backup:** the backup and the entry stay.
 - **Removing a shared registration we did not create,** or one another
-  install, or another Windows user, still needs; or acting on an unreadable
-  dependents list.
-- **An all-users layer built from anything a standard user can write.**
+  install still needs; or removing one while a dependent's record could not
+  be read.
+- **An all-users registration of any kind** in v1.
 - **A config edit that rewrites more than the keys changed,** or restores more
   than that.
 - **Deleting by name alone a file the game commonly ships** (`nvngx_dlss.dll`,
@@ -981,14 +1003,14 @@ started `tasklist` (`installer.py:3438`), `cmd /c <bat>` (`selfupdate.py:399`),
 | files enter the record before they are written | "Order of an install" step 3, the record's lifecycle |
 | a failed restore keeps its backup on the record | "Backups" (restore), "Uninstall" per-entry table and step 7 |
 | a corrupt record falls back to a known-names uninstall | "Uninstall without a record" |
-| atomic writes fsync before rename | "Settings: `settings.json` and atomic writes" |
+| atomic writes fsync before rename | [platform](platform.md), "Settings and the per-game state store" |
 | nothing is moved or deleted before the last refusal check | "Refusal checks", "Order of an install" |
 | game updates between install and uninstall are detected by hash | "Backups" (ownership), "Uninstall" per-entry table |
 | emulator config restores only the keys changed | "Emulator config edits" |
 | the ReShadePreset technique is removed only on routes that wrote it | bug 12 below |
 | layer bookkeeping compares resolved paths | "Shared registrations" (bookkeeping) |
-| unreadable settings never drop the Vulkan games list | "Settings" (unreadable is not empty), "Shared registrations" |
-| the all-users Vulkan layer is never built from the per-user cache | "Shared registrations" |
+| unreadable settings never drop the Vulkan games list | "Shared registrations" (dependents come from the records) |
+| the all-users Vulkan layer is never built from the per-user cache | "Shared registrations": no all-users registration in v1 |
 | system tools run by absolute System32 path | "System tools" |
 
 ## Bugs and questionable choices in the reference not to port
@@ -1088,8 +1110,10 @@ started `tasklist` (`installer.py:3438`), `cmd /c <bat>` (`selfupdate.py:399`),
 28. **The settings lock is in-process only** (`prefs.py:40`); two copies of
     the tool lose each other's writes.
 29. **A failed settings write is silent** (`prefs.py:104-105`).
-30. **The all-users cleanup at start** runs with no knowledge of other users
-    (`vulkan.py:539-559`).
+30. **The all-users cleanup at start** was gated on one user's list
+    (`vulkan.py:539-559`), and the CLI ran it before validating its
+    arguments, inside `except: pass`. The v1 cleanup removes only our own
+    values, reports failures, and is called by the app and the CLI alike.
 
 ## To verify against primary sources
 
@@ -1117,7 +1141,6 @@ started `tasklist` (`installer.py:3438`), `cmd /c <bat>` (`selfupdate.py:399`),
 - **ReShade's setup executable.** That it carries `ReShade64.dll`,
   `ReShade32.dll`, `ReShade64.json`, `ReShade32.json` and `ReShade64_XR.json`
   as an appended zip; its Authenticode signature, if any; any published hash.
-  This decides how the all-users copy can be verified (open question 3).
   Source: reshade.me, the ReShade repository's setup project.
 - **`UserGpuPreferences`.** The key, the value name being the full path, the
   `GpuPreference=` token and its values (0 let Windows decide, 1 power saving,
@@ -1128,10 +1151,9 @@ started `tasklist` (`installer.py:3438`), `cmd /c <bat>` (`selfupdate.py:399`),
   current Windows 11.
 - **Elevation.** `IsUserAnAdmin` versus `TokenElevation` on a UAC-off
   machine, which the reference relies on (`wincrash.py:338-345`).
-- **Program Files ACL.** That a standard user cannot write under the
-  `ProgramFilesDir` value on a default Windows, so the machine copy cannot be
-  replaced. The `ProgramFilesDir` registry value as the trusted source
-  (`vulkan.py:248-267`).
+- **The old all-users layer.** The `ProgramFilesDir` registry value and
+  the folder the Python releases used, so the start-up cleanup finds exactly
+  their values (`vulkan.py:248-267`).
 - **Process image paths.** That a non-elevated process cannot always read an
   elevated process' image path, and what the fallback is.
 - **Antivirus behaviour.** The README's statement of Defender heuristics
@@ -1200,8 +1222,6 @@ interfaces"); the reference had the registry one already (`gpupref.py:73-90`).
   emulator writes it, with a BOM, with CRLF, with the key absent, with the
   section absent, with a trailing comment on the line, with a non-UTF-8 byte,
   and an unwritable file; `installed.txt` and `portable.txt` markers.
-- **Corrupt settings**: empty file, truncated JSON, a JSON array, a file with
-  a wrong-typed `overlay_key`, a file locked by another handle.
 - **Disk full**: a file system fake that throws errno 28 and Windows 112 and
   39 at a chosen write, directly and wrapped in other errors; a fake free-space
   answer per drive.
@@ -1217,66 +1237,25 @@ interfaces"); the reference had the registry one already (`gpupref.py:73-90`).
 
 ## Open questions
 
-1. **Reading the Python release's records.** The new tool reads and
-   uninstalls version 1 records (hash-less). Also read the older names
-   (`dlss5kur-kurulum.json`, `dlss5-installer.json`, `dosyalar`, the
-   `.dlss5kur-yedek` and `.dlss5-installer-backup` suffixes,
-   `installer.py:346-350`)? Those are from releases up to 1.2. Recommendation:
-   read version 1, drop everything older.
-2. **Install over a damaged record.** This spec refuses and tells the person to
-   uninstall first, since treating it as "no record" would back up our own
-   old files as the game's. Alternative: run the known-names uninstall
-   automatically as part of the install. Recommendation: refuse (safer), with
-   an "uninstall, then install" button.
-3. **How is the all-users layer's source verified?** ReShade may publish no
-   hash and its setup may be unsigned. Options: ship its hash in the tool
-   (pinned per version, so the tool must update when ReShade does), accept
-   only a version the tool knows, or never register for all users and say
-   so. Recommendation: pin, and offer the all-users copy only for a pinned
-   version.
-4. **Other Windows users and the machine registration.** The dependents list is
-   per user, the all-users registration is per machine. Options: the elevated
-   run removes it only after reading every profile's list it can; or never
-   removes it automatically and shows a command; or keeps a machine-level
-   list under Program Files, writable only when elevated. Recommendation:
-   the machine-level list, since an unelevated install never adds to it.
-5. **Hold until commit costs disk and complexity.** Switching routes and
+1. **Hold until commit costs disk and complexity.** Switching routes and
    updates keep the old files until commit (transient old plus new). The
    alternative is the reference's irreversible removal with rollback of fresh
    installs only. Recommendation: keep the design; cap it with the free-space
    check, which gather makes exact.
-6. **DLSS page and the record.** A runtime this install swapped and the DLSS
-   page later updates changes the file's hash, so uninstall leaves it. The DLSS
-   page's update must either rewrite the entry's hash or mark it "owned by the
-   DLSS page", with its `.dlss5-dlss-original` twin untouched. This crosses the
-   DLSS-files spec; decide there.
-7. **Close while an install waits.** Waiting for a safe point can take a few
-   seconds on a large file; a person may close again. Is a hard "close
-   anyway" offered, relying on the journal, or is the wait unconditional?
-   Recommendation: offer "close anyway" after 10 seconds, with the record
-   covering it.
-8. **Cross-process safety.** Single instance of the tool (a second start
-   focuses the first) versus a mutex for the settings only. Recommendation:
-   single instance, plus the mutex around the record and settings for the
-   command line.
-9. **"Quarantined files" scope.** Read here as files an antivirus removes
+2. **"Quarantined files" scope.** Read here as files an antivirus removes
    after the install wrote them. If the term meant something else (a
    deliberate holding area the tool makes for files it moved aside), the
    moved-aside section is where it would live; confirm.
-10. **Verification after the first launch.** Cloud heuristics can act
-    minutes or hours after a write. The "verify" operation reports it when
-    asked; should the library check each installed game's files at start and
-    show a banner? Recommendation: yes, a quick size check at start and the
-    full hash when a game page opens.
-11. **Hashing cost.** Hashing every written file at commit and at uninstall
-    reads a few hundred MB per game. Acceptable, or hash only components over a
-    size at install and trust the size at uninstall for those? Recommendation:
-    always hash; it is local disk.
-12. **Config-class list.** Which files count as rewritten at run time is a
-    per-component judgment (the list above is from the reference's notes);
-    each route spec must confirm its files. A file listed `config` that a
-    component does not rewrite loses the hash protection for nothing.
-13. **Refuse uninstall while the game runs.** The reference tried and
-    reported locks. This spec refuses. If a person wants to uninstall with a
-    launcher holding one DLL, the stuck path covers it; confirm refusing is
-    the right default.
+3. **Verification after the first launch.** Cloud heuristics can act
+   minutes or hours after a write. The "verify" operation reports it when
+   asked; should the library check each installed game's files at start and
+   show a banner? Recommendation: yes, a quick size check at start and the
+   full hash when a game page opens.
+4. **Config-class list.** Which files count as rewritten at run time is a
+   per-component judgment (the list above is from the reference's notes);
+   each route spec must confirm its files. A file listed `config` that a
+   component does not rewrite loses the hash protection for nothing.
+5. **Refuse uninstall while the game runs.** The reference tried and
+   reported locks. This spec refuses. If a person wants to uninstall with a
+   launcher holding one DLL, the stuck path covers it; confirm refusing is
+   the right default.

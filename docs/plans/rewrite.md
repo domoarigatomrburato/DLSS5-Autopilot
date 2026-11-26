@@ -78,9 +78,10 @@ specified.
 - **CI later.** The gate runs locally until the first milestone works end
   to end; then GitHub Actions runs it on Windows. Releases are built,
   hashed and attested in CI.
-- **The compatibility feed and its page** come back when the app can send
-  results. Until then the last published list stays online and nothing
-  updates it.
+- **The compatibility feed and its page** come back in M8, served by a
+  Cloudflare Worker that receives results from the app with no GitHub
+  account ([community](../spec/community.md)). Until then the last published
+  list stays online and nothing updates it.
 
 ## Milestones
 
@@ -95,20 +96,36 @@ specified.
       and safe archive extraction.
 - [ ] **M2. Reading games.** PE files: architecture, imports and version
       resources, which decide the graphics API. The game library: Steam,
-      Epic, GOG, EA, Ubisoft, Battle.net, Rockstar, Xbox, folders added by
-      hand, emulators.
+      Epic, GOG, EA, Ubisoft, Battle.net, Rockstar, Xbox, Amazon, Heroic,
+      folders added by hand, emulators (detection only). itch waits for M8.
 - [ ] **M3. Routes.** Which route a game gets and why, from what was read;
       the components each route needs, and where they come from.
 - [ ] **M4. Install and uninstall.** The record written first; backups;
       rollback; the preview ("what will happen?") that writes nothing;
-      uninstall from the record alone.
+      uninstall from the record alone. Emulator config edits wait for M8.
 - [ ] **M5. DLSS files kept current.** Every game's DLSS runtimes against
       NVIDIA's newest; update and restore original.
 - [ ] **M6. Diagnosis.** Logs to a verdict and a next step, driven by the
-      report corpus; the bug-report text.
-- [ ] **M7. The app.** Library, game page, DLSS page, settings; Windows
-      implementations; the first release built in CI.
-- [ ] **M8. Beyond games.** Video, webcam and capture; RTX Remix; VR; the
-      tray; autopilot; the shared compatibility results.
+      report corpus: only the verdicts the corpus exercises; the bug-report
+      text.
+- [ ] **M7. The app and autopilot.** Library, game page, DLSS page,
+      settings; the game watcher, the "did it work?" answer after a
+      session, "try another route", and autopilot
+      ([watch](../spec/watch.md)); the Windows implementations; the first
+      release built in CI.
+- [ ] **M8. Beyond the core.** "Aim for" and compare; RTX Remix; VR; the
+      tray; the shared compatibility results (the Cloudflare Worker);
+      emulator config edits; itch; verdicts outside the report corpus, as
+      data; the log drawer's pop-out.
 - [ ] **M9. Parity.** Every behaviour of the reference is either done or
       dropped on purpose and listed. The README is written for users.
+
+## Dropped
+
+Out of scope: the tool is about games.
+
+- Video: DLSS 5 on video playback ([video](../spec/video.md) keeps the
+  reference's behaviour as a record).
+- YouTube.
+- Webcam.
+- Screen capture.

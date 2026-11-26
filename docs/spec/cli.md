@@ -1,10 +1,12 @@
 # The command line
 
-The same executable is the window and the command line. With no arguments it
-opens the window; with a game folder it installs into that folder, reads it
+The command line is a second, console-subsystem executable in the same
+release, sharing Core with the app. Changed from the reference: one
+window-subsystem exe attached to the parent console, so the shell prompt
+returned before the output and redirection was awkward. With no arguments
+it prints the usage; with a game folder it installs into that folder, reads it
 (`--check`) or removes (`--remove`) without a window, printing what it reads and
-does, so it can be scripted and pasted into a bug report. `--video` sets up the
-video player. Read from `dlss5_autopilot.py` (the whole file, `1-474`), the
+does, so it can be scripted and pasted into a bug report. Read from `dlss5_autopilot.py` (the whole file, `1-474`), the
 README's "Command line", and the old tests around line 25492
 (`d5801a3~1:test_all.py`). The command line decides nothing of its own: it
 runs the same detection, route choice, plan and install as the window; what it
@@ -16,11 +18,10 @@ specs), and this spec fixes only the shape.
 ### The grammar
 
 ```
-dlss5-autopilot.exe                                 the window
+dlss5-autopilot.exe                                 the usage text, exit 2
 dlss5-autopilot.exe "D:\Games\Game"                 install
 dlss5-autopilot.exe "D:\Games\Game" --check         read and report, write nothing
 dlss5-autopilot.exe "D:\Games\Game" --remove        uninstall
-dlss5-autopilot.exe --video ["D:\DLSS5 Player"]     set up the video player (then install into it)
 dlss5-autopilot.exe --help | -h | --version
 ```
 
@@ -34,7 +35,6 @@ dlss5-autopilot.exe --help | -h | --version
 | `--opti-build <key>` | `--route optiscaler` | another OptiScaler build than the default: `y4my4my4m` (multi-pass, multi-frame generation), `wilsjo2` (neural pass before the upscaler, 1-3 passes; installed with that placement on, which is off in the fork's default), `wilsjo2-mfg` (the same from the fork's RTX 40 multi-frame generation package; refused on a card known not to be RTX 40), `janblade` (a fork of wilsjo2's, same placement), `jlrouzies` (wilsjo2's, with the neural-rendering settings in `OptiScaler.ini` applied while the game runs). An unknown key: `error: --opti-build takes one of: <keys>`, exit 2. With another route: `note: --opti-build applies to --route optiscaler only; ignored here` on stderr |
 | `--feed-helper` | `--route feeder`, 64-bit | run DLSS in `host64\dlss5-feed-host64.exe` instead of the game's own process, for a game whose process cannot start it (feeder 1.18.0 and newer) |
 | `--own-fg <dll or name>` | `--route optiscaler`, DirectX 12 | frame-generation files the user downloaded: `dlssg_for_sm86` (its `version.dll` with `dlssg_sm86.ini` beside it, or one of its `alternatives\` proxies with the ini copied beside it) or DLSS Enabler (its `version.dll`). The first time, the path of the dll; the tool keeps a copy, after which its name is enough (`sm86 sm86-winmm sm86-dxgi sm86-d3d12 sm86-dbghelp enabler`, any case). Experimental, and out again on `--remove`. Not given a value: `error: --own-fg takes the path of the .dll you downloaded, or a name you used before`, exit 2; a name with no stored copy: `error: --own-fg: no copy of <set> is stored yet - give the path of the .dll you downloaded`, exit 2; an unrecognised file: `error: --own-fg: <reason>`, exit 2. On another route: `note    : --own-fg applies to --route optiscaler only; ignored here`; on another API: `note    : --own-fg applies to D3D12 games only (<api> here); ignored` |
-| `--video [folder]` | alone | the player (`video` spec) is fetched into the folder (default `%USERPROFILE%\Videos\DLSS5 Player`) with progress, then the normal flow runs on it with the route forced to `feeder` and DXVK off |
 | `--help`, `-h` | | the usage text, exit 0 |
 | `--version` | | the tool's version alone, exit 0 |
 
@@ -92,18 +92,35 @@ the in-game advice by route:
 ### Uninstall
 
 `--remove` runs the same uninstall as the window and prints each action
-(`removed: ...`, `restored: ...`). Run as administrator with no Vulkan install
-left, it also takes off the all-users Vulkan layer an earlier uninstall could not,
-printing `removed: our ReShade Vulkan layer from the all-users list (no Vulkan
-install left)`.
+(`removed: ...`, `restored: ...`).
+
+Every run, after its arguments are validated, calls install's start-up
+cleanup of the old all-users Vulkan layer ([install](install.md), "Shared
+registrations") and prints what it says. Run as administrator, it removes the
+layer (`removed: our ReShade Vulkan layer from the all-users list`); otherwise
+it prints how to.
+
+**No prompts.** The command line never asks a question; everything that
+needs an answer is a flag (`--remix-swap`, `--vr`, `--route`), so a script
+never hangs on input.
+
+**Ctrl+C** cancels the running job ([platform](platform.md), "Cancellation"):
+an install rolls back, an uninstall finishes the entry it is on, and the
+process exits with **130**. Changed from the reference: it had no handling,
+and a Ctrl+C mid-install left a partial chain.
+
+**Beside the app.** The CLI may run while the app is open. It takes the job
+lock around every write and waits, saying so, while the app runs a job
+([platform](platform.md)).
 
 ### Console and exit codes
 
-- The executable is a window program, so it attaches to the console it was started
-  from; with none, output is lost. Output and errors are UTF-8.
+- A console program: output and errors go to its own standard streams, in
+  UTF-8, and redirect like any console tool's.
 - Exit **0**: the action was done (or `--check` found the game ready, or
   `--help`/`--version`); **1**: refused or failed (no executable, route not
-  available, install error, a refusal in `--check`); **2**: a usage error.
+  available, install error, a refusal in `--check`); **2**: a usage error;
+  **130**: cancelled with Ctrl+C.
   - Changed from the reference: `--check` also exits 1 when `status` is not
     `ready` for an ordinary reason (no executable found for the game, architecture
     unreadable): the reference returned 0 (`dlss5_autopilot.py:271`), so a script
@@ -112,7 +129,7 @@ install left)`.
 ## What must never happen
 
 - `--check` writing anything: no file, no registry value, no download of a
-  component, no player setup (`--video --check` included).
+  component.
 - A destructive action from an unrecognised or misspelled option. An option the
   program does not know is an error, never ignored.
 - An uninstall refused because the executable cannot be read now: it works from the
@@ -144,15 +161,14 @@ install left)`.
 - `dlss5_autopilot.py:272-278`: `--remove` is refused when the install checks
   (`check_supported`) fail, so a game whose executable can no longer be read cannot
   be uninstalled. The plan's "uninstall from the record alone" applies.
-- `dlss5_autopilot.py:421-444`: `--video` runs `video.prepare` (downloads, writes
-  the ini) **before** `--check` is considered; `--video --check` writes. It also
-  ignores `--vr`, `--remix-swap` and the other options silently.
+- `dlss5_autopilot.py:421-444`: `--video` (dropped with the video area) ran
+  `video.prepare` before `--check` was considered, so `--video --check` wrote.
 - `dlss5_autopilot.py:296`: progress is printed with a carriage return and padded
   to 60 characters, which turns a redirected log into one long line. Print a line
   per ten percent when the output is not a terminal.
 - `dlss5_autopilot.py:76-97`: attaching to the parent console and rebinding
   stdout/stderr by `open("CONOUT$")` makes the shell prompt return at once and the
-  output arrive after it. See open questions.
+  output arrive after it. The console executable replaces it.
 - `dlss5_autopilot.py:372-374,392-394,422`: `_console()` is called in some branches
   and not others, so an error printed before it is lost.
 - `dlss5_autopilot.py:249-260,283-294`: the `--check` and install paths build the
@@ -185,17 +201,6 @@ install left)`.
 
 ## Open questions
 
-1. **Console strategy.** One window-subsystem exe that attaches to the parent
-   console (as the reference does; prompt returns early, redirection awkward), or a
-   second small console-subsystem exe in the same release that shares Core? The
-   plan's layering allows the second at no cost; recommendation: add it.
-2. **Machine-readable output.** A `--json` for `--check` (the same facts, as an
+1. **Machine-readable output.** A `--json` for `--check` (the same facts, as an
    object) would make the command line scriptable; not in the reference. Worth it
    now or after the first milestone?
-3. **Unattended install.** There is no `--yes`: the command line never asks
-   questions today (the window asks about the swap, the shared result...). Confirm
-   it stays that way, and that anything that needs an answer is an option.
-4. **Cancellation.** Ctrl+C during an install: roll back the partial install (the
-   plan's rule) and exit 130? The reference had no handling.
-5. **Elevation.** The all-users Vulkan clean-up needs administrator; should the
-   command line offer to relaunch elevated, or only print the command?

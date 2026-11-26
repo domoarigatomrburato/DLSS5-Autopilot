@@ -7,10 +7,10 @@ which executable is the game, reads it (see [pe](pe.md)), shows a cover and
 says up front when an anti-cheat or an engine that crashes ReShade is
 involved. The result is kept between launches. This spec covers finding the
 games, choosing the executable, the library cache, cover art, anti-cheat and
-RE Engine detection, emulators, the search, and the watcher that tells when
-an installed game starts and closes. Read from the reference's
+RE Engine detection, emulators and the search. Watching an installed game
+is [watch](watch.md)'s. Read from the reference's
 `core/games.py`, `core/library.py`, `core/emulators.py`, `core/covers.py`,
-`core/anticheat.py`, `core/reengine.py`, `core/refw.py`, `core/lookout.py`,
+`core/anticheat.py`, `core/reengine.py`, `core/refw.py`,
 `core/pe.py` (executable choice), `core/ui/art.py` and
 `core/ui/ctl_library.py` (scan flow, search, hiding), and from tests written
 against them.
@@ -25,7 +25,7 @@ A library entry holds:
 | --- | --- |
 | name | what the store calls it, else the folder name (see Names) |
 | folder | the game's root folder |
-| source | `Steam`, `Epic`, `GOG`, `EA`, `Ubisoft`, `Battle.net`, `Rockstar`, `Amazon`, `itch`, `Heroic`, `Xbox`, `Folder`, `Emulator`, `Manual` |
+| source | `Steam`, `Epic`, `GOG`, `EA`, `Ubisoft`, `Battle.net`, `Rockstar`, `Amazon`, `Heroic`, `Xbox`, `Folder`, `Emulator`, `Manual` |
 | exe | the chosen executable, or none |
 | candidates | every executable found, best first |
 | bitness | 32 or 64, or unknown |
@@ -39,15 +39,21 @@ A library entry holds:
   Kingdom Come 2 lives in `Bin\Win64MasterMasterSteamPGO\KingdomCome.exe`
   and a ReShade proxy elsewhere is never loaded. Once an install has
   happened, the folder it wrote to wins (see Previous install below).
-- **Installed** means: an install record of ours is in the install folder,
-  and it is not a rolled-back one (a record that holds only the note
-  "rolled back: nothing of this install was left in the folder" and no
-  files); or one of our add-on files is there together with a loader (a
-  ReShade or other proxy DLL, `ReShade.ini`, `OptiScaler.ini`). A loose
-  add-on alone is not an install: a Downloads folder full of hand-fetched
-  components used to show as installed (`core/games.py:192-221`,
-  `core/games.py:34-64`). The record's format and the marker names belong to
-  the install spec; this spec only needs "is there a live record".
+- **Installed** is read through [install](install.md)'s typed contract,
+  never from the record's file or field names:
+  - `Installed`: installed;
+  - `Installing` or `Removing`: an operation was interrupted; the entry
+    shows as installed, says so, and the game page offers to finish it;
+  - `Unreadable`: installed, with "install record damaged"; uninstall runs
+    install's known-names cleanup;
+  - no record: not installed. A loose add-on is not an install: a Downloads
+    folder full of hand-fetched components used to show as installed
+    (`core/games.py:192-221`, `core/games.py:34-64`).
+
+  Changed from the reference: it also took "one of our add-ons beside a
+  loader" as installed with no record, and read a record holding only a
+  "rolled back" note as not installed. A rollback now leaves no record, and
+  without one nothing says which files are ours.
 
 ### Names
 
@@ -85,15 +91,18 @@ registry only; there is no network access (`core/games.py:3-4`).
 | Rockstar | `HKLM\SOFTWARE\WOW6432Node\Rockstar Games\<title>` and `HKLM\SOFTWARE\Rockstar Games\<title>`, value `InstallFolder` | the key name | skip keys `launcher`, `rockstar games launcher`, `rockstar games social club`, `social club` (these register an install folder and are not games) | `core/games.py:596-631` |
 | Xbox / Game Pass | for drive letters C to H: `X:\Program Files\ModifiableWindowsApps` and `X:\XboxGames`: every subfolder; the game folder is its `Content` subfolder when there is one (XboxGames puts the files one level down) | folder name | skip `GameSave` (cloud saves in empty containers) and `Minecraft Launcher` (a large runtime tree, not a game), any case | `core/games.py:551-588` |
 | Amazon Games | `%LOCALAPPDATA%\Amazon Games\Library\*`, and `X:\Amazon Games\Library\*` for C to H | folder name | | `core/games.py:634-653` |
-| itch | `%APPDATA%\itch\apps\*` | folder name | | `core/games.py:656-669` |
 | Heroic | `%APPDATA%\heroic\legendaryConfig\legendary\installed.json`, `gog_store\installed.json`, `nile_config\nile\installed.json` (a dictionary, or a list, of records) | `title` or `app_name`; `install_path` or `path` | directory must exist | `core/games.py:672-698` |
 | Plain folders | for drive letters C to J that exist and are not removable: `Games`, `Game`, `Oyunlar`, `Juegos`, `Spiele`, `Jeux`, `Giochi`, `My Games`, `PC Games`, `Installed Games` at the drive root, one level of subfolders | folder name | skip names starting `.` or `$`; skip the names below | `core/games.py:743-777` |
 | Emulators | see Emulators | | | |
 | Added by hand | see Folders added by hand | | | |
 
 The plan's list is Steam, Epic, GOG, EA, Ubisoft, Battle.net, Rockstar and
-Xbox; Amazon, itch and Heroic are in the reference and the README names them
-(`README.md:112`). See Open questions.
+Xbox. Amazon and Heroic are in the reference (`README.md:112`) and stay,
+since each costs one small source.
+
+- Changed from the reference: itch is dropped in v1 (`core/games.py:656-669`).
+  Its games are reached as plain or hand-added folders; the source is
+  deferred to M8.
 
 **Steam rules.**
 
@@ -129,7 +138,7 @@ dropped (`core/games.py:1152-1170`).
 
 ### The scan
 
-- **Order**: Steam, Epic, GOG, EA, Ubisoft, Battle.net, Rockstar, Amazon, itch,
+- **Order**: Steam, Epic, GOG, EA, Ubisoft, Battle.net, Rockstar, Amazon,
   Heroic, Xbox, plain folders, emulators. Progress is reported before each
   ("Scanning Steam...") and, for each game, "Inspecting games... i/n: name"
   (the last two games used to be missing from that count, `test_scan.py:133`).
@@ -142,8 +151,7 @@ dropped (`core/games.py:1152-1170`).
   carries something wins over one that does not: an install recorded against
   it, or a graphics API or architecture set by hand (both are keyed by that
   entry's folder and would be lost). Games with an emulator profile (several
-  games of one system share an emulator's executable) and the video player are
-  never merged.
+  games of one system share an emulator's executable) are never merged.
 - **The result is sorted by name**, ignoring case.
 - **A game with no executable** is not hidden silently: the scan note says "N
   folders had no executable" and the log names which ("no executable under
@@ -177,7 +185,7 @@ dropped (`core/games.py:1152-1170`).
     disk, and every new game meant walking all of them again). It does not
     search for emulators; "full rescan" does that. Kept: a game that is
     still on disk and either a store still lists it, or it is an emulator, a
-    folder added by hand, the video player, or anything of ours installed
+    folder added by hand, or anything of ours installed
     (so it can be uninstalled). Dropped: a game a store listed before and no
     longer lists (a removed Steam game often leaves its folder, and a scan
     that only added would keep it forever), and any game whose folder is gone.
@@ -233,7 +241,8 @@ explainable. The candidates are every `.exe` in the game folder, ranked.
   `epicwebhelper`, `thirdparty`, `steamvr`, `openvr`, `__installer`,
   `dotnetfx`, `movies`, `content`, `data`, `assets`, `textures`, `host64`
   (the last is where our own install puts the 32-bit feeder helper).
-- The walk ends after 400 executables, or 6000 directories, or 6 seconds.
+- The walk ends after 400 executables or 6000 directories, or when it is
+  cancelled.
   This exists because a tree can hold hundreds of thousands of directories
   with no `.exe` in any (C:\XboxGames' empty GameSave folder, the Minecraft
   Launcher's runtime tree), and the scan stopped for minutes and died. A
@@ -456,35 +465,13 @@ opengl32.dll and is the least reliable."
   are generic names, and any program with that file name in a game folder is
   given a profile and renamed (see the bugs).
 
-**Render backend of an emulator.** Every hint above tells the person to open a
-settings dialog and pick Direct3D. The tool does that edit itself, straight in
-the emulator's config file, so the install is one click as for games. It
-runs at install and is undone at uninstall (the install spec owns when). The
-rules are below because they are the emulators' (`core/emulators.py:378-838`).
-
-- A config is edited **as text, one line**, never re-serialised through a
-  parser: INI, TOML and cfg writers reorder keys and drop comments, and the
-  person's other settings must come back byte for byte on uninstall. Bytes that
-  are not UTF-8 survive; BOM, line endings (CRLF if any line has it), and a
-  trailing comment on the line are kept.
-- The key is looked up in its section (headers matched ignoring case and
-  surrounding spaces, BOM tolerated); a missing key is added at the top of its
-  section; a missing section is added at the end; a flat file (`key = value`
-  without sections) gets the line appended.
-- Idempotent: a value that already presents through DXGI (D3D11 or D3D12) is
-  left alone, no backup, and the note says "<name>: backend already <name> in
-  <file>".
-- The first real edit copies the file beside itself as `<file>.dlss5-autopilot-backup`
-  if no backup exists yet; undo copies it back and deletes it.
-- Notes the person reads: "<name>: <file>: [Section] key: <old> -> <new>" with
-  "(not set)" for a missing value, then "backup: <path>"; "<name>: config
-  file not found (run the emulator once first). Set the backend by hand: <hint>";
-  "<name>: could not read <file> (<reason>). Set the backend by hand: <hint>";
-  for a profile with no editable backend, "<name>: no DXGI backend, leave
-  Vulkan/OpenGL (<hint>)" when it cannot present through Direct3D and
-  "<name>: set the backend by hand: <hint>" otherwise; restore says
-  "<name>: restored <file> from its backup", "could not restore <file>
-  (<reason>)", or "<name>: no backend backup to restore".
+**Render backend of an emulator.** Every hint above tells the person to open
+a settings dialog and pick Direct3D. Library owns detection: the profile, and
+reading the current backend for the status. The edit itself is
+[install](install.md)'s ("Emulator config edits": key by key, each key's old
+value recorded, no whole-file backup) and is deferred to M8; in v1 the
+install shows the hint. The table below is where the status reads the
+backend from (`core/emulators.py:378-838`).
 
 | Emulator | Config file (first that exists) | Setting | Value written | Already DXGI |
 | --- | --- | --- | --- | --- |
@@ -715,6 +702,12 @@ install and wonder.
   (`mhyprot3.sys`). "vanguard" in an asset name told the owner of Rise of the
   Tomb Raider, a single-player game, that Riot Vanguard was installed (#187).
 - **Every warning names the file it rests on**, so a wrong one can be checked.
+- **One detector, failing closed.** This is the only anti-cheat detector;
+  install, the DLSS page's swaps, update all and the watcher's game start all
+  call it. A folder or subfolder that cannot be read gives the answer
+  "unknown", and every caller treats unknown as an anti-cheat present: a ban
+  costs more than one more button press. Changed from the reference: a
+  detection failure read as no anti-cheat (`dlssupdate.py:666-679`).
 
 | Marker | Product |
 | --- | --- |
@@ -794,19 +787,17 @@ normally as `dxgi.dll`).
   newer titles by a long way: Requiem (codename RE9) has no build there; the
   nightly is reported to ship one universal `dinput8.dll` that detects the
   running game. Installed **before** ReShade.
-- **A `dinput8.dll` already there** is kept as `dinput8.dll.dlss5-autopilot-backup`
-  once, unless it is REFramework itself (ours or the person's own copy): a
-  file is REFramework when it is at least 1 MiB and contains the bytes
-  `REFramework`. Backing REFramework up would hand it to uninstall as "the
-  game's own file" and leave REFramework in the folder after removal, the same
-  trap DXVK's `d3d9.dll` fell into. A backup that cannot be made (a full
-  drive) is an error: the person's own `dinput8.dll` must never be written over
-  without one; a partial backup is removed, or the next install would take it
-  for the backup.
+- **A `dinput8.dll` already there**, REFramework or not, that the install
+  record does not list as ours (by hash), is the game's or the person's: it
+  is backed up and restored on uninstall by [install](install.md)'s rules. A
+  `dinput8.dll` the record lists with a matching hash is ours, and uninstall
+  removes it.
+  - Changed from the reference: it guessed by content (a file of at least
+    1 MiB that contains the bytes `REFramework` was "REFramework, not the
+    game's", `refw.py:49`) and left a person's own REFramework unbacked. The
+    record's hash decides, so no file is read whole to guess.
 - The install, the record and the removal of this file are in the install
-  spec; the rule that a REFramework file is not "the game's" is here.
-  `dinput8.dll` is a file REFramework replaces, so uninstall removes it only
-  when it is REFramework.
+  spec.
 
 ### Search, hiding, sorting and filtering
 
@@ -838,39 +829,6 @@ normally as `dxgi.dll`).
   settings value that is not a list of a known column and a boolean reads as
   the default (a hand-edited settings file raised `TypeError` and the window
   never opened).
-- The **video player** entry is a library entry of its own kind (not a game).
-  A library with only the player is not a library.
-
-### Watching installed games
-
-The watcher keeps watching every folder the tool has installed into, for as
-long as the tool runs or sits in the tray, and says two things: **started**
-(the game is up and settled; what it loaded) and **closed** (it is gone, after
-so many seconds of play). When a game closes, the window reads the logs back
-itself, so the answer to "did it work?" is waiting when the person comes back.
-It only reads the process table and, once per start, one game's module list.
-It writes nothing into any game folder (`core/lookout.py`).
-
-- **Watched**: the installed games that have an install record naming files;
-  the install folder, the record's files and its executable name. A game with
-  no record is not watched. The set is replaced whenever the library changes.
-- **A game is up** when a process runs from a file under the install folder
-  (resolved paths), or is a child of one: a launcher in the folder that starts
-  the game somewhere else is the case this exists to see (#191). Processes are
-  ordered for the caller: the recorded executable first, then game-like
-  names, then helpers (a crash handler in the folder is a process of the game
-  and is not the thing that draws), then the deepest path.
-- **Timing**: a snapshot every 4 seconds (every second while a started game's
-  module list is not yet read); 8 seconds after a start the module list is
-  read once ("settled"); and a game that stops running closes after
-  at least 20 seconds, or after being read.
-- Nothing the watcher reads is allowed to take the tool down: each tick is
-  guarded and logged.
-- Specified here only as far as the library needs it; the process snapshot, the
-  module list and the sighting record belong to the watching spec.
-- Questionable: a start that is read at 8 seconds and then ends at 9 seconds
-  fires a **closed** event, though the constant says a start shorter than 20
-  seconds is "a crash at launch or a launcher hop". See the bugs.
 
 ## What must never happen
 
@@ -891,8 +849,8 @@ It writes nothing into any game folder (`core/lookout.py`).
 - **A launcher chosen over the game** when anything else is available.
 - **A stale answer from the cache**: another tool version, another GPU, a
   changed executable.
-- **Writing into an emulator's config file other than the one line**, or
-  leaving it without a backup that restores it byte for byte.
+- **An emulator config edit that is not [install](install.md)'s**: key by
+  key, each key's old value recorded, no whole-file backup.
 - **Anything the scan does touching a game folder.** The scan only reads.
 - **A guess shown as a fact**: anti-cheat warnings name their file;
   protected executables are labelled as guesses.
@@ -923,8 +881,8 @@ It writes nothing into any game folder (`core/lookout.py`).
   different lists for one machine.
 - `core/games.py:25-31`, `:61`: marker file names of two older generations of
   the tool, one of them Turkish (`dlss5kur-kurulum.json`, `dosyalar`), and
-  `dlss5-installer.json`. Keep only if the rewrite must uninstall what those
-  old releases wrote; see Open questions.
+  `dlss5-installer.json`. Not read: install reads version 1 records only, and
+  nobody else reads record names.
 - `core/games.py:495`: `import sys as _sys` and `del _sys`; `core/games.py:34`
   a global cache of rolled-back records; dead scaffolding.
 - `core/games.py:358-392`: Epic manifests of DLC and add-ons that share the
@@ -943,17 +901,13 @@ It writes nothing into any game folder (`core/lookout.py`).
 - `core/pe.py:1182-1183`: a wall clock in the executable walk (see above).
 - `core/library.py:128-130`, `:141-144`: rows keyed by `"<folder>\x00<exe>"`
   strings in JSON; use a structured key.
-- `core/lookout.py:159`: a closed event for a start of under 20 seconds as
-  soon as the module list was read. See the watcher.
-- `core/lookout.py:43`, `:68-70`: shared mutable state between the watcher's
-  thread and the caller.
 - `core/ui/ctl_library.py:183-188`: the search text includes the folder path, so
   "d" or "games" match every game on a drive. Intended ("search by folder"), not
   clearly wanted; open question.
 - `core/ui/ctl_library.py:179`: a failed row returns `False`, a successful one a
   tuple of six values (`tuple` or `False`): a sum type.
-- `core/refw.py:49`: `is_reframework` reads the entire file into memory. Read
-  the file by blocks, or the Authenticode/version info.
+- `core/refw.py:49`: `is_reframework` reads the entire file into memory to
+  guess ownership; the record's hash replaces it.
 - Names of internal gates and issue numbers in user texts.
 
 ## To verify against primary sources
@@ -970,7 +924,7 @@ It writes nothing into any game folder (`core/lookout.py`).
 | Battle.net: which registry or file lists an installed game and its path (uninstall keys and their names; `ProgramData\Battle.net\Agent\product.db`) | a machine with Battle.net and two games |
 | Rockstar: key names, `InstallFolder` | a machine with the Rockstar launcher |
 | Xbox: where Game Pass libraries live and how to list them without guessing drive letters (`MicrosoftGame.config` `ExecutableList`, the Gaming Services package repository, `PackageManager`); the `Content` subfolder; the executable protected by access denied; "Enable mods" | Microsoft GDK documentation; a Game Pass PC |
-| Amazon Games and itch: library locations (`%LOCALAPPDATA%\Amazon Games\Library` versus `C:\Amazon Games\Library`) | the apps' documentation; machines |
+| Amazon Games: library locations (`%LOCALAPPDATA%\Amazon Games\Library` versus `C:\Amazon Games\Library`) | the apps' documentation; machines |
 | Heroic: the three `installed.json` files and their shapes | Heroic's source |
 | Each emulator's profile: executable names, portable markers, config paths and keys, value spellings (`settings.cpp`, `Pcsx2Config.cpp`, `MainSettings.cpp`, `Config.cpp`, `xenia_main.cc`, `retroarch.cfg`, `CemuConfig.h`, `system_config_types.h`) | each emulator's source at its current release; the renamed or retired projects (yuzu, Citra) and their forks |
 | An emulator rewrites its config on exit, so an edit made while it runs is lost | run each emulator and compare |
@@ -1025,53 +979,34 @@ It writes nothing into any game folder (`core/lookout.py`).
 
 ## Open questions
 
-1. **Which stores are in.** The plan lists Steam, Epic, GOG, EA, Ubisoft,
-   Battle.net, Rockstar, Xbox, folders and emulators. The reference also has
-   Amazon, itch and Heroic (named in the README). Keep them? They cost one
-   small source each, and "plain folders" already covers many of them.
-   Recommendation: keep Amazon and Heroic, drop itch unless a report asks.
-2. **Battle.net.** The reference's method is probably wrong (see bugs).
+1. **Battle.net.** The reference's method is probably wrong (see bugs).
    Options: read `ProgramData\Battle.net\Agent\product.db` (a protobuf
    file), or Blizzard's uninstall entries by publisher. Needs a machine with
    Battle.net to settle. Recommendation: verify first, then choose the smaller.
-3. **Xbox discovery.** Hard-coded `XboxGames` and `ModifiableWindowsApps`
+2. **Xbox discovery.** Hard-coded `XboxGames` and `ModifiableWindowsApps`
    under fixed letters cannot find a Game Pass library elsewhere; Windows
    knows its libraries. Use `MicrosoftGame.config` `ExecutableList` to pick
    the executable by name as well (a documented schema, better than ranking
    a protected file)? Recommendation: yes for both, after a check on a real
    machine.
-4. **Old install records.** Must the rewrite uninstall what the Python
-   releases wrote (`dlss5-autopilot.json` and the two older names, the
-   `.dlss5-autopilot-backup` suffix)? If nobody installed with 1.x, the
-   two legacy names and the Turkish key can go.
-5. **The cache's version gate.** A new tool version always drops the cache,
+3. **The cache's version gate.** A new tool version always drops the cache,
    so every update costs a full scan. A detector version number would keep
    it across releases that change nothing in detection, at the price of
    discipline. Recommendation: keep the reference's rule until scans are fast.
-6. **Emulator backend edits.** Where do they belong: here (the emulators'
-   knowledge) or in the install spec? And two changes: refuse to edit while the
-   emulator runs (it rewrites its config on exit, undoing the edit), and undo by
-   putting back only the one line if it still holds our value, rather than
-   overwriting the whole file with the backup (the emulator has saved other
-   settings since). Both are better than the reference; needs a decision
-   because they change what "uninstall" restores.
-7. **Naming by hand-added folders.** An Xbox `...\Content` folder added by
+4. **Naming by hand-added folders.** An Xbox `...\Content` folder added by
    hand is named "Content" because `Content` is not a generic name. Skip it
    when its parent is under `XboxGames`? Recommendation: yes (the rule
    stays "nearest non-generic", with `Content` generic only below an
    `XboxGames` game folder). Same question for the folder-name bonus (+350) has no minimum length; and the search text
    includes the folder. Keep, or constrain?
-8. **Steam tool filtering** (Steamworks Common Redistributables, Proton,
+5. **Steam tool filtering** (Steamworks Common Redistributables, Proton,
    SteamVR): by appid list in code, or leave them to the "no executable" path?
-9. **Frame of an empty library.** What does the first run show when no store
+6. **Frame of an empty library.** What does the first run show when no store
    finds anything: the reference only offers "add a game". Is there a first-run
    hint for a library on an unusual drive?
-10. **Localised folder names.** The plain-folder names include `Oyunlar`,
-    `Juegos`, `Spiele`, `Jeux`, `Giochi`. Keep the list as data (cheap), or
-    only English plus `Games`?
-11. **REFramework supply chain.** The nightly is an unsigned continuous build
-    with no published hash: the plan's rule is a verified hash or signer where
-    publishers provide one. Pin a known-good tag, or accept and say so?
-12. **Whether the watcher belongs here.** `core/lookout.py` depends on the
-    process snapshot of `core/watch.py` and the install record; it is in this
-    spec only because the brief named it. Move it to the diagnosis/watching spec?
+7. **Localised folder names.** The plain-folder names include `Oyunlar`,
+   `Juegos`, `Spiele`, `Jeux`, `Giochi`. Keep the list as data (cheap), or
+   only English plus `Games`?
+8. **REFramework supply chain.** The nightly is an unsigned continuous build
+   with no published hash: the plan's rule is a verified hash or signer where
+   publishers provide one. Pin a known-good tag, or accept and say so?

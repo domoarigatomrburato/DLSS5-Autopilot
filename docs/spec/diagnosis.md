@@ -65,7 +65,7 @@ and is not evidence about this one (it may still be shown as a finding).
 | Standalone log | `%LOCALAPPDATA%\RHI\Logs\standalone-dlssnr.log`, **one file for every game** | 200 000 | last ` attached; requested profile=` line | `standalone contract ready: ...`; `on-present frame N:`; `standalone pipeline FAILED at <stage>`; `required private runtime dependency missing`; `NGX core: no _nvngx.dll found`; `same-frame VORT optical flow`, `zero-motion`, `fallback guides`; `DLSS-G runtime unavailable`, `falling back to real frames`, `frame generation disabled`; `native presentation (initialization )?(failed\|rejected)`; `waiting for a valid ... shared frame`; `standalone session ending`, `clean process shutdown`. Only evidence about this folder when this is the **only** standalone install the tool made (otherwise another game wrote it) and it was written after this install. |
 | Remix log | the runtime's `rtx-remix\logs\remix-dxvk.log` (found through the `.trex` runtime) | 300 000 | whole tail | `[DLSS-NR] Loaded .trex\nvngx_dlssnr.dll`, `Snippet initialized`, `Created the Neural Uplift feature (id, preset) at WxH`, evaluated-frame counts, the runtime's failure phrases and skip phrases, `NVIDIA DLSS-NR inactive:` |
 | DXVK logs | `<exe-stem>_d3d9.log`, `_d3d11.log`, `_dxgi.log`, ... beside the game | existence and age | | proof the game **ran** since the install on a DXVK route (DXVK writes one the moment it loads) |
-| Install record | `dlss5-autopilot.json` (older names `dlss5kur-kurulum.json`, `dlss5-installer.json`) | whole | | see next section |
+| Install record and failure note | through install's reader ([install](install.md)), never the file | whole | | see next section |
 | Other files | `ReShade.ini`, `OptiScaler.ini`, `dlss5-feed.cfg`, the dlss page's record | whole | | the add-on's own switch (`[<section>] <key>` in ReShade.ini: on / off / absent), OptiScaler's `[Log] LogToFile` and `[DlssNr] Enabled`, `WorkingScale`/`work_resolution` |
 | Process record | the watcher's sightings, or a live process | | | see [watch](watch.md): which of our files the process had loaded, which it had from elsewhere, which graphics DLLs it held, how many modules, whether the list was refused |
 | Windows' crash record | the Application log | | | see "The Windows crash record" |
@@ -81,17 +81,24 @@ programs in other code pages.
 
 #### What the diagnosis reads from the install record
 
-`path` (the route), `exe`, `proxy` (a file name, or the marker
-`(vulkan layer)` for a registry layer with no file), `files` (every file the
-install wrote, relative), `bitness`, `api`, `kind` (game or video), `dxvk`
-(version, when DXVK was installed), `complete` (false while unfinished), `notes`
-(a disk-full note, a rolled-back note, a stop note, an "uninstall left" note,
-"replaced a previous ..."), `tool` (the version that wrote it), `components`
-(e.g. renodx build, optiscaler release tag, remix runtime), `opti_build`,
-`upscaler`, `provider`, `feed_helper`, `native_dlss` (false = a bridge
-installed for a game with no DLSS of its own), `vr`, `remix {key, conf}`,
-`own_fg`, `gpu_pref`. The install spec owns the format; the diagnosis must not
-need anything else.
+The diagnosis consumes [install](install.md)'s typed contract, never the
+record's file or field names, and never a legacy record name (install
+converts version 1 records itself):
+
+- the reader's answer: no record, `Installing`, `Installed`, `Removing`, or
+  `Unreadable` with its reason;
+- from the record: the route and its choices (proxy name or the Vulkan
+  layer, OptiScaler build, upscaler, motion-vector provider, helper mode,
+  own frame generation, VR, the Remix key and conf, the graphics
+  preference), the executable, bitness, API, the
+  components and their versions (DXVK among them), the entries (path, class,
+  state), the registrations, the notes and warnings, and the tool version
+  that wrote it;
+- the **failure note** from the game's per-game state: kind, cause, text,
+  outcome (`NothingWritten`, `RolledBack`, `RollbackIncomplete`) and
+  operation.
+
+Nothing else about the install is read.
 
 ### Verdict classes
 
@@ -143,12 +150,28 @@ front of DXVK are `failed`.
 
 Changed from the reference: stages 1 and 2 (the install stopped, a file went
 missing) are **not an outcome of a route** at all: the reference returns
-`failed` for them and a shared result would blame the route for a full disk or
+`failed` for them, and a shared result would blame the route for a full disk or
 a quarantined file. Their outcome is `not-a-result`: never shared, never
-counted. The reference already excluded 11 and `not-a-route`; this extends it
-by the same reasoning (the route was never run).
+counted, and they never offer another route. The reference already excluded 11
+and `not-a-route`; this extends it by the same reasoning (the route was never
+run).
+
+**Conflicting readings.** A failure seen in any reading of a session wins over
+a later reading that shows nothing: an empty pass never clears a failure,
+because "nothing seen" is weaker evidence than a fault that was logged or
+recorded. It applies to logs and to the watcher's repeated module-list
+reads ([watch](watch.md)).
 
 ### The verdict catalogue
+
+- **One verdict id per next step.** Ids that differ only in what they name
+  (the `crash.*` helper ones, the `process.*` ones) are one id, with the name
+  as a parameter of its text.
+- **v1 ships the verdicts the report corpus exercises** (Fixtures). The
+  other rows below are deferred to M8 and ship as data, so adding one is a
+  data change with a corpus case, not new code.
+- **Text** lives in resources keyed by verdict id ([platform](platform.md)),
+  English in v1, so a translation needs no code change.
 
 The table lists each verdict by id, the evidence that produces it, and the
 next step the sentence must carry. Rows keep the reference's evidence rules;
@@ -161,12 +184,12 @@ not-a-route, `R` = route failed.
 | Id | When | Next step |
 | --- | --- | --- |
 | `install.nothing` | no record, none of our marker files (`dlss5-feed.addon64\|32`, `dlss5-bridge.addon64`, `renodx-dlss5.addon64`, `dlss5-feed.log`, `OptiScaler.ini`, `nvngx_dlssnr.dll`; on Remix `.trex\nvngx_dlssnr.dll`), and no install traceback; `NeverRan` | install first, play once |
-| `install.crashed` | folder empty of ours (no record, or a complete record and still nothing) and the tool's last error came out of the install path (any frame from a module the install reaches; a frame of the window's own does not count) | install again; per cause: `blocked` allow the tool through the firewall; `cut` another network or turn off the VPN/proxy; `dns` check the connection; `refused` another network; `timeout` try later. The cause is read from error codes first, text last ([net](net.md)) |
-| `install.disk-full` | record incomplete with the disk-full note | free a few hundred MB on the game's drive and on the drive holding the cache, install again. Says whether what was written was taken back out |
-| `install.stopped-by-reason` | record incomplete with a stop note | the reason in the person's terms; says whether it was rolled back |
-| `install.net-stopped` | record incomplete, error names a connection fault | as the `crashed` causes |
-| `install.unfinished` | record incomplete, no reason; lists files recorded and gone | install again (downloads are kept), or uninstall first |
-| `uninstall.incomplete` | record incomplete with an "uninstall left" note | close the game, uninstall again |
+| `install.crashed` | no record, or an `Installed` record with none of its files present, and a failure note of kind `Unexpected` | install again; the bug report carries the note |
+| `install.disk-full` | a failure note of kind `DiskFull` | free a few hundred MB on the game's drive and on the drive holding the cache, install again. Says whether what was written was taken back out (the note's outcome) |
+| `install.stopped-by-reason` | a failure note of kind `Refused`, `Locked` or `Verification` | the reason in the person's terms; says whether it was rolled back |
+| `install.net-stopped` | a failure note of kind `Network` | install again; per cause: `blocked` allow the tool through the firewall; `cut` another network or turn off the VPN/proxy; `dns` check the connection; `refused` another network; `timeout` try later ([net](net.md)) |
+| `install.unfinished` | the reader answers `Installing` (an install that was interrupted and not yet rolled back); lists entries recorded and gone | open the game's page: the tool finishes the rollback, then install again (downloads are kept) |
+| `uninstall.incomplete` | the reader answers `Removing` | close the game, uninstall again |
 | `install.opti-wrong-release` | OptiScaler: no proxy beside the exe, and the release tag the record names is not an OptiScaler package (or is unrecorded on an install made inside the known window when wilsjo2's page carried a non-OptiScaler release as newest) | install again (the tool now refuses such a package) |
 | `install.opti-no-proxy` | OptiScaler: no log, no proxy | check the proxy is beside the exe the game launches and was not quarantined. See the LIMIT below |
 | `install.beside-launcher` NR [3] | no log; the recorded exe is launcher-like (by its PE: imports/size/name rules of the game-reading spec) | pick the exe that draws (named when the folder holds a likely one), install again; `NeverRan` |
@@ -219,7 +242,7 @@ that is gone is named, since the log may predate the quarantine.
 | `process.not-drawing-yet` [7] | 45+ modules and no graphics DLL | press the button again while the game is drawing |
 | `process.no-dxgi` NR / `process.only-ddraw` NR | a DXGI-family proxy was installed, the process held d3d9/d3d8/opengl/vulkan and no DXGI | set "graphics api" to what the process held, install again; DirectDraw is reached by no route |
 | `api.not-dxgi-rescan` NR / `api.renderer-unreachable` NR | the engine beside the exe says the game does not draw with DXGI | full rescan, install again |
-| `api.d3d9-device-on-dx11-install` NR | the ReShade log shows `Direct3DCreate9` and no swap chain on an install set up for DX11/12 | set the graphics API to DirectX 9 and install again (a video player: choose another output renderer) |
+| `api.d3d9-device-on-dx11-install` NR | the ReShade log shows `Direct3DCreate9` and no swap chain on an install set up for DX11/12 | set the graphics API to DirectX 9 and install again |
 | `api.vulkan-on-d3d-optiscaler` | OptiScaler log: `Vulkan is creating swapchain` on a D3D install | set the game to DirectX 12, or use the feeder route |
 | `reshade.d3d9-before-dxvk` [11] | a ReShade `d3d9.dll` in front of DXVK on a DX9-through-DXVK install | remove that file (or uninstall then install, when the record lists it) |
 | `reshade.ran-wrote-no-log` NR | an add-on in the process, no `ReShade.log` | the folder is read-only to ReShade (store/Xbox build, or admin-only folder) |
@@ -481,7 +504,8 @@ to look at something in a running game (the "look in the game" list:
 overlay/panel asks, "Working.", add-ons loaded, inconclusive, loaded and set up,
 not switched on, needs the game's own upscaler, no D3D12 DLSS call, no neural
 frame followed, delivered no frame) is **wrong for them** and is replaced. Every
-verdict that names something the logs show stays. Video installs are left as is.
+verdict that names something the logs show stays. Video installs are dropped
+from scope.
 
 Replacement, in order of what is known:
 
@@ -764,10 +788,11 @@ copied, linked or zipped:
    readable.
 The replayer (below) must accept redacted text as input.
 
-**"save zip"** attaches the raw logs to the report: it runs the same pass over
-every text log in it, or warns that the logs are unredacted. (Changed from the
-reference, which put the raw tails in a zip meant to be attached to a public
-issue: `reportout.py:68-106`.)
+**"save zip"** attaches the logs to the report, and runs the same pass over
+every text log in it, so the game folder, the user name and the machine name
+leave neither the posted report nor the zip: both are meant for a public
+issue. (Changed from the reference, which put the raw tails in a zip meant to
+be attached to a public issue: `reportout.py:68-106`.)
 
 **Delivery** (`reportout.py`): save the whole report to a file first (name
 `report-<slug of the game>-<yyyyMMdd-HHmmss>.md`, slug = ASCII alphanumerics
@@ -801,13 +826,13 @@ until the person attaches it.
 game's name (cut at 80) and exe (lowercase), route and build, the game's own API
 (not the record's: a DXVK install records Vulkan), what the game ships, the card
 (name cut at 40, `sm_NN`) and driver, the tool version, `worked`/`failed`, the
-one-line verdict, the measurement above, and who said it (`person` when the
+verdict's id (not its sentence), the measurement above, and who said it (`person` when the
 logs could not see the outcome and the person answered; `crash` when Windows
 recorded the fault). No paths, no user name. When the outcome is `unknown` the
 person is asked "did the DLSS 5 picture show in the game?"; a counted fault is
 a failure without asking. A record the person did not answer and whose verdict
-is unknown, or is `not-a-route`, is not counted. The community feed and its
-page are out of scope until the app can send results.
+is unknown, or is `not-a-route`, is not counted. Sending, the server and the
+feed are [community](community.md)'s, deferred to M8.
 
 ## What must never happen
 
@@ -890,8 +915,9 @@ page are out of scope until the app can send results.
   (`evidence.py:1483-1511`, `_CRASH_CAUSES` by substrings of a Python exception
   name such as `getaddrinfo`, `gaierror`, `urlerror`; `model.py:390-436`
   reads bytecode to learn which modules the install reaches). In C# the install
-  returns a **typed failure** (kind, cause, host) that is stored in the record
-  and read by the diagnosis; no traceback text is parsed.
+  returns a **typed failure** (kind, cause, host) that is stored in the
+  failure note in the per-game state ([install](install.md)) and read by the
+  diagnosis; no traceback text is parsed.
 - **`_RESHADE_KEEP`, `_FEED_KINDS`, `_opti_kind`... are a second hand-written
   copy of the rules**, which is why replays differ from the machine.
 - **The mod-by-mod `if`/`elif` chain is 236 branches in one function with order
@@ -1135,32 +1161,17 @@ Do not copy the current drifted answers as truths; the stop rule applies.
    Ale or the orchestrator reads the report.
 2. **Run the reference on Windows** to confirm the 28 are path-parsing
    artefacts and not drift. Needs a Windows machine (or the work PC).
-3. **Verdict granularity**: about 150 ids above. Merge the families that
-   differ only in what they name (the `crash.*` helper ones, the `process.*`
-   ones), or keep them? Ids are cheap, text variants are not; the proposal
-   keeps one id per distinct next step.
-4. **The classes of the currently unmapped verdicts** are proposed in the
+3. **The classes of the currently unmapped verdicts** are proposed in the
    catalogue by their evidence; confirm (in particular `crash.in-game-code`,
-   proposed route-failed no, and `uplift.*`).
-5. **Should "install stopped"/"file missing" be `not-a-result`** (proposed) or
-   keep failing the route as the reference did?
-6. **Redaction strength**: replace the install folder with `<game>`
-   (proposed) or only the user and machine names (keeps the library path,
-   which helps triage)? Should the zip be redacted or only warned?
-7. **How many sightings feed the diagnosis**: the reference trusts one reading
-   8 s after the start. The watcher spec proposes more; the diagnosis then
-   needs a rule for conflicting readings (see [watch](watch.md)).
-8. **Is `Working` allowed for a route that logs frames but where "the picture
+   proposed route-failed no, and `uplift.*`), for those the corpus exercises.
+4. **Is `Working` allowed for a route that logs frames but where "the picture
    changed" is in no log?** The reference says Working for the feeder on frames
    delivered, but the "bordered window" case (frames delivered, nothing on
    screen) is a warn under a `Working.` verdict; should that be stage 7?
-9. **A localisable verdict**: the text is English in the reference. The product
-   language is English until said otherwise (the rewrite plan says nothing);
-   confirm the verdict text lives in a resource file keyed by id.
-10. **The "report a bug" two questions**: keep exactly two required answers?
-    (They were added because four of nine first-day reports arrived blank.)
-11. **Anti-cheat answer wording**: it says "no route gets past it" and "do not
-    use this in an online game". Is that the tone Ale wants in a published
-    tool?
-12. **Where the repository for reports points**: `<repo>/issues/new`; the
-    repository name moves with the rewrite.
+5. **The "report a bug" two questions**: keep exactly two required answers?
+   (They were added because four of nine first-day reports arrived blank.)
+6. **Anti-cheat answer wording**: it says "no route gets past it" and "do not
+   use this in an online game". Is that the tone Ale wants in a published
+   tool?
+7. **Where the repository for reports points**: `<repo>/issues/new`; the
+   repository name moves with the rewrite.
