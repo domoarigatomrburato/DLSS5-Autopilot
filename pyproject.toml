@@ -45,7 +45,7 @@ sequence = [
     { cmd = "vulture" },
     { cmd = "lint-imports" },
     { cmd = """pytest --cov=core --cov=dlss5_autopilot --cov=pages
-        --cov-report=term-missing:skip-covered --cov-fail-under=0""" },
+        --cov-report=term-missing:skip-covered --cov-fail-under=12""" },
 ]
 
 [tool.poe.tasks.test]

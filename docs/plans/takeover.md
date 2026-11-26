@@ -166,8 +166,8 @@ complexity limits.
 - [x] Fixtures for an isolated HOME and cache and a game folder; the
       64-bit PE fixture built by `fake_pe.py`, never a file on someone's
       disk.
-- [ ] First test: every module imports, with warnings as errors.
-- [ ] Coverage measured, floor set; it only rises.
+- [x] First test: every module imports, with warnings as errors.
+- [x] Coverage measured, floor set; it only rises.
 - [ ] The release workflow runs the tests on Windows before it builds, in
       place of the two deleted scripts.
 
