@@ -100,7 +100,12 @@ before that give 728 PASS and 24 FAIL. All 24 are Windows-only APIs
 (`winreg`, `ctypes.WINFUNCTYPE`, Windows paths): compare the sorted
 `  FAIL  ` lines with a baseline run, never the exit code. On Windows the
 whole suite should run; that has not been checked yet.
-`test_reshade_ini.py` and `python -m unittest test_scan` pass everywhere.
+`test_reshade_ini.py` and `_tools/verdict_check.py` open no window and run
+anywhere; `test_scan.py` creates an invisible Tk window, so it runs in the
+container too.
+
+The lab scripts that rebuild this (export a revision, wrap it, run it
+headless, compare check titles) live outside the repository, next to it.
 
 The suite opens real Tk windows, which take the focus on a desktop. On a
 developer's machine run it headless in a Linux container (Docker, or
@@ -161,21 +166,31 @@ basedpyright strict 14,244 errors (about 12,700 missing or unknown types),
 ruff with every rule about 7,500 findings, 232 functions over the
 complexity limits.
 
-- [ ] `pyproject.toml` with uv; dev dependencies pinned; one local gate
-      command (`fix` autofixes, `check` validates read-only).
-- [ ] Full gate configuration, every check blocking (see Decisions).
-- [ ] Prune what the product, the gate and the tests do not use, before
-      spending gate work on it: upstream's maintenance scripts in `_tools/`
-      (issue triage, stats, Microsoft submissions, its agent hooks), the 184
-      user reports copied into `_tools/reports/`, `build.bat`, and the
-      top-level `test_*.py` files the pytest suite will replace. Tests that
-      import a `_tools` script keep it only if the check is worth keeping.
-- [ ] One `ruff format` commit, listed in `.git-blame-ignore-revs`.
-- [ ] Ruff safe autofixes applied.
-- [ ] `core/diagnose`: explicit imports instead of `import *` and the
+- [x] `pyproject.toml` with uv; dev dependencies pinned; `uv run poe fix`,
+      `check`, `check-files <paths>` (the files a commit touches) and
+      `build` (replaces `build.bat`).
+- [x] Full gate configuration, every check blocking (see Decisions). After
+      the clean-up commits: format clean, ruff 5,988 findings (125 C901,
+      73 PLR0912, 54 PLR0915), basedpyright 17,564 errors (the top-level
+      tests and `pages/` now counted), vulture 116, both import contracts
+      broken.
+- [x] Pruned: upstream's maintenance scripts and agent hooks in `_tools/`,
+      `build.bat`, `test_install.py` (hard-coded to the original author's
+      disk), and every check that inspected the code instead of what the
+      app does (source text, line caps, structure rules). Kept, as the
+      regression corpus of the diagnosis users see: the 184 reports,
+      `verdict_baseline.json`, `replay_report.py`, `verdict_check.py`, and
+      `fake_pe.py`; phase 3 moves them under `tests/`.
+- [x] The feed scripts moved from `.github/scripts` to `pages/`: the type
+      checker never reads dot directories.
+- [x] One `ruff format` commit, listed in `.git-blame-ignore-revs`.
+- [x] Ruff safe autofixes applied (PERF101 left out in `core/ui/art.py`:
+      the `list()` copy is a snapshot against another thread).
+- [x] `core/diagnose`: explicit imports instead of `import *` and the
       `globals()` re-export.
-- [ ] import-linter contracts written; violations listed for phase 4.
-- [ ] `AGENTS.md` (and a `CLAUDE.md` that points to it): layout, the gate
+- [x] import-linter contracts written (`core.ui` protected, no cycles
+      between `core`'s modules); violations listed in phase 4.
+- [x] `AGENTS.md` (and a `CLAUDE.md` that points to it): layout, the gate
       command, when each check is needed, autofix first.
 
 ### 3. Tests
@@ -197,6 +212,16 @@ complexity limits.
 - [ ] Windows-only tests marked and skipped elsewhere, so macOS and Linux
       run everything else; no test opens a window on the screen of the
       person running it.
+- [ ] The DLSS page's behaviour gets tests again; the pruned
+      `_tools/dlss_page_check.py` (in git history) drove the real window and
+      listed it: update all takes only what it may (not an anti-cheat game,
+      not a running one), the originals stay beside the new files and
+      restore puts them back, a refused file says where and why with
+      nothing changed, versions read "current -> newest", a stale read waits
+      for the new one.
+- [ ] `verdict_baseline.json` re-checked: 28 reports already get a verdict
+      other than the recorded one on `main` before this fork's changes;
+      each is judged right or wrong, then the baseline is saved.
 - [ ] The whole suite run once on Windows, when a Windows machine is
       available.
 - [ ] Coverage measured, floor set.
@@ -217,8 +242,13 @@ Every fix here can change behaviour, so each one comes with a test.
       every other function over the complexity limits into named steps.
 - [ ] One version parser, one path-equality helper, one HTTP retry loop.
 - [ ] Function-level imports that dodge cycles: fix the cycle instead;
-      import-linter contracts green.
-- [ ] `core/reportui.py` and `core/compareui.py` move under `core/ui`.
+      import-linter contracts green. The cycle contract needs 17 imports
+      gone, among them `autopilot`, `components` and `dlss` importing
+      `installer`, and `community` importing `dlss` (`uv run lint-imports`
+      lists them).
+- [ ] `core/reportui.py` and `core/compareui.py` move under `core/ui`: they
+      are the only `core` modules that import the window (`kit`, `theme`,
+      `win`).
 - [ ] Dead code removed (vulture clean, no whitelist entry without a
       reason).
 - [ ] The full gate is green; CI workflow and branch protection on `main`.
