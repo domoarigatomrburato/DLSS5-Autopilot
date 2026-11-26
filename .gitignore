@@ -24,3 +24,8 @@ dist-new/
 # meaningful on the machine that wrote it, and _tools/detect_check.py
 # writes it with --save on first run.
 _tools/detect_baseline.json
+
+# Coding-agent machine-local files
+.claude/worktrees/
+.claude/launch.json
+.claude/settings.local.json
