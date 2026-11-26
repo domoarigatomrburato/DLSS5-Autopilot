@@ -1,0 +1,7 @@
+[*.cs]
+# CA1707: test names are sentences about what the tool does for the user, so they carry underscores.
+dotnet_diagnostic.CA1707.severity = none
+# CA1515: MSTest needs public test classes.
+dotnet_diagnostic.CA1515.severity = none
+# IDE0058: assertion helpers return the value they checked, which a test has no use for.
+dotnet_diagnostic.IDE0058.severity = none

@@ -1,0 +1,16 @@
+[default.extend-words]
+# Unreal Engine, as in UE4 and UE5.
+ue = "ue"
+# AMD GPU Services, as in amd_ags_x64.dll.
+ags = "ags"
+# A yt-dlp format selector ("ba" is best audio).
+ba = "ba"
+
+[default.extend-identifiers]
+# The Unreal Engine 4 prerequisites installer.
+ue4prereqsetup = "ue4prereqsetup"
+# Plural of PNG.
+PNGs = "PNGs"
+
+[files]
+extend-exclude = ["**/packages.lock.json"]

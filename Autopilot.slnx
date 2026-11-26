@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Autopilot.App/Autopilot.App.csproj" />
+    <Project Path="src/Autopilot.Core/Autopilot.Core.csproj" />
+    <Project Path="src/Autopilot.ViewModels/Autopilot.ViewModels.csproj" />
+    <Project Path="src/Autopilot.Windows/Autopilot.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Autopilot.App.Tests/Autopilot.App.Tests.csproj" />
+    <Project Path="tests/Autopilot.Core.Tests/Autopilot.Core.Tests.csproj" />
+    <Project Path="tests/Autopilot.ViewModels.Tests/Autopilot.ViewModels.Tests.csproj" />
+  </Folder>
+</Solution>

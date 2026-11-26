@@ -1,0 +1,30 @@
+# Build output
+bin/
+obj/
+
+# Test and coverage output
+TestResults/
+coverage/
+
+# IDEs
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+
+# Machine-local agent files
+.claude/settings.local.json
+.claude/worktrees/
+.claude/launch.json
+
+# OS
+.DS_Store
+
+# Third-party binaries are never committed: the DLSS 5 add-on, NVIDIA's runtimes
+# and the games' files belong to their publishers. Test fixtures are built by
+# the tests themselves.
+*.dll
+*.exe
+*.addon32
+*.addon64

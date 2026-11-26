@@ -84,12 +84,12 @@ specified.
 
 ## Milestones
 
-- [ ] **M0. Scaffold.**
-  - [ ] solution, projects, shared build settings, `.editorconfig`;
-  - [ ] the gate (`fix`, `check`, `build`);
-  - [ ] test projects with the timeout default and coverage;
-  - [ ] a window that opens on macOS;
-  - [ ] `AGENTS.md`.
+- [x] **M0. Scaffold.**
+  - [x] solution, projects, shared build settings, `.editorconfig`;
+  - [x] the gate (`fix`, `check`, `build`);
+  - [x] test projects with the timeout default and coverage;
+  - [x] a window, shown by a headless test on macOS;
+  - [x] `AGENTS.md`.
 - [ ] **M1. Network and downloads** (spec: [net](../spec/net.md)): one HTTP
       path with retries, TLS, size limits, no downgrade, a download cache,
       and safe archive extraction.

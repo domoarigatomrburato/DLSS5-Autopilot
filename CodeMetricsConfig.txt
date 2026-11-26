@@ -1,0 +1,5 @@
+# Complexity limits for CA1502 (cyclomatic complexity) and CA1506 (class coupling).
+# Strict on purpose: a method or type over the limit gets split, not exempted.
+CA1502: 10
+CA1506(Method): 20
+CA1506(Type): 40

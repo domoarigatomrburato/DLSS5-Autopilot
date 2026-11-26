@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFrameworks>net11.0;net11.0-windows</TargetFrameworks>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Autopilot.Core\Autopilot.Core.csproj" />
+    <ProjectReference Include="..\Autopilot.ViewModels\Autopilot.ViewModels.csproj" />
+  </ItemGroup>
+
+  <!-- The Windows implementations exist only on the Windows target, so the rest builds and tests everywhere. -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <ProjectReference Include="..\Autopilot.Windows\Autopilot.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Autopilot.App.Tests" />
+  </ItemGroup>
+
+</Project>

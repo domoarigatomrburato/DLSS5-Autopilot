@@ -1,0 +1,11 @@
+<Project Sdk="MSTest.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Autopilot.ViewModels\Autopilot.ViewModels.csproj" />
+  </ItemGroup>
+
+</Project>

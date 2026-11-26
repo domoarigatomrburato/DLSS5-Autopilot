@@ -1,0 +1,30 @@
+<Project>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Everything blocks: warnings are errors, and every analyzer rule is on unless .editorconfig says otherwise. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Features>strict</Features>
+    <!-- Without it the build does not report unused usings (IDE0005). It also checks the XML comments we write. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NuGetAuditMode>all</NuGetAuditMode>
+
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+
+    <!-- Lets the Windows targets build and be checked on macOS and Linux. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- Lock files are committed; the gate restores them in locked mode. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)CodeMetricsConfig.txt" Link="CodeMetricsConfig.txt" />
+  </ItemGroup>
+
+</Project>
