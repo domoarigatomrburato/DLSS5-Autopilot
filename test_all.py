@@ -5337,8 +5337,13 @@ check("...with the certifi bundle loaded on top of the Windows store",
 check("every fetch goes through it",
       "context=ssl_context()" in src_of(net.download)
       and "context=net.ssl_context()" in src_of(sources._get))
-check("the release build installs certifi",
-      "pip install --upgrade certifi" in Path(".github/workflows/release.yml").read_text(encoding="utf8"))
+_rel_yml = (SRC_DIR / ".github" / "workflows" / "release.yml").read_text(encoding="utf8")
+_rel_txt = (SRC_DIR / ".github" / "release-requirements.txt").read_text(encoding="utf8")
+check("the release build installs certifi from the hashed requirements file",
+      "--require-hashes" in _rel_yml
+      and ".github/release-requirements.txt" in _rel_yml
+      and _re.search(r"^certifi==\S+ \\\s+--hash=sha256:", _rel_txt, _re.M) is not None
+      and "--upgrade certifi" not in _rel_yml)
 check("a failed verification is explained, by host and not by file name",
       "untrusted(_host(url), e)" in src_of(net.download)
       and "untrusted(name, e)" not in src_of(net.download))
