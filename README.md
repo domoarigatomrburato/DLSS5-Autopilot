@@ -5,6 +5,12 @@ games, reads each one, picks the route that fits the game and your card,
 downloads every part from its publisher, and can take all of it back out.
 One `.exe`, nothing to install, no admin, and nothing is bundled.
 
+This is a fork of [Kizzuwatnaa/DLSS5-Autopilot](https://github.com/Kizzuwatnaa/DLSS5-Autopilot)
+(MIT); the original author and contributors wrote the tool, and their
+copyright stays in [LICENSE](LICENSE). The fork is maintained separately at
+`domoarigatomrburato/DLSS5-Autopilot`, where its releases, updates, bug
+reports and compatibility list live.
+
 **[Download the latest release](../../releases/latest)** · Windows 10/11 ·
 NVIDIA RTX 20 or newer
 
@@ -729,7 +735,7 @@ dlss5-autopilot.exe --video ["D:\DLSS5 Player"]     set up the video player
   runner, which builds the exe from the commit you can read, writes
   `SHA256SUMS.txt` and attaches a signed provenance attestation.
   `certutil -hashfile dlss5-autopilot.exe SHA256` against the release page;
-  `gh attestation verify dlss5-autopilot.exe --repo Kizzuwatnaa/DLSS5-Autopilot`.
+  `gh attestation verify dlss5-autopilot.exe --repo domoarigatomrburato/DLSS5-Autopilot`.
 - **Or skip the exe**: plain Python, standard library and tkinter only, no
   PyPI packages. `git clone` and `python dlss5_autopilot.py`.
 - It writes only into the game folders you install into or update DLSS in
@@ -772,18 +778,25 @@ dlss5-autopilot.exe --video ["D:\DLSS5 Player"]     set up the video player
   Microsoft as a false positive when it is published; if it happens to
   you, Windows Security → Protection history → Restore → Allow, or run
   from source. SmartScreen's *Windows protected your PC* is the missing
-  paid certificate, not the file: More info → Run anyway. Report false
-  positives: <https://www.microsoft.com/en-us/wdsi/filesubmission>.
+  code-signing certificate, not the file: this fork's releases are not signed
+  yet (see [Code signing policy](#code-signing-policy)). More info → Run
+  anyway. Report false positives:
+  <https://www.microsoft.com/en-us/wdsi/filesubmission>.
 
 ## Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate
-by [SignPath Foundation](https://signpath.org). Signing happens inside the
-GitHub Actions release workflow, on GitHub-hosted runners; SignPath verifies
-that a build came out of that workflow before it signs it, so a signed
-`dlss5-autopilot.exe` is exactly what the tagged commit builds.
+This fork's releases are not signed. The signing steps in the release
+workflow stay off until the fork has its own project with the
+[SignPath Foundation](https://signpath.org), which signs open-source builds
+for free; until then Windows shows the unknown-publisher prompt
+(SmartScreen's *Windows protected your PC*). Check a download against
+`SHA256SUMS.txt` and the build attestation instead (see [Is it
+safe](#is-it-safe)). Once releases are signed, signing happens inside the
+GitHub Actions release workflow, on GitHub-hosted runners, and SignPath
+verifies that a build came out of that workflow before it signs it.
 
-- **Team roles.** Author, reviewer and approver: [Kizzuwatnaa](https://github.com/Kizzuwatnaa)
+- **Team roles.** Author, reviewer and approver:
+  [domoarigatomrburato](https://github.com/domoarigatomrburato)
   (project owner). Changes proposed by others are reviewed by the owner
   before they are merged; only the owner approves a signing request.
 - **Privacy policy.** This program will not transfer any information to
