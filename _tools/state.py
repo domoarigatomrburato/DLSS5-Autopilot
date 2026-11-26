@@ -160,7 +160,7 @@ def new_on_the_tracker(online: bool) -> list[int]:
     try:
         from core import sources, net       # noqa: F401
         import urllib.request
-        url = ("https://api.github.com/repos/Kizzuwatnaa/DLSS5-Autopilot/"
+        url = ("https://api.github.com/repos/domoarigatomrburato/DLSS5-Autopilot/"
                "issues?state=all&per_page=100&sort=created&direction=desc")
         req = urllib.request.Request(url, headers=sources.UA)
         with urllib.request.urlopen(req, timeout=30,
@@ -301,7 +301,7 @@ def sync(numbers: list[int]) -> int:
     REPORTS.mkdir(parents=True, exist_ok=True)
     done = 0
     for n in numbers:
-        url = ("https://api.github.com/repos/Kizzuwatnaa/DLSS5-Autopilot/"
+        url = ("https://api.github.com/repos/domoarigatomrburato/DLSS5-Autopilot/"
                f"issues/{n}")
         try:
             req = urllib.request.Request(url, headers=sources.UA)

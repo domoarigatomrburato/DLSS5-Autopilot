@@ -33,7 +33,7 @@ sys.path.insert(0, str(SRC))
 from core import net  # noqa: E402
 
 DESK = SRC.parent
-REPO = "Kizzuwatnaa/DLSS5-Autopilot"
+REPO = "domoarigatomrburato/DLSS5-Autopilot"
 API = f"https://api.github.com/repos/{REPO}"
 FORM = "https://www.microsoft.com/en-us/wdsi/filesubmission"
 EXE = "dlss5-autopilot.exe"

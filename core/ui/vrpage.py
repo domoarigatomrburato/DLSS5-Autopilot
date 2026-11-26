@@ -22,7 +22,7 @@ import threading
 import time
 import webbrowser
 
-from .. import openxr, prefs
+from .. import openxr, prefs, update
 from . import theme as T
 from .shell import Page
 
@@ -31,7 +31,7 @@ from .shell import Page
 XR_FILES = ("openxr_loader.dll", "openxr_loader64.dll")
 
 RESHADE_XR = "https://reshade.me/forum/general-discussion/6451-reshade-in-vr"
-OUR_DOCS = "https://github.com/Kizzuwatnaa/DLSS5-Autopilot/blob/main/docs/vr.md"
+OUR_DOCS = f"https://github.com/{update.REPO}/blob/main/docs/vr.md"
 
 
 class VrPage(Page):

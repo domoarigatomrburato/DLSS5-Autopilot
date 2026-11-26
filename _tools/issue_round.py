@@ -41,8 +41,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from core import net  # noqa: E402
 
-REPO = "Kizzuwatnaa/DLSS5-Autopilot"
-OWNER = "Kizzuwatnaa"
+REPO = "domoarigatomrburato/DLSS5-Autopilot"
+OWNER = "domoarigatomrburato"
 CACHE = (Path(os.environ.get("LOCALAPPDATA", Path.home()))
          / "dlss5-autopilot" / "issue-round.json")
 
