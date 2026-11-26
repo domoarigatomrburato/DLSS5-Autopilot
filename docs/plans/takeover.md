@@ -158,7 +158,7 @@ complexity limits.
 - [x] pytest configured in `pyproject.toml` and run by `check`: strict
       markers (`windows`, `network`), Windows-only tests skipped elsewhere,
       the `network` ones only on request.
-- [x] Every test has a timeout (`pytest-timeout`): a low default for all,
+- [x] Every test has a timeout (`pytest-timeout`): a low default for all (5 seconds),
       raised only where a test needs it, with the reason beside it. A hung
       test fails with its stack instead of stopping the suite.
 - [x] Unit tests cannot reach the network or open a window: an unexpected

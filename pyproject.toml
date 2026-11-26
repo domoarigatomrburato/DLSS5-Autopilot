@@ -82,7 +82,7 @@ xfail_strict = true
 filterwarnings = ["error"]
 # A hung test fails with its stack instead of stopping the run; raise it for
 # one test with @pytest.mark.timeout(n) and the reason beside it.
-timeout = 10
+timeout = 5
 markers = [
     "windows: needs Windows; skipped on other platforms",
     "network: reaches the real internet; deselected by default, run with -m network",

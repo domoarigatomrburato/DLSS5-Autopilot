@@ -51,7 +51,7 @@ for a focused run (`uv run poe test -k diagnose`, a path, `-m network`);
 - Markers, strict: `windows` for a test that needs Windows (skipped
   elsewhere, run by the release workflow); `network` for one that reaches the
   real internet (deselected by default, `-m network` runs only those).
-- Every test has 10 seconds; a hung one fails with its stack. One that needs
+- Every test has 5 seconds; a hung one fails with its stack. One that needs
   longer takes `@pytest.mark.timeout(n)` with the reason on the line above.
 - Fixtures in `tests/conftest.py`: `home` (a user profile under `tmp_path`:
   HOME, USERPROFILE, LOCALAPPDATA, APPDATA, PROGRAMDATA and the settings,
