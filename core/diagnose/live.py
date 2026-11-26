@@ -22,7 +22,24 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .helper import _clock
-from .model import *  # noqa: F403
+from .model import (
+    _BRIDGE_ATTACHED,
+    _BRIDGE_CALLED,
+    _BRIDGE_CRASH,
+    _BRIDGE_CREATE_FAILED,
+    _BRIDGE_FAILED,
+    _BRIDGE_FAULTED,
+    _BRIDGE_FRAME,
+    _BRIDGE_REGISTERED,
+    _BRIDGE_STATS,
+    _BRIDGE_STOPS,
+    BAD,
+    BRIDGE_LOG,
+    INFO,
+    OK,
+    WARN,
+    Report,
+)
 
 __all__ = [
     "BridgeRun",

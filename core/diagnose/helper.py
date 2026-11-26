@@ -23,7 +23,7 @@ import re
 from pathlib import Path
 
 from .evidence import _same_launch
-from .model import *  # noqa: F403
+from .model import BAD, WARN, Report
 
 __all__ = [
     "_fed_the_helper",

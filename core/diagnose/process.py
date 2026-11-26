@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .evidence import TAIL_RESHADE, _installed_at, _standalone_named, _upstream_named
-from .model import *  # noqa: F403
+from .model import BAD, INFO, NATIVE_ADDON_NAME, OK, WARN, Report
 
 __all__ = ["_foreign_hooks", "_loaded_note", "_name_foreign_hooks"]
 
