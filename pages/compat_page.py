@@ -7,8 +7,8 @@ the workflow also hands this script one row per configuration - the same
 results, kept apart instead of added up - and it writes a single static
 page for GitHub Pages:
 
-    python .github/scripts/compat_page.py              # _site/compatibility.json -> _site/
-    python .github/scripts/compat_page.py --out DIR    # DIR/compatibility.json -> DIR/
+    python pages/compat_page.py              # _site/compatibility.json -> _site/
+    python pages/compat_page.py --out DIR    # DIR/compatibility.json -> DIR/
 
 Run on its own it has only the per-game sums, and the page says so instead
 of offering filters it cannot apply. Everything is inline: no CDN, nothing
@@ -25,7 +25,7 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from core.gpu import SM_NAMES  # noqa: E402  one table of card families

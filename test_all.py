@@ -10107,7 +10107,7 @@ import importlib.util  # noqa: E402
 
 _agg_spec = importlib.util.spec_from_file_location(
     "_agg_check",
-    Path(__file__).resolve().parent / ".github" / "scripts" / "compatibility.py",
+    Path(__file__).resolve().parent / "pages" / "compatibility.py",
 )
 _agg = importlib.util.module_from_spec(_agg_spec)
 _agg_spec.loader.exec_module(_agg)
@@ -10254,7 +10254,7 @@ import html.parser as _hp  # noqa: E402
 
 _pg_spec = importlib.util.spec_from_file_location(
     "_pg_check",
-    Path(__file__).resolve().parent / ".github" / "scripts" / "compat_page.py",
+    Path(__file__).resolve().parent / "pages" / "compat_page.py",
 )
 _pg = importlib.util.module_from_spec(_pg_spec)
 _pg_spec.loader.exec_module(_pg)
@@ -25326,7 +25326,7 @@ from core import autopilot as _ap206m, community as _comm  # noqa: E402
 from core.ui import ctl_library as _uil  # noqa: E402
 
 _spec206 = _ilu206.spec_from_file_location(
-    "_agg206", SRC_DIR / ".github" / "scripts" / "compatibility.py"
+    "_agg206", SRC_DIR / "pages" / "compatibility.py"
 )
 _agg = _ilu206.module_from_spec(_spec206)
 _spec206.loader.exec_module(_agg)

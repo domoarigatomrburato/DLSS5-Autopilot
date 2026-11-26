@@ -11,8 +11,9 @@ start there.
 - `dlss5_autopilot.py`: the entry point (window and command line).
 - `core/`: the engine (detection, routes, installer, diagnosis, updates).
   `core/ui/`: the window. `core/diagnose/`: logs to verdict and bug-report body.
-- `.github/scripts/`: the compatibility feed and its page; `.github/workflows/`:
-  the release and the feed. No other CI yet.
+- `pages/`: the compatibility feed and its searchable page, built and
+  published by `.github/workflows/compatibility.yml`. `.github/workflows/`
+  holds only that and the release; no other CI yet.
 - `_tools/`: the report corpus (`reports/`, `verdict_baseline.json`) and the
   scripts that replay it (`replay_report.py`, `verdict_check.py`, `fake_pe.py`).
 - `tests/`: fixtures for the pytest suite that replaces the top-level
@@ -38,12 +39,12 @@ false positive and the reason on the line.
 
 ## Tests
 
-`test_all.py` and `test_clean_machine.py` open real Tk windows that take the
-focus: never run them on a desktop. Run `test_all.py` headless in a Linux
-container with Xvfb, as the tracker's "Running the current suite before
-phase 3" describes. `python test_reshade_ini.py` and
-`python -m unittest test_scan` are safe anywhere; `python _tools/verdict_check.py`
-replays the report corpus without windows.
+`test_all.py`, `test_clean_machine.py` and `test_scan.py` create Tk windows
+(`test_scan` an invisible one, which can still take the focus): never run them
+on a desktop. Run them headless in a Linux container with Xvfb, as the
+tracker's "Running the current suite before phase 3" describes.
+`python test_reshade_ini.py` and `python _tools/verdict_check.py` (the report
+corpus through the diagnosis) open no window and run anywhere.
 
 ## Git
 

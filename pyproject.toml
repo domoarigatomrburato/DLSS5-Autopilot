@@ -90,8 +90,6 @@ combine-as-imports = true
 typeCheckingMode = "strict"
 pythonVersion = "3.12"
 pythonPlatform = "Windows"
-# Pyright always skips dot directories, so .github/scripts is out of reach
-# (no config key turns that off in 1.40.2); its two files are covered by ruff only.
 include = ["."]
 
 [tool.vulture]
