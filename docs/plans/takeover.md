@@ -55,8 +55,12 @@ section current. Any coding agent picking the work up starts here.
       swallowed (`installer._backup`, `dxvk`, `refw`, `mfg`); a partial
       backup is removed before the error is raised.
 - [x] Both merged into this fork's `main`.
-- [ ] Both offered upstream (branches `fix/route-switch-keeps-user-files`,
-      `fix/failed-backup-stops-overwrite`, based on upstream `1736a20`).
+- [x] Both offered upstream:
+      [#1068](https://github.com/Kizzuwatnaa/DLSS5-Autopilot/pull/1068)
+      (`fix/route-switch-keeps-user-files`) and
+      [#1069](https://github.com/Kizzuwatnaa/DLSS5-Autopilot/pull/1069)
+      (`fix/failed-backup-stops-overwrite`), based on upstream `1736a20`.
+      Delete the two branches once upstream merges or closes them.
 
 ### 1. Identity
 
