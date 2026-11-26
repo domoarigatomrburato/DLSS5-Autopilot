@@ -733,8 +733,9 @@ install and wonder.
 - **Detection is by file, not by a game list**, so it covers games nobody
   told us about. For the install folder and the game folder (when they
   differ both are searched), every entry's name and, for each non-hidden
-  subfolder, the names of its first 80 entries, is matched against the
-  markers. The result: the products (sorted, unique) and the evidence, the
+  subfolder (a name starting `.` or the hidden attribute), the names of its
+  first 80 entries in name order (ordinal, so every file system gives the
+  same answer), is matched against the markers. The result: the products (sorted, unique) and the evidence, the
   file names (sorted, unique, at most 4).
 - **Matching** is on a whole word of a name, any case: the character before
   and after the marker must not be a letter or digit; digits may follow
@@ -745,7 +746,8 @@ install and wonder.
   install, the DLSS page's swaps, update all and the watcher's game start all
   call it. A folder or subfolder that cannot be read gives the answer
   "unknown", and every caller treats unknown as an anti-cheat present: a ban
-  costs more than one more button press. Changed from the reference: a
+  costs more than one more button press. A marker found elsewhere still makes the
+  answer "present", naming it. Changed from the reference: a
   detection failure read as no anti-cheat (`dlssupdate.py:666-679`).
 
 | Marker | Product |

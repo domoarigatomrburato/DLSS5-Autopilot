@@ -250,4 +250,21 @@
   <data name="ApiUnknown" xml:space="preserve">
     <value>graphics DLL loaded at runtime; assuming DX11/DX12 via dxgi.dll</value>
   </data>
+  <!-- Anti-cheat: {0} is the products joined by ", ", or the files they rest on; the swap text's {0} is a file name. -->
+  <data name="AntiCheatWarning" xml:space="preserve">
+    <value>{0} is installed with this game.&#10;&#10;Anti-cheat and ReShade add-ons do not coexist. Expect one of: the game refuses to start, ReShade is blocked so nothing happens at all, or your account is banned. This is not something the tool can work around - it is the anti-cheat doing its job.&#10;&#10;If you play this game online, do not install here.</value>
+  </data>
+  <data name="AntiCheatFound" xml:space="preserve">
+    <value>&#10;&#10;(found: {0})</value>
+  </data>
+  <data name="AntiCheatUnknown" xml:space="preserve">
+    <value>The tool could not read every folder of this game to look for an anti-cheat, so it treats the game as having one.&#10;&#10;Anti-cheat and ReShade add-ons do not coexist. Expect one of: the game refuses to start, ReShade is blocked so nothing happens at all, or your account is banned. Make sure the game's folders can be read and check again.&#10;&#10;If you play this game online, do not install here.</value>
+  </data>
+  <data name="SwapWarning" xml:space="preserve">
+    <value>Swapping {0} replaces a file the game itself ships.&#10;&#10;The one that is there is backed up and comes back when you uninstall, so nothing is lost. Two things to know before you do it: a launcher that verifies its files will simply put its own copy back, and in an online game an anti-cheat can treat a changed file as tampering.&#10;&#10;For a single-player game this is the usual way to move off an old build. For anything you play online, keep the game's own file.</value>
+  </data>
+  <!-- RE Engine: {0} is the marker file's name. -->
+  <data name="ReEngineWarning" xml:space="preserve">
+    <value>This looks like a Capcom RE Engine game ({0} is in the folder) - the engine behind the Resident Evil 2/3/4 remakes, RE7, RE8 (Village) and Requiem.&#10;&#10;ReShade's add-on support, which every route here needs, is documented to crash several RE Engine titles the moment it loads - Resident Evil Requiem worst of all, since it also carries Denuvo. This is the engine's own tamper protection, not a mistake in the setup.&#10;&#10;This install puts REFramework in first: a separate, actively maintained mod that loads before the game's own checks and patches around them, after which ReShade survives. It is what players report using on Requiem itself. Not guaranteed on every title or every game update - REFramework's own build has to catch up first.</value>
+  </data>
 </root>
