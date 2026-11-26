@@ -208,6 +208,9 @@ Every fix here can change behaviour, so each one comes with a test.
 - [ ] Dead code removed (vulture clean, no whitelist entry without a
       reason).
 - [ ] The full gate is green; CI workflow and branch protection on `main`.
+- [ ] The release runs the full gate before it builds, and tests and
+      build use one interpreter (today setup-python's latest 3.12 builds,
+      while uv runs the tests on `.python-version`'s 3.12.11).
 
 ### 5. Security
 
