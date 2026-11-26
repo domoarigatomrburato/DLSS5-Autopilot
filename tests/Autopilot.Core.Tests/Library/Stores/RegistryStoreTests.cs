@@ -12,6 +12,8 @@ public sealed class RegistryStoreTests(TestContext testContext) : IDisposable
 
     public void Dispose() => _bed.Dispose();
 
+    private Task<StoreGame[]> FindEaAsync(HostFolders folders) => StoreBed.FindAsync(new EaSource(_bed.Registry, folders), Ct);
+
     [TestMethod]
     public async Task Ea_games_come_from_both_registry_views_and_the_ea_games_folders_named_after_the_folder()
     {
@@ -26,7 +28,7 @@ public sealed class RegistryStoreTests(TestContext testContext) : IDisposable
         _ = _bed.Registry.Machine32(@"SOFTWARE\Electronic Arts\Odd", "Install Dir", 12);
         _ = _bed.Registry.Machine32(@"SOFTWARE\Electronic Arts\Relative", "Install Dir", "relative");
 
-        StoreGame[] games = await StoreBed.FindAsync(new EaSource(_bed.Registry, _bed.Folders), Ct);
+        StoreGame[] games = await FindEaAsync(_bed.Folders);
 
         StoreBed.AssertNames(games, "Mass Effect", "Battlefield 2042", "Dead Space", "Crysis");
         CollectionAssert.IsSubsetOf(new[] { wow, defaultFolder, x86Folder }, games.Select(game => game.Folder).ToArray());
@@ -39,7 +41,7 @@ public sealed class RegistryStoreTests(TestContext testContext) : IDisposable
         string registered = _bed.Folder("D/Mass Effect");
         _ = _bed.Registry.Machine32(@"SOFTWARE\Electronic Arts\Mass Effect", "Install Dir", registered);
 
-        StoreGame[] games = await StoreBed.FindAsync(new EaSource(_bed.Registry, new HostFolders(null, null, null, null, null)), Ct);
+        StoreGame[] games = await FindEaAsync(new HostFolders(null, null, null, null, null));
 
         StoreBed.AssertNames(games, "Mass Effect");
     }

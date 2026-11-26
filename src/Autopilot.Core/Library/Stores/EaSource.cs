@@ -3,11 +3,12 @@ using Autopilot.Core.Platform;
 namespace Autopilot.Core.Library.Stores;
 
 /// <summary>
-/// The EA app's and Origin's games as the registry and the default folders show them: every
-/// <c>Electronic Arts\&lt;game&gt;</c> key's <c>Install Dir</c>, and every folder under
-/// <c>Program Files\EA Games</c>. Named after the folder.
+/// The EA app's and Origin's games: every <c>Electronic Arts\&lt;game&gt;</c> key's <c>Install Dir</c>,
+/// every folder under <c>Program Files\EA Games</c>, and the installed games of the EA app's encrypted
+/// install file, which needs the machine's <paramref name="hardware"/> identity and is skipped without
+/// it. Named after the folder.
 /// </summary>
-public sealed class EaSource(IRegistry registry, HostFolders folders) : IGameSource
+public sealed class EaSource(IRegistry registry, HostFolders folders, IHardwareIdentity? hardware = null) : IGameSource
 {
     private const string EaKey = @"SOFTWARE\Electronic Arts";
 
@@ -15,10 +16,11 @@ public sealed class EaSource(IRegistry registry, HostFolders folders) : IGameSou
 
     public GameSource Source => GameSource.Ea;
 
-    public Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
     {
+        IReadOnlyList<string> eaDesktop = await EaDesktopFoldersAsync(cancellationToken);
         FoundGames found = new();
-        foreach (string folder in RegistryFolders().Concat(DefaultFolders()))
+        foreach (string folder in RegistryFolders().Concat(DefaultFolders()).Concat(eaDesktop))
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (DrivePaths.IsDirectory(folder))
@@ -27,8 +29,13 @@ public sealed class EaSource(IRegistry registry, HostFolders folders) : IGameSou
             }
         }
 
-        return Task.FromResult(found.Games);
+        return found.Games;
     }
+
+    private async Task<IReadOnlyList<string>> EaDesktopFoldersAsync(CancellationToken cancellationToken) =>
+        folders.ProgramData is { } programData && hardware is not null && await hardware.ReadAsync(cancellationToken) is { } identity
+            ? await EaDesktopInstalls.FoldersAsync(programData, identity, cancellationToken)
+            : [];
 
     private IEnumerable<string> RegistryFolders() =>
         _views.SelectMany(view => registry.SubKeyNames(RegistryRoot.LocalMachine, view, EaKey)

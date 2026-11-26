@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="SharpCompress" />
     <PackageReference Include="ValveKeyValue" />

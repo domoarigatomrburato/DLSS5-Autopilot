@@ -119,7 +119,14 @@ the Python reference, for what the tool keeps. Where they differ:
   the `PC` executable of `MicrosoftGame.config`'s `ExecutableList`, else the
   first.
 - Heroic: the three shapes; DLC entries (`is_dlc`) dropped.
-- EA: also the EA app's encrypted install file (M2e).
+- EA: also the EA app's install file, `<ProgramData>\EA Desktop\<id>\IS`,
+  AES-CBC encrypted with a key derived from the machine's hardware (the
+  format as the open-source GameFinder documents it; our own code, SHA3 from
+  BouncyCastle). Installed means `softwareId`, `baseSlug` and
+  `baseInstallPath` all set and the folder a directory; the name is the
+  folder's and there is no store pick (`executableCheck` is relative to a
+  registry value and can name an anti-cheat launcher). Without the hardware
+  identity (the Windows side reads it through WMI) this part is skipped.
 
 The plan's list is Steam, Epic, GOG, EA, Ubisoft, Battle.net, Rockstar and
 Xbox. Amazon and Heroic are in the reference (`README.md:112`) and stay,
@@ -958,6 +965,7 @@ normally as `dxgi.dll`).
 | MicrosoftGame.config and appxmanifest image attribute names and scale variants | Microsoft docs |
 | Anti-cheat markers: each file name belongs to its product; the lists of products | the vendors' docs; a game of each |
 | `re_chunk_000.pak` is in every RE Engine title's root; REFramework-nightly's asset name and that its `dinput8.dll` is universal; that stable releases lag | the REFramework repository; the games |
+| EA app install file as built (M2e): the key derivation against a real `IS` file (and whether its JSON starts with a BOM); the volume serial from `C:` or the Windows volume; which instance when a machine has two GPUs; padding or non-ASCII in WMI values; schema versions other than 21; `executableCheck` / `launchers[].exePath` as a future store pick, with an anti-cheat launcher filter | a machine with the EA app and a few installed games |
 | Store sources as built (M2d): uninstall lists read in both views under `HKLM` and `HKCU`; Battle.net's uid format and its client's own entry; Rockstar's launcher and Social Club entries under the uninstall pattern; the columns of Amazon's `DbSet` table; that `MicrosoftGame.config` sits in the `Content` folder; Ubisoft's forward slashes through `Path.GetFullPath`; NTFS junctions resolved once (8.3 short names are not) | a Windows machine with each store |
 | Windows: `GetDriveTypeW` removable for USB hard disks (they report fixed); error 87 on unready drives; WOW6432Node views | Win32 documentation |
 

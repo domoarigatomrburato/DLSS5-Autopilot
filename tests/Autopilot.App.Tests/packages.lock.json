@@ -331,6 +331,7 @@
       "autopilot.core": {
         "type": "Project",
         "dependencies": {
+          "BouncyCastle.Cryptography": "[2.7.0, )",
           "Microsoft.Data.Sqlite": "[11.0.0, )",
           "SharpCompress": "[0.50.12, )",
           "ValveKeyValue": "[0.80.0.542, )"
@@ -376,6 +377,12 @@
         "dependencies": {
           "Avalonia": "12.2.0"
         }
+      },
+      "BouncyCastle.Cryptography": {
+        "type": "CentralTransitive",
+        "requested": "[2.7.0, )",
+        "resolved": "2.7.0",
+        "contentHash": "U+12df8UEWHgBi04YVf/Lgi2dy3SItlIYvHjjEVa/BngCQIzDCDRBk50DDByCfDvSbe5pRNFr3b7UrVK2kMcLw=="
       },
       "CommunityToolkit.Mvvm": {
         "type": "CentralTransitive",
