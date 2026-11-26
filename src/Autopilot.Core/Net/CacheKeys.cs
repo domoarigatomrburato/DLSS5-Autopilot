@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Autopilot.Core.Archives;
@@ -14,9 +15,22 @@ internal static class CacheKeys
     /// <summary>An API answer: its URL.</summary>
     public static string Api(Uri url) => Of(url.AbsoluteUri);
 
-    /// <summary>An unpacked archive: the entry it came from and every option that shapes the tree, with case folded.</summary>
-    public static string Unpacked(string entryName, TreeOptions? options, ArchiveLimits? limits) =>
-        Of(string.Join('\n', entryName, (options ?? new()).CanonicalKey(), (limits ?? ArchiveLimits.Default).CanonicalKey()));
+    /// <summary>
+    /// An unpacked archive: the file it came from (its path, size and last write, since an entry
+    /// fetched again under the same name may hold other bytes) and every option that shapes the
+    /// tree, with case folded.
+    /// </summary>
+    public static string Unpacked(string archivePath, TreeOptions? options, ArchiveLimits? limits)
+    {
+        FileInfo archive = new(archivePath);
+        return Of(string.Join(
+            '\n',
+            archive.FullName,
+            archive.Length.ToString(CultureInfo.InvariantCulture),
+            archive.LastWriteTimeUtc.Ticks.ToString(CultureInfo.InvariantCulture),
+            (options ?? new()).CanonicalKey(),
+            (limits ?? ArchiveLimits.Default).CanonicalKey()));
+    }
 
     private static string Of(string identity) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(identity)))[..32];

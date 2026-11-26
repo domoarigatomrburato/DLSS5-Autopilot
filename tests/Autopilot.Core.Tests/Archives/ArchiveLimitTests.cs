@@ -13,7 +13,7 @@ public sealed class ArchiveLimitTests(TestContext testContext) : ArchiveTestBase
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, limits: new ArchiveLimits { MaxEntries = 5 }, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: new ArchiveLimits { MaxEntries = 5 }, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.TooManyEntries, failure.Reason);
         AssertNothingWritten(destination);
@@ -41,7 +41,7 @@ public sealed class ArchiveLimitTests(TestContext testContext) : ArchiveTestBase
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, limits: new ArchiveLimits { MaxRatio = 10 }, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: new ArchiveLimits { MaxRatio = 10 }, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.RatioExceeded, failure.Reason);
         AssertNothingWritten(destination);
@@ -54,7 +54,7 @@ public sealed class ArchiveLimitTests(TestContext testContext) : ArchiveTestBase
         string archive = Build(format, new TestMember("small.bin", TestArchives.Zeros(64 << 10)));
         string destination = In("small.bin");
 
-        string written = await ArchiveExtractor.ExtractMemberAsync(archive, "small.bin", destination, ct: Ct);
+        string written = await ArchiveExtractor.ExtractMemberAsync(archive, "small.bin", destination, limits: null, ct: Ct);
 
         Assert.AreEqual(destination, written);
         Assert.AreEqual(64 << 10, new FileInfo(destination).Length);

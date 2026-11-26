@@ -19,8 +19,8 @@ public static class ArchiveExtractor
         string archivePath,
         string memberEnding,
         string destinationFile,
-        ArchiveLimits? limits = null,
-        CancellationToken ct = default)
+        ArchiveLimits? limits,
+        CancellationToken ct)
     {
         // The caller's arguments are checked before the .part exists, so a bad one leaves nothing.
         MemberTarget target = new(archivePath, memberEnding, PartDestination.PathFor(destinationFile));
@@ -38,9 +38,9 @@ public static class ArchiveExtractor
     public static async Task<IReadOnlyList<string>> ExtractTreeAsync(
         string archivePath,
         string destinationDirectory,
-        TreeOptions? options = null,
-        ArchiveLimits? limits = null,
-        CancellationToken ct = default)
+        TreeOptions? options,
+        ArchiveLimits? limits,
+        CancellationToken ct)
     {
         TreeTarget target = new(archivePath, destinationDirectory, PartDestination.PathFor(destinationDirectory), options ?? new TreeOptions());
         var part = PartDestination.Prepare(archivePath, destinationDirectory, isDirectory: true);

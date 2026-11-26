@@ -32,7 +32,7 @@ public sealed class ArchiveNameTests(TestContext testContext) : ArchiveTestBase(
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.DuplicateName, failure.Reason);
         AssertNothingWritten(destination);
@@ -46,7 +46,7 @@ public sealed class ArchiveNameTests(TestContext testContext) : ArchiveTestBase(
         string destination = In("deep", "out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.UnsafeName, failure.Reason);
         Assert.IsInstanceOfType<UnsafePathException>(failure.InnerException);
@@ -62,7 +62,7 @@ public sealed class ArchiveNameTests(TestContext testContext) : ArchiveTestBase(
         string destination = In("x.dll");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractMemberAsync(archive, "x.dll", destination, ct: Ct));
+            () => ArchiveExtractor.ExtractMemberAsync(archive, "x.dll", destination, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.UnsafeName, failure.Reason);
         AssertNothingWritten(destination);
@@ -76,7 +76,7 @@ public sealed class ArchiveNameTests(TestContext testContext) : ArchiveTestBase(
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.DuplicateName, failure.Reason);
         AssertNothingWritten(destination);
@@ -92,7 +92,7 @@ public sealed class ArchiveNameTests(TestContext testContext) : ArchiveTestBase(
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.Link, failure.Reason);
         AssertNothingWritten(destination);
@@ -106,7 +106,7 @@ public sealed class ArchiveNameTests(TestContext testContext) : ArchiveTestBase(
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.UnsupportedEntry, failure.Reason);
         AssertNothingWritten(destination);
@@ -123,7 +123,7 @@ public sealed class ArchiveNameTests(TestContext testContext) : ArchiveTestBase(
             TestArchives.TarFile("repo-main/x.txt", [1]));
         string destination = In("out");
 
-        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct);
+        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct);
 
         CollectionAssert.AreEqual(new[] { Path.Join(destination, "repo-main", "x.txt") }, written.ToArray());
     }
@@ -135,7 +135,7 @@ public sealed class ArchiveNameTests(TestContext testContext) : ArchiveTestBase(
         string archive = Build(format, new TestMember("./"), TestMember.Text("./x.txt", "x"));
         string destination = In("out");
 
-        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct);
+        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct);
 
         CollectionAssert.AreEqual(new[] { Path.Join(destination, "x.txt") }, written.ToArray());
     }

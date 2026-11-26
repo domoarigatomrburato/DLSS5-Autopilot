@@ -8,7 +8,7 @@ namespace Autopilot.Core.Tests.Net;
 /// <summary>What the cache tests download: a small real zip, and the HTML page a filter answers with instead.</summary>
 internal static class CacheFixtures
 {
-    public static byte[] Zip { get; } = MakeZip();
+    public static byte[] Zip { get; } = ZipSaying("hello");
 
     public static string ZipDigest { get; } = DigestOf(Zip);
 
@@ -18,13 +18,14 @@ internal static class CacheFixtures
 
     public static string DigestOf(byte[] data) => Convert.ToHexStringLower(SHA256.HashData(data));
 
-    private static byte[] MakeZip()
+    /// <summary>A zip holding <c>tool/readme.txt</c> with <paramref name="text"/>.</summary>
+    public static byte[] ZipSaying(string text)
     {
         using MemoryStream buffer = new();
         using (ZipArchive archive = new(buffer, ZipArchiveMode.Create, leaveOpen: true))
         {
             using StreamWriter readme = new(archive.CreateEntry("tool/readme.txt").Open());
-            readme.Write("hello");
+            readme.Write(text);
         }
         return buffer.ToArray();
     }

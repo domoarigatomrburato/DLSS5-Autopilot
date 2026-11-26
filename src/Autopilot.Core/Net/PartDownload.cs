@@ -16,6 +16,7 @@ internal sealed class PartDownload(NetClient client, Verifier verifier)
         {
             long size = await client.StreamToAsync(download.Url, download.Hosts, PartStream.Opener(part), options, progress, cancellationToken);
             await verifier.CheckAsync(part, download.FileName, download.Url.Host, download.Expected, cancellationToken);
+            PartStream.FlushToDisk(part);
             File.Move(part, download.Entry);
             return new(download.Entry, size, download.Expected);
         }

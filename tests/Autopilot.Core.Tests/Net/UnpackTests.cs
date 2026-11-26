@@ -37,6 +37,23 @@ public sealed class UnpackTests(TestContext testContext)
     }
 
     [TestMethod]
+    public async Task An_archive_fetched_again_with_other_bytes_is_unpacked_again()
+    {
+        using CacheBed bed = new CacheBed(testContext).Serve(CacheFixtures.Zip, CacheFixtures.ZipSaying("hello again"));
+        Verification unverified = new NoVerification("the publisher gives no digest");
+        CachedFile first = await bed.Download(unverified);
+        string before = await bed.Unpack(first);
+
+        File.Delete(first.Path);
+        CachedFile second = await bed.Download(unverified);
+        string after = await bed.Unpack(second);
+
+        Assert.AreEqual(first.Path, second.Path);
+        Assert.AreNotEqual(before, after);
+        Assert.AreEqual("hello again", await File.ReadAllTextAsync(Path.Combine(after, "tool", "readme.txt"), testContext.CancellationToken));
+    }
+
+    [TestMethod]
     public async Task Options_that_differ_only_in_case_or_order_share_a_folder()
     {
         using CacheBed bed = new CacheBed(testContext).Serve(CacheFixtures.Zip);

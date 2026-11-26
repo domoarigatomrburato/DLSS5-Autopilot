@@ -18,7 +18,7 @@ public sealed class ArchiveSelectionTests(TestContext testContext) : ArchiveTest
             TestMember.Text("Pack/readme.txt", "read me"));
         string destination = In("out");
 
-        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct);
+        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct);
 
         CollectionAssert.AreEquivalent(
             new[] { Path.Join(destination, "Pack", "Shaders", "a.fx"), Path.Join(destination, "Pack", "Textures", "b.png"), Path.Join(destination, "Pack", "readme.txt") },
@@ -38,7 +38,7 @@ public sealed class ArchiveSelectionTests(TestContext testContext) : ArchiveTest
             TestMember.Text("pkg/bin/dlss.dll", "plain"));
         string destination = In("picked.dll");
 
-        string written = await ArchiveExtractor.ExtractMemberAsync(archive, "BIN/DLSS.DLL", destination, ct: Ct);
+        string written = await ArchiveExtractor.ExtractMemberAsync(archive, "BIN/DLSS.DLL", destination, limits: null, ct: Ct);
 
         Assert.AreEqual(destination, written);
         Assert.AreEqual("plain", await File.ReadAllTextAsync(destination, Ct));
@@ -53,7 +53,7 @@ public sealed class ArchiveSelectionTests(TestContext testContext) : ArchiveTest
         string destination = In("nvngx.dll");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractMemberAsync(archive, "nvngx.dll", destination, ct: Ct));
+            () => ArchiveExtractor.ExtractMemberAsync(archive, "nvngx.dll", destination, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.AmbiguousMember, failure.Reason);
         AssertNothingWritten(destination);
@@ -67,7 +67,7 @@ public sealed class ArchiveSelectionTests(TestContext testContext) : ArchiveTest
         string destination = In("dlss.dll");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractMemberAsync(archive, "dlss.dll", destination, ct: Ct));
+            () => ArchiveExtractor.ExtractMemberAsync(archive, "dlss.dll", destination, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.MemberNotFound, failure.Reason);
         StringAssert.Contains(failure.Message, "'dlss.dll'", StringComparison.Ordinal);
@@ -88,7 +88,7 @@ public sealed class ArchiveSelectionTests(TestContext testContext) : ArchiveTest
         string destination = In("reshade-shaders");
         TreeOptions options = new() { StripTopFolder = true, SourceFolder = "shaders", Extensions = [".fx"] };
 
-        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, options, ct: Ct);
+        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, options, limits: null, ct: Ct);
 
         CollectionAssert.AreEquivalent(
             new[] { Path.Join(destination, "a.fx"), Path.Join(destination, "sub", "b.FX") },
@@ -107,7 +107,7 @@ public sealed class ArchiveSelectionTests(TestContext testContext) : ArchiveTest
         string destination = In("out");
         TreeOptions options = new() { StripTopFolder = true, Names = ["B.FX", "c.fx"], Extensions = [".fx"] };
 
-        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, options, ct: Ct);
+        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, options, limits: null, ct: Ct);
 
         CollectionAssert.AreEquivalent(new[] { Path.Join(destination, "b.fx"), Path.Join(destination, "c.fx") }, written.ToArray());
     }
@@ -119,7 +119,7 @@ public sealed class ArchiveSelectionTests(TestContext testContext) : ArchiveTest
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, new TreeOptions { StripTopFolder = true }, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, new TreeOptions { StripTopFolder = true }, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.DuplicateName, failure.Reason);
         AssertNothingWritten(destination);
@@ -132,7 +132,7 @@ public sealed class ArchiveSelectionTests(TestContext testContext) : ArchiveTest
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, new TreeOptions { StripTopFolder = true }, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, new TreeOptions { StripTopFolder = true }, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.DuplicateName, failure.Reason);
         AssertNothingWritten(destination);

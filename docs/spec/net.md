@@ -154,8 +154,13 @@ value is injectable, so tests do not wait.
   waits for the lock (cancellably), then finds the finished entry and uses
   it. Finished entries are never rewritten in place, so reading one needs no
   lock; deleting a bad one takes the lock.
-- **Writing.** Downloads go to `<entry>.part`, then are renamed into place
-  after every check passes.
+- **Writing.** Downloads go to `<entry>.part`, are flushed to the disk once
+  complete (not after each failed attempt), then are renamed into place after
+  every check passes. Unpacked files are flushed to the disk before their
+  folder is moved into place, since a finished folder is reused for good.
+- **Unpacked identity.** An unpacked folder's `<key>` covers the archive
+  file's path, size and last write, plus the tree options and limits. An
+  entry deleted as bad and fetched again with other bytes unpacks anew.
 - **Answers.** An API answer is fresh for 6 hours and is used at any age
   when the live request fails ("Retries").
 - Changed from the reference: the reference cached by a label
@@ -320,10 +325,13 @@ them, on every host:
   limit (a highly compressible entry, too many entries); an HTML page named
   `.zip`; a zip missing its central directory.
 - **A cache folder** with a finished entry, a `.part` leftover, a held lock
-  from another process (a second test process), and an entry whose digest
-  no longer matches.
-- **Disk full**: a stream fake that throws errno 28 and Windows 112 and 39,
-  directly and wrapped.
+  (an exclusive open in the test process: on macOS and Linux .NET locks with
+  `flock`, which conflicts within one process as it does across two; two
+  processes are a Windows check, above), and an entry whose digest no longer
+  matches.
+- **Disk full**: an `IOException` with errno 28 and Windows 112 and 39,
+  directly and wrapped, raised while a download is written. A real full
+  volume, and the flush and unpacking under it, are a Windows check, above.
 - **Real reports**: `_tools/reports/` 175 (a certificate for another name),
   434 (a blocked socket), and the 140-era "not a zip" cases.
 

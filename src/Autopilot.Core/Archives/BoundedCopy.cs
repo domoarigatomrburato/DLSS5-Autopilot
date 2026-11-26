@@ -34,6 +34,9 @@ internal sealed class BoundedCopy(string archivePath) : IDisposable
 
             await output.WriteAsync(_buffer.AsMemory(0, read), ct);
         }
+
+        // The tree is moved into place and reused for good, so its files must be on the disk first.
+        RandomAccess.FlushToDisk(output.SafeFileHandle);
     }
 
     public void Dispose() => ArrayPool<byte>.Shared.Return(_buffer);

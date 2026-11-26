@@ -1,8 +1,8 @@
 namespace Autopilot.Core.Net;
 
 /// <summary>
-/// A download's <c>.part</c> file opened at an offset: everything after it is dropped, writes go to
-/// the end, and closing flushes it to the disk, so the file moved into place is the file on disk.
+/// A download's <c>.part</c> file opened at an offset: everything after it is dropped and writes go
+/// to the end.
 /// </summary>
 internal sealed class PartStream : FileStream
 {
@@ -16,18 +16,13 @@ internal sealed class PartStream : FileStream
     /// <summary>What <see cref="NetClient.StreamToAsync"/> calls to open the file at each attempt's offset.</summary>
     public static Func<long, Stream> Opener(string path) => offset => new PartStream(path, offset);
 
-    // NetClient closes each attempt's stream with await using.
-    public override async ValueTask DisposeAsync()
+    /// <summary>
+    /// Puts the finished file on the disk before it is moved into place. Once per download, not per
+    /// attempt, so a failed or cancelled attempt does not wait for the disk.
+    /// </summary>
+    public static void FlushToDisk(string path)
     {
-        try
-        {
-            await FlushAsync();
-            // There is no asynchronous fsync, so this blocks; it runs once per attempt.
-            RandomAccess.FlushToDisk(SafeFileHandle);
-        }
-        finally
-        {
-            await base.DisposeAsync();
-        }
+        using Microsoft.Win32.SafeHandles.SafeFileHandle handle = File.OpenHandle(path, FileMode.Open, FileAccess.Write);
+        RandomAccess.FlushToDisk(handle);
     }
 }

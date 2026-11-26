@@ -13,7 +13,7 @@ public sealed class DamagedArchiveTests(TestContext testContext) : ArchiveTestBa
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.NotAnArchive, failure.Reason);
         StringAssert.Contains(failure.Message, "download.zip", StringComparison.Ordinal);
@@ -26,7 +26,7 @@ public sealed class DamagedArchiveTests(TestContext testContext) : ArchiveTestBa
         string archive = Build(ArchiveFormat.Zip);
         string destination = In("out");
 
-        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct);
+        IReadOnlyList<string> written = await ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct);
 
         Assert.IsEmpty(written);
         Assert.IsTrue(Directory.Exists(destination));
@@ -40,7 +40,7 @@ public sealed class DamagedArchiveTests(TestContext testContext) : ArchiveTestBa
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.Corrupt, failure.Reason);
         AssertNothingWritten(destination);
@@ -57,7 +57,7 @@ public sealed class DamagedArchiveTests(TestContext testContext) : ArchiveTestBa
         string destination = In("out");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, ct: Ct));
+            () => ArchiveExtractor.ExtractTreeAsync(archive, destination, options: null, limits: null, ct: Ct));
 
         Assert.AreEqual(ArchiveFailure.Corrupt, failure.Reason);
         AssertNothingWritten(destination);
@@ -71,7 +71,7 @@ public sealed class DamagedArchiveTests(TestContext testContext) : ArchiveTestBa
         string destination = In("big.bin");
 
         ArchiveException failure = await Assert.ThrowsExactlyAsync<ArchiveException>(
-            () => ArchiveExtractor.ExtractMemberAsync(archive, "big.bin", destination, ct: Ct));
+            () => ArchiveExtractor.ExtractMemberAsync(archive, "big.bin", destination, limits: null, ct: Ct));
 
         // System.IO.Compression stops at the declared size, and the checksum then fails.
         Assert.AreEqual(ArchiveFailure.Corrupt, failure.Reason);

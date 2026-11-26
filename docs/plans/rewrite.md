@@ -100,12 +100,22 @@ specified.
       Epic, GOG, EA, Ubisoft, Battle.net, Rockstar, Xbox, Amazon, Heroic,
       folders added by hand, emulators (detection only). itch waits for M8.
 - [ ] **M3. Routes.** Which route a game gets and why, from what was read;
-      the components each route needs, and where they come from.
+      the components each route needs, and where they come from. Net gains
+      a HEAD that reports a redirect without following it, and a 5xx body
+      read when the caller asks (reshade.me).
 - [ ] **M4. Install and uninstall.** The record written first; backups;
       rollback; the preview ("what will happen?") that writes nothing;
       uninstall from the record alone. Emulator config edits wait for M8.
+      Archives gain the zip appended to ReShade's installer and a member
+      listing that writes nothing (for the preview); the download cache
+      gains cache-only reads and deleting an entry under its lock; storage
+      gains a free-space seam tests can fake, structured drive data on
+      `DiskFullException`, one atomic-write helper, and archive failure
+      texts from resources.
 - [ ] **M5. DLSS files kept current.** Every game's DLSS runtimes against
-      NVIDIA's newest; update and restore original.
+      NVIDIA's newest; update and restore original. The Authenticode
+      verifier reports who signed and why a check failed, not only yes or
+      no (M7's self-update needs the signer).
 - [ ] **M6. Diagnosis.** Logs to a verdict and a next step, driven by the
       report corpus: only the verdicts the corpus exercises; the bug-report
       text.
@@ -113,11 +123,14 @@ specified.
       settings; the game watcher, the "did it work?" answer after a
       session, "try another route", and autopilot
       ([watch](../spec/watch.md)); the Windows implementations; the first
-      release built in CI.
+      release built in CI. Sums files match a member by its base name
+      (`dist/dlss5-autopilot.exe`). One cache-root object feeds both
+      `NetClient` and `DownloadCache`.
 - [ ] **M8. Beyond the core.** "Aim for" and compare; RTX Remix; VR; the
       tray; the shared compatibility results (the Cloudflare Worker);
       emulator config edits; itch; verdicts outside the report corpus, as
-      data; the log drawer's pop-out.
+      data; the log drawer's pop-out. Net gains a JSON POST (community
+      results).
 - [ ] **M9. Parity.** Every behaviour of the reference is either done or
       dropped on purpose and listed. The README is written for users.
 

@@ -59,7 +59,7 @@ public sealed class DownloadCache
     /// <exception cref="DiskFullException">The drive filled up while the archive was unpacked; nothing was kept.</exception>
     public async Task<string> UnpackAsync(CachedFile file, TreeOptions? options, ArchiveLimits? limits, CancellationToken cancellationToken)
     {
-        string folder = Path.Combine(_cacheRoot, "unpacked", CacheKeys.Unpacked(Path.GetFileName(file.Path), options, limits));
+        string folder = Path.Combine(_cacheRoot, "unpacked", CacheKeys.Unpacked(file.Path, options, limits));
         await using FileStream held = await CacheLock.AcquireAsync(folder + ".lock", _time, cancellationToken);
         if (!Directory.Exists(folder))
         {
