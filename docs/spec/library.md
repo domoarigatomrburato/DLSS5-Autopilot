@@ -96,6 +96,31 @@ registry only; there is no network access (`core/games.py:3-4`).
 | Emulators | see Emulators | | | |
 | Added by hand | see Folders added by hand | | | |
 
+**How each store is found (settled in M2d).** Playnite's library plugins
+(MIT) are the reference for finding installed games; the table above, from
+the Python reference, for what the tool keeps. Where they differ:
+
+- Steam: Valve's text files are parsed with the `ValveKeyValue` package; the
+  folders under `common` drive the list (the rules above); names from the
+  manifest's `name`, then the folder; Steam's tools are dropped by appid
+  (228980, 250820) and by name prefix (`Proton `, `Steam Linux Runtime`,
+  `Steamworks Common`, `SteamVR`).
+- Epic: Playnite's filters on top of the flags above; among manifests that
+  share a folder, the one whose `AppName` is the `MainGameAppName` wins.
+- GOG: uninstall entries named `<digits>_is1` with publisher `GOG.com`.
+- Battle.net and Rockstar: uninstall entries whose `UninstallString` names
+  the client's uninstaller (`--uid=` for Battle.net), Test and Beta entries
+  and the clients themselves dropped; names from `DisplayName`.
+  Battle.net's `product.db` is not read.
+- Amazon: the app's `GameInstallInfo.sqlite` (installed rows; read-only,
+  with `Microsoft.Data.Sqlite`); the library folders when the database is
+  missing or unreadable.
+- Xbox: the folders on every fixed or removable drive; the store's pick is
+  the `PC` executable of `MicrosoftGame.config`'s `ExecutableList`, else the
+  first.
+- Heroic: the three shapes; DLC entries (`is_dlc`) dropped.
+- EA: also the EA app's encrypted install file (M2e).
+
 The plan's list is Steam, Epic, GOG, EA, Ubisoft, Battle.net, Rockstar and
 Xbox. Amazon and Heroic are in the reference (`README.md:112`) and stay,
 since each costs one small source.
@@ -933,6 +958,7 @@ normally as `dxgi.dll`).
 | MicrosoftGame.config and appxmanifest image attribute names and scale variants | Microsoft docs |
 | Anti-cheat markers: each file name belongs to its product; the lists of products | the vendors' docs; a game of each |
 | `re_chunk_000.pak` is in every RE Engine title's root; REFramework-nightly's asset name and that its `dinput8.dll` is universal; that stable releases lag | the REFramework repository; the games |
+| Store sources as built (M2d): uninstall lists read in both views under `HKLM` and `HKCU`; Battle.net's uid format and its client's own entry; Rockstar's launcher and Social Club entries under the uninstall pattern; the columns of Amazon's `DbSet` table; that `MicrosoftGame.config` sits in the `Content` folder; Ubisoft's forward slashes through `Path.GetFullPath`; NTFS junctions resolved once (8.3 short names are not) | a Windows machine with each store |
 | Windows: `GetDriveTypeW` removable for USB hard disks (they report fixed); error 87 on unready drives; WOW6432Node views | Win32 documentation |
 
 ## Fixtures
@@ -983,12 +1009,15 @@ normally as `dxgi.dll`).
    Options: read `ProgramData\Battle.net\Agent\product.db` (a protobuf
    file), or Blizzard's uninstall entries by publisher. Needs a machine with
    Battle.net to settle. Recommendation: verify first, then choose the smaller.
+   Settled for v1: the uninstall entries (Playnite's method); verify on Windows.
 2. **Xbox discovery.** Hard-coded `XboxGames` and `ModifiableWindowsApps`
    under fixed letters cannot find a Game Pass library elsewhere; Windows
    knows its libraries. Use `MicrosoftGame.config` `ExecutableList` to pick
    the executable by name as well (a documented schema, better than ranking
    a protected file)? Recommendation: yes for both, after a check on a real
-   machine.
+   machine. Settled for v1: the folders on every fixed or removable drive
+   from the drive list, and `ExecutableList` for the pick; verify on a Game
+   Pass PC.
 3. **The cache's version gate.** A new tool version always drops the cache,
    so every update costs a full scan. A detector version number would keep
    it across releases that change nothing in detection, at the price of
@@ -1001,12 +1030,13 @@ normally as `dxgi.dll`).
    includes the folder. Keep, or constrain?
 5. **Steam tool filtering** (Steamworks Common Redistributables, Proton,
    SteamVR): by appid list in code, or leave them to the "no executable" path?
+   Settled: appids plus name prefixes (see the store notes).
 6. **Frame of an empty library.** What does the first run show when no store
    finds anything: the reference only offers "add a game". Is there a first-run
    hint for a library on an unusual drive?
 7. **Localised folder names.** The plain-folder names include `Oyunlar`,
    `Juegos`, `Spiele`, `Jeux`, `Giochi`. Keep the list as data (cheap), or
-   only English plus `Games`?
+   only English plus `Games`? Settled: kept.
 8. **REFramework supply chain.** The nightly is an unsigned continuous build
    with no published hash: the plan's rule is a verified hash or signer where
    publishers provide one. Pin a known-good tag, or accept and say so?
