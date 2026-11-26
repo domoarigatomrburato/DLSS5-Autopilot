@@ -156,4 +156,98 @@
   <data name="AgilityUnmet" xml:space="preserve">
     <value>{0} asks Windows for the Direct3D 12 Agility SDK version {1} at '{2}', which it does not ship, and this Windows has version {3}.</value>
   </data>
+  <!-- Graphics API: every reason names its evidence; a guess from a layout or a name in the bytes is worded as one. {0} and {1} are file names, paths or other texts below. -->
+  <data name="ApiStaticImport" xml:space="preserve">
+    <value>imports {0} statically</value>
+  </data>
+  <data name="ApiStaticDxgi" xml:space="preserve">
+    <value>imports dxgi.dll statically but neither d3d11.dll nor d3d12.dll: Direct3D 11 or 12, picked at run time</value>
+  </data>
+  <data name="ApiStaticNoDxgi" xml:space="preserve">
+    <value>imports {0}, no DXGI</value>
+  </data>
+  <data name="ApiD3d11Promoted" xml:space="preserve">
+    <value>imports d3d11.dll, but ships {0}: the real renderer is Direct3D 12</value>
+  </data>
+  <data name="ApiUnrealPlugin" xml:space="preserve">
+    <value>imports d3d11.dll, but its Unreal plugin {0} ships {1}, DLSS Frame Generation or Ray Reconstruction, which run on Direct3D 12 only: the real renderer is Direct3D 12</value>
+  </data>
+  <data name="ApiNoImportPromoted" xml:space="preserve">
+    <value>no graphics DLL imported statically, but ships {0}: the real renderer is Direct3D 12</value>
+  </data>
+  <data name="ApiEvidenceAgilityCore" xml:space="preserve">
+    <value>a D3D12 Agility SDK (D3D12\D3D12Core.dll)</value>
+  </data>
+  <data name="ApiEvidenceFrameGeneration" xml:space="preserve">
+    <value>{0}, DLSS Frame Generation or Ray Reconstruction, which run on Direct3D 12 only</value>
+  </data>
+  <data name="ApiD3d9Dlss" xml:space="preserve">
+    <value>imports d3d9.dll, but ships {0}: the renderer is Direct3D 12 or Vulkan, not DirectX 9. If the game is set to Vulkan, pick that in the settings before installing</value>
+  </data>
+  <data name="ApiD3d9DelayLoad" xml:space="preserve">
+    <value>imports d3d9.dll, but delay-loads {0}: the renderer is {1} and the d3d9 import is a leftover</value>
+  </data>
+  <data name="ApiD3d9RunTime" xml:space="preserve">
+    <value>imports d3d9.dll, but loads {0} at run time ({1}): the renderer is {2}, not DirectX 9</value>
+  </data>
+  <data name="ApiD3d9Engine" xml:space="preserve">
+    <value>imports d3d9.dll, but it is {0}</value>
+  </data>
+  <data name="ApiDelayLoad" xml:space="preserve">
+    <value>no graphics DLL imported statically, but the delay-load table names {0}</value>
+  </data>
+  <data name="ApiDx8On64" xml:space="preserve">
+    <value>{0}, but DirectX 8 is 32-bit only, and this exe is 64-bit</value>
+  </data>
+  <data name="ApiRunTime" xml:space="preserve">
+    <value>loads {0} at run time ({1}); no static graphics import</value>
+  </data>
+  <data name="ApiRunTimeDlss" xml:space="preserve">
+    <value>loads d3d9.dll at run time ({0}), but ships {1}: the renderer is Direct3D 12 or Vulkan, not DirectX 9</value>
+  </data>
+  <data name="ApiWhereExe" xml:space="preserve">
+    <value>named in the exe</value>
+  </data>
+  <data name="ApiWhereSiblingImport" xml:space="preserve">
+    <value>{0} beside the exe imports it</value>
+  </data>
+  <data name="ApiWhereSiblingString" xml:space="preserve">
+    <value>named in {0} beside the exe</value>
+  </data>
+  <data name="ApiUnity" xml:space="preserve">
+    <value>a Unity game (UnityPlayer.dll beside the exe): Direct3D 11 on Windows unless the game is started with -force-d3d12, -force-vulkan or -force-glcore</value>
+  </data>
+  <data name="ApiUnreal" xml:space="preserve">
+    <value>an Unreal Engine game (Binaries\{0} beside the engine's own Engine folder): Direct3D 12 or 11, not settled. The opengl32.dll name such an executable carries is Unreal's OpenGL renderer, which its Windows builds do not use</value>
+  </data>
+  <data name="ApiUnreal3Dx9" xml:space="preserve">
+    <value>a 32-bit Unreal Engine 3 game (Binaries\Win32 beside {0}): it draws with Direct3D 9 unless its own settings switch it to 11; the d3d11.dll its exe names is that option</value>
+  </data>
+  <data name="ApiUnreal3Dx11" xml:space="preserve">
+    <value>an Unreal Engine 3 game whose {0} sets AllowD3D11=True</value>
+  </data>
+  <data name="ApiUnreal3Dx9Set" xml:space="preserve">
+    <value>a 32-bit Unreal Engine 3 game whose {0} sets AllowD3D11=False: it draws with Direct3D 9</value>
+  </data>
+  <data name="ApiUnrealClassic" xml:space="preserve">
+    <value>an Unreal Engine 1/2 game ({0}; {1})</value>
+  </data>
+  <data name="ApiUnrealClassicD3d7" xml:space="preserve">
+    <value>an Unreal Engine 1 game on its Direct3D 7 renderer ({0}; {1}): nothing here reaches Direct3D 7. Switch the game to its OpenGL or Direct3D 9 renderer, if it has one, and scan again</value>
+  </data>
+  <data name="ApiClassicFromIni" xml:space="preserve">
+    <value>{0} as the {1} in {2}</value>
+  </data>
+  <data name="ApiClassicFromModule" xml:space="preserve">
+    <value>{0}.dll beside the exe, no ini naming a renderer</value>
+  </data>
+  <data name="ApiClassicModuleImports" xml:space="preserve">
+    <value>{0} imports {1}</value>
+  </data>
+  <data name="ApiClassicByName" xml:space="preserve">
+    <value>{0} is the {1} renderer</value>
+  </data>
+  <data name="ApiUnknown" xml:space="preserve">
+    <value>graphics DLL loaded at runtime; assuming DX11/DX12 via dxgi.dll</value>
+  </data>
 </root>

@@ -218,8 +218,17 @@ defined after the table.
 | 9 | statically imports `d3d9.dll` | the d3d9 sequence below | per step | `core/pe.py:494-571` |
 | 10 | statically imports `d3d8.dll` | DX8 | static-import | `core/pe.py:572-575` |
 | 11 | imports no graphics DLL and the folder has a D3D12 Agility SDK or the game's own DLSS-G/RR DLL | DX12 | agility-sdk | `core/pe.py:576-582` |
-| 12 | imports no graphics DLL and the run-time search names a renderer | that renderer | per source | `core/pe.py:583-594` |
-| 13 | nothing above | Unknown | none | `core/pe.py:595` |
+| 12 | imports no graphics DLL statically and the delay-load table names one | that API, by the static table's ranking (`d3d12`, `d3d11`, the `d3d10` family, `dxgi`, `vulkan-1`, `opengl32`, `d3d9`, `d3d8`) | delay-load | changed from the reference, below |
+| 13 | imports no graphics DLL and the run-time search names a renderer | that renderer | per source | `core/pe.py:583-594` |
+| 14 | nothing above | Unknown | none | `core/pe.py:595` |
+
+- Changed from the reference: rule 12. The reference looked at the
+  delay-load table only inside the d3d9 sequence, so an executable that
+  delay-loads its renderer and links no graphics DLL statically reached the
+  run-time search and was called a guess ("named in the exe"), although the
+  linker recorded the dependency. It sits after rule 11 so that the Agility
+  SDK beside the executable still settles DX12, as rule 2 does for a static
+  `d3d11.dll`.
 
 After the table, a result of `DX8` for a **64-bit** executable becomes
 `Unknown`, with the reason "... but DirectX 8 is 32-bit only, and this exe is
@@ -241,21 +250,23 @@ the first hit decides (`core/pe.py:494-571`):
 | Step | Evidence | Result |
 | --- | --- | --- |
 | 1 | the game's own `nvngx_dlss.dll`, `nvngx_dlssg.dll` or `nvngx_dlssd.dll` beside it, or a `D3D12\D3D12Core.dll` that fits its bitness | DX12, reason also says "if the game is set to Vulkan, pick that in the settings before installing" |
-| 2 | a D3D12 Agility SDK beside it (see below) | DX12 |
-| 3 | the **delay-load** table names `d3d12.dll` | DX12 |
-| 4 | the delay-load table names `d3d11.dll` | DX11 |
-| 5 | only for a **64-bit** executable: a run-time search returns a record, not a string (an engine rule, a marker file, or another DLL's import table), naming `d3d12.dll`, `d3d11.dll`, or a DX11/DX12 engine verdict | that API |
-| 6 | none | DX9 ("imports d3d9.dll, no DXGI") |
+| 2 | the **delay-load** table names `d3d12.dll` | DX12 |
+| 3 | the delay-load table names `d3d11.dll` | DX11 |
+| 4 | only for a **64-bit** executable: a run-time search returns a record, not a string (an engine rule, a marker file, or another DLL's import table), naming `d3d12.dll`, `d3d11.dll`, or a DX11/DX12 engine verdict (an Unreal 4/5 layout gives `DXGI`) | that API |
+| 5 | none | DX9 ("imports d3d9.dll, no DXGI") |
 
-- A bare `dxgi.dll` in the delay-load table does not count at step 3 or 4: a
+- A bare `dxgi.dll` in the delay-load table does not count at step 2 or 3: a
   DirectX 9 game can use DXGI only to enumerate displays (`core/pe.py:520-523`).
-- Step 5 excludes mere **strings** in the executable ("named in the exe").
+- Step 4 excludes mere **strings** in the executable ("named in the exe").
   Every executable here has "d3d9.dll" in its own bytes, because the import
   table's name string is there, and SDL2 carries the literal `d3d11.dll` for
   its render backend, so a string would call an SDL game DX11 and send it to
   a dxgi proxy it never loads (`core/pe.py:536-545`). A 32-bit game that
-  reaches step 6 is DirectX 9 in every case seen and has the most to lose from
-  a wrong answer, so step 5 skips it.
+  reaches step 5 is DirectX 9 in every case seen and has the most to lose from
+  a wrong answer, so step 4 skips it.
+- Step 1 covers the Agility SDK too (it was a separate step in the
+  reference, which counted the game's own `nvngx_dlssg.dll` or
+  `nvngx_dlssd.dll` as Agility evidence even beside another DLSS tool).
 - `ddraw.dll`-only games (DirectX 7) are not a label; see the Unreal 1 rule.
 
 ### Evidence beside the executable
@@ -291,8 +302,9 @@ unless stated, and all of them are limited by bitness.
 - **Another DLSS tool in the folder** brings NGX files of its own. A
   swapper's `nvngx_dlss.dll` beside Arkham Knight (DirectX 11) read as "the
   game ships DLSS" (#250). With one of the files below present (not counting
-  ours), the NGX files say nothing about the game, and only the Agility SDK
-  still does:
+  ours), the NGX files say nothing about the game (`nvngx_dlssg.dll` and
+  `nvngx_dlssd.dll` included: frame-generation mods ship their own), and only
+  `D3D12\D3D12Core.dll` still does:
   - foreign files: `optiscaler.ini`, `nvngx.ini`, `fakenvapi.ini`,
     `dlss-enabler.dll`, `dlss-enabler-upscaler.dll`, `nvngx-wrapper.dll`,
     `dlssg_to_fsr3_amd_is_better.dll`, `dlssg_to_fsr3.ini`,
@@ -321,8 +333,8 @@ unless stated, and all of them are limited by bitness.
 
 ### Engine rules that settle the renderer by themselves
 
-Consulted at rule 8 (OpenGL import) and rule 12 (nothing imported), and
-inside the d3d9 sequence step 5 where they may only say DX11 or DX12. Order:
+Consulted at rule 8 (OpenGL import) and rule 13 (nothing imported), and
+inside the d3d9 sequence step 4 where they may only say DX11 or DX12. Order:
 
 | Engine | Detected by | Result | Evidence |
 | --- | --- | --- | --- |
