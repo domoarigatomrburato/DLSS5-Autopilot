@@ -41,16 +41,20 @@ on:
     tags: ["v*"]
   workflow_dispatch:          # lets a build be run by hand, without a tag
 
-permissions:
-  contents: write             # create the release and upload to it
-  id-token: write             # sign the provenance attestation
-  attestations: write
+# The minimum for the workflow; the one job below declares what it needs.
+permissions: {}
 
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write         # create the release and upload to it
+      id-token: write         # sign the provenance attestation
+      attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # Written out as an if/else rather than as one expression: `a && b ||
       # c` falls through to c when b is empty, which sent a hand-started run
@@ -73,24 +77,34 @@ jobs:
           echo "SIGNPATH_POLICY=$POLICY" >> "$GITHUB_ENV"
           echo "signing policy: ${POLICY:-none - this run is built unsigned}"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
 
-      # From source, so the bootloader is compiled here rather than taken
-      # from the wheel every scanner has seen. Falls back to the wheel if the
-      # runner cannot compile it - the build must not fail over this.
+      # The build tools are pinned with their hashes in
+      # .github/release-requirements.txt (regenerated from the .in file
+      # beside it), so a changed or hijacked package fails the install
+      # instead of ending up in the exe.
+      #
+      # Two passes over that one file. The first installs everything as
+      # wheels, which is also the fallback. The second builds PyInstaller
+      # from its source archive, so the bootloader is compiled here rather
+      # than taken from the wheel every scanner has seen; if the runner
+      # cannot compile it, the first pass's wheel stays and the build goes
+      # on - it must not fail over this. The source build runs with
+      # --no-build-isolation: pip's isolated build environment would fetch
+      # PyInstaller's build backend (hatchling) from PyPI without hashes, so
+      # hatchling and its dependencies are in the file and installed by the
+      # first pass instead.
       - name: Install PyInstaller (fresh bootloader)
         shell: bash
         run: |
-          python -m pip install --upgrade pip wheel setuptools
-          # The root-certificate bundle the exe carries (net.ssl_context).
-          python -m pip install --upgrade certifi
-          if python -m pip install --no-binary pyinstaller --no-cache-dir pyinstaller; then
+          python -m pip install --require-hashes --only-binary :all: -r .github/release-requirements.txt
+          if python -m pip install --require-hashes --no-deps --no-build-isolation --no-binary pyinstaller --no-cache-dir --force-reinstall -r .github/release-requirements.txt; then
             echo "BOOTLOADER=compiled on this runner" >> "$GITHUB_ENV"
           else
             echo "::warning::could not build PyInstaller from source; using the wheel"
-            python -m pip install pyinstaller
+            python -m pip install --require-hashes --only-binary :all: -r .github/release-requirements.txt
             echo "BOOTLOADER=stock wheel" >> "$GITHUB_ENV"
           fi
           python -m PyInstaller --version
@@ -128,6 +142,7 @@ jobs:
             dlss5_autopilot.py
 
       # ---- code signing (SignPath Foundation), when the repository is set up
+      # This fork has no SignPath project yet, so every build is unsigned until it gets one.
       # The project's artifact configuration in SignPath is a single PE file,
       # so the exe goes up as it is (archive: false) and comes back as it is
       # (skip-decompress). With archive: false the artifact is named after
@@ -153,7 +168,7 @@ jobs:
       - name: Upload the unsigned executable for signing
         if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && env.SIGNPATH_POLICY != '' }}
         id: unsigned
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: dist/dlss5-autopilot.exe
           archive: false
@@ -167,7 +182,7 @@ jobs:
       # signs without asking.
       - name: Sign the executable
         if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && env.SIGNPATH_POLICY != '' }}
-        uses: signpath/github-action-submit-signing-request@v3
+        uses: signpath/github-action-submit-signing-request@a2c5b60d9c75f073142b653c354b632eedce097b # v3.2
         with:
           wait-for-completion-timeout-in-seconds: 7200
           parameters: |
@@ -238,7 +253,7 @@ jobs:
 
       # Ties the binary to this commit and this workflow run, verifiable with
       #     gh attestation verify dlss5-autopilot.exe --repo <owner>/<repo>
-      - uses: actions/attest-build-provenance@v1
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
             dist/dlss5-autopilot.exe
@@ -251,8 +266,8 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
         run: |
-          TAG="${{ github.ref_name }}"
           ZIP="DLSS5-Autopilot-v${VERSION}-win64.zip"
           # The notes live in docs/releases/<tag>.md; the old flat
           # release-notes-<tag>.md is still accepted so re-running an older
@@ -280,7 +295,7 @@ jobs:
           fi
           gh release upload "$TAG" "$ZIP" "SHA256SUMS.txt" --clobber
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dlss5-autopilot-${{ env.VERSION }}
           path: |
