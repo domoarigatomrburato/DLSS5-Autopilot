@@ -17,6 +17,17 @@ section current. Any coding agent picking the work up starts here.
 - **Upstream courtesy.** The two critical installer fixes (phase 0) go
   upstream as two separate pull requests, in upstream's style, before the
   fork diverges.
+- **What the app does is the spec; the code is not.** Assume the inherited
+  code is poorly built: it was written without engineering review. What
+  matters is what the tool does for the person using it. Its comments,
+  README claims, design choices
+  and workarounds are hypotheses to check against behaviour and primary
+  sources, never reasons in themselves; `test_all.py` records what the code
+  does today, not what it should do. Keep what survives the check, replace
+  what does not, and say which in the commit. Pruning and rewriting are
+  encouraged, not merely allowed: code, tools, tests and docs with no clear
+  use are deleted, and a part simpler to rewrite than to repair is
+  rewritten from scratch behind tests that pin what it does for the user.
 - **Identity.** The fork's name everywhere (copyright, the exe's
   `CompanyName`, signing roles) is the GitHub handle `domoarigatomrburato`;
   upstream's copyright stays beside it.
@@ -43,9 +54,10 @@ section current. Any coding agent picking the work up starts here.
   out of the ruff selection are left out on purpose, each with its reason
   in `pyproject.toml`; per-line suppressions only for a confirmed false
   positive, with the reason on the line.
-- **Clean-up order: behaviour-neutral first, then tests, then the rest.**
-  Formatting, safe autofixes, annotations and explicit imports do not change
-  behaviour and come first. Fixes that do (real type errors, broad
+- **Clean-up order: prune and format, then tests, then repair or rewrite.**
+  Pruning, formatting and safe autofixes come first. No annotation work goes
+  into a module before it is judged worth keeping: each module is triaged
+  (keep, repair, rewrite) once the tests pin what it does. Fixes that do (real type errors, broad
   `except`, complexity splits, dead code) wait for the pytest suite and each
   comes with a test. Until the tree is clean, a commit must leave the files
   it touches clean under the full gate.
@@ -65,7 +77,7 @@ section current. Any coding agent picking the work up starts here.
 | Layering and cycles | import-linter (`core` never imports `core.ui`; no cycles between modules) | everywhere |
 | Complexity | ruff `C901`, `PLR0912`, `PLR0915` | everywhere |
 | Tests and coverage | pytest, pytest-cov | failures; coverage floor that only rises |
-| CI | Later: GitHub Actions on push and pull request, lint on Ubuntu, tests on Windows and Ubuntu, actions pinned by SHA, Dependabot for actions and uv. Until then the gate runs locally | required checks, once the tree is clean |
+| CI | Later: GitHub Actions on push and pull request; the platform-neutral checks (format, lint, types, dead code, imports) on Ubuntu, the tests on Windows, the only platform the tool runs on; actions pinned by SHA; Dependabot for actions and uv. Until then the gate runs locally | required checks, once the tree is clean |
 
 ## Running the current suite before phase 3
 
@@ -73,7 +85,9 @@ Until the pytest migration, `test_all.py` needs a 64-bit PE fixture and
 downloads real components (about 700 MB) into a cache under `HOME`. Keep
 both out of the repository and point the suite at them:
 
-Python 3.12 comes from `uv python install 3.12` where the system has none.
+Use Python 3.12.11 (`uv python install 3.12.11`): it is the last uv build
+with Tk 8.6, the Tk the Windows build ships; later builds carry Tk 9.0, which
+segfaults on macOS (`Tk_MacOSXGetTkWindow`) when a test updates a window.
 
 ```
 python3.12 -I -c "import sys; sys.path.insert(0, '_tools'); import fake_pe; open('<lab>/fake-host64.exe', 'wb').write(fake_pe.dll('1.0.0'))"
@@ -87,6 +101,26 @@ before that give 728 PASS and 24 FAIL. All 24 are Windows-only APIs
 `  FAIL  ` lines with a baseline run, never the exit code. On Windows the
 whole suite should run; that has not been checked yet.
 `test_reshade_ini.py` and `python -m unittest test_scan` pass everywhere.
+
+The suite opens real Tk windows, which take the focus on a desktop. On a
+developer's machine run it headless in a Linux container (Docker, or
+`colima` on macOS) with Tk drawing into Xvfb:
+
+```
+FROM python:3.12.11-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends xvfb xauth && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+```
+
+```
+docker run --rm -v "$PWD":/src -v <lab>/home:/cache -v <lab>:/lab -e HOME=/cache \
+  -e DLSS5_TEST_X64=/lab/fake-host64.exe dlss5-tests xvfb-run -a python test_all.py
+```
+
+The suite still stops at the first Windows-only section there. To see every
+section, run a copy rewritten so each top-level statement catches its own
+exception and prints it as a `FAIL` line; compare base and change the same
+way.
 
 ## Phases
 
@@ -108,19 +142,19 @@ whole suite should run; that has not been checked yet.
 
 ### 1. Identity
 
-- [ ] Repoint `core/update.py` `REPO`, `core/community.py` `FEED_URL`,
+- [x] Repoint `core/update.py` `REPO`, `core/community.py` `FEED_URL`,
       `core/ui/vrpage.py`, `version_info.txt`, `.github/scripts/*`, README
       verification and roles.
-- [ ] README: a fork notice with credit to upstream; NOTICE and LICENSE
+- [x] README: a fork notice with credit to upstream; NOTICE and LICENSE
       keep the original copyright and add ours.
-- [ ] SECURITY.md: private advisories on this repository only.
-- [ ] Compatibility results stop committing to `main` (87% of upstream's
+- [x] SECURITY.md: private advisories on this repository only.
+- [x] Compatibility results stop committing to `main` (87% of upstream's
       history is that bot): `compatibility.json` is published with the
       Pages site, read by the client from there (see Decisions).
-- [ ] Release workflow: pinned PyInstaller and certifi, actions by SHA,
+- [x] Release workflow: pinned PyInstaller and certifi, actions by SHA,
       signing off until this fork has its own SignPath project.
 
-### 2. Tooling and behaviour-neutral clean-up
+### 2. Tooling, pruning and behaviour-neutral clean-up
 
 Measured on 2026-11-26 over `core` and `dlss5_autopilot.py` (44k lines):
 basedpyright strict 14,244 errors (about 12,700 missing or unknown types),
@@ -130,12 +164,16 @@ complexity limits.
 - [ ] `pyproject.toml` with uv; dev dependencies pinned; one local gate
       command (`fix` autofixes, `check` validates read-only).
 - [ ] Full gate configuration, every check blocking (see Decisions).
+- [ ] Prune what the product, the gate and the tests do not use, before
+      spending gate work on it: upstream's maintenance scripts in `_tools/`
+      (issue triage, stats, Microsoft submissions, its agent hooks), the 184
+      user reports copied into `_tools/reports/`, `build.bat`, and the
+      top-level `test_*.py` files the pytest suite will replace. Tests that
+      import a `_tools` script keep it only if the check is worth keeping.
 - [ ] One `ruff format` commit, listed in `.git-blame-ignore-revs`.
 - [ ] Ruff safe autofixes applied.
 - [ ] `core/diagnose`: explicit imports instead of `import *` and the
       `globals()` re-export.
-- [ ] Type annotations until basedpyright reports only findings that need
-      a behaviour change; those are listed for phase 4.
 - [ ] import-linter contracts written; violations listed for phase 4.
 - [ ] `AGENTS.md` (and a `CLAUDE.md` that points to it): layout, the gate
       command, when each check is needed, autofix first.
@@ -145,18 +183,31 @@ complexity limits.
 - [ ] pytest scaffold, fixtures for a game folder and an isolated HOME and
       cache; the 64-bit PE fixture built by `_tools/fake_pe.py`, never a
       file on someone's disk.
+- [ ] Every test has a timeout (`pytest-timeout`): a low default for all,
+      raised only where a test needs it, with the reason beside it. A hung
+      test fails with its stack instead of stopping the suite.
 - [ ] `test_all.py` sections moved to `tests/` module by module; source
-      text checks rewritten or dropped.
+      text checks rewritten or dropped. The tests describe what the tool
+      does for the user (the route it picks, the files it writes, backs up
+      and restores, what it reports), not how the code does it: a check that
+      pins an implementation detail is dropped, since the code under it may
+      be rewritten.
 - [ ] Network replaced by local fixture archives in unit tests; a marked
       network suite for the real publishers.
-- [ ] The whole suite run once on Windows; macOS and Linux run what
-      applies.
+- [ ] Windows-only tests marked and skipped elsewhere, so macOS and Linux
+      run everything else; no test opens a window on the screen of the
+      person running it.
+- [ ] The whole suite run once on Windows, when a Windows machine is
+      available.
 - [ ] Coverage measured, floor set.
 
 ### 4. Clean-up of the remaining findings
 
 Every fix here can change behaviour, so each one comes with a test.
 
+- [ ] Triage every module by what it does for the user: keep, repair or
+      rewrite. Rewrites go module by module behind the phase 3 tests;
+      kept and repaired modules get their annotations here.
 - [ ] basedpyright findings that need a behaviour change (attributes that
       do not exist, unhandled `None`, wrong argument types).
 - [ ] `except Exception` audit: each one either narrows, logs with intent,
