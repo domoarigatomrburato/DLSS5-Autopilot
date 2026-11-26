@@ -90,6 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: read
     # Only the rebuild: the newest one has read every issue anyway, so a run
     # in progress is cancelled when the next result lands. The `file` job
     # above must never be cancelled, or a result it was about to close
