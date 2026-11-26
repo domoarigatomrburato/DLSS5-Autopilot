@@ -860,7 +860,8 @@ for the OpenGL findings.
 
 ```
 uv run poe build               a local .exe (Windows only); the release build is GitHub's
-uv run poe check               every check over the tree
+uv run poe test                the tests (no network, no window)
+uv run poe check               every check over the tree, tests included
 ```
 
 ```

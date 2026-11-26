@@ -24,3 +24,4 @@ dist-new/
 .claude/launch.json
 .claude/settings.local.json
 .venv/
+.coverage

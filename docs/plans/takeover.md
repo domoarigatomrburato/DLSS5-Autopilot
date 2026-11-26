@@ -155,13 +155,13 @@ complexity limits.
 - [x] The inherited top-level tests deleted (`test_all.py`,
       `test_clean_machine.py`, `test_reshade_ini.py`, `test_scan.py`; see
       Decisions).
-- [ ] pytest configured in `pyproject.toml` and run by `check`: strict
+- [x] pytest configured in `pyproject.toml` and run by `check`: strict
       markers (`windows`, `network`), Windows-only tests skipped elsewhere,
       the `network` ones only on request.
-- [ ] Every test has a timeout (`pytest-timeout`): a low default for all,
+- [x] Every test has a timeout (`pytest-timeout`): a low default for all,
       raised only where a test needs it, with the reason beside it. A hung
       test fails with its stack instead of stopping the suite.
-- [ ] Unit tests cannot reach the network or open a window: an unexpected
+- [x] Unit tests cannot reach the network or open a window: an unexpected
       socket or Tk root fails the test.
 - [ ] Fixtures for an isolated HOME and cache and a game folder; the
       64-bit PE fixture built by `fake_pe.py`, never a file on someone's

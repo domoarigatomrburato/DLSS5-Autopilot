@@ -18,6 +18,7 @@ dev = [
     "pytest==9.2.0",
     "pytest-cov==7.1.0",
     "pytest-timeout==2.4.0",
+    "pytest-socket==0.8.1",
     "poethepoet==0.49.0",
 ]
 build = [
@@ -43,7 +44,13 @@ sequence = [
     { cmd = "basedpyright" },
     { cmd = "vulture" },
     { cmd = "lint-imports" },
+    { cmd = """pytest --cov=core --cov=dlss5_autopilot --cov=pages
+        --cov-report=term-missing:skip-covered --cov-fail-under=0""" },
 ]
+
+[tool.poe.tasks.test]
+help = "pytest, with its arguments passed through (-k, a path, -m network): for focused runs"
+cmd = "pytest"
 
 [tool.poe.tasks.check-files]
 help = "Format, lint and type check only the given files (while the tree is not clean yet)"
@@ -60,6 +67,26 @@ help = "Build dist/dlss5-autopilot.exe with the release workflow's PyInstaller f
 cmd = """uv run --group build python -m PyInstaller --onefile --windowed --noupx
     --name dlss5-autopilot --version-file version_info.txt
     --icon dlss5-autopilot.ico --distpath dist --noconfirm dlss5_autopilot.py"""
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+    "--disable-socket",
+    "-m",
+    "not network",
+]
+xfail_strict = true
+filterwarnings = ["error"]
+# A hung test fails with its stack instead of stopping the run; raise it for
+# one test with @pytest.mark.timeout(n) and the reason beside it.
+timeout = 10
+markers = [
+    "windows: needs Windows; skipped on other platforms",
+    "network: reaches the real internet; deselected by default, run with -m network",
+]
 
 [tool.ruff]
 target-version = "py312"
@@ -78,6 +105,10 @@ ignore = [
     # Conflicts with the formatter (ruff's formatter docs).
     "ISC001",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest tests are plain asserts.
+"tests/**" = ["S101"]
 
 [tool.ruff.lint.isort]
 # A statement that imports several modules with `as` stays one statement:

@@ -38,10 +38,23 @@ false positive and the reason on the line.
 
 ## Tests
 
-The inherited top-level tests are deleted; the pytest suite grows as each
-module is triaged (see the tracker, phase 3 and 4). `python
-_tools/verdict_check.py` (the report corpus through the diagnosis) opens no
-window and runs anywhere.
+pytest, in `tests/`. `uv run poe test` runs it, and takes pytest's arguments
+for a focused run (`uv run poe test -k diagnose`, a path, `-m network`);
+`check` runs the whole suite with the coverage floor, which only rises.
+
+- A test describes what the tool does for the person using it, built from a
+  real log or a real folder where there is one. A module gets its tests
+  when it is triaged: the tracker's phases 3 and 4. Until then it has none.
+- No network, no window: both are enforced. A socket (pytest-socket) or a
+  `tkinter.Tk()` (an autouse fixture in `tests/conftest.py`) fails the test.
+  Put the logic under test behind a function that takes plain values.
+- Markers, strict: `windows` for a test that needs Windows (skipped
+  elsewhere, run by the release workflow); `network` for one that reaches the
+  real internet (deselected by default, `-m network` runs only those).
+- Every test has 10 seconds; a hung one fails with its stack. One that needs
+  longer takes `@pytest.mark.timeout(n)` with the reason on the line above.
+- `python _tools/verdict_check.py` (the report corpus through the diagnosis)
+  opens no window and runs anywhere.
 
 ## Git
 

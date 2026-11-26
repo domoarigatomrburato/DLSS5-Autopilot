@@ -22,7 +22,8 @@ uv run poe build                 a local .exe (Windows only); the release build 
 
 The development tools are pinned in `uv.lock`; set them up with `uv sync`.
 [AGENTS.md](AGENTS.md) lists the checks and when each is needed
-(`uv run poe fix`, `check-files`, `check`).
+(`uv run poe fix`, `check-files`, `check`, and `test` for the pytest suite,
+which opens no window and reaches no network).
 
 ## If you send a pull request
 
@@ -30,9 +31,10 @@ The development tools are pinned in `uv.lock`; set them up with `uv sync`.
   distinction - a protected executable is not an unwritable folder - and it
   went in.
 - **A check with it.** The suite is in `tests/` (it grows as modules are
-  triaged, see AGENTS.md); add the case your change is about, built from a
-  real log or a real folder rather than from a clean file made up for it. A rule that has never seen a
-  real input is a guess.
+  triaged, see AGENTS.md; `uv run poe test` runs it). Add the case your
+  change is about, built from a real log or a real folder rather than from a
+  clean file made up for it. A rule that has never seen a real input is a
+  guess.
 - **Leave the files you touch clean.** `uv run poe fix`, then
   `uv run poe check-files <the files>`, before every commit.
 - **Run the checks that guard what you touched.** `_tools/verdict_check.py`
