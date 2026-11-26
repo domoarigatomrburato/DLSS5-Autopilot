@@ -35,10 +35,23 @@ section current. Any coding agent picking the work up starts here.
   behaviour tests or dropped. Unit tests run offline; tests that need the
   network or Windows are marked and run where those exist.
 - **Gates mirror the IDP Quality Gates model**, translated to Python:
-  formatter and linter with autofix, a strict type checker whose existing
-  findings sit in a baseline so only new code is held to it, dead code,
-  import layering and cycles, complexity reported but not blocking, and a
-  ratchet that only grows.
+  formatter and linter with autofix, a strict type checker, dead code,
+  import layering and cycles, complexity, tests with a coverage floor.
+- **Everything blocks, nothing is grandfathered.** No type-checker
+  baseline, no report-only rules, no ratchet: every selected rule blocks
+  everywhere, and the existing findings are fixed, not recorded. Rules left
+  out of the ruff selection are left out on purpose, each with its reason
+  in `pyproject.toml`; per-line suppressions only for a confirmed false
+  positive, with the reason on the line.
+- **Clean-up order: behaviour-neutral first, then tests, then the rest.**
+  Formatting, safe autofixes, annotations and explicit imports do not change
+  behaviour and come first. Fixes that do (real type errors, broad
+  `except`, complexity splits, dead code) wait for the pytest suite and each
+  comes with a test. Until the tree is clean, a commit must leave the files
+  it touches clean under the full gate.
+- **No CI checks on GitHub for now.** The gate runs locally; GitHub Actions
+  keeps only the compatibility and release workflows. CI and branch
+  protection come once the tree is clean.
 
 ## Toolchain
 
@@ -46,13 +59,13 @@ section current. Any coding agent picking the work up starts here.
 | --- | --- | --- |
 | Environment and dev dependencies | uv, `pyproject.toml`, `uv.lock` | lockfile drift |
 | Formatting | `ruff format` | everywhere |
-| Lint | `ruff check`; the selected rule list is the ratchet, a rule joins it once its findings are fixed | selected rules everywhere |
-| Types | basedpyright, strict, with a committed baseline | new findings only |
+| Lint | `ruff check`, an explicit rule selection; each family left out says why | everywhere |
+| Types | basedpyright, strict, no baseline | everywhere |
 | Dead code | vulture, with a reviewed whitelist | everywhere |
 | Layering and cycles | import-linter (`core` never imports `core.ui`; no cycles between modules) | everywhere |
-| Complexity | ruff `C901`, `PLR0912`, `PLR0915` | report only |
+| Complexity | ruff `C901`, `PLR0912`, `PLR0915` | everywhere |
 | Tests and coverage | pytest, pytest-cov | failures; coverage floor that only rises |
-| CI | GitHub Actions on push and pull request: lint on Ubuntu, tests on Windows and Ubuntu; actions pinned by SHA; Dependabot for actions and uv | required checks |
+| CI | Later: GitHub Actions on push and pull request, lint on Ubuntu, tests on Windows and Ubuntu, actions pinned by SHA, Dependabot for actions and uv. Until then the gate runs locally | required checks, once the tree is clean |
 
 ## Running the current suite before phase 3
 
@@ -107,16 +120,23 @@ whole suite should run; that has not been checked yet.
 - [ ] Release workflow: pinned PyInstaller and certifi, actions by SHA,
       signing off until this fork has its own SignPath project.
 
-### 2. Tooling baseline
+### 2. Tooling and behaviour-neutral clean-up
 
-- [ ] `pyproject.toml` with uv; dev dependencies pinned.
+Measured on 2026-11-26 over `core` and `dlss5_autopilot.py` (44k lines):
+basedpyright strict 14,244 errors (about 12,700 missing or unknown types),
+ruff with every rule about 7,500 findings, 232 functions over the
+complexity limits.
+
+- [ ] `pyproject.toml` with uv; dev dependencies pinned; one local gate
+      command (`fix` autofixes, `check` validates read-only).
+- [ ] Full gate configuration, every check blocking (see Decisions).
 - [ ] One `ruff format` commit, listed in `.git-blame-ignore-revs`.
-- [ ] Ruff with the safe autofixes applied; starting rule list green.
-- [ ] basedpyright strict baseline committed.
-- [ ] vulture whitelist reviewed (dead code removed, not whitelisted).
-- [ ] import-linter contracts; the current violations listed as phase 6
-      work.
-- [ ] CI workflow and branch protection on `main`.
+- [ ] Ruff safe autofixes applied.
+- [ ] `core/diagnose`: explicit imports instead of `import *` and the
+      `globals()` re-export.
+- [ ] Type annotations until basedpyright reports only findings that need
+      a behaviour change; those are listed for phase 4.
+- [ ] import-linter contracts written; violations listed for phase 4.
 - [ ] `AGENTS.md` (and a `CLAUDE.md` that points to it): layout, the gate
       command, when each check is needed, autofix first.
 
@@ -129,10 +149,30 @@ whole suite should run; that has not been checked yet.
       text checks rewritten or dropped.
 - [ ] Network replaced by local fixture archives in unit tests; a marked
       network suite for the real publishers.
-- [ ] Windows CI runs the whole suite; macOS and Linux run what applies.
+- [ ] The whole suite run once on Windows; macOS and Linux run what
+      applies.
 - [ ] Coverage measured, floor set.
 
-### 4. Security
+### 4. Clean-up of the remaining findings
+
+Every fix here can change behaviour, so each one comes with a test.
+
+- [ ] basedpyright findings that need a behaviour change (attributes that
+      do not exist, unhandled `None`, wrong argument types).
+- [ ] `except Exception` audit: each one either narrows, logs with intent,
+      or goes.
+- [ ] Split `installer.install` (1,528 lines), `installer.preview` (597),
+      `installer.uninstall` (433), `diagnose.chain._analyse` (1,335) and
+      every other function over the complexity limits into named steps.
+- [ ] One version parser, one path-equality helper, one HTTP retry loop.
+- [ ] Function-level imports that dodge cycles: fix the cycle instead;
+      import-linter contracts green.
+- [ ] `core/reportui.py` and `core/compareui.py` move under `core/ui`.
+- [ ] Dead code removed (vulture clean, no whitelist entry without a
+      reason).
+- [ ] The full gate is green; CI workflow and branch protection on `main`.
+
+### 5. Security
 
 - [ ] The all-users Vulkan layer is never built from the per-user cache
       (download to an admin-only folder, or verify the ReShade setup's
@@ -147,7 +187,7 @@ whole suite should run; that has not been checked yet.
 - [ ] Compatibility list: one vote per author per game and route;
       `compat_page.py` escapes `<` as `<`.
 
-### 5. Installer correctness
+### 6. Installer correctness
 
 - [ ] Closing the window during an install waits for it or records first.
 - [ ] Files enter the record before they are written, so a partial write
@@ -162,19 +202,6 @@ whole suite should run; that has not been checked yet.
 - [ ] Layer bookkeeping compares resolved paths; unreadable settings never
       drop `vulkan_games`.
 - [ ] `sidelined` entries pass `_permitted`.
-
-### 6. Structure
-
-- [ ] Split `installer.install` (1,528 lines), `installer.preview` (597),
-      `installer.uninstall` (433) and `diagnose.chain._analyse` (1,335)
-      into named steps.
-- [ ] `core/diagnose`: explicit imports instead of `import *` and the
-      `globals()` re-export.
-- [ ] One version parser, one path-equality helper, one HTTP retry loop.
-- [ ] `except Exception` audit: each one either narrows, logs with intent,
-      or goes.
-- [ ] Function-level imports that dodge cycles: fix the cycle instead.
-- [ ] `core/reportui.py` and `core/compareui.py` move under `core/ui`.
 
 ### 7. Docs
 
