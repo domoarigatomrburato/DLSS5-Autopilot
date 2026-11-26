@@ -136,4 +136,24 @@
   <data name="SizeTerabytes" xml:space="preserve">
     <value>{0:0.#} TB</value>
   </data>
+  <!-- Executables: {0} is the file name; for a machine type, {1} is its name or hex number; for an unreadable file, {1} is the system's reason. -->
+  <data name="PeNotExecutable" xml:space="preserve">
+    <value>{0} is not a Windows executable (no MZ signature).</value>
+  </data>
+  <data name="PeNoPeHeader" xml:space="preserve">
+    <value>{0} has no PE header.</value>
+  </data>
+  <data name="PeUnsupportedMachine" xml:space="preserve">
+    <value>{0} is built for an unsupported machine type: {1}.</value>
+  </data>
+  <data name="PeCorruptHeader" xml:space="preserve">
+    <value>{0} has a damaged PE header.</value>
+  </data>
+  <data name="PeUnreadable" xml:space="preserve">
+    <value>Cannot read {0}: {1}</value>
+  </data>
+  <!-- Agility SDK: {0} is the executable's file name, {1} the version it asks for, {2} the path it exports, {3} the version Windows has. -->
+  <data name="AgilityUnmet" xml:space="preserve">
+    <value>{0} asks Windows for the Direct3D 12 Agility SDK version {1} at '{2}', which it does not ship, and this Windows has version {3}.</value>
+  </data>
 </root>

@@ -508,6 +508,10 @@ game):
 | That the Documents known folder, not `%USERPROFILE%\Documents`, is where UE3 writes | `SHGetKnownFolderPath(FOLDERID_Documents)` documentation |
 | `nvngx_dlssg.dll` / `nvngx_dlssd.dll` under an Unreal plugin path, per plugin | NVIDIA Streamline / DLSS Unreal plugin packaging |
 | Engines named in the "named in every API" list really do name every API | Inspect the libraries; NVIDIA Nsight Aftermath documentation |
+| On Windows: the hand-parsed file version equals `GetFileVersionInfo`/`VerQueryValue` on real `nvngx_dlss*.dll` files, one with two language blocks | a Windows machine |
+| On Windows: shipped games export `D3D12SDKPath` as a `const char*` (pointer, `ImageBase` subtracted) or as an inline array | `dumpbin /exports` and a hex read on a few Agility SDK games |
+| On Windows: a `WindowsApps` or `XboxGames` executable fails with `UnauthorizedAccessException` on open or first read; opening a running game's executable with `FileShare.ReadWrite \| Delete` works | a Game Pass game, installed and running |
+| On Windows: `PEHeaders` accepts an executable over 2 GB given a size capped at `int.MaxValue` | a game executable over 2 GB, or a padded copy |
 
 ## Fixtures
 
