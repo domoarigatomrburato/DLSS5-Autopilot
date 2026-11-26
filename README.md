@@ -699,7 +699,7 @@ and whether the one they picked did worse. The issue is closed as soon as it
 is read - it is a record, not a bug report - and still counts.
 
 Every shared result, by game, card, driver and build:
-[the compatibility list](https://kizzuwatnaa.github.io/DLSS5-Autopilot/) (also in the tool's **help** menu).
+[the compatibility list](https://domoarigatomrburato.github.io/DLSS5-Autopilot/) (also in the tool's **help** menu).
 
 ## Command line
 
@@ -751,7 +751,8 @@ dlss5-autopilot.exe --video ["D:\DLSS5 Player"]     set up the video player
   said yes to that (see Network access).
 - **Network access**, and nothing else: `reshade.me`,
   `raw.githubusercontent.com`, `api.github.com`, `github.com`,
-  `objects.githubusercontent.com`, `codeload.github.com`. Download URLs and
+  `objects.githubusercontent.com`, `codeload.github.com`,
+  `domoarigatomrburato.github.io` (the shared-results list). Download URLs and
   version pins are in [`core/sources.py`](core/sources.py); the video
   player's, the update check's and the shared-results list's are in
   `core/video.py`, `core/update.py` and `core/community.py`. Covers for games

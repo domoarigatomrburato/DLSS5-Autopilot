@@ -29,6 +29,8 @@ FAILS: list[str] = []
 X64 = Path(os.environ.get("DLSS5_TEST_X64",
                           r"C:\Users\Mustafa\Downloads\dlss5-feed-host64.exe"))
 SRC_DIR = Path(__file__).resolve().parent
+# A copy of the published list, kept as data for the tests that read one.
+SNAPSHOT = SRC_DIR / "tests" / "fixtures" / "compatibility-snapshot.json"
 
 
 def _diag_src() -> str:
@@ -6767,10 +6769,6 @@ check("...and name the driver behind the failures",
 check("...as a count, not as a cause",
       "is behind" not in _said and "were on driver" in _said, _said)
 
-# The published file has to exist and parse, or the first fetch 404s.
-_feed = Path(__file__).resolve().parent / "docs" / "compatibility.json"
-check("docs/compatibility.json is there and is an object",
-      isinstance(json.loads(_feed.read_text(encoding="utf8")), dict))
 check("the workflow reads the tool's own parser, not a copy of the format",
       "from core.community import parse" in
       (Path(__file__).resolve().parent / ".github" / "scripts"
@@ -6886,6 +6884,24 @@ _agg_spec = importlib.util.spec_from_file_location(
     / "compatibility.py")
 _agg = importlib.util.module_from_spec(_agg_spec)
 _agg_spec.loader.exec_module(_agg)
+
+
+def _agg_run(mod, here, page, upstream=(), repo="test/fork"):
+    """Run the aggregator with the issues of each repository stubbed in at
+    its issues() seam (`here` for `repo`, `upstream` for the fork's origin);
+    the feed lands in `page`, and is returned."""
+    mod.issues = lambda r, token: list(here if r == repo else upstream)
+    keep = {k: os.environ.get(k) for k in ("REPO", "PAGE_DIR")}
+    os.environ["REPO"], os.environ["PAGE_DIR"] = repo, str(page)
+    try:
+        mod.main()
+    finally:
+        for k, v in keep.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+    return json.loads((Path(page) / "compatibility.json").read_text(encoding="utf8"))
 _bodies = [_comm.block(_comm.record(_FakeGame(), "optiscaler", "worked",
                                     measured={"res": r, "ms": ms, "fps": f}))
            for r, ms, f in ((65, 5.2, 81), (70, 6.1, 77), (75, 6.9, 74))]
@@ -6893,10 +6909,7 @@ _bodies.append(_comm.block(_comm.record(_FakeGame(), "optiscaler", "failed",
                                         measured={"res": 25, "ms": 99.0,
                                                   "fps": 9})))
 with tempfile.TemporaryDirectory() as _td:
-    _agg.issues = lambda repo, token: [{"body": b} for b in _bodies]
-    _agg.OUT = Path(_td) / "compatibility.json"
-    _agg.main()
-    _built = json.loads(_agg.OUT.read_text(encoding="utf8"))
+    _built = _agg_run(_agg, [{"body": b} for b in _bodies], page=_td)
 _row = ((_built["games"]["rdr2.exe"]).get("measured") or {}).get("optiscaler")
 check("the published file carries the middle of what people really ran",
       _row and _row["n"] == 3 and _row["res"] == 70 and _row["ms"] == 6.1,
@@ -6925,10 +6938,7 @@ _hostile = [_comm.block({"v": 1, "exe": "hostile.exe", "game": "H",
                          "route": " optiscaler ", "driver": "616.92",
                          "result": "worked", "res": 70, "ms": 6.0})]
 with tempfile.TemporaryDirectory() as _td:
-    _agg.issues = lambda repo, token: [{"body": b} for b in _hostile]
-    _agg.OUT = Path(_td) / "compatibility.json"
-    _agg.main()                      # must not raise
-    _bad = json.loads(_agg.OUT.read_text(encoding="utf8"))
+    _bad = _agg_run(_agg, [{"body": b} for b in _hostile], page=_td)  # must not raise
 _hrow = ((_bad["games"]["hostile.exe"]).get("measured") or {})
 check("a hand-written block cannot stop the workflow",
       _hrow.get("optiscaler", {}).get("n") == 1
@@ -6939,10 +6949,8 @@ _mixed_case = [_comm.block({"v": 1, "exe": "case.exe", "game": "C",
                             "route": r, "result": "worked", "res": 70})
                for r in ("feeder", "Feeder", "FEEDER ")]
 with tempfile.TemporaryDirectory() as _td:
-    _agg.issues = lambda repo, token: [{"body": b} for b in _mixed_case]
-    _agg.OUT = Path(_td) / "compatibility.json"
-    _agg.main()
-    _case = json.loads(_agg.OUT.read_text(encoding="utf8"))["games"]["case.exe"]
+    _case = _agg_run(_agg, [{"body": b} for b in _mixed_case],
+                     page=_td)["games"]["case.exe"]
 check("one route, however it was typed into the issue",
       list(_case["routes"]) == ["feeder"]
       and _case["measured"]["feeder"]["n"] == 3, _case)
@@ -6979,8 +6987,7 @@ class _PageRead(_hp.HTMLParser):
             self.blob += d
 
 
-_real = json.loads((Path(__file__).resolve().parent / "docs"
-                    / "compatibility.json").read_text(encoding="utf8"))
+_real = json.loads(SNAPSHOT.read_text(encoding="utf8"))
 _pr = _PageRead()
 _pr.feed(_pg.render(_real))
 _pdata = json.loads(_pr.blob)
@@ -7002,15 +7009,8 @@ _pg_bodies = [{"body": _comm.block({"v": 1, "exe": "evil.exe", "result": "worked
                                     "driver": "616.64", "tool": "2.0.6"}),
                "created_at": "2026-09-23T10:00:00Z"}]
 with tempfile.TemporaryDirectory() as _td:
-    _agg.issues = lambda repo, token: _pg_bodies
-    _agg.OUT = Path(_td) / "compatibility.json"
-    os.environ["PAGE_DIR"] = str(Path(_td) / "site")
-    try:
-        _agg.main()
-    finally:
-        os.environ.pop("PAGE_DIR", None)
+    _pubd = _agg_run(_agg, _pg_bodies, page=Path(_td) / "site")
     _page = (Path(_td) / "site" / "index.html").read_text(encoding="utf8")
-    _pubd = json.loads(_agg.OUT.read_text(encoding="utf8"))
 _pr2 = _PageRead()
 _pr2.feed(_page)
 _pd2 = json.loads(_pr2.blob)
@@ -10708,7 +10708,7 @@ check("the watcher writes nothing into a game folder",
 
 
 # --- what to try next, said with its numbers --------------------------------
-_shared = json.loads((Path("docs") / "compatibility.json").read_text(encoding="utf8"))
+_shared = json.loads(SNAPSHOT.read_text(encoding="utf8"))
 _tot = community.totals(_shared)
 check("the shared file adds up across every game, not one at a time",
       _tot["games"] > 0 and _tot["reports"] > 0
@@ -16563,13 +16563,25 @@ _b205 = [
         _comm.record(_G205, "renodx", "failed"), _UNSEEN205)).split("&body=", 1)[1]},
 ]
 with tempfile.TemporaryDirectory() as _td205:
-    _agg.issues = lambda repo, token: _b205
-    _agg.OUT = Path(_td205) / "compatibility.json"
-    _agg.main()
-    _built205 = json.loads(_agg.OUT.read_text(encoding="utf8"))
+    # 414 is a number in upstream's tracker, so these are read as upstream's.
+    _built205 = _agg_run(_agg, _b205, repo=_agg.UPSTREAM, page=_td205)
 _row205 = _built205["games"]["rdr2.exe"]["routes"].get("renodx")
 check("the list leaves out an old 'failed' the tool could not see, and counts the person's word",
       _row205 == {"worked": 2, "failed": 1} and _built205["reports"] == 3, (_row205, _built205["reports"]))
+# Both repositories feed one list, and a word-of-mouth override names the
+# repository it was written for: upstream's #414 is not this fork's #414.
+with tempfile.TemporaryDirectory() as _td205:
+    _fork205 = [_b205[1], _b205[3]]       # #2 by the person, #414 unseen
+    _both205 = _agg_run(_agg, _fork205, upstream=_b205[1::2], page=_td205)
+_row205b = _both205["games"]["rdr2.exe"]["routes"].get("renodx")
+check("the list adds up the results of this repository and of the one it was forked from",
+      _row205b == {"worked": 3, "failed": 0} and _both205["reports"] == 3,
+      (_row205b, _both205["reports"]))
+with tempfile.TemporaryDirectory() as _td205:
+    _alone205 = _agg_run(_agg, [_b205[3]], page=_td205)   # this repository's own #414
+check("...and an override written for upstream's issue 414 leaves this repository's 414 alone",
+      (_agg.UPSTREAM, 414) in _agg.SAID_IN_WORDS and _alone205["reports"] == 0
+      and "rdr2.exe" not in _alone205["games"], _alone205["reports"])
 check("...but a verdict nobody mapped, or a body its reporter rewrote, still counts (#193 was a 'worked')",
       _comm.counts({"result": "worked"}, "**X** worked on the `feeder` route.\n\n"
                    "It ran, and then the game crashed - Windows recorded the fault.\n\n- api: DX11\n")
@@ -17055,7 +17067,7 @@ _spec206 = _ilu206.spec_from_file_location(
     "_agg206", SRC_DIR / ".github" / "scripts" / "compatibility.py")
 _agg = _ilu206.module_from_spec(_spec206)
 _spec206.loader.exec_module(_agg)
-_shared = json.loads((Path("docs") / "compatibility.json").read_text(encoding="utf8"))
+_shared = json.loads(SNAPSHOT.read_text(encoding="utf8"))
 
 
 class _FakeGame:
@@ -17089,10 +17101,7 @@ _b206 = ([_rec206("a.exe", "feeder", "worked")] * 10 + [_rec206("a.exe", "feeder
             _comm.block({"v": 1, "exe": "h.exe", "game": "H", "route": "Feed er!", "api": "DX11",
                          "up": "none", "driver": "616.92", "result": "worked"})])
 with tempfile.TemporaryDirectory() as _td:
-    _agg.issues = lambda repo, token: [{"body": b} for b in _b206]
-    _agg.OUT = Path(_td) / "compatibility.json"
-    _agg.main()
-    _l206 = json.loads(_agg.OUT.read_text(encoding="utf8"))
+    _l206 = _agg_run(_agg, [{"body": b} for b in _b206], page=_td)
 check("the published list counts results by the kind of game, split by route",
       _l206.get("by_class", {}).get("DX11/none", {}).get("feeder") == {"worked": 10, "failed": 30}
       and _l206["by_class"]["DX11/none"].get("standalone") == {"worked": 28, "failed": 2},

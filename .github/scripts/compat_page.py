@@ -7,8 +7,8 @@ the workflow also hands this script one row per configuration - the same
 results, kept apart instead of added up - and it writes a single static
 page for GitHub Pages:
 
-    python .github/scripts/compat_page.py              # docs/compatibility.json -> _site/
-    python .github/scripts/compat_page.py --out DIR
+    python .github/scripts/compat_page.py              # _site/compatibility.json -> _site/
+    python .github/scripts/compat_page.py --out DIR    # DIR/compatibility.json -> DIR/
 
 Run on its own it has only the per-game sums, and the page says so instead
 of offering filters it cannot apply. Everything is inline: no CDN, nothing
@@ -31,7 +31,7 @@ from core.gpu import SM_NAMES               # noqa: E402  one table of card fami
 
 # The fields of one configuration row, in the order compatibility.py keys them.
 KEYS = ("exe", "route", "build", "api", "sm", "gpu", "driver", "tool")
-REPO_URL = "https://github.com/Kizzuwatnaa/DLSS5-Autopilot"
+REPO_URL = "https://github.com/domoarigatomrburato/DLSS5-Autopilot"
 
 
 def family(sm: str) -> str:
@@ -212,11 +212,11 @@ def write(payload: dict, rows: list[dict] | None, out_dir: Path) -> Path:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--json", default=str(ROOT / "docs" / "compatibility.json"))
     ap.add_argument("--out", default=str(ROOT / "_site"))
     a = ap.parse_args()
-    payload = json.loads(Path(a.json).read_text(encoding="utf8"))
-    print(write(payload, [], Path(a.out)))
+    out = Path(a.out)
+    payload = json.loads((out / "compatibility.json").read_text(encoding="utf8"))
+    print(write(payload, [], out))
     return 0
 
 
