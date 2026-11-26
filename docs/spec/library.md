@@ -127,6 +127,13 @@ the Python reference, for what the tool keeps. Where they differ:
   folder's and there is no store pick (`executableCheck` is relative to a
   registry value and can name an anti-cheat launcher). Without the hardware
   identity (the Windows side reads it through WMI) this part is skipped.
+  The Windows `IHardwareIdentity`, in the key's order: `Win32_BaseBoard`
+  `Manufacturer`, `SerialNumber`; `Win32_BIOS` `Manufacturer`,
+  `SerialNumber`; the volume serial of `C:` from `GetVolumeInformationW`,
+  uppercase hex without leading zeros; `Win32_VideoController`
+  `PNPDeviceID`; `Win32_Processor` `Manufacturer`, `ProcessorId`, `Name`.
+  Each WMI value is the first instance's string; any failure means no
+  identity (null), never an exception.
 
 The plan's list is Steam, Epic, GOG, EA, Ubisoft, Battle.net, Rockstar and
 Xbox. Amazon and Heroic are in the reference (`README.md:112`) and stay,
