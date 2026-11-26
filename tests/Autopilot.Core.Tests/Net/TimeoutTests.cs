@@ -115,31 +115,33 @@ public sealed class TimeoutTests(TestContext testContext)
     [TestMethod]
     public async Task A_download_timeout_may_not_be_raised()
     {
-        using TestBed bed = new(testContext);
+        using CacheBed bed = new(testContext);
 
-        await Assert.ThrowsExactlyAsync<ArgumentOutOfRangeException>(() => bed.Stream(Url, options: new FileRequest { Timeout = TimeSpan.FromHours(3) }));
+        await Assert.ThrowsExactlyAsync<ArgumentOutOfRangeException>(() => bed.Fetch(new FileRequest { Timeout = TimeSpan.FromHours(3) }));
 
         Assert.IsEmpty(bed.Server.Requests);
+        Assert.IsEmpty(bed.Files.Cached);
     }
 
     [TestMethod]
     public async Task A_download_limit_may_not_be_raised_past_two_gibibytes()
     {
-        using TestBed bed = new(testContext);
+        using CacheBed bed = new(testContext);
 
-        await Assert.ThrowsExactlyAsync<ArgumentOutOfRangeException>(() => bed.Stream(Url, options: new FileRequest { MaxBytes = (2L << 30) + 1 }));
+        await Assert.ThrowsExactlyAsync<ArgumentOutOfRangeException>(() => bed.Fetch(new FileRequest { MaxBytes = (2L << 30) + 1 }));
 
         Assert.IsEmpty(bed.Server.Requests);
+        Assert.IsEmpty(bed.Files.Cached);
     }
 
     [TestMethod]
     public async Task A_download_may_be_allowed_up_to_two_gibibytes()
     {
-        using TestBed bed = new(testContext);
-        bed.Server.AnswerBytes(Url, [1, 2, 3]);
+        using CacheBed bed = new(testContext);
+        bed.Server.AnswerBytes(CacheBed.Url, [1, 2, 3]);
 
-        long size = await bed.Stream(Url, options: new FileRequest { MaxBytes = 2L << 30 });
+        CachedFile file = await bed.Fetch(new FileRequest { MaxBytes = 2L << 30 });
 
-        Assert.AreEqual(3, size);
+        Assert.AreEqual(3, file.Size);
     }
 }

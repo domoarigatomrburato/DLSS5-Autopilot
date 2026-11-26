@@ -80,12 +80,13 @@ public sealed class FailureTests(TestContext testContext)
     [TestMethod]
     public async Task A_connection_dropped_mid_body_is_cut()
     {
-        using TestBed bed = new(testContext, TestBed.SingleAttempt);
-        bed.Server.BreakBody(Url);
+        using CacheBed bed = new(testContext, TestBed.SingleAttempt);
+        bed.Server.BreakBody(CacheBed.Url);
 
-        NetException failure = await bed.StreamFails(Url);
+        NetException failure = await bed.FetchFails();
 
         Assert.AreEqual(NetErrorKind.Cut, failure.Kind);
+        Assert.IsEmpty(bed.Files.Cached);
     }
 
     private async Task<NetException> FailWith(Exception thrown)

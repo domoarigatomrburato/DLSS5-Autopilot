@@ -23,6 +23,9 @@ internal sealed class TestBed : IDisposable
     /// <summary>One attempt only, so failure tests need no clock.</summary>
     public static NetOptions SingleAttempt => new("1.2.3") { RetryWaits = [] };
 
+    /// <summary>Three attempts with no wait between them, for tests about what each attempt asks.</summary>
+    public static NetOptions ImmediateRetries => new("1.2.3") { RetryWaits = [TimeSpan.Zero, TimeSpan.Zero] };
+
     public FakeTimeProvider Time { get; } = new(new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero));
 
     public DateTimeOffset Start { get; }
@@ -42,6 +45,9 @@ internal sealed class TestBed : IDisposable
     /// <summary>When each request reached the server, in seconds since the test began.</summary>
     public double[] RequestSeconds => [.. Server.Requests.Select(request => (request.At - Start).TotalSeconds)];
 
+    /// <summary>The <c>Range</c> header of each request, in order: <see langword="null"/> when it asked for the whole file.</summary>
+    public string?[] RequestRanges => [.. Server.Requests.Select(request => request.Range?.ToString())];
+
     /// <summary>Moves the clock by each step in turn, so timers set along the way fire in order.</summary>
     public void Advance(params double[] seconds)
     {
@@ -60,45 +66,10 @@ internal sealed class TestBed : IDisposable
     public Task<NetException> GetTextFails(string url, TextRequest? options = null, HostAllowlist? hosts = null) =>
         Assert.ThrowsAsync<NetException>(() => GetText(url, options, hosts));
 
-    public Task<long> Stream(string url, PartFile? part = null, FileRequest? options = null, IProgress<DownloadProgress>? progress = null) =>
-        Client.StreamToAsync(new(url), Hosts, (part ?? new()).Open, options, progress, _cancellation);
-
-    public Task<NetException> StreamFails(string url, PartFile? part = null, FileRequest? options = null) =>
-        Assert.ThrowsAsync<NetException>(() => Stream(url, part, options));
-
     public void Dispose()
     {
         Client.Dispose();
         Directory.Delete(CacheRoot, recursive: true);
-    }
-}
-
-/// <summary>A stand-in for the caller's <c>.part</c> file: opening at an offset keeps that many bytes.</summary>
-internal sealed class PartFile(bool diskFull = false)
-{
-    public byte[] Content { get; private set; } = [];
-
-    public List<long> Opens { get; } = [];
-
-    public Stream Open(long offset)
-    {
-        Opens.Add(offset);
-        if (diskFull)
-        {
-            throw new IOException("There is not enough space on the disk.");
-        }
-
-        Content = Content[..(int)offset];
-        return new Appender(this);
-    }
-
-    private sealed class Appender(PartFile file) : MemoryStream
-    {
-        protected override void Dispose(bool disposing)
-        {
-            file.Content = [.. file.Content, .. ToArray()];
-            base.Dispose(disposing);
-        }
     }
 }
 

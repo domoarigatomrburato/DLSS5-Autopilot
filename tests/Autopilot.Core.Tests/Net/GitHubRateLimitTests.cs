@@ -100,14 +100,20 @@ public sealed class GitHubRateLimitTests(TestContext testContext)
     public async Task A_download_from_the_api_is_held_back_too()
     {
         const string Asset = "https://api.github.com/repos/o/r/releases/assets/1";
-        using TestBed bed = new(testContext);
-        bed.Server.Answer(Asset, HttpStatusCode.OK, "asset", ("x-ratelimit-remaining", "0"), ("x-ratelimit-reset", Epoch(bed, minutes: 60)));
+        using CacheBed bed = new(testContext);
+        await UseUpTheApi(bed, Asset);
 
-        await bed.GetText(Asset);
-        NetException failure = await bed.StreamFails(Asset);
+        NetException failure = await bed.FetchFails(url: Asset);
 
         Assert.AreEqual(NetErrorKind.RateLimited, failure.Kind);
         Assert.HasCount(1, bed.Server.Requests);
+        Assert.IsEmpty(bed.Files.Cached);
+    }
+
+    private static async Task UseUpTheApi(CacheBed bed, string url)
+    {
+        bed.Server.Answer(url, HttpStatusCode.OK, "asset", ("x-ratelimit-remaining", "0"), ("x-ratelimit-reset", Epoch(bed.Bed, minutes: 60)));
+        _ = await bed.Bed.GetText(url);
     }
 
     private static string Epoch(TestBed bed, int minutes) =>

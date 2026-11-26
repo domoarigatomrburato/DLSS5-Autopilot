@@ -73,7 +73,7 @@ public sealed class NetClient : IDisposable
     /// the file behind it; each stream is disposed at the end of its attempt.
     /// </summary>
     /// <returns>The size of the finished download.</returns>
-    public async Task<long> StreamToAsync(
+    internal async Task<long> StreamToAsync(
         Uri url,
         HostAllowlist hosts,
         Func<long, Stream> openDestination,

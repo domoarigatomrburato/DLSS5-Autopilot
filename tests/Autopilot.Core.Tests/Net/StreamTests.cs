@@ -6,21 +6,19 @@ namespace Autopilot.Core.Tests.Net;
 [TestClass]
 public sealed class StreamTests(TestContext testContext)
 {
-    private const string Url = "https://example.test/file.zip";
     private static readonly byte[] _body = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     [TestMethod]
-    public async Task A_download_lands_in_the_destination_and_reports_progress_ending_at_its_size()
+    public async Task A_download_lands_in_the_cache_and_reports_progress_ending_at_its_size()
     {
-        using TestBed bed = new(testContext);
-        bed.Server.AnswerBytes(Url, _body);
-        PartFile part = new();
+        using CacheBed bed = new(testContext);
+        bed.Server.AnswerBytes(CacheBed.Url, _body);
         ProgressLog progress = new();
 
-        long size = await bed.Stream(Url, part, progress: progress);
+        CachedFile file = await bed.Fetch(progress: progress);
 
-        Assert.AreEqual(10, size);
-        CollectionAssert.AreEqual(_body, part.Content);
+        Assert.AreEqual(10, file.Size);
+        Assert.IsTrue(CacheFiles.Holds(file.Path, _body));
         Assert.AreEqual(new DownloadProgress(10, 10), progress.Reports[^1]);
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
     }
@@ -28,11 +26,11 @@ public sealed class StreamTests(TestContext testContext)
     [TestMethod]
     public async Task A_download_of_unknown_length_still_ends_at_its_size()
     {
-        using TestBed bed = new(testContext);
-        bed.Server.AnswerUndeclared(Url, _body);
+        using CacheBed bed = new(testContext);
+        bed.Server.AnswerUndeclared(CacheBed.Url, _body);
         ProgressLog progress = new();
 
-        await bed.Stream(Url, progress: progress);
+        await bed.Fetch(progress: progress);
 
         Assert.AreEqual(new DownloadProgress(10, null), progress.Reports[0]);
         Assert.AreEqual(new DownloadProgress(10, 10), progress.Reports[^1]);
@@ -41,46 +39,37 @@ public sealed class StreamTests(TestContext testContext)
     [TestMethod]
     public async Task A_cut_download_resumes_where_it_stopped_when_the_server_allows()
     {
-        using TestBed bed = new(testContext);
+        using CacheBed bed = new(testContext, TestBed.ImmediateRetries);
         CutThenResume(bed.Server);
-        PartFile part = new();
 
-        Task<long> pending = bed.Stream(Url, part);
-        bed.Advance(1);
-        long size = await pending;
+        CachedFile file = await bed.Fetch();
 
-        Assert.AreEqual(10, size);
-        CollectionAssert.AreEqual(_body, part.Content);
-        CollectionAssert.AreEqual(new long[] { 0, 4 }, part.Opens);
+        Assert.AreEqual(10, file.Size);
+        Assert.IsTrue(CacheFiles.Holds(file.Path, _body));
     }
 
     [TestMethod]
     public async Task A_resumed_download_asks_only_for_the_rest()
     {
-        using TestBed bed = new(testContext);
+        using CacheBed bed = new(testContext, TestBed.ImmediateRetries);
         CutThenResume(bed.Server);
 
-        Task<long> pending = bed.Stream(Url);
-        bed.Advance(1);
-        await pending;
+        _ = await bed.Fetch();
 
-        Assert.IsNull(bed.Server.Requests[0].Range);
-        Assert.AreEqual("bytes=4-", bed.Server.Requests[1].Range?.ToString());
+        CollectionAssert.AreEqual(new string?[] { null, "bytes=4-" }, bed.Bed.RequestRanges);
     }
 
     [TestMethod]
     public async Task A_cut_download_starts_over_when_the_server_sends_the_whole_file()
     {
-        using TestBed bed = new(testContext);
-        bed.Server.AnswerBytes(Url, _body[..4], declaredLength: 10).AnswerBytes(Url, _body);
-        PartFile part = new();
+        using CacheBed bed = new(testContext, TestBed.ImmediateRetries);
+        bed.Server.AnswerBytes(CacheBed.Url, _body[..4], declaredLength: 10).AnswerBytes(CacheBed.Url, _body);
 
-        Task<long> pending = bed.Stream(Url, part);
-        bed.Advance(1);
-        await pending;
+        CachedFile file = await bed.Fetch();
 
-        CollectionAssert.AreEqual(_body, part.Content);
-        CollectionAssert.AreEqual(new long[] { 0, 0 }, part.Opens);
+        Assert.IsTrue(CacheFiles.Holds(file.Path, _body), "the whole file, not the first 4 bytes and then all of it");
+        Assert.AreEqual(10, file.Size);
+        CollectionAssert.AreEqual(new string?[] { null, "bytes=4-" }, bed.Bed.RequestRanges, "the server was asked to resume, and sent everything");
     }
 
     [TestMethod]
@@ -88,57 +77,53 @@ public sealed class StreamTests(TestContext testContext)
     [DataRow(HttpStatusCode.PartialContent, "bytes 2-9/10")]
     public async Task A_cut_download_starts_over_when_the_server_will_not_resume_from_its_offset(HttpStatusCode status, string range)
     {
-        using TestBed bed = new(testContext);
+        using CacheBed bed = new(testContext, TestBed.ImmediateRetries);
         CutThenRefuseToResume(bed.Server, status, range);
-        PartFile part = new();
 
-        Task<long> pending = bed.Stream(Url, part);
-        bed.Advance(1, 4);
-        long size = await pending;
+        CachedFile file = await bed.Fetch();
 
-        Assert.AreEqual(10, size);
-        CollectionAssert.AreEqual(_body, part.Content);
-        Assert.IsNull(bed.Server.Requests[2].Range, "the third attempt asks for the whole file");
+        Assert.AreEqual(10, file.Size);
+        Assert.IsTrue(CacheFiles.Holds(file.Path, _body));
+        Assert.IsNull(bed.Bed.RequestRanges[2], "the third attempt asks for the whole file");
     }
 
     [TestMethod]
-    public async Task A_download_that_stays_cut_is_reported_as_cut()
+    public async Task A_download_that_stays_cut_is_reported_as_cut_and_leaves_nothing_in_the_cache()
     {
-        using TestBed bed = new(testContext, TestBed.SingleAttempt);
-        bed.Server.AnswerBytes(Url, _body[..4], declaredLength: 10);
+        using CacheBed bed = new(testContext, TestBed.SingleAttempt);
+        bed.Server.AnswerBytes(CacheBed.Url, _body[..4], declaredLength: 10);
 
-        NetException failure = await bed.StreamFails(Url);
+        NetException failure = await bed.FetchFails();
 
         Assert.AreEqual(NetErrorKind.Cut, failure.Kind);
         Assert.AreEqual("example.test", failure.Host);
+        Assert.IsEmpty(bed.Files.Cached);
     }
 
     [TestMethod]
-    public async Task A_file_declared_larger_than_the_limit_is_refused_before_anything_is_written()
+    public async Task A_file_declared_larger_than_the_limit_is_refused_before_anything_is_kept()
     {
-        using TestBed bed = new(testContext);
-        bed.Server.AnswerBytes(Url, _body, declaredLength: (1L << 30) + 1);
-        PartFile part = new();
+        using CacheBed bed = new(testContext);
+        bed.Server.AnswerBytes(CacheBed.Url, _body, declaredLength: (1L << 30) + 1);
 
-        NetException failure = await bed.StreamFails(Url, part);
+        NetException failure = await bed.FetchFails();
 
         Assert.AreEqual(NetErrorKind.TooLarge, failure.Kind);
-        Assert.IsEmpty(part.Opens);
+        Assert.IsEmpty(bed.Files.Cached);
         Assert.HasCount(1, bed.Server.Requests, "a size limit is never retried");
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
     }
 
     [TestMethod]
-    public async Task A_file_that_grows_past_the_limit_while_streaming_is_refused()
+    public async Task A_file_that_grows_past_the_limit_while_streaming_is_refused_and_removed()
     {
-        using TestBed bed = new(testContext);
-        bed.Server.AnswerUndeclared(Url, _body);
-        PartFile part = new();
+        using CacheBed bed = new(testContext);
+        bed.Server.AnswerUndeclared(CacheBed.Url, _body);
 
-        NetException failure = await bed.StreamFails(Url, part, new FileRequest { MaxBytes = 6 });
+        NetException failure = await bed.FetchFails(new FileRequest { MaxBytes = 6 });
 
         Assert.AreEqual(NetErrorKind.TooLarge, failure.Kind);
-        Assert.IsEmpty(part.Content, "nothing past the limit is written");
+        Assert.IsEmpty(bed.Files.Cached, "the partial file is removed");
         Assert.HasCount(1, bed.Server.Requests);
     }
 
@@ -146,9 +131,9 @@ public sealed class StreamTests(TestContext testContext)
     public async Task A_text_answer_past_its_limit_is_refused()
     {
         using TestBed bed = new(testContext);
-        bed.Server.AnswerUndeclared(Url, _body);
+        bed.Server.AnswerUndeclared(CacheBed.Url, _body);
 
-        NetException failure = await bed.GetTextFails(Url, new TextRequest { MaxBytes = 5 });
+        NetException failure = await bed.GetTextFails(CacheBed.Url, new TextRequest { MaxBytes = 5 });
 
         Assert.AreEqual(NetErrorKind.TooLarge, failure.Kind);
     }
@@ -156,15 +141,14 @@ public sealed class StreamTests(TestContext testContext)
     [TestMethod]
     public async Task A_not_found_download_is_a_failure_with_its_status()
     {
-        using TestBed bed = new(testContext);
-        bed.Server.Answer(Url, HttpStatusCode.NotFound, "missing");
-        PartFile part = new();
+        using CacheBed bed = new(testContext);
+        bed.Server.Answer(CacheBed.Url, HttpStatusCode.NotFound, "missing");
 
-        NetException failure = await bed.StreamFails(Url, part);
+        NetException failure = await bed.FetchFails();
 
         Assert.AreEqual(NetErrorKind.HttpStatus, failure.Kind);
         Assert.AreEqual(new HttpStatusDetail(HttpStatusCode.NotFound), failure.Detail);
-        Assert.IsEmpty(part.Opens);
+        Assert.IsEmpty(bed.Files.Cached);
         Assert.HasCount(1, bed.Server.Requests);
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
     }
@@ -172,36 +156,42 @@ public sealed class StreamTests(TestContext testContext)
     [TestMethod]
     public async Task A_part_answer_from_the_wrong_offset_is_refused()
     {
-        using TestBed bed = new(testContext, TestBed.SingleAttempt);
-        bed.Server.AnswerBytes(Url, _body[2..], status: HttpStatusCode.PartialContent, headers: ("Content-Range", "bytes 2-9/10"));
+        using CacheBed bed = new(testContext, TestBed.SingleAttempt);
+        bed.Server.AnswerBytes(CacheBed.Url, _body[2..], status: HttpStatusCode.PartialContent, headers: ("Content-Range", "bytes 2-9/10"));
 
-        NetException failure = await bed.StreamFails(Url);
+        NetException failure = await bed.FetchFails();
 
         Assert.AreEqual(NetErrorKind.HttpStatus, failure.Kind);
         Assert.AreEqual(new HttpStatusDetail(HttpStatusCode.PartialContent), failure.Detail);
+        Assert.IsEmpty(bed.Files.Cached);
     }
 
     [TestMethod]
-    public async Task A_failed_write_to_the_destination_is_not_a_network_failure()
+    public async Task A_failed_write_is_not_a_network_failure_and_is_not_retried()
     {
-        using TestBed bed = new(testContext);
-        bed.Server.AnswerBytes(Url, _body);
+        using CacheBed bed = new(testContext);
+        bed.Server.AnswerBytes(CacheBed.Url, _body);
 
-        await Assert.ThrowsExactlyAsync<IOException>(() => bed.Stream(Url, new PartFile(diskFull: true)));
+        await FetchFailsToWrite(bed);
 
+        Assert.IsEmpty(bed.Files.Cached);
         Assert.HasCount(1, bed.Server.Requests);
         Assert.IsTrue(bed.Server.EveryBodyDisposed);
     }
 
+    // A write error that is not a full drive reaches the caller as it is.
+    private static Task<IOException> FetchFailsToWrite(CacheBed bed) =>
+        Assert.ThrowsExactlyAsync<IOException>(() => bed.Fetch(progress: new FullDrive(new IOException("could not write the file"))));
+
     /// <summary>The first answer is cut after 4 of 10 bytes; the next resumes from there with a 206.</summary>
     private static void CutThenRefuseToResume(FakeServer server, HttpStatusCode status, string range) =>
         server
-            .AnswerBytes(Url, _body[..4], declaredLength: 10)
-            .AnswerBytes(Url, status == HttpStatusCode.PartialContent ? _body[2..] : [], status: status, headers: ("Content-Range", range))
-            .AnswerBytes(Url, _body);
+            .AnswerBytes(CacheBed.Url, _body[..4], declaredLength: 10)
+            .AnswerBytes(CacheBed.Url, status == HttpStatusCode.PartialContent ? _body[2..] : [], status: status, headers: ("Content-Range", range))
+            .AnswerBytes(CacheBed.Url, _body);
 
     private static void CutThenResume(FakeServer server) =>
         server
-            .AnswerBytes(Url, _body[..4], declaredLength: 10)
-            .AnswerBytes(Url, _body[4..], status: HttpStatusCode.PartialContent, headers: ("Content-Range", "bytes 4-9/10"));
+            .AnswerBytes(CacheBed.Url, _body[..4], declaredLength: 10)
+            .AnswerBytes(CacheBed.Url, _body[4..], status: HttpStatusCode.PartialContent, headers: ("Content-Range", "bytes 4-9/10"));
 }

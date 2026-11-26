@@ -12,6 +12,9 @@ internal sealed class CacheBed : IDisposable
     public const string Name = "tool.zip";
     public const string SumsUrl = "https://example.test/SHA256SUMS";
 
+    /// <summary>A name whose extension the content check lets through, for tests about the transfer rather than the file.</summary>
+    public const string BinName = "tool.bin";
+
     private readonly CancellationToken _cancellation;
 
     public CacheBed(TestContext context, NetOptions? options = null)
@@ -49,6 +52,13 @@ internal sealed class CacheBed : IDisposable
 
     public Task<CachedFile> Download(Verification? verification = null, string name = Name, IProgress<DownloadProgress>? progress = null, CancellationToken? cancellation = null) =>
         Cache.DownloadAsync(new(Url), TestBed.Hosts, name, verification ?? CacheFixtures.ZipVerification, null, progress, cancellation ?? _cancellation);
+
+    /// <summary>Downloads <see cref="BinName"/>, checked against nothing, from <see cref="Url"/> or <paramref name="url"/>.</summary>
+    public Task<CachedFile> Fetch(FileRequest? options = null, IProgress<DownloadProgress>? progress = null, string? url = null) =>
+        Cache.DownloadAsync(new(url ?? Url), TestBed.Hosts, BinName, new NoVerification("the test is about the transfer"), options, progress, _cancellation);
+
+    public Task<NetException> FetchFails(FileRequest? options = null, string? url = null) =>
+        Assert.ThrowsAsync<NetException>(() => Fetch(options, url: url));
 
     public Task<NetException> DownloadFails(Verification? verification = null, string name = Name, IProgress<DownloadProgress>? progress = null) =>
         Assert.ThrowsAsync<NetException>(() => Download(verification, name, progress));

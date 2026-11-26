@@ -116,13 +116,14 @@ public sealed class RedirectTests(TestContext testContext)
     [TestMethod]
     public async Task An_address_on_a_host_off_the_list_is_refused_without_a_request()
     {
-        using TestBed bed = new(testContext);
+        using CacheBed bed = new(testContext);
 
-        NetException failure = await bed.StreamFails("https://evil.test/file.zip");
+        NetException failure = await bed.FetchFails(url: "https://evil.test/file.zip");
 
         Assert.AreEqual(NetErrorKind.HostNotAllowed, failure.Kind);
         Assert.AreEqual("evil.test", failure.Host);
         Assert.IsEmpty(bed.Server.Requests);
+        Assert.IsEmpty(bed.Files.Cached);
     }
 
     [TestMethod]
