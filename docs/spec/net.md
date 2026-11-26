@@ -16,7 +16,10 @@ itself, and the archive extraction behind it. Read from the reference's
   (below), before it is moved into place. For a zip that means the whole
   archive: an HTML error page saved as `.zip`, or a zip missing its central
   directory, is refused. A bad file already in the cache is fetched again.
-- **A server that hiccups is ridden out** (see "Retries").
+- **A server that hiccups is ridden out** (see "Retries"). A retried
+  download resumes where it stopped with a `Range` request when the server
+  answers 206 from that offset, and starts over otherwise: dropping 150 MB
+  on a slow line because a connection blipped is miserable.
 - **A failure is said in words.** On the last attempt the failure becomes
   an explanation that names the host and ends with what to do. The network
   kinds are:
@@ -81,8 +84,10 @@ These are all the hosts the tool talks to, by the area that passes them:
 | [library](library.md) cover art | `store.steampowered.com`, `api.steampowered.com`, `shared.fastly.steamstatic.com`, `cdn.cloudflare.steamstatic.com`, Epic's image hosts |
 | [community](community.md) feed and shared results (M8) | the project's Cloudflare Worker host, named once it is deployed |
 
-"GitHub's release-asset hosts" and "Epic's image hosts" are named exactly
-once they are verified (below); a wildcard is never used.
+"GitHub's release-asset hosts" are `release-assets.githubusercontent.com`
+(where a release download redirects today) and `objects.githubusercontent.com`
+(where it redirected before, still GitHub's). "Epic's image hosts" are named
+exactly once they are verified (below). A wildcard is never used.
 
 ## Verification
 
@@ -208,12 +213,15 @@ may lower:
 | --- | --- |
 | entries | 50,000 |
 | total expanded size | 16 GiB |
-| one entry's expansion | 200 times its compressed size, for an entry over 1 MiB; for a solid 7z block, the block's ratio |
+| one entry's expansion | 200 times its compressed size, for an entry over 1 MiB; for 7z and tar.gz, whose readers give no per-entry compressed size, the whole archive's expanded size over its file size, once over 1 MiB |
 
 - A tar.gz has no index, so its limits are enforced in one streaming pass
   into the `.part` folder, with the ratio taken over the whole archive
   (expanded size to `.tar.gz` size); a refusal deletes the `.part`.
-- A tar symbolic link or hard link is refused.
+- A tar symbolic link or hard link is refused. A pax global header (the
+  first entry of every `git archive` tarball, so of GitHub's codeload
+  archives) is metadata: counted, never written. A directory entry that names
+  the root (`./`) is skipped.
 
 **Names.** Member names and cache file names are read the way Windows reads
 them, on every host:
@@ -280,9 +288,8 @@ them, on every host:
 
 | Claim | Source |
 | --- | --- |
-| The exact host names GitHub's release downloads redirect to (`objects.githubusercontent.com`, `release-assets.githubusercontent.com` or others) | observe a redirect chain for a release asset today |
 | The host names of Epic's image URLs in the launcher's catalog cache | a real `catcache.bin` |
-| SharpCompress opens the real OptiScaler `.7z` archives, including BCJ2 filters, and reports entry sizes for solid blocks | SharpCompress docs and source; y4my4my4m's real archives |
+| SharpCompress opens the real OptiScaler `.7z` archives, including BCJ2 filters | SharpCompress source; y4my4my4m's real archives |
 | `System.Formats.Tar` exposes symbolic and hard link entries so they can be refused, and DXVK's archive has none | .NET docs; a real `dxvk-<v>.tar.gz` |
 | GitHub's `Retry-After`, `x-ratelimit-remaining` and `x-ratelimit-reset` on 403 and 429 answers | GitHub REST rate-limit docs |
 | `SocketsHttpHandler.ConnectTimeout` and a read-stall timeout built on the response stream cover the cases above | .NET docs |
