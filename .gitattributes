@@ -1,9 +1,0 @@
-# Read by Python, which does not care.
-*.py text
-*.md text
-*.json text
-*.yml text
-*.fx text
-*.ico binary
-*.png binary
-*.svg text
