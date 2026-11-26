@@ -152,7 +152,7 @@ complexity limits.
 
 ### 3. Test scaffold
 
-- [ ] The inherited top-level tests deleted (`test_all.py`,
+- [x] The inherited top-level tests deleted (`test_all.py`,
       `test_clean_machine.py`, `test_reshade_ini.py`, `test_scan.py`; see
       Decisions).
 - [ ] pytest configured in `pyproject.toml` and run by `check`: strict

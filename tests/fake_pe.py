@@ -6,14 +6,17 @@ the reading. So the tests write files Windows itself accepts: a PE32+ (or
 PE32) image with one .rsrc section holding a VS_VERSIONINFO, padded to a
 size the download check accepts as a runtime.
 
-    from fake_pe import dll
+    from tests.fake_pe import I386, dll
     Path("nvngx_dlss.dll").write_bytes(dll("3.7.20"))
-    Path("x86.dll").write_bytes(dll("310.2.1", machine=0x14C))
+    Path("x86.dll").write_bytes(dll("310.2.1", machine=I386))
 """
 
 from __future__ import annotations
 
 import struct
+
+AMD64 = 0x8664
+I386 = 0x14C
 
 
 def _utf16z(s: str) -> bytes:
@@ -39,23 +42,23 @@ def _version_info(version: str) -> bytes:
 def _resources(version: str, rva: int) -> bytes:
     """type 16 (RT_VERSION) -> id 1 -> language 0x409 -> the data."""
 
-    def directory(entry_id: int, offset: int, leaf: bool) -> bytes:
+    def directory(entry_id: int, offset: int, *, leaf: bool) -> bytes:
         return struct.pack("<IIHHHH", 0, 0, 0, 0, 0, 1) + struct.pack(
             "<II", entry_id, offset | (0 if leaf else 0x80000000)
         )
 
-    d0 = directory(16, 0x18, False)  # 0x00, entries at 0x10
-    d1 = directory(1, 0x30, False)  # 0x18
-    d2 = directory(0x409, 0x48, True)  # 0x30 -> data entry at 0x48
+    d0 = directory(16, 0x18, leaf=False)  # 0x00, entries at 0x10
+    d1 = directory(1, 0x30, leaf=False)  # 0x18
+    d2 = directory(0x409, 0x48, leaf=True)  # 0x30 -> data entry at 0x48
     info = _version_info(version)
     data_at = 0x58
     entry = struct.pack("<IIII", rva + data_at, len(info), 0, 0)
     return _align(d0 + d1 + d2 + entry + info, 8)
 
 
-def dll(version: str = "", machine: int = 0x8664, size: int = 300_000) -> bytes:
+def dll(version: str = "", machine: int = AMD64, size: int = 300_000) -> bytes:
     """A DLL image with `version` stamped in it ("" stamps none)."""
-    pe32plus = machine == 0x8664
+    pe32plus = machine == AMD64
     file_align, sect_align, rva = 0x200, 0x1000, 0x1000
     rsrc = _resources(version, rva) if version else b""
     raw = rsrc + b"\0" * ((-len(rsrc)) % file_align)

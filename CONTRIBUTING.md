@@ -22,17 +22,16 @@ uv run poe build                 a local .exe (Windows only); the release build 
 
 The development tools are pinned in `uv.lock`; set them up with `uv sync`.
 [AGENTS.md](AGENTS.md) lists the checks and when each is needed
-(`uv run poe fix`, `check-files`, `check`). `test_all.py` opens real windows:
-see AGENTS.md for how to run it headless.
+(`uv run poe fix`, `check-files`, `check`).
 
 ## If you send a pull request
 
 - **Small and about one thing.** The first outside PR (#157) was one
   distinction - a protected executable is not an unwritable folder - and it
   went in.
-- **A check with it.** The suite is `test_all.py` (moving to `tests/`); add
-  the case your change is about, built from a real log or a real folder
-  rather than from a clean file made up for it. A rule that has never seen a
+- **A check with it.** The suite is in `tests/` (it grows as modules are
+  triaged, see AGENTS.md); add the case your change is about, built from a
+  real log or a real folder rather than from a clean file made up for it. A rule that has never seen a
   real input is a guess.
 - **Leave the files you touch clean.** `uv run poe fix`, then
   `uv run poe check-files <the files>`, before every commit.

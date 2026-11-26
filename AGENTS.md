@@ -15,9 +15,8 @@ start there.
   published by `.github/workflows/compatibility.yml`. `.github/workflows/`
   holds only that and the release; no other CI yet.
 - `_tools/`: the report corpus (`reports/`, `verdict_baseline.json`) and the
-  scripts that replay it (`replay_report.py`, `verdict_check.py`, `fake_pe.py`).
-- `tests/`: fixtures for the pytest suite that replaces the top-level
-  `test_*.py` files (phase 3).
+  scripts that replay it (`replay_report.py`, `verdict_check.py`).
+- `tests/`: the pytest suite and its fixtures (`fake_pe.py` builds a PE image).
 
 ## Commands
 
@@ -39,12 +38,10 @@ false positive and the reason on the line.
 
 ## Tests
 
-`test_all.py`, `test_clean_machine.py` and `test_scan.py` create Tk windows
-(`test_scan` an invisible one, which can still take the focus): never run them
-on a desktop. Run them headless in a Linux container with Xvfb, as the
-tracker's "Running the current suite before phase 3" describes.
-`python test_reshade_ini.py` and `python _tools/verdict_check.py` (the report
-corpus through the diagnosis) open no window and run anywhere.
+The inherited top-level tests are deleted; the pytest suite grows as each
+module is triaged (see the tracker, phase 3 and 4). `python
+_tools/verdict_check.py` (the report corpus through the diagnosis) opens no
+window and runs anywhere.
 
 ## Git
 

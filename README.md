@@ -860,8 +860,7 @@ for the OpenGL findings.
 
 ```
 uv run poe build               a local .exe (Windows only); the release build is GitHub's
-python test_all.py             the whole suite
-python test_clean_machine.py   empty cache, no local files
+uv run poe check               every check over the tree
 ```
 
 ```
