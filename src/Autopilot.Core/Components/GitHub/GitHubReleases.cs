@@ -19,27 +19,31 @@ public sealed class GitHubReleases(NetClient client, TimeProvider time, ILogger<
     private readonly ReleaseResolver _resolver = new(client, time, logger);
 
     // Several components pick from the same list (the feeder's choices, wilsjo2's two builds): it is read once per run.
-    private readonly ResolutionMemory<(string Repository, int Count), ReleaseListAnswer> _lists = new();
+    private readonly ResolutionMemory<(GitHubRepository Repository, int Count), ReleaseListAnswer> _lists = new();
 
     /// <summary>The newest release that is neither a draft nor a pre-release, as GitHub names it; <see langword="null"/> when the repository has none.</summary>
     /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
     /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer.</exception>
     /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
-    public async Task<ReleaseAnswer?> GetLatestAsync(string repository, CancellationToken cancellationToken)
-    {
-        var repo = GitHubRepository.Parse(repository);
-        return await GetOneAsync(repo.Api("/latest"), token => _pages.LatestAsync(repo, token), cancellationToken);
-    }
+    public async Task<ReleaseAnswer?> GetLatestAsync(string repository, CancellationToken cancellationToken) =>
+        await GetLatestAsync(GitHubRepository.Parse(repository), cancellationToken);
+
+    /// <inheritdoc cref="GetLatestAsync(string, CancellationToken)"/>
+    internal Task<ReleaseAnswer?> GetLatestAsync(GitHubRepository repository, CancellationToken cancellationToken) =>
+        GetOneAsync(repository.Api("/latest"), token => _pages.LatestAsync(repository, token), cancellationToken);
 
     /// <summary>The release tagged <paramref name="tag"/>; <see langword="null"/> when the API says there is none.</summary>
     /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>, or the tag is empty.</exception>
     /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer.</exception>
     /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
-    public async Task<ReleaseAnswer?> GetByTagAsync(string repository, string tag, CancellationToken cancellationToken)
+    public async Task<ReleaseAnswer?> GetByTagAsync(string repository, string tag, CancellationToken cancellationToken) =>
+        await GetByTagAsync(GitHubRepository.Parse(repository), tag, cancellationToken);
+
+    /// <inheritdoc cref="GetByTagAsync(string, string, CancellationToken)"/>
+    internal async Task<ReleaseAnswer?> GetByTagAsync(GitHubRepository repository, string tag, CancellationToken cancellationToken)
     {
-        var repo = GitHubRepository.Parse(repository);
         ArgumentException.ThrowIfNullOrWhiteSpace(tag);
-        return await GetOneAsync(repo.Api("/tags/" + Uri.EscapeDataString(tag)), token => _pages.ReleaseAsync(repo, tag, token), cancellationToken);
+        return await GetOneAsync(repository.Api("/tags/" + Uri.EscapeDataString(tag)), token => _pages.ReleaseAsync(repository, tag, token), cancellationToken);
     }
 
     /// <summary>
@@ -50,40 +54,41 @@ public sealed class GitHubReleases(NetClient client, TimeProvider time, ILogger<
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="count"/> is not 1 to <see cref="MaxListCount"/>.</exception>
     /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer, or the API does not know the repository.</exception>
     /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
-    public Task<ReleaseListAnswer> GetListAsync(string repository, int count, CancellationToken cancellationToken) =>
+    public async Task<ReleaseListAnswer> GetListAsync(string repository, int count, CancellationToken cancellationToken) =>
+        await GetListAsync(GitHubRepository.Parse(repository), count, cancellationToken);
+
+    /// <inheritdoc cref="GetListAsync(string, int, CancellationToken)"/>
+    internal Task<ReleaseListAnswer> GetListAsync(GitHubRepository repository, int count, CancellationToken cancellationToken) =>
         GetListAsync(repository, count, (pages, repo, token) => pages.ListAsync(repo, count, token), cancellationToken);
 
     /// <summary>
-    /// <see cref="GetListAsync(string, int, CancellationToken)"/>, read once per run: the same answer
+    /// <see cref="GetListAsync(GitHubRepository, int, CancellationToken)"/>, read once per run: the same answer
     /// for the rest of the run once read, for the callers that pick from one list several times.
     /// </summary>
-    /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="count"/> is not 1 to <see cref="MaxListCount"/>.</exception>
     /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer, or the API does not know the repository.</exception>
     /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
-    internal Task<ReleaseListAnswer> GetListOnceAsync(string repository, int count, CancellationToken cancellationToken) =>
+    internal Task<ReleaseListAnswer> GetListOnceAsync(GitHubRepository repository, int count, CancellationToken cancellationToken) =>
         _lists.GetAsync((repository, count), token => GetListAsync(repository, count, token), cancellationToken);
 
     /// <summary>
     /// Up to <paramref name="count"/> releases, newest first, with the caller's own reading of
     /// github.com's pages when the API fails and nothing was kept.
     /// </summary>
-    /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="count"/> is not 1 to <see cref="MaxListCount"/>.</exception>
     /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer, or the API does not know the repository.</exception>
     /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
     internal async Task<ReleaseListAnswer> GetListAsync(
-        string repository,
+        GitHubRepository repository,
         int count,
         Func<ReleasePages, GitHubRepository, CancellationToken, Task<IReadOnlyList<GitHubRelease>?>> pagesFallback,
         CancellationToken cancellationToken)
     {
-        var repo = GitHubRepository.Parse(repository);
-        Uri api = ListApi(repo, count);
+        Uri api = ListApi(repository, count);
         (IReadOnlyList<GitHubRelease>? releases, ReleaseSource source) = await _resolver.ResolveAsync(
             api,
             ReleaseJson.List,
-            token => pagesFallback(_pages, repo, token),
+            token => pagesFallback(_pages, repository, token),
             cancellationToken);
         return releases is not null ? new(releases, source) : throw ReleaseResolver.StatusFailure(api, HttpStatusCode.NotFound);
     }
@@ -98,10 +103,9 @@ public sealed class GitHubReleases(NetClient client, TimeProvider time, ILogger<
         _pages.TagsOnPagesAsync(GitHubRepository.Parse(repository), pages, cancellationToken);
 
     /// <summary>The tag GitHub's <c>releases/latest</c> redirect points at; <see langword="null"/> when it names no release.</summary>
-    /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
     /// <exception cref="NetException">The redirect could not be asked.</exception>
-    internal Task<string?> GetLatestTagAsync(string repository, CancellationToken cancellationToken) =>
-        _pages.LatestTagAsync(GitHubRepository.Parse(repository), cancellationToken);
+    internal Task<string?> GetLatestTagAsync(GitHubRepository repository, CancellationToken cancellationToken) =>
+        _pages.LatestTagAsync(repository, cancellationToken);
 
     private static Uri ListApi(GitHubRepository repo, int count)
     {

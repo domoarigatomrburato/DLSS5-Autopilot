@@ -51,7 +51,7 @@ internal sealed class StandaloneComponent(GitHubReleases releases, NetClient cli
     private async Task<ComponentRelease?> ArchiveByNameAsync(CancellationToken cancellationToken)
     {
         CatalogEntry entry = ComponentCatalog.Of(ComponentIds.Standalone);
-        if (await NetFallback.OrNullAsync(releases.GetLatestTagAsync(entry.Source, cancellationToken)) is not { } tag)
+        if (await NetFallback.OrNullAsync(releases.GetLatestTagAsync(entry.Repository, cancellationToken)) is not { } tag)
         {
             return null;
         }

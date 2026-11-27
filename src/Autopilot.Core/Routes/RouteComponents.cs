@@ -54,14 +54,14 @@ public static class RouteComponents
             _ = ids.Add(ComponentIds.Reframework);
         }
 
-        return [.. ComponentCatalog.All.Select(entry => entry.Id).Where(ids.Contains)];
+        return [.. ComponentCatalog.Ids.Where(ids.Contains)];
     }
 
     /// <summary>The provider the feeder gets: the choice, LumeniteFX's kernel by default; VORT on an OpenGL game, where LumeniteFX reads no motion.</summary>
     public static MotionProvider ProviderFor(GraphicsApi api, MotionProvider? provider)
     {
         MotionProvider chosen = provider ?? MotionProvider.LumeniteKernel;
-        return api == GraphicsApi.OpenGL && chosen is MotionProvider.LumeniteKernel or MotionProvider.LumeniteQuantMotion ? MotionProvider.Vort : chosen;
+        return api == GraphicsApi.OpenGL && chosen == MotionProvider.LumeniteKernel ? MotionProvider.Vort : chosen;
     }
 
     /// <summary>Whether the executable, by name or Windows path, is one known to close itself on a ReShade DLL, which DXVK serves by default.</summary>
@@ -91,7 +91,7 @@ public static class RouteComponents
     // Providers 0 and 1 are shaders the person installs, and 5 is the feeder's own.
     private static IEnumerable<string> ProviderShaders(MotionProvider provider) => provider switch
     {
-        MotionProvider.LumeniteKernel or MotionProvider.LumeniteQuantMotion => [ComponentIds.Lumenite],
+        MotionProvider.LumeniteKernel => [ComponentIds.Lumenite],
         MotionProvider.Vort => [ComponentIds.Vort],
         _ => [],
     };

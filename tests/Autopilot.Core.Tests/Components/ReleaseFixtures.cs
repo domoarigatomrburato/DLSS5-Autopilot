@@ -10,10 +10,10 @@ namespace Autopilot.Core.Tests.Components;
 /// <c>crosire/reshade</c>'s tags, the feeder's and the OptiScaler forks' release lists (trimmed to
 /// the fields read and four assets a release), and jlrouzies' sums file of v0.8.93. Captured the
 /// same day for the other components, trimmed to the fields read: the newest release of
-/// dlss5-bridge, neural-upstream, standalone-dlssnr, REFramework and the Remix runtime, DXVK v3.1.1
-/// (with its <c>native</c> sibling), the pinned MFG unlock and ASI Loader releases, GITC-Uplift's
-/// list (a draft and a pre-release added by hand on top) with v2.1.0's sums file, and LumeniteFX's
-/// branch head.
+/// dlss5-bridge, neural-upstream, standalone-dlssnr and REFramework, DXVK v3.1.1 (with its
+/// <c>native</c> sibling), the pinned Remix runtime, MFG unlock and ASI Loader releases,
+/// GITC-Uplift's list (a draft and a pre-release added by hand on top) with v2.1.0's sums file, and
+/// LumeniteFX's branch head.
 /// </summary>
 internal static class ReleaseFixtures
 {

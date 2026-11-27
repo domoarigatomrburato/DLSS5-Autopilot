@@ -10,14 +10,29 @@ public sealed class BuildCatalog
 {
     private readonly IReadOnlyDictionary<BuildFamily, IReadOnlyList<BuildEntry>> _families;
 
-    internal BuildCatalog(IReadOnlyDictionary<BuildFamily, IReadOnlyList<BuildEntry>> families, ReleaseSource source)
+    internal BuildCatalog(IReadOnlyDictionary<BuildFamily, IReadOnlyList<BuildEntry>> families, ReleaseSource source, bool nvidiaListUnread)
     {
         _families = families;
         Source = source;
+        NvidiaListUnread = nvidiaListUnread;
     }
 
     /// <summary>Where the mirror's list came from; its notice is what the install says about it.</summary>
     public ReleaseSource Source { get; }
+
+    /// <summary>
+    /// Whether NVIDIA's own runtime list could not be read this time (its redirect failed, was
+    /// refused, or named no release), so the mirror alone serves <see cref="BuildFamily.Dlss"/>,
+    /// <see cref="BuildFamily.Dlssd"/> and <see cref="BuildFamily.Dlssg"/>.
+    /// </summary>
+    public bool NvidiaListUnread { get; }
+
+    /// <summary>
+    /// What the install's report notes when it takes a mirror <c>nvngx_dlss.dll</c>,
+    /// <c>nvngx_dlssd.dll</c> or <c>nvngx_dlssg.dll</c> because NVIDIA's list could not be read;
+    /// <see langword="null"/> when it could.
+    /// </summary>
+    public string? NvidiaListNote => NvidiaListUnread ? Texts.Text("NvidiaListUnread") : null;
 
     /// <summary>The family's builds, newest first; empty when none could be read.</summary>
     public IReadOnlyList<BuildEntry> Entries(BuildFamily family) => _families.GetValueOrDefault(family) ?? [];

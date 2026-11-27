@@ -1,3 +1,4 @@
+using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Net;
 
 namespace Autopilot.Core.Components.Mirror;
@@ -16,13 +17,20 @@ public sealed record BuildEntry(BuildFamily Family, BuildPublisher Publisher, st
     public bool IsRaw => Publisher == BuildPublisher.Nvidia;
 
     /// <summary>
-    /// The check the file taken out of the download must pass before it is placed:
-    /// NVIDIA's signature on a file of NVIDIA's the mirror republishes unchanged
-    /// (<c>nvngx_dlssnr.dll</c>, <c>nvngx_dlss.dll</c>, <c>nvngx_dlssg.dll</c>); <see langword="null"/> when
-    /// nothing beyond the download's own check applies (the RenoDX add-ons, and NVIDIA's own DLL,
-    /// whose download is that check).
+    /// The check the file taken out of the download must pass before it is placed, as the family's
+    /// mirror row says: NVIDIA's signature on a file of NVIDIA's the mirror republishes unchanged
+    /// (<c>nvngx_dlss.dll</c>, <c>nvngx_dlssd.dll</c>, <c>nvngx_dlssg.dll</c>); for an
+    /// <c>nvngx_dlssnr.dll</c> build, the digest pinned for its label (<see cref="DlssnrPins"/>), else
+    /// NVIDIA's signature; <see langword="null"/> when nothing beyond the download's own check applies
+    /// (the RenoDX add-ons, and NVIDIA's own DLL, whose download is that check).
     /// </summary>
-    public Verification? Contents => Publisher == BuildPublisher.Mirror ? MirrorFamilies.EntryOf(Family).Signer : null;
+    public Verification? Contents =>
+        Publisher != BuildPublisher.Mirror ? null : MirrorFamilies.EntryOf(Family).Contents switch
+        {
+            ContentsCheck.NvidiaSigner => CatalogEntry.NvidiaSignerCheck,
+            ContentsCheck.PinnedDigestOrNvidiaSigner => DlssnrPins.Of(Label)?.Verification ?? (Verification)CatalogEntry.NvidiaSignerCheck,
+            _ => null,
+        };
 }
 
 /// <summary>The entry chosen from a family.</summary>

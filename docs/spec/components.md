@@ -383,9 +383,11 @@ What the reference verifies, and what it does not:
   A build with a pinned digest is checked against the pin; any other must
   carry NVIDIA's signature. So a new NVIDIA build works the day it is
   published, and a new community build only after a release pins it; until
-  then picking it by hand stops the install with "<label> is a community
-  build this release has no digest for; pick another build or update the
-  tool."
+  then picking it by hand stops the install with "<label> carries neither
+  NVIDIA's signature nor a digest this release pinned; pick another build or
+  update the tool." On Auto an untrusted build is skipped like one that does
+  not fit the card, and named; when every build was skipped and one of them
+  was untrusted, the refusal names those and does not blame the card.
   - Changed from the reference: it placed any build, and the spec before
     this measurement asked for NVIDIA's signature on every build, which no
     build for RTX 20, 30 or 40 carries.

@@ -6,7 +6,7 @@ using Autopilot.Core.Net;
 
 namespace Autopilot.Core.Tests.Components.Sources;
 
-/// <summary>The add-ons taken from a repository's newest release: dlss5-bridge, neural-upstream, standalone-dlssnr, the Remix runtime.</summary>
+/// <summary>The add-ons taken from a repository's newest release (dlss5-bridge, neural-upstream, standalone-dlssnr) and the Remix runtime, from its pinned tag.</summary>
 [TestClass]
 public sealed class AddonReleaseTests(TestContext testContext)
 {
@@ -14,6 +14,7 @@ public sealed class AddonReleaseTests(TestContext testContext)
     private const string Upstream = "matiasLombo/neural-upstream";
     private const string Standalone = "kibblerz/DLSS5-Reshade-AIO";
     private const string Remix = "lunks/dxvk-remix-plus-dlssnr";
+    private static readonly string _remixTag = ComponentsBed.Api(Remix, "/tags/dlssnr-v1");
 
     [TestMethod]
     public async Task The_bridge_is_the_newest_releases_add_on_with_its_digest()
@@ -211,9 +212,9 @@ public sealed class AddonReleaseTests(TestContext testContext)
     }
 
     [TestMethod]
-    public async Task The_remix_runtime_is_checked_against_its_sums_file()
+    public async Task The_remix_runtime_is_its_pinned_tags_two_files_checked_against_its_sums_file()
     {
-        using ComponentsBed bed = new ComponentsBed(testContext).Fixture(ComponentsBed.Api(Remix, "/latest"), "remix-runtime-latest.json");
+        using ComponentsBed bed = new ComponentsBed(testContext).Fixture(_remixTag, "remix-runtime-dlssnr-v1.json");
 
         ComponentRelease release = await bed.Resolve(ComponentIds.RemixRuntime);
 
@@ -222,14 +223,15 @@ public sealed class AddonReleaseTests(TestContext testContext)
         Assert.AreSequenceEqual(
             [new SumsFileVerification(sums, "d3d9.dll"), new SumsFileVerification(sums, "remix_nvngx.dll")],
             release.Downloads.Select(download => download.Verification).ToArray());
+        Assert.AreEqual(0, bed.Server.RequestsTo(ComponentsBed.Api(Remix, "/latest")), "the fork's newest release is never asked");
     }
 
     [TestMethod]
     public async Task A_remix_runtime_without_sums_falls_back_to_the_digest_then_the_magic_bytes()
     {
-        JsonObject latest = ReleaseJsonText.Release(Remix, "dlssnr-v2", 0, "d3d9.dll", "remix_nvngx.dll");
-        latest["assets"]![0]!["digest"] = "sha256:" + new string('a', 64);
-        using ComponentsBed bed = new ComponentsBed(testContext).Json(ComponentsBed.Api(Remix, "/latest"), latest);
+        JsonObject pinned = ReleaseJsonText.Release(Remix, "dlssnr-v1", 0, "d3d9.dll", "remix_nvngx.dll");
+        pinned["assets"]![0]!["digest"] = "sha256:" + new string('a', 64);
+        using ComponentsBed bed = new ComponentsBed(testContext).Json(_remixTag, pinned);
 
         ComponentRelease release = await bed.Resolve(ComponentIds.RemixRuntime);
 
@@ -240,24 +242,37 @@ public sealed class AddonReleaseTests(TestContext testContext)
     [TestMethod]
     public async Task A_remix_release_without_both_files_is_a_changed_layout()
     {
-        using ComponentsBed bed = new ComponentsBed(testContext).Json(
-            ComponentsBed.Api(Remix, "/latest"),
-            ReleaseJsonText.Release(Remix, "capifix31", 0, "rtx-remix-for-x64-games-83-b687a4f-release.zip", "d3d9.dll"));
+        using ComponentsBed bed = new ComponentsBed(testContext).Json(_remixTag, ReleaseJsonText.Release(Remix, "dlssnr-v1", 0, "d3d9.dll"));
 
         ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.Resolve(ComponentIds.RemixRuntime));
 
         Assert.AreEqual(ComponentFailure.LayoutChanged, failure.Reason);
-        StringAssert.Contains(failure.Message, "capifix31 does not carry remix_nvngx.dll:", StringComparison.Ordinal);
+        StringAssert.Contains(failure.Message, "dlssnr-v1 does not carry remix_nvngx.dll:", StringComparison.Ordinal);
     }
 
     [TestMethod]
-    public async Task With_no_release_data_both_remix_files_come_by_redirect()
+    public async Task A_pinned_remix_tag_that_is_gone_says_so()
     {
-        using ComponentsBed bed = new ComponentsBed(testContext).NoReleaseData(Remix);
+        using ComponentsBed bed = new ComponentsBed(testContext).Fixture(_remixTag, "rate-limited-403.json", HttpStatusCode.NotFound);
+
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.Resolve(ComponentIds.RemixRuntime));
+
+        Assert.AreEqual(ComponentFailure.NoRelease, failure.Reason);
+        Assert.AreEqual("lunks/dxvk-remix-plus-dlssnr has no release dlssnr-v1 on GitHub, the release this tool places. Try again later.", failure.Message);
+    }
+
+    [TestMethod]
+    public async Task With_no_release_data_both_remix_files_come_from_the_pinned_tag_checked_by_magic_bytes()
+    {
+        using ComponentsBed bed = new ComponentsBed(testContext).Unreachable(_remixTag).Unreachable(ComponentsBed.Expanded(Remix, "dlssnr-v1"));
 
         ComponentRelease release = await bed.Resolve(ComponentIds.RemixRuntime);
 
-        Assert.AreSame(ComponentVersion.Latest, release.Version);
+        Assert.AreEqual("dlssnr-v1", release.Version.Label);
+        Assert.AreSequenceEqual(
+            [new Uri(ComponentsBed.Download(Remix, "dlssnr-v1", "d3d9.dll")), new Uri(ComponentsBed.Download(Remix, "dlssnr-v1", "remix_nvngx.dll"))],
+            [.. release.Downloads.Select(download => download.Url)]);
+        Assert.AreEqual(new NoVerification("lunks/dxvk-remix-plus-dlssnr: taken with no release data, so no digest is known"), release.Downloads[1].Verification);
         Assert.AreSequenceEqual(["d3d9.dll", "remix_nvngx.dll"], [.. release.Files.Select(file => file.Path)]);
     }
 

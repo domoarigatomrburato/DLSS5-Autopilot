@@ -34,6 +34,10 @@ internal static class MirrorFixtures
         return releases.ToJsonString();
     }
 
+    /// <summary>The API's release list in the opposite order, oldest first.</summary>
+    public static string ApiListReversed() =>
+        new JsonArray([.. JsonNode.Parse(ApiList())!.AsArray().Reverse().Select(release => release!.DeepClone())]).ToJsonString();
+
     /// <summary>
     /// A list of 100 releases that no longer reaches the pinned builds: the captured one without
     /// <c>renodx-dlss5-4.55</c> and <c>-4.60</c>, two newer releases of no family in front.

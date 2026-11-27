@@ -10,12 +10,12 @@ namespace Autopilot.Core.Tests.Components.Sources;
 /// <summary>OptiScaler release answers and package archives for the tests.</summary>
 internal static class OptiScalerFixtures
 {
-    public static string List(OptiScalerBuild build) => ComponentsBed.ApiList(build.Repository, OptiScalerReleases.ListedReleases);
+    public static string List(OptiScalerBuild build) => ComponentsBed.ApiList(build.Repository.ToString(), OptiScalerReleases.ListedReleases);
 
-    public static string Latest(OptiScalerBuild build) => ComponentsBed.Api(build.Repository, "/latest");
+    public static string Latest(OptiScalerBuild build) => ComponentsBed.Api(build.Repository.ToString(), "/latest");
 
     public static JsonObject Release(OptiScalerBuild build, string tag, int age, params string[] assets) =>
-        ReleaseJsonText.Release(build.Repository, tag, age, assets);
+        ReleaseJsonText.Release(build.Repository.ToString(), tag, age, assets);
 
     /// <summary>A newest release of Dagherbou's page that carries another program.</summary>
     public static JsonObject DagherbouTools() => Release(OptiScalerBuild.Default, "v0.3.0-tools", 0, "DLSSNR-Overlay-Tools.zip");
@@ -53,7 +53,7 @@ internal static class OptiScalerFixtures
         new(
             OptiScalerBuild.Wilsjo2,
             "v0.10.0",
-            new(name, new(ComponentsBed.Download(OptiScalerBuild.Wilsjo2.Repository, "v0.10.0", name)), null),
+            new(name, new(ComponentsBed.Download(OptiScalerBuild.Wilsjo2.Repository.ToString(), "v0.10.0", name)), null),
             verification,
             new(ReleaseOrigin.Api, TimeSpan.Zero));
 

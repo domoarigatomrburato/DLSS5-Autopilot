@@ -49,7 +49,7 @@ public sealed class OptiScalerReleaseTests(TestContext testContext)
 
         Assert.AreEqual(
             new SumsFileVerification(
-                new(ComponentsBed.Download(OptiScalerBuild.Jlrouzies.Repository, "v0.8.93", "OptiScaler-NR-v0.8.93-SHA256SUMS.txt")),
+                new(ComponentsBed.Download(OptiScalerBuild.Jlrouzies.Repository.ToString(), "v0.8.93", "OptiScaler-NR-v0.8.93-SHA256SUMS.txt")),
                 "OptiScaler-NR-v0.8.93.zip"),
             release.Verification);
     }
@@ -77,7 +77,7 @@ public sealed class OptiScalerReleaseTests(TestContext testContext)
 
         OptiScalerRelease release = await bed.OptiScaler.ResolveAsync(_default, bed.Cancellation);
 
-        Assert.AreEqual(new SumsFileVerification(new(ComponentsBed.Download(_default.Repository, "v0.3.0", "SHA256SUMS.txt")), "OptiScaler-DLSSNR-v0.3.0.zip"), release.Verification);
+        Assert.AreEqual(new SumsFileVerification(new(ComponentsBed.Download(_default.Repository.ToString(), "v0.3.0", "SHA256SUMS.txt")), "OptiScaler-DLSSNR-v0.3.0.zip"), release.Verification);
     }
 
     [TestMethod]

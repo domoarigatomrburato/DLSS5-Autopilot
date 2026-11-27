@@ -22,7 +22,7 @@ public sealed class OptiScalerChoiceTests(TestContext testContext)
         Assert.AreEqual("v0.10.0", release.Version.Label, "the tag is the version recorded");
         Assert.AreEqual("OptiScaler-NR-v0.10.0.zip", release.Archive.Name);
         Assert.AreEqual(
-            new SumsFileVerification(new(ComponentsBed.Download(_wilsjo2.Repository, "v0.10.0", "OptiScaler-NR-v0.10.0-SHA256SUMS.txt")), "OptiScaler-NR-v0.10.0.zip"),
+            new SumsFileVerification(new(ComponentsBed.Download(_wilsjo2.Repository.ToString(), "v0.10.0", "OptiScaler-NR-v0.10.0-SHA256SUMS.txt")), "OptiScaler-NR-v0.10.0.zip"),
             release.Verification,
             "the release's sums file comes before the API's digest");
         Assert.AreEqual(

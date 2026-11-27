@@ -5,8 +5,8 @@ using Autopilot.Core.Graphics;
 namespace Autopilot.Core.Components.Sources;
 
 /// <summary>
-/// The components taken from a repository's newest release: dlss5-bridge, neural-upstream,
-/// the Remix runtime, DXVK, REFramework. Those taken by asset name have GitHub's
+/// The components taken from a repository's newest release: dlss5-bridge, neural-upstream, DXVK,
+/// REFramework. Those taken by asset name have GitHub's
 /// <c>latest/download</c> redirect as their last resort, when neither the API, a kept answer nor
 /// the pages could answer.
 /// </summary>
@@ -14,8 +14,6 @@ internal sealed class ReleaseComponents(GitHubReleases releases)
 {
     /// <summary>The upstream add-on's name, which is load-bearing: the NGX hook only serves a module whose path holds <c>nvngx.dll</c>.</summary>
     public const string UpstreamAsset = "nvngx.dll.addon64";
-
-    public static readonly string[] RemixRuntimeFiles = [KnownFiles.D3d9, KnownFiles.RemixNgx];
 
     private static readonly ExpectedFile[] _dxvkLayout =
         [.. new[] { "x64", "x32" }.SelectMany(folder => KnownFiles.DxvkProxies.Select(name => new ExpectedFile($"{folder}/{name}")))];
@@ -34,10 +32,6 @@ internal sealed class ReleaseComponents(GitHubReleases releases)
 
     public Task<ComponentRelease> UpstreamAsync(CancellationToken cancellationToken) =>
         ReleaseAssets.ByNameAsync(releases, ComponentIds.Upstream, [UpstreamAsset], cancellationToken);
-
-    /// <summary>Both runtime files, checked against the release's sums file when it carries one.</summary>
-    public Task<ComponentRelease> RemixRuntimeAsync(CancellationToken cancellationToken) =>
-        ReleaseAssets.ByNameAsync(releases, ComponentIds.RemixRuntime, RemixRuntimeFiles, cancellationToken);
 
     /// <summary>The first <c>dxvk-*.tar.gz</c> that is not the <c>native</c> (Linux) build.</summary>
     public async Task<ComponentRelease> DxvkAsync(CancellationToken cancellationToken)

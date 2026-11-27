@@ -53,11 +53,59 @@ public enum ComponentCheck
     None,
 }
 
-/// <summary>One component of the catalog.</summary>
-/// <param name="Id">The id the install record stores.</param>
+/// <summary>
+/// The check the file taken out of a download must pass before it is placed, beside the download's
+/// own <see cref="ComponentCheck"/>: a mirror zip is checked by its release digest, the DLL inside
+/// it by this.
+/// </summary>
+public enum ContentsCheck
+{
+    /// <summary>Nothing beyond the download's own check: the download is the file, or the file inside it is taken on the download's word (the RenoDX add-ons).</summary>
+    None,
+
+    /// <summary>NVIDIA's Authenticode signature: a file of NVIDIA's the mirror republishes unchanged.</summary>
+    NvidiaSigner,
+
+    /// <summary>
+    /// The SHA-256 pinned for the build's label in the release's data (a community
+    /// <c>nvngx_dlssnr.dll</c> build, which no one signs), else NVIDIA's signature (NVIDIA's own build).
+    /// </summary>
+    PinnedDigestOrNvidiaSigner,
+}
+
+/// <summary>Where a component is taken from. <see cref="object.ToString"/> names it for messages.</summary>
+public abstract record ComponentSource
+{
+    private protected ComponentSource()
+    {
+    }
+}
+
+/// <summary>A GitHub repository: its releases, branches or raw files.</summary>
+/// <param name="Repository">The repository.</param>
+internal sealed record GitHubSource(GitHubRepository Repository) : ComponentSource
+{
+    /// <summary>The source for <c>owner/name</c>.</summary>
+    /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
+    public static GitHubSource Parse(string repository) => new(GitHubRepository.Parse(repository));
+
+    /// <summary><c>owner/name</c>.</summary>
+    public override string ToString() => Repository.ToString();
+}
+
+/// <summary>A web site that is not GitHub (ReShade's <c>reshade.me</c>).</summary>
+/// <param name="Site">The site's host name.</param>
+internal sealed record WebSource(string Site) : ComponentSource
+{
+    /// <summary>The site's host name.</summary>
+    public override string ToString() => Site;
+}
+
+/// <summary>One row of the catalog: one component from one source.</summary>
+/// <param name="Id">The id the install record stores; several rows share it when the component has several sources.</param>
 /// <param name="Publisher">Who publishes it.</param>
 /// <param name="Source">Where it is taken from: a GitHub repository, or a web site.</param>
-/// <param name="Check">How its files prove themselves.</param>
+/// <param name="Check">How the download proves itself.</param>
 /// <param name="UncheckedReason">
 /// Why a file goes in with only its magic bytes checked: always for <see cref="ComponentCheck.None"/>,
 /// and for a release that gives no digest otherwise.
@@ -66,7 +114,15 @@ public enum ComponentCheck
 /// The sums file's asset name for the sums checks, case ignored: a name, or a pattern where <c>*</c>
 /// stands for any run of characters.
 /// </param>
-public sealed record CatalogEntry(string Id, string Publisher, string Source, ComponentCheck Check, string UncheckedReason, string? SumsPattern = null)
+/// <param name="Contents">How the file taken out of the download proves itself, beside <paramref name="Check"/>.</param>
+public sealed record CatalogEntry(
+    string Id,
+    string Publisher,
+    ComponentSource Source,
+    ComponentCheck Check,
+    string UncheckedReason,
+    string? SumsPattern = null,
+    ContentsCheck Contents = ContentsCheck.None)
 {
     /// <summary>The signer NVIDIA's runtimes carry. The one place the name is written.</summary>
     internal const string NvidiaPublisher = "NVIDIA Corporation";
@@ -80,9 +136,10 @@ public sealed record CatalogEntry(string Id, string Publisher, string Source, Co
     /// </summary>
     internal SignerVerification? Signer => Check == ComponentCheck.NvidiaSigner ? NvidiaSignerCheck : null;
 
-    /// <summary>The source as a GitHub repository.</summary>
-    /// <exception cref="ArgumentException">The source is not a GitHub repository (a web site).</exception>
-    internal GitHubRepository Repository => GitHubRepository.Parse(Source);
+    /// <summary>The source as a GitHub repository, for the components taken from GitHub.</summary>
+    /// <exception cref="InvalidOperationException">The source is not on GitHub (a web site).</exception>
+    internal GitHubRepository Repository =>
+        Source is GitHubSource github ? github.Repository : throw new InvalidOperationException($"'{Id}' is not taken from GitHub but from {Source}");
 
     /// <summary>
     /// The check for <paramref name="asset"/> of <paramref name="release"/>, as this entry says: the sums
@@ -127,48 +184,81 @@ public sealed record CatalogEntry(string Id, string Publisher, string Source, Co
 }
 
 /// <summary>
-/// Every component the routes install, as data: its publisher, its source and how it is verified;
-/// the area's requests and redirects stay on <see cref="ComponentHosts.Allowlist"/>. A component cannot
-/// move to another host or lose its check without a change to this table or that list.
+/// Every component the routes install, as data, one row per source: its publisher, its source and
+/// how its files are verified; the area's requests and redirects stay on <see cref="ComponentHosts.Allowlist"/>.
+/// A component cannot move to another host or lose its check without a change to this table or that
+/// list, and no row is borrowed by another source and rewritten in code.
 /// </summary>
 public static class ComponentCatalog
 {
     private const string NoDigest = "the release data gave no digest";
     private const string Sums = "SHA256SUMS.txt";
+    private const string OptiScalerSums = "*SHA256SUMS*";
     private const string CommitArchive = "a commit's archive has no published digest; the commit is the version recorded";
+    private const string ThroughTheMirror = "NVIDIA, through the mirror";
 
-    /// <summary>Every component, in the order an install names them.</summary>
+    /// <summary>Every row, in the order an install names the components.</summary>
     public static IReadOnlyList<CatalogEntry> All { get; } =
     [
-        new(ComponentIds.ReShade, "crosire", "reshade.me", ComponentCheck.None, "no publisher sums or signature verified"),
-        new(ComponentIds.ShaderHeaders, "crosire", ComponentRepositories.ShaderHeaders, ComponentCheck.None, CommitArchive),
-        new(ComponentIds.Renodx, "Krish, through the mirror", ComponentRepositories.Mirror, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.RenodxSf, "ShortFuse, through the mirror", ComponentRepositories.Mirror, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.Dlssnr, "NVIDIA, through the mirror", ComponentRepositories.Mirror, ComponentCheck.NvidiaSigner, NoDigest),
-        new(ComponentIds.Dlss, "NVIDIA", ComponentRepositories.Nvidia, ComponentCheck.NvidiaSigner, NoDigest),
-        new(ComponentIds.Dlssd, "NVIDIA", ComponentRepositories.Nvidia, ComponentCheck.NvidiaSigner, NoDigest),
-        new(ComponentIds.Dlssg, "NVIDIA", ComponentRepositories.Nvidia, ComponentCheck.NvidiaSigner, NoDigest),
-        new(ComponentIds.Feeder, "jlrouzies-fr", ComponentRepositories.Feeder, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.Lumenite, "umar-afzaal", ComponentRepositories.Lumenite, ComponentCheck.None, CommitArchive),
-        new(ComponentIds.Vort, "vortigern11", ComponentRepositories.Vort, ComponentCheck.None, CommitArchive),
-        new(ComponentIds.Bridge, "NIGos", ComponentRepositories.Bridge, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.Upstream, "matiasLombo", ComponentRepositories.Upstream, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.Standalone, "kibblerz", ComponentRepositories.Standalone, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.Uplift, "ghostinthecamera", ComponentRepositories.Uplift, ComponentCheck.SumsRequired, NoDigest, Sums),
-        // A build that publishes sums in every release requires them (OptiScalerBuild.PublishesSums);
-        // the sums file's name varies by build.
-        new(ComponentIds.OptiScaler, "the build's publisher", ComponentRepositories.OptiScaler, ComponentCheck.SumsWhenPublished, NoDigest, "*SHA256SUMS*"),
-        new(ComponentIds.Dxvk, "doitsujin", ComponentRepositories.Dxvk, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.Reframework, "praydog", ComponentRepositories.Reframework, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.Mfg, "dashdogy", ComponentRepositories.Mfg, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.AsiLoader, "ThirteenAG", ComponentRepositories.AsiLoader, ComponentCheck.ReleaseDigest, NoDigest),
-        new(ComponentIds.RemixRuntime, "lunks", ComponentRepositories.RemixRuntime, ComponentCheck.SumsWhenPublished, NoDigest, Sums),
+        new(ComponentIds.ReShade, "crosire", new WebSource("reshade.me"), ComponentCheck.None, "no publisher sums or signature verified"),
+        new(ComponentIds.ShaderHeaders, "crosire", GitHub(ComponentRepositories.ShaderHeaders), ComponentCheck.None, CommitArchive),
+        new(ComponentIds.Renodx, "Krish, through the mirror", GitHub(ComponentRepositories.Mirror), ComponentCheck.ReleaseDigest, NoDigest),
+        new(ComponentIds.RenodxSf, "ShortFuse, through the mirror", GitHub(ComponentRepositories.Mirror), ComponentCheck.ReleaseDigest, NoDigest),
+
+        // The mirror's zips are checked by their release digest, the DLL inside by NVIDIA's signer or a pinned digest.
+        new(ComponentIds.Dlssnr, ThroughTheMirror, GitHub(ComponentRepositories.Mirror), ComponentCheck.ReleaseDigest, NoDigest, Contents: ContentsCheck.PinnedDigestOrNvidiaSigner),
+
+        // NVIDIA's own rows download the DLL itself, so the download's check is the signer.
+        new(ComponentIds.Dlss, "NVIDIA", GitHub(ComponentRepositories.Nvidia), ComponentCheck.NvidiaSigner, NoDigest),
+        new(ComponentIds.Dlss, ThroughTheMirror, GitHub(ComponentRepositories.Mirror), ComponentCheck.ReleaseDigest, NoDigest, Contents: ContentsCheck.NvidiaSigner),
+        new(ComponentIds.Dlssd, "NVIDIA", GitHub(ComponentRepositories.Nvidia), ComponentCheck.NvidiaSigner, NoDigest),
+        new(ComponentIds.Dlssd, ThroughTheMirror, GitHub(ComponentRepositories.Mirror), ComponentCheck.ReleaseDigest, NoDigest, Contents: ContentsCheck.NvidiaSigner),
+        new(ComponentIds.Dlssg, "NVIDIA", GitHub(ComponentRepositories.Nvidia), ComponentCheck.NvidiaSigner, NoDigest),
+        new(ComponentIds.Dlssg, ThroughTheMirror, GitHub(ComponentRepositories.Mirror), ComponentCheck.ReleaseDigest, NoDigest, Contents: ContentsCheck.NvidiaSigner),
+        new(ComponentIds.Feeder, "jlrouzies-fr", GitHub(ComponentRepositories.Feeder), ComponentCheck.ReleaseDigest, NoDigest),
+        new(ComponentIds.Lumenite, "umar-afzaal", GitHub(ComponentRepositories.Lumenite), ComponentCheck.None, CommitArchive),
+        new(ComponentIds.Vort, "vortigern11", GitHub(ComponentRepositories.Vort), ComponentCheck.None, CommitArchive),
+        new(ComponentIds.Bridge, "NIGos", GitHub(ComponentRepositories.Bridge), ComponentCheck.ReleaseDigest, NoDigest),
+        new(ComponentIds.Upstream, "matiasLombo", GitHub(ComponentRepositories.Upstream), ComponentCheck.ReleaseDigest, NoDigest),
+        new(ComponentIds.Standalone, "kibblerz", GitHub(ComponentRepositories.Standalone), ComponentCheck.ReleaseDigest, NoDigest),
+        new(ComponentIds.Uplift, "ghostinthecamera", GitHub(ComponentRepositories.Uplift), ComponentCheck.SumsRequired, NoDigest, Sums),
+
+        // One row per OptiScaler page (wilsjo2's two builds share theirs); jlrouzies puts a sums file in every release.
+        new(ComponentIds.OptiScaler, "Dagherbou", GitHub(ComponentRepositories.OptiScaler), ComponentCheck.SumsWhenPublished, NoDigest, OptiScalerSums),
+        new(ComponentIds.OptiScaler, "y4my4my4m", GitHub(ComponentRepositories.OptiScalerY4my4my4m), ComponentCheck.SumsWhenPublished, NoDigest, OptiScalerSums),
+        new(ComponentIds.OptiScaler, "wilsjo2", GitHub(ComponentRepositories.OptiScalerWilsjo2), ComponentCheck.SumsWhenPublished, NoDigest, OptiScalerSums),
+        new(ComponentIds.OptiScaler, "Janblade", GitHub(ComponentRepositories.OptiScalerJanblade), ComponentCheck.SumsWhenPublished, NoDigest, OptiScalerSums),
+        new(ComponentIds.OptiScaler, "jlrouzies-fr", GitHub(ComponentRepositories.OptiScalerJlrouzies), ComponentCheck.SumsRequired, NoDigest, OptiScalerSums),
+        new(ComponentIds.Dxvk, "doitsujin", GitHub(ComponentRepositories.Dxvk), ComponentCheck.ReleaseDigest, NoDigest),
+        new(ComponentIds.Reframework, "praydog", GitHub(ComponentRepositories.Reframework), ComponentCheck.ReleaseDigest, NoDigest),
+        new(ComponentIds.Mfg, "dashdogy", GitHub(ComponentRepositories.Mfg), ComponentCheck.ReleaseDigest, NoDigest),
+        new(ComponentIds.AsiLoader, "ThirteenAG", GitHub(ComponentRepositories.AsiLoader), ComponentCheck.ReleaseDigest, NoDigest),
+        new(ComponentIds.RemixRuntime, "lunks", GitHub(ComponentRepositories.RemixRuntime), ComponentCheck.SumsWhenPublished, NoDigest, Sums),
     ];
 
-    /// <summary>The component whose id is <paramref name="id"/>.</summary>
-    /// <exception cref="ArgumentException">No component has that id.</exception>
-    public static CatalogEntry Of(string id) =>
-        All.FirstOrDefault(entry => entry.Id == id) ?? throw new ArgumentException($"'{id}' is not a component", nameof(id));
+    /// <summary>Every component's id once, in the order an install names them.</summary>
+    public static IReadOnlyList<string> Ids { get; } = [.. All.Select(entry => entry.Id).Distinct(StringComparer.Ordinal)];
+
+    /// <summary>The row of the component whose id is <paramref name="id"/>, a component with one source.</summary>
+    /// <exception cref="ArgumentException">No row has that id, or several do: the caller must say which source.</exception>
+    public static CatalogEntry Of(string id)
+    {
+        CatalogEntry[] rows = [.. All.Where(entry => entry.Id == id)];
+        return rows.Length switch
+        {
+            1 => rows[0],
+            0 => throw new ArgumentException($"'{id}' is not a component", nameof(id)),
+            _ => throw new ArgumentException($"'{id}' has {rows.Length} sources; name the source", nameof(id)),
+        };
+    }
+
+    /// <summary>The row of the component <paramref name="id"/> taken from <paramref name="source"/>.</summary>
+    /// <exception cref="ArgumentException">No row has that id and source.</exception>
+    public static CatalogEntry Of(string id, ComponentSource source) =>
+        All.FirstOrDefault(entry => entry.Id == id && entry.Source == source)
+            ?? throw new ArgumentException($"'{id}' is not taken from {source}", nameof(source));
+
+    private static GitHubSource GitHub(string repository) => GitHubSource.Parse(repository);
 }
 
 /// <summary>The GitHub repositories of the components this area resolves.</summary>
@@ -184,6 +274,14 @@ internal static class ComponentRepositories
 
     /// <summary>The default OptiScaler build's repository (<c>OptiScalerBuild.Default</c>).</summary>
     public const string OptiScaler = "Dagherbou/OptiScaler_DLSSNR";
+
+    public const string OptiScalerY4my4my4m = "y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG";
+
+    /// <summary>wilsjo2's page, which carries both the standard build and the RTX 40 MFG package.</summary>
+    public const string OptiScalerWilsjo2 = "wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass";
+
+    public const string OptiScalerJanblade = "Janblade/OptiScaler-F5-DLSSNR-Multipass";
+    public const string OptiScalerJlrouzies = "jlrouzies-fr/OptiScaler-DLSSNR-PreSR-Multipass";
 
     /// <summary>ReShade's source, which publishes version tags and no installer.</summary>
     public const string ReShade = "crosire/reshade";

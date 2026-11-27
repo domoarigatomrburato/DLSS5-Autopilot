@@ -44,7 +44,10 @@ public sealed class BuildPickTests(TestContext testContext)
     public async Task An_empty_family_is_a_build_list_that_could_not_be_read()
     {
         using MirrorBed bed = new(testContext);
-        BuildCatalog catalog = await bed.ApiAnswers().Unreachable(MirrorBed.NvidiaLatest).Get();
+        BuildCatalog catalog = await bed
+            .ApiAnswers("dlssd-310.9.16", "dlssd-310.9.1", "dlssd-310.9.0", "dlssd-310.7.129", "dlssd-310.7.128")
+            .Unreachable(MirrorBed.NvidiaLatest)
+            .Get();
 
         ComponentException failure = Assert.Throws<ComponentException>(() => catalog.Pick(BuildFamily.Dlssd, null));
 
@@ -69,6 +72,6 @@ public sealed class BuildPickTests(TestContext testContext)
         BuildCatalog catalog = await MirrorBed.Captured(testContext);
 
         Assert.ContainsSingle(catalog.Candidates(catalog.Pick(BuildFamily.Renodx, "2.5")));
-        Assert.ContainsSingle(catalog.Candidates(catalog.Pick(BuildFamily.Dlssd, null)));
+        Assert.ContainsSingle(catalog.Candidates(catalog.Pick(BuildFamily.Dlssd, "310.7.128")));
     }
 }

@@ -110,7 +110,7 @@ public sealed class OptiScalerPackageTests(TestContext testContext)
     // The release's sums file: its text, or a connection that fails when null.
     private static SumsFileVerification SumsOf(ComponentsBed bed, string? text)
     {
-        string url = ComponentsBed.Download(OptiScalerBuild.Wilsjo2.Repository, "v0.10.0", "OptiScaler-NR-v0.10.0-SHA256SUMS.txt");
+        string url = ComponentsBed.Download(OptiScalerBuild.Wilsjo2.Repository.ToString(), "v0.10.0", "OptiScaler-NR-v0.10.0-SHA256SUMS.txt");
         if (text is null)
         {
             _ = bed.Unreachable(url);

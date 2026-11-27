@@ -14,9 +14,9 @@ public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<Nvid
 {
     private const string Folder = "lib/Windows_x86_64/rel";
 
-    private static readonly GitHubRepository _repository = GitHubRepository.Parse(ComponentRepositories.Nvidia);
+    private static readonly GitHubSource _source = GitHubSource.Parse(ComponentRepositories.Nvidia);
 
-    // The families the SDK ships a runtime of; each family's file name and catalog row come from its table.
+    // The families the SDK ships a runtime of; each family's file name and component id come from its table.
     private static readonly BuildFamily[] _families = [BuildFamily.Dlss, BuildFamily.Dlssd, BuildFamily.Dlssg];
 
     // An empty list is the redirect naming no release: not kept, like a failure.
@@ -24,7 +24,9 @@ public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<Nvid
 
     /// <summary>
     /// One entry per runtime, labelled <c>&lt;sdk tag&gt; (NVIDIA SDK)</c>, remembered for the process;
-    /// none when the redirect fails, and that failure is not remembered: the next call asks again.
+    /// none when the redirect fails (a refusal included: a blocked host, a downgrade) or names no
+    /// release, and that is not remembered: the next call asks again. The mirror alone then serves
+    /// the families, and the catalog says so (<see cref="BuildCatalog.NvidiaListUnread"/>).
     /// </summary>
     public async Task<IReadOnlyList<BuildEntry>> GetAsync(CancellationToken cancellationToken)
     {
@@ -46,7 +48,7 @@ public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<Nvid
     /// <exception cref="NetException">The redirect could not be asked.</exception>
     private async Task<IReadOnlyList<BuildEntry>> ResolveAsync(CancellationToken cancellationToken)
     {
-        if (await releases.GetLatestTagAsync(ComponentRepositories.Nvidia, cancellationToken) is not { } tag)
+        if (await releases.GetLatestTagAsync(_source.Repository, cancellationToken) is not { } tag)
         {
             if (logger.IsEnabled(LogLevel.Warning))
             {
@@ -61,16 +63,16 @@ public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<Nvid
         return [.. _families.Select(family => Runtime(family, tag, label))];
     }
 
-    // The family's DLL in the SDK's tree at the tag, checked by the signer of the family's catalog row.
+    // The family's DLL in the SDK's tree at the tag, checked by the signer of NVIDIA's own catalog row for it.
     private static BuildEntry Runtime(BuildFamily family, string tag, string label) =>
         new(
             family,
             BuildPublisher.Nvidia,
             tag,
             label,
-            _repository.RawFile(Uri.EscapeDataString(tag), $"{Folder}/{MirrorFamilies.NameOf(family)}"),
+            _source.Repository.RawFile(Uri.EscapeDataString(tag), $"{Folder}/{MirrorFamilies.NameOf(family)}"),
             MirrorFamilies.NameOf(family),
-            MirrorFamilies.EntryOf(family).Signer ?? throw new InvalidOperationException($"{family} is not checked by its signer"));
+            ComponentCatalog.Of(MirrorFamilies.IdOf(family), _source).Signer ?? throw new InvalidOperationException($"{family} is not checked by its signer"));
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "NVIDIA's latest-release redirect failed at {Host} ({Kind}); the mirror alone serves the DLSS runtimes this time")]
     private static partial void LogFailed(ILogger logger, string host, NetErrorKind kind);

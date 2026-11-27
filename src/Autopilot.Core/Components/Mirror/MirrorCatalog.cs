@@ -15,10 +15,15 @@ namespace Autopilot.Core.Components.Mirror;
 /// </summary>
 public sealed class MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia, ILogger<MirrorCatalog> logger)
 {
+    private static readonly GitHubRepository _repository = GitHubRepository.Parse(ComponentRepositories.Mirror);
+
     private readonly MirrorPins _pins = new(releases, logger);
     private readonly ResolutionMemory<bool, MirrorList> _memory = new(list => list.Complete);
 
-    /// <summary>Every family's builds, newest first, NVIDIA's runtimes in front of the mirror's.</summary>
+    /// <summary>
+    /// Every family's builds, newest first, NVIDIA's runtimes in front of the mirror's; with NVIDIA's
+    /// list unread, the mirror's alone, and the catalog says so.
+    /// </summary>
     /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer, or the API does not know the repository.</exception>
     /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
     public async Task<BuildCatalog> GetAsync(CancellationToken cancellationToken)
@@ -31,7 +36,7 @@ public sealed class MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia
             families[own.Key] = [.. own, .. families.GetValueOrDefault(own.Key) ?? []];
         }
 
-        return new(families, mirror.Source);
+        return new(families, mirror.Source, nvidiaListUnread: runtimes.Count == 0);
     }
 
     private async Task<MirrorList> ReadAsync(CancellationToken cancellationToken)
@@ -49,7 +54,7 @@ public sealed class MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia
     // One page of 100 from the API, else the pages walked as far as needed.
     private Task<ReleaseListAnswer> ReadListAsync(CancellationToken cancellationToken) =>
         releases.GetListAsync(
-            ComponentRepositories.Mirror,
+            _repository,
             GitHubReleases.MaxListCount,
             (pages, repo, token) => new MirrorPages(pages, repo).ReadAsync(token),
             cancellationToken);

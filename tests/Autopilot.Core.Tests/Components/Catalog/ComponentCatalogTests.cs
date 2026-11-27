@@ -5,7 +5,7 @@ using Autopilot.Core.Net;
 
 namespace Autopilot.Core.Tests.Components.Catalog;
 
-/// <summary>The catalog as data: one entry per component, its publisher, its check, and the area's hosts.</summary>
+/// <summary>The catalog as data: one row per source, its publisher, its checks, and the area's hosts.</summary>
 [TestClass]
 public sealed class ComponentCatalogTests(TestContext testContext)
 {
@@ -15,12 +15,15 @@ public sealed class ComponentCatalogTests(TestContext testContext)
 
     private static readonly string[] _others = ["dxvk", "reframework", "mfg", "asi_loader", "lumenite", "vort", "shader_headers"];
 
-    [TestMethod]
-    public void Every_component_is_listed_once()
-    {
-        string[] ids = [.. ComponentCatalog.All.Select(entry => entry.Id)];
+    private static readonly GitHubSource _nvidia = GitHubSource.Parse("NVIDIA/DLSS");
 
-        CollectionAssert.AreEquivalent(_recorded.Concat(_others).ToArray(), ids);
+    [TestMethod]
+    public void Every_component_is_listed_and_every_source_of_it_once()
+    {
+        string[] pairs = [.. ComponentCatalog.All.Select(entry => $"{entry.Id} {entry.Source}")];
+
+        CollectionAssert.AreEquivalent(_recorded.Concat(_others).ToArray(), ComponentCatalog.Ids.ToArray());
+        CollectionAssert.AllItemsAreUnique(pairs);
     }
 
     [TestMethod]
@@ -33,8 +36,7 @@ public sealed class ComponentCatalogTests(TestContext testContext)
         }
 
         Assert.AreEqual(ComponentCheck.SumsRequired, ComponentCatalog.Of("uplift").Check);
-        Assert.AreEqual(ComponentCheck.NvidiaSigner, ComponentCatalog.Of("dlssnr").Check);
-        Assert.AreEqual("umar-afzaal/LumeniteFX", ComponentCatalog.Of("lumenite").Source);
+        Assert.AreEqual("umar-afzaal/LumeniteFX", ComponentCatalog.Of("lumenite").Source.ToString());
     }
 
     [TestMethod]
@@ -48,7 +50,11 @@ public sealed class ComponentCatalogTests(TestContext testContext)
     }
 
     [TestMethod]
-    public void An_unknown_id_is_refused() => _ = Assert.ThrowsExactly<ArgumentException>(() => ComponentCatalog.Of("vulkan"));
+    public void An_unknown_id_or_source_is_refused()
+    {
+        _ = Assert.ThrowsExactly<ArgumentException>(() => ComponentCatalog.Of("vulkan"));
+        _ = Assert.ThrowsExactly<ArgumentException>(() => ComponentCatalog.Of("dlssnr", _nvidia));
+    }
 
     [TestMethod]
     public void A_component_not_checked_by_its_release_data_has_no_release_check()

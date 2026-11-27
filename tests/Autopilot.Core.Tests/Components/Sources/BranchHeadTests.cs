@@ -29,7 +29,7 @@ public sealed class BranchHeadTests(TestContext testContext)
     {
         using ComponentsBed bed = new ComponentsBed(testContext).Unreachable(LumeniteHead);
 
-        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.Sources.ResolveLumeniteAsync(MotionProvider.LumeniteKernel, bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.Sources.ResolveLumeniteAsync(bed.Cancellation));
 
         Assert.AreEqual(ComponentFailure.BranchUnavailable, failure.Reason);
         StringAssert.StartsWith(failure.Message, "The newest commit of umar-afzaal/LumeniteFX (branch mainline) could not be read: ", StringComparison.Ordinal);

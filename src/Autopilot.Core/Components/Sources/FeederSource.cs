@@ -16,6 +16,8 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
     /// <summary>How many of the newest releases are read, and the only ones an exact tag is looked for in.</summary>
     public const int ListedReleases = 15;
 
+    private static readonly GitHubRepository _repository = ComponentCatalog.Of(ComponentIds.Feeder).Repository;
+
     private readonly ResolutionMemory<FeederChoice, FeederRelease> _memory = new();
     private readonly FeederPages _pages = new(releases, logger);
 
@@ -32,7 +34,7 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
     private async Task<FeederRelease> ResolveOnceAsync(FeederChoice choice, CancellationToken cancellationToken)
     {
         // Each choice picks from the same list: it is read once per run.
-        ReleaseListAnswer list = await releases.GetListOnceAsync(ComponentRepositories.Feeder, ListedReleases, cancellationToken);
+        ReleaseListAnswer list = await releases.GetListOnceAsync(_repository, ListedReleases, cancellationToken);
         GitHubRelease[] published = [.. list.Releases.Where(release => release.Draft != true)];
         (GitHubRelease release, ReleaseSource source, string? notice) = choice.Pick switch
         {
@@ -74,7 +76,7 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
 
         // Every source answered a test build: GitHub's own "latest", else the newest of the list,
         // installed and said so rather than nothing installed.
-        ReleaseAnswer? latest = await releases.GetLatestAsync(ComponentRepositories.Feeder, cancellationToken);
+        ReleaseAnswer? latest = await releases.GetLatestAsync(_repository, cancellationToken);
         (GitHubRelease release, ReleaseSource source) = latest is not null ? (latest.Release, latest.Source) : (Newest(published), listSource);
         return (release, source, IsTestBuild(release) ? Texts.Format("FeederEveryReleaseTest", release.Tag) : null);
     }

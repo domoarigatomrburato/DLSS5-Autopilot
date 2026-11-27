@@ -36,9 +36,9 @@ public sealed class RouteComponentsTests
     public void An_opengl_game_on_the_feeder_takes_vort_never_lumenite()
     {
         AssertIds(RouteComponents.For(RouteId.Feeder, Game(GraphicsApi.OpenGL)), "reshade", "shader_headers", "renodx", "dlssnr", "dlss", "feeder", "vort");
-        Assert.AreEqual(MotionProvider.Vort, RouteComponents.ProviderFor(GraphicsApi.OpenGL, MotionProvider.LumeniteQuantMotion));
+        Assert.AreEqual(MotionProvider.Vort, RouteComponents.ProviderFor(GraphicsApi.OpenGL, MotionProvider.LumeniteKernel));
         Assert.AreEqual(MotionProvider.BuiltIn, RouteComponents.ProviderFor(GraphicsApi.OpenGL, MotionProvider.BuiltIn));
-        Assert.AreEqual(MotionProvider.LumeniteQuantMotion, RouteComponents.ProviderFor(GraphicsApi.DX11, MotionProvider.LumeniteQuantMotion));
+        Assert.AreEqual(MotionProvider.LumeniteKernel, RouteComponents.ProviderFor(GraphicsApi.DX11, null));
     }
 
     [TestMethod]

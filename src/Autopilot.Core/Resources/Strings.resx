@@ -551,6 +551,10 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <data name="RouteNoteRemixOthersRefused" xml:space="preserve">
     <value>The other routes are listed for completeness only: they install a ReShade proxy, which crashes a Remix game before it draws a frame, so installing any of them is refused.</value>
   </data>
+  <!-- A setting or install record names motion-vector provider 4, which the feeder cannot use now. -->
+  <data name="RouteProviderQuantMotion" xml:space="preserve">
+    <value>LumeniteFX renamed QuantMotion to PocketMV and the feeder does not read it yet; pick provider 3 or 5.</value>
+  </data>
   <!-- The note the route dropdown shows beside each route ("fit"). {0} in RouteFitOptiScalerUpscalerOn is "FSR" or "XeSS". -->
   <data name="RouteFitOptiScaler" xml:space="preserve">
     <value>model resolution dial: the fps lever</value>
@@ -690,6 +694,30 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <!-- {0} is the build's label. -->
   <data name="DlssnrOverridden" xml:space="preserve">
     <value>dlssnr {0} does not match your card - installed anyway</value>
+  </data>
+  <!-- DlssnrNoneMatched's {0} when no card was detected. -->
+  <data name="DlssnrNoCard" xml:space="preserve">
+    <value>your card</value>
+  </data>
+  <!-- The nvngx_dlssnr.dll trust rule: NVIDIA's signature or the digest pinned for the label. {0} is the labels skipped. -->
+  <data name="DlssnrUntrusted" xml:space="preserve">
+    <value>skipped as untrusted: {0}</value>
+  </data>
+  <!-- Every candidate was skipped and at least one failed the trust check. {0} is the card (or DlssnrNoCard), {1} every label tried, {2} the untrusted ones. -->
+  <data name="DlssnrNoneTrusted" xml:space="preserve">
+    <value>No nvngx_dlssnr build could be used for {0}. Tried: {1}. These failed the trust check (NVIDIA's signature or the digest this release pinned): {2}. Update the tool or try again later.</value>
+  </data>
+  <!-- {0} is the build's label. -->
+  <data name="DlssnrNoDigest" xml:space="preserve">
+    <value>{0} carries neither NVIDIA's signature nor a digest this release pinned; pick another build or update the tool.</value>
+  </data>
+  <!-- {0} is the build's label. -->
+  <data name="DlssnrDigestMismatch" xml:space="preserve">
+    <value>The nvngx_dlssnr.dll in build {0} does not match the digest this release pinned; pick another build or update the tool.</value>
+  </data>
+  <!-- The install's report, when it takes a mirror nvngx_dlss, nvngx_dlssd or nvngx_dlssg build because NVIDIA's own list could not be read. -->
+  <data name="NvidiaListUnread" xml:space="preserve">
+    <value>NVIDIA's list could not be read; the mirror's copy, signed by NVIDIA, was used</value>
   </data>
   <!-- ReShade: each source's reason joins the error that lists them all. {0} is an HTTP status. -->
   <data name="ReShadeNoLink" xml:space="preserve">

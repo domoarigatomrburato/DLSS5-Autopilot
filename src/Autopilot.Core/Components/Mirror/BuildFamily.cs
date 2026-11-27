@@ -21,7 +21,7 @@ public enum BuildFamily
     /// <summary><c>nvngx_dlss.dll</c>: NVIDIA's own first, then mirror tags <c>dlss-&lt;v&gt;</c>.</summary>
     Dlss,
 
-    /// <summary><c>nvngx_dlssd.dll</c>: NVIDIA's own only; the mirror's tags are not read for it.</summary>
+    /// <summary><c>nvngx_dlssd.dll</c>: NVIDIA's own first, then mirror tags <c>dlssd-&lt;v&gt;</c>.</summary>
     Dlssd,
 }
 
@@ -36,39 +36,40 @@ public enum BuildPublisher
 }
 
 /// <summary>
-/// The families in one table: which mirror tags belong to each, its catalog row, and its name as a
+/// The families in one table: which mirror tags belong to each, its component id, and its name as a
 /// person knows it (for NVIDIA's runtimes, the file's own name).
 /// </summary>
 internal static class MirrorFamilies
 {
-    // Longest prefix first: "dlssnr-" and "dlssg-" both start with "dlss", so the bare "dlss-" is tried last.
-    // dlssd has no prefix: the mirror's tags are not read for it.
-    private static readonly (BuildFamily Family, string? Prefix, string Id, string Name)[] _families =
+    private static readonly GitHubSource _mirror = GitHubSource.Parse(ComponentRepositories.Mirror);
+
+    // Longest prefix first: "dlssnr", "dlssd" and "dlssg" all start with "dlss", so the bare "dlss-" is tried last.
+    private static readonly (BuildFamily Family, string Prefix, string Id, string Name)[] _families =
     [
         (BuildFamily.Renodx, "renodx-dlss5", ComponentIds.Renodx, "renodx-dlss5"),
         (BuildFamily.RenodxSf, "renodx-dlss-SF", ComponentIds.RenodxSf, "renodx-dlss SF"),
         (BuildFamily.Dlssnr, "dlssnr", ComponentIds.Dlssnr, KnownFiles.NeuralRendering),
+        (BuildFamily.Dlssd, "dlssd", ComponentIds.Dlssd, KnownFiles.RayReconstruction),
         (BuildFamily.Dlssg, "dlssg", ComponentIds.Dlssg, KnownFiles.FrameGeneration),
         (BuildFamily.Dlss, "dlss-", ComponentIds.Dlss, KnownFiles.Dlss),
-        (BuildFamily.Dlssd, null, ComponentIds.Dlssd, KnownFiles.RayReconstruction),
     ];
 
-    /// <summary>The families the mirror serves.</summary>
-    public static IEnumerable<BuildFamily> All => Mirrored.Select(row => row.Family);
-
-    private static IEnumerable<(BuildFamily Family, string Prefix)> Mirrored =>
-        _families.Where(row => row.Prefix is not null).Select(row => (row.Family, row.Prefix!));
+    /// <summary>The families the mirror serves: every one.</summary>
+    public static IEnumerable<BuildFamily> All => _families.Select(row => row.Family);
 
     /// <summary>The family as a person knows it, for messages; for NVIDIA's runtimes, the file's name.</summary>
     public static string NameOf(BuildFamily family) => Row(family).Name;
 
-    /// <summary>The family's own catalog row.</summary>
-    public static CatalogEntry EntryOf(BuildFamily family) => ComponentCatalog.Of(Row(family).Id);
+    /// <summary>The component id the install record stores for the family's file.</summary>
+    public static string IdOf(BuildFamily family) => Row(family).Id;
+
+    /// <summary>The family's mirror row: where the mirror's zips come from and how they and the file inside are checked.</summary>
+    public static CatalogEntry EntryOf(BuildFamily family) => ComponentCatalog.Of(Row(family).Id, _mirror);
 
     /// <summary>The family of the first prefix the tag starts with, and its label: the tag minus the prefix and a leading <c>-</c>.</summary>
     public static (BuildFamily Family, string Label)? Classify(string tag)
     {
-        foreach ((BuildFamily family, string prefix) in Mirrored)
+        foreach ((BuildFamily family, string prefix, _, _) in _families)
         {
             if (tag.StartsWith(prefix, StringComparison.Ordinal))
             {
@@ -83,10 +84,10 @@ internal static class MirrorFamilies
     /// <summary>The mirror's tag for a label of <paramref name="family"/> (<c>renodx-dlss5-4.55</c>).</summary>
     public static string TagOf(BuildFamily family, string label)
     {
-        string prefix = Mirrored.Single(row => row.Family == family).Prefix;
+        string prefix = Row(family).Prefix;
         return prefix.EndsWith('-', StringComparison.Ordinal) ? prefix + label : prefix + "-" + label;
     }
 
-    private static (BuildFamily Family, string? Prefix, string Id, string Name) Row(BuildFamily family) =>
+    private static (BuildFamily Family, string Prefix, string Id, string Name) Row(BuildFamily family) =>
         Array.Find(_families, row => row.Family == family);
 }

@@ -16,22 +16,22 @@ namespace Autopilot.Core.Components.Sources;
 /// </summary>
 internal sealed class BranchSnapshots(NetClient client, TimeProvider time, ILogger logger)
 {
-    /// <summary>The four includes every LumeniteFX provider needs.</summary>
+    /// <summary>The four includes LumeniteFX's kernel needs.</summary>
     public static readonly string[] LumeniteIncludes =
         ["lumenite_Projections.fxh", "lumenite_Helpers.fxh", "lumenite_Compute.fxh", "lumenite_ColorManagement.fxh"];
 
     /// <summary>The headers the feeder's and the standalone add-on's shaders include.</summary>
     public static readonly string[] Headers = ["ReShade.fxh", "ReShadeUI.fxh", "DrawText.fxh"];
 
-    // One head per repository and branch for the run: LumeniteFX's two shaders share mainline's.
+    // One head per repository and branch for the run.
     private readonly ResolutionMemory<(GitHubRepository Repo, string Branch), (string Commit, ReleaseSource Source)> _heads = new();
 
-    /// <summary>LumeniteFX at the head of <c>mainline</c>: <paramref name="shader"/>, its includes and its texture.</summary>
-    public Task<ComponentRelease> LumeniteAsync(string shader, CancellationToken cancellationToken) =>
+    /// <summary>LumeniteFX at the head of <c>mainline</c>: <c>lumenite_Kernel.fx</c>, its includes and its texture.</summary>
+    public Task<ComponentRelease> LumeniteAsync(CancellationToken cancellationToken) =>
         ArchiveAsync(
             ComponentIds.Lumenite,
             "mainline",
-            [new("Shaders/" + shader), .. LumeniteIncludes.Select(include => new ExpectedFile(include)), new("Textures/lumenite_bluenoise256.png")],
+            [new("Shaders/lumenite_Kernel.fx"), .. LumeniteIncludes.Select(include => new ExpectedFile(include)), new("Textures/lumenite_bluenoise256.png")],
             cancellationToken);
 
     /// <summary>VORT at the head of <c>main</c>: <c>vort_Motion.fx</c>, its includes under <c>Shaders/Includes</c>, its texture.</summary>

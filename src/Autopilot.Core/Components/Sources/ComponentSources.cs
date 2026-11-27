@@ -34,13 +34,13 @@ public sealed partial class ComponentSources
             [ComponentIds.Reframework] = fromReleases.ReframeworkAsync,
             [ComponentIds.Mfg] = listed.MfgAsync,
             [ComponentIds.AsiLoader] = listed.AsiLoaderAsync,
-            [ComponentIds.RemixRuntime] = fromReleases.RemixRuntimeAsync,
+            [ComponentIds.RemixRuntime] = listed.RemixRuntimeAsync,
             [ComponentIds.Vort] = _branches.VortAsync,
             [ComponentIds.ShaderHeaders] = _branches.HeadersAsync,
         };
     }
 
-    /// <summary>The ids <see cref="ResolveAsync"/> takes; LumeniteFX has its own method, since its files depend on the provider.</summary>
+    /// <summary>The ids <see cref="ResolveAsync"/> takes; LumeniteFX has its own method.</summary>
     internal IReadOnlyCollection<string> Ids => _resolvers.Keys;
 
     /// <summary>The component <paramref name="id"/>, resolved by its rule; the same answer for the rest of the run once found.</summary>
@@ -55,20 +55,11 @@ public sealed partial class ComponentSources
         return _memory.GetAsync(id, token => LoggedAsync(resolve(token)), cancellationToken);
     }
 
-    /// <summary>LumeniteFX at its newest commit, with the files <paramref name="provider"/> needs.</summary>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="provider"/> is not one of LumeniteFX's.</exception>
+    /// <summary>LumeniteFX at its newest commit, with the files of its one provider, <see cref="MotionProvider.LumeniteKernel"/>.</summary>
     /// <exception cref="ComponentException">The branch could not be resolved to a commit.</exception>
     /// <exception cref="ReleaseDataException">The API's answer names no commit.</exception>
-    public Task<ComponentRelease> ResolveLumeniteAsync(MotionProvider provider, CancellationToken cancellationToken)
-    {
-        string shader = provider switch
-        {
-            MotionProvider.LumeniteKernel => "lumenite_Kernel.fx",
-            MotionProvider.LumeniteQuantMotion => "lumenite_QuantMotion.fx",
-            _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, "not a LumeniteFX provider"),
-        };
-        return _memory.GetAsync($"{ComponentIds.Lumenite}/{shader}", token => LoggedAsync(_branches.LumeniteAsync(shader, token)), cancellationToken);
-    }
+    public Task<ComponentRelease> ResolveLumeniteAsync(CancellationToken cancellationToken) =>
+        _memory.GetAsync(ComponentIds.Lumenite, token => LoggedAsync(_branches.LumeniteAsync(token)), cancellationToken);
 
     private async Task<ComponentRelease> LoggedAsync(Task<ComponentRelease> resolving)
     {

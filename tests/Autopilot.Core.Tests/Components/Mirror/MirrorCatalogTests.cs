@@ -9,6 +9,7 @@ public sealed class MirrorCatalogTests(TestContext testContext)
 {
     private const string PagesNotice = "GitHub's API could not be reached; this release was read from github.com's release pages instead.";
     private const string NvidiaLabel = "310.9.16 (NVIDIA SDK)";
+    private const string NvidiaListNote = "NVIDIA's list could not be read; the mirror's copy, signed by NVIDIA, was used";
 
     [TestMethod]
     public async Task Each_family_lists_its_builds_newest_first()
@@ -24,11 +25,35 @@ public sealed class MirrorCatalogTests(TestContext testContext)
     {
         BuildCatalog catalog = await MirrorBed.Captured(testContext);
 
-        // Builds that sort as equal (310.8.Lecram, 310.8.SF, 310.8.0) keep the list's order.
-        Assert.AreEqual("310.9.16-nvidia, 310.9.16, 310.8.SF-v2, 310.8.0-RTX40, 310.8.Lecram, 310.8.SF, 310.8.0", MirrorBed.Labels(catalog, BuildFamily.Dlssnr));
+        // Builds whose versions tie (310.8.SF, 310.8.Lecram, 310.8.0) go by tag, ordinal, descending.
+        Assert.AreEqual("310.9.16-nvidia, 310.9.16, 310.8.SF-v2, 310.8.0-RTX40, 310.8.SF, 310.8.Lecram, 310.8.0", MirrorBed.Labels(catalog, BuildFamily.Dlssnr));
         Assert.AreEqual(NvidiaLabel + ", 310.9.16, 310.9.1, 310.9.0, 310.8.0, 310.7.129, 310.7.128", MirrorBed.Labels(catalog, BuildFamily.Dlss));
+        Assert.AreEqual(NvidiaLabel + ", 310.9.16, 310.9.1, 310.9.0, 310.7.129, 310.7.128", MirrorBed.Labels(catalog, BuildFamily.Dlssd));
         Assert.IsTrue(catalog.Entries(BuildFamily.Dlssg).Skip(1).All(entry => entry.Tag.StartsWith("dlssg-", StringComparison.Ordinal)));
         Assert.HasCount(18, catalog.Entries(BuildFamily.Dlssg).Skip(1).ToList());
+    }
+
+    [TestMethod]
+    public async Task The_order_is_the_same_whatever_order_the_list_comes_in()
+    {
+        BuildCatalog captured = await MirrorBed.Captured(testContext);
+        BuildCatalog reversed = await Reversed();
+
+        foreach (BuildFamily family in Enum.GetValues<BuildFamily>())
+        {
+            Assert.AreEqual(MirrorBed.Labels(captured, family), MirrorBed.Labels(reversed, family), family.ToString());
+        }
+
+        Assert.AreEqual("310.9.16-nvidia, 310.9.16, 310.8.SF-v2, 310.8.0-RTX40, 310.8.SF, 310.8.Lecram, 310.8.0", MirrorBed.Labels(reversed, BuildFamily.Dlssnr));
+    }
+
+    [TestMethod]
+    public async Task Nvidias_build_stays_ahead_of_the_community_build_with_the_same_numbers()
+    {
+        foreach (BuildCatalog catalog in new[] { await MirrorBed.Captured(testContext), await Reversed() })
+        {
+            Assert.AreEqual("310.9.16-nvidia, 310.9.16", MirrorBed.Labels(catalog.Entries(BuildFamily.Dlssnr).Take(2)));
+        }
     }
 
     [TestMethod]
@@ -38,7 +63,6 @@ public sealed class MirrorCatalogTests(TestContext testContext)
 
         string[] tags = [.. Enum.GetValues<BuildFamily>().SelectMany(catalog.Entries).Select(entry => entry.Tag)];
         Assert.IsFalse(tags.Any(tag => tag.StartsWith("streamline", StringComparison.Ordinal) || tag.StartsWith("DLSS-Enabler", StringComparison.Ordinal) || tag.StartsWith("ue-dof-fix", StringComparison.Ordinal)));
-        Assert.IsFalse(tags.Any(tag => tag.StartsWith("dlssd-", StringComparison.Ordinal)), "the mirror's dlssd releases are not read");
     }
 
     [TestMethod]
@@ -58,18 +82,37 @@ public sealed class MirrorCatalogTests(TestContext testContext)
     }
 
     [TestMethod]
-    public async Task A_mirror_runtime_must_carry_nvidias_signature()
+    [DataRow("310.8.0")]
+    [DataRow("310.9.16-nvidia")]
+    public async Task Nvidias_own_dlssnr_build_must_carry_nvidias_signature(string label)
     {
         BuildCatalog catalog = await MirrorBed.Captured(testContext);
 
-        BuildEntry entry = catalog.Entries(BuildFamily.Dlssnr).Single(entry => entry.Label == "310.8.0-RTX40");
+        BuildEntry entry = catalog.Entries(BuildFamily.Dlssnr).Single(entry => entry.Label == label);
 
         Assert.AreEqual(new SignerVerification("NVIDIA Corporation"), entry.Contents);
         Assert.IsInstanceOfType<Sha256Verification>(entry.Download);
     }
 
     [TestMethod]
+    [DataRow("310.8.0-RTX40", "4b8d19bc3eff58a084f5eca7489c921501c203450169fb82ff4f649a4482ba05")]
+    [DataRow("310.8.SF", "4c5bd1171c7336b4b04fb394de51da285ab6ead6f922d7afdec163f71c319d74")]
+    [DataRow("310.8.SF-v2", "6eb209e764f39872625debd6abaf45e2bb6322f6f270f781f70c059ae30b3927")]
+    [DataRow("310.8.Lecram", "f95feb54137ea11979f9b4ec4f00afd84b5c98a5624d3388fbf6a87714a39fcc")]
+    [DataRow("310.9.16", "cdfa6c1ec784867182164c7836f324f087b5c9f374d0c9fe46f54999feabf3ed")]
+    public async Task A_community_dlssnr_build_must_match_the_digest_pinned_for_its_label(string label, string digest)
+    {
+        BuildCatalog catalog = await MirrorBed.Captured(testContext);
+
+        BuildEntry entry = catalog.Entries(BuildFamily.Dlssnr).Single(entry => entry.Label == label);
+
+        Assert.AreEqual(new Sha256Verification(digest), entry.Contents);
+        Assert.IsInstanceOfType<Sha256Verification>(entry.Download, "the zip by its release digest");
+    }
+
+    [TestMethod]
     [DataRow(BuildFamily.Dlss, "dlss-310.9.16")]
+    [DataRow(BuildFamily.Dlssd, "dlssd-310.9.16")]
     [DataRow(BuildFamily.Dlssg, "dlssg-310.9.16")]
     public async Task Nvidias_runtimes_on_the_mirror_must_carry_nvidias_signature_too(BuildFamily family, string tag)
     {
@@ -97,8 +140,10 @@ public sealed class MirrorCatalogTests(TestContext testContext)
             Assert.IsTrue(first.IsRaw);
         }
 
-        Assert.ContainsSingle(catalog.Entries(BuildFamily.Dlssd));
+        Assert.HasCount(6, catalog.Entries(BuildFamily.Dlssd));
         Assert.IsNull(catalog.Source.Notice);
+        Assert.IsFalse(catalog.NvidiaListUnread);
+        Assert.IsNull(catalog.NvidiaListNote);
     }
 
     [TestMethod]
@@ -134,23 +179,30 @@ public sealed class MirrorCatalogTests(TestContext testContext)
         BuildCatalog second = await bed.Get();
 
         Assert.AreEqual("310.9.16", first.Entries(BuildFamily.Dlss)[0].Label, "the mirror alone serves the family");
-        Assert.IsEmpty(first.Entries(BuildFamily.Dlssd));
+        Assert.AreEqual("dlssd-310.9.16", first.Entries(BuildFamily.Dlssd)[0].Tag, "ray reconstruction too");
+        Assert.IsTrue(first.NvidiaListUnread);
+        Assert.AreEqual(NvidiaListNote, first.NvidiaListNote);
         Assert.AreEqual(NvidiaLabel, second.Entries(BuildFamily.Dlss)[0].Label);
+        Assert.IsFalse(second.NvidiaListUnread, "the failure is not remembered");
         Assert.AreEqual(1, bed.RequestsTo(MirrorBed.Api), "the mirror's list is remembered");
     }
 
     [TestMethod]
     [DataRow("https://evil.test/NVIDIA/DLSS/releases/tag/v310.9.16", DisplayName = "off the host list")]
+    [DataRow("http://github.com/NVIDIA/DLSS/releases/tag/v310.9.16", DisplayName = "a downgrade to http")]
     [DataRow("https://github.com/NVIDIA/DLSS/releases", DisplayName = "no tag")]
-    public async Task A_redirect_that_names_no_usable_tag_adds_nothing(string location)
+    public async Task A_redirect_that_names_no_usable_tag_leaves_the_mirror_alone_and_says_so(string location)
     {
         using MirrorBed bed = new(testContext);
         bed.ApiAnswers().Server.Redirect(MirrorBed.NvidiaLatest, location);
 
         BuildCatalog catalog = await bed.Get();
 
-        Assert.AreEqual("310.9.16", catalog.Entries(BuildFamily.Dlss)[0].Label);
+        Assert.AreEqual("310.9.16, 310.9.1, 310.9.0, 310.7.129, 310.7.128", MirrorBed.Labels(catalog, BuildFamily.Dlssd), "the mirror alone serves ray reconstruction");
         Assert.AreEqual(BuildPublisher.Mirror, catalog.Entries(BuildFamily.Dlss)[0].Publisher);
+        Assert.AreEqual(new SignerVerification("NVIDIA Corporation"), catalog.Entries(BuildFamily.Dlssg)[0].Contents);
+        Assert.IsTrue(catalog.NvidiaListUnread);
+        Assert.AreEqual(NvidiaListNote, catalog.NvidiaListNote);
     }
 
     [TestMethod]
@@ -175,6 +227,7 @@ public sealed class MirrorCatalogTests(TestContext testContext)
         Assert.AreEqual("310.9.16-nvidia, 310.9.16, 310.8.Lecram", MirrorBed.Labels(catalog, BuildFamily.Dlssnr));
         Assert.AreEqual("26.1025.0009, 26.1016.1304, 26.1003.2350", MirrorBed.Labels(catalog, BuildFamily.RenodxSf));
         Assert.AreEqual(NvidiaLabel + ", 310.9.16, 310.9.1, 310.9.0", MirrorBed.Labels(catalog, BuildFamily.Dlss));
+        Assert.AreEqual(NvidiaLabel + ", 310.9.16, 310.9.1, 310.9.0", MirrorBed.Labels(catalog, BuildFamily.Dlssd));
         Assert.AreEqual(PagesNotice, catalog.Source.Notice);
     }
 
@@ -185,7 +238,7 @@ public sealed class MirrorCatalogTests(TestContext testContext)
 
         _ = await bed.Get();
 
-        foreach (string skipped in new[] { "renodx-dlss5-8.5.0-rc10", "dlssnr-310.8.SF-v2", "renodx-dlss-SF-26.0928.0205", "renodx-dlss5-7.0.0-rc8", "streamline-2.14.16.0", "DLSS-Enabler-4.10.0.27" })
+        foreach (string skipped in new[] { "renodx-dlss5-8.5.0-rc10", "dlssnr-310.8.SF-v2", "renodx-dlss-SF-26.0928.0205", "renodx-dlss5-7.0.0-rc8", "dlssd-310.7.129", "streamline-2.14.16.0", "DLSS-Enabler-4.10.0.27" })
         {
             Assert.AreEqual(0, bed.RequestsTo(MirrorBed.Expanded(skipped)), skipped);
         }
@@ -246,14 +299,22 @@ public sealed class MirrorCatalogTests(TestContext testContext)
         Assert.AreEqual("api.github.com", failure.Host);
     }
 
+    // The captured list, oldest first.
+    private async Task<BuildCatalog> Reversed()
+    {
+        using MirrorBed bed = new(testContext);
+        bed.NvidiaRedirects().Server.Answer(MirrorBed.Api, HttpStatusCode.OK, MirrorFixtures.ApiListReversed());
+        return await bed.Get();
+    }
+
     // The API is unreachable (first, when a test adds an answer after it); page 1 is the captured one, pages 2 and 3 carry older builds, 4.55 is on none of them.
     private MirrorBed PagesBed()
     {
         MirrorBed bed = new(testContext);
         bed.Unreachable(MirrorBed.Api).NvidiaRedirects().Pages(
             MirrorFixtures.PageTags,
-            ["renodx-dlss5-8.5.0-rc5", "renodx-dlss5-8.5.0-rc4", "renodx-dlss5-8.5.0-rc10", "dlssnr-310.8.Lecram", "dlssnr-310.8.SF-v2", "renodx-dlss-SF-26.1003.2350", "renodx-dlss-SF-26.0928.0205", "dlssg-310.9.16", "dlss-310.9.16"],
-            ["renodx-dlss5-7.0.0-rc8", "renodx-dlss5-4.60", "dlssg-310.9.1", "dlss-310.9.1", "dlssg-310.9.0", "dlss-310.9.0"]);
+            ["renodx-dlss5-8.5.0-rc5", "renodx-dlss5-8.5.0-rc4", "renodx-dlss5-8.5.0-rc10", "dlssnr-310.8.Lecram", "dlssnr-310.8.SF-v2", "renodx-dlss-SF-26.1003.2350", "renodx-dlss-SF-26.0928.0205", "dlssg-310.9.16", "dlssd-310.9.16", "dlss-310.9.16"],
+            ["renodx-dlss5-7.0.0-rc8", "renodx-dlss5-4.60", "dlssg-310.9.1", "dlssd-310.9.1", "dlss-310.9.1", "dlssg-310.9.0", "dlssd-310.9.0", "dlss-310.9.0", "dlssd-310.7.129"]);
         bed.Server.Answer(MirrorBed.Expanded("renodx-dlss5-4.55"), HttpStatusCode.OK, ReleaseFixtures.Fixture("rhi-repo-expanded-assets-renodx-dlss5-4.55.html"));
         return bed;
     }

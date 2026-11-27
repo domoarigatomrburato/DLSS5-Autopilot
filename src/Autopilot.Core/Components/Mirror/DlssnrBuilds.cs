@@ -1,4 +1,5 @@
 using Autopilot.Core.Gpu;
+using Autopilot.Core.Net;
 using Autopilot.Core.Resources;
 
 namespace Autopilot.Core.Components.Mirror;
@@ -40,7 +41,8 @@ public abstract record DlssnrOutcome
 /// <param name="Entry">The build.</param>
 /// <param name="Check">Its file against the card.</param>
 /// <param name="Skipped">The candidates before it that did not match the card, in order.</param>
-public sealed record DlssnrChosen(BuildEntry Entry, DlssnrCheck Check, IReadOnlyList<BuildEntry> Skipped) : DlssnrOutcome
+/// <param name="Untrusted">The candidates before it whose file failed its trust check (a pinned digest or NVIDIA's signature), in order.</param>
+public sealed record DlssnrChosen(BuildEntry Entry, DlssnrCheck Check, IReadOnlyList<BuildEntry> Skipped, IReadOnlyList<BuildEntry> Untrusted) : DlssnrOutcome
 {
     /// <summary>The install's warning: a check that could not tell, or a mismatch the person overrode; null otherwise.</summary>
     public string? Warning => Check.Fit switch
@@ -52,6 +54,9 @@ public sealed record DlssnrChosen(BuildEntry Entry, DlssnrCheck Check, IReadOnly
 
     /// <summary>The note naming the candidates skipped as incompatible; null when none was.</summary>
     public string? SkippedNote => Skipped.Count > 0 ? Texts.Format("DlssnrSkipped", Labels(Skipped)) : null;
+
+    /// <summary>The note naming the candidates skipped as untrusted; null when none was.</summary>
+    public string? UntrustedNote => Untrusted.Count > 0 ? Texts.Format("DlssnrUntrusted", Labels(Untrusted)) : null;
 
     internal static string Labels(IEnumerable<BuildEntry> entries) => string.Join(", ", entries.Select(entry => entry.Label));
 }
@@ -68,15 +73,6 @@ public sealed record DlssnrRefused(string Message, IReadOnlyList<BuildEntry> Tri
 /// </summary>
 public static class DlssnrBuilds
 {
-    /// <summary>The preferred labels per architecture, in order; first matching row wins.</summary>
-    private static readonly (int MinSm, int MaxSm, string[] Labels)[] _preferred =
-    [
-        (120, int.MaxValue, ["310.8.0"]),
-        (89, 89, ["310.8.0-RTX40"]),
-        (86, 86, ["310.8.SF-v2", "310.8.SF"]),
-        (75, 75, ["310.8.SF-v2", "310.8.SF"]),
-    ];
-
     /// <summary>
     /// The builds to try: with a label chosen, that build alone (the newest when it is not on the
     /// list, marked for the caller to say); on Auto, the card's preferred labels, then every other
@@ -101,7 +97,7 @@ public static class DlssnrBuilds
 
     /// <summary>The labels preferred for an architecture, in order; none for an unknown card or one below RTX 20.</summary>
     private static string[] PreferredLabels(int? sm) =>
-        sm is { } known ? _preferred.FirstOrDefault(row => known >= row.MinSm && known <= row.MaxSm).Labels ?? [] : [];
+        sm is { } known ? DlssnrPins.Preferred.FirstOrDefault(row => known >= row.MinSm && known <= row.MaxSm).Labels ?? [] : [];
 
     /// <summary>A file's architectures against the card.</summary>
     /// <param name="supported">The sm the file carries code for, as its fatbin records list them.</param>
@@ -126,14 +122,20 @@ public static class DlssnrBuilds
 
     /// <summary>
     /// Tries the candidates in order: each is read (<paramref name="readArchitectures"/> downloads it,
-    /// takes the DLL out and reads its fatbin, before anything is placed) and checked against the card.
-    /// The first that does not mismatch is chosen; a mismatch is skipped on Auto, and refuses a chosen
-    /// label unless <paramref name="placeMismatch"/>, the person's override, is set.
+    /// takes the DLL out, runs its contents check, <see cref="BuildEntry.Contents"/>, and reads its
+    /// fatbin, before anything is placed) and checked against the card. The first that does not
+    /// mismatch is chosen. A mismatch is skipped on Auto, and refuses a chosen label unless
+    /// <paramref name="placeMismatch"/>, the person's override, is set. A file that fails its contents
+    /// check is skipped on Auto, and always refuses a chosen label: no override places an untrusted file.
     /// </summary>
     /// <param name="candidates">The builds to try, from <see cref="Candidates"/>.</param>
     /// <param name="card">The card; null when none was detected.</param>
     /// <param name="placeMismatch">Whether the person chose to place a build that does not match the card.</param>
-    /// <param name="readArchitectures">Reads a candidate's file: the sm it carries code for.</param>
+    /// <param name="readArchitectures">
+    /// Reads a candidate's file: the sm it carries code for. It throws <see cref="NetException"/> with a
+    /// <see cref="VerificationFailedDetail"/> when the file fails its contents check; any other failure
+    /// ends the loop.
+    /// </param>
     /// <param name="cancellationToken">Cancels the reads.</param>
     public static async Task<DlssnrOutcome> ChooseAsync(
         DlssnrCandidates candidates,
@@ -143,12 +145,29 @@ public static class DlssnrBuilds
         CancellationToken cancellationToken)
     {
         List<BuildEntry> skipped = [];
+        List<BuildEntry> untrusted = [];
         foreach (BuildEntry entry in candidates.Entries)
         {
-            DlssnrCheck check = Check(await readArchitectures(entry, cancellationToken), card);
+            IReadOnlySet<int> supported;
+            try
+            {
+                supported = await readArchitectures(entry, cancellationToken);
+            }
+            catch (NetException failure) when (failure.Detail is VerificationFailedDetail)
+            {
+                if (candidates.Pinned)
+                {
+                    return new DlssnrRefused(Untrusted(entry), [entry]);
+                }
+
+                untrusted.Add(entry);
+                continue;
+            }
+
+            DlssnrCheck check = Check(supported, card);
             if (check.Fit != DlssnrFit.Incompatible || placeMismatch)
             {
-                return new DlssnrChosen(entry, check, skipped);
+                return new DlssnrChosen(entry, check, skipped, untrusted);
             }
 
             if (candidates.Pinned)
@@ -159,8 +178,22 @@ public static class DlssnrBuilds
             skipped.Add(entry);
         }
 
-        return new DlssnrRefused(Texts.Format("DlssnrNoneMatched", card?.Name, DlssnrChosen.Labels(skipped)), skipped);
+        // Every candidate was skipped, as incompatible or untrusted: the card is blamed only when none was untrusted.
+        string cardName = card?.Name ?? Texts.Text("DlssnrNoCard");
+        string tried = DlssnrChosen.Labels(candidates.Entries);
+        string message = untrusted.Count == 0
+            ? Texts.Format("DlssnrNoneMatched", cardName, tried)
+            : Texts.Format("DlssnrNoneTrusted", cardName, tried, DlssnrChosen.Labels(untrusted));
+        return new DlssnrRefused(message, candidates.Entries);
     }
+
+    // A chosen build whose file failed its contents check: a build with no pin in this release (so it
+    // had to carry NVIDIA's signature: NVIDIA's own, or a community build not pinned yet), or a
+    // pinned one whose digest did not match.
+    private static string Untrusted(BuildEntry entry) =>
+        DlssnrPins.Of(entry.Label) is null
+            ? Texts.Format("DlssnrNoDigest", entry.Label)
+            : Texts.Format("DlssnrDigestMismatch", entry.Label);
 
     private static string Name(int sm) => CardNames.Family(sm) ?? $"sm_{sm}";
 }

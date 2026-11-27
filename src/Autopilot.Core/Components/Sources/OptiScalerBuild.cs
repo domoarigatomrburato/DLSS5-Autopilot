@@ -7,34 +7,40 @@ using Autopilot.Core.Resources;
 namespace Autopilot.Core.Components.Sources;
 
 /// <summary>
-/// One of the six selectable OptiScaler builds: a release page, the words that name the variants
-/// it passes over, and for a build that exists for one variant, that variant's word.
+/// One of the six selectable OptiScaler builds: its catalog row (the release page and its check),
+/// the words that name the variants it passes over, and for a build that exists for one variant,
+/// that variant's word.
 /// </summary>
 /// <param name="Key">The key the CLI and settings name it by; empty for the default build.</param>
-/// <param name="Repository">The GitHub repository whose releases carry it.</param>
+/// <param name="Row">The catalog row of the build's release page: its repository and how its packages are checked.</param>
 /// <param name="SkipWords">Archive names carrying one of these are other variants, passed over.</param>
 /// <param name="VariantWord">For a build that exists for one variant: only an archive carrying this word is taken.</param>
-/// <param name="PublishesSums">The publisher puts a <c>SHA256SUMS</c> file in every release: without one readable, nothing is installed.</param>
 /// <param name="OnlyCardSm">The one card architecture the build is for; <see langword="null"/> for any card.</param>
-public sealed record OptiScalerBuild(string Key, string Repository, IReadOnlyList<string> SkipWords, string? VariantWord, bool PublishesSums, int? OnlyCardSm = null)
+public sealed record OptiScalerBuild(string Key, CatalogEntry Row, IReadOnlyList<string> SkipWords, string? VariantWord, int? OnlyCardSm = null)
 {
     /// <summary>Dagherbou's DLSS-NR build: <c>/latest</c>, then the release list.</summary>
-    public static OptiScalerBuild Default { get; } = new("", ComponentRepositories.OptiScaler, [], null, PublishesSums: false);
+    public static OptiScalerBuild Default { get; } = new("", RowOf(ComponentRepositories.OptiScaler), [], null);
 
     /// <summary>y4my4my4m's development builds in <c>.7z</c>; the <c>with_dlss</c> archives are passed over.</summary>
-    public static OptiScalerBuild Y4my4my4m { get; } = new("y4my4my4m", "y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG", ["with_dlss"], null, PublishesSums: false);
+    public static OptiScalerBuild Y4my4my4m { get; } = new("y4my4my4m", RowOf(ComponentRepositories.OptiScalerY4my4my4m), ["with_dlss"], null);
 
     /// <summary>wilsjo2's pass before super resolution; the RTX 40 MFG package is passed over.</summary>
-    public static OptiScalerBuild Wilsjo2 { get; } = new("wilsjo2", "wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass", ["rtx40-mfg"], null, PublishesSums: false);
+    public static OptiScalerBuild Wilsjo2 { get; } = new("wilsjo2", RowOf(ComponentRepositories.OptiScalerWilsjo2), ["rtx40-mfg"], null);
 
-    /// <summary>wilsjo2's RTX 40 MFG package only; refused on any card but RTX 40.</summary>
-    public static OptiScalerBuild Wilsjo2Mfg { get; } = new("wilsjo2-mfg", "wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass", [], "rtx40-mfg", PublishesSums: false, OnlyCardSm: 89);
+    /// <summary>wilsjo2's RTX 40 MFG package only, from the same page; refused on any card but RTX 40.</summary>
+    public static OptiScalerBuild Wilsjo2Mfg { get; } = new("wilsjo2-mfg", RowOf(ComponentRepositories.OptiScalerWilsjo2), [], "rtx40-mfg", OnlyCardSm: 89);
 
     /// <summary>Janblade's fork of wilsjo2's; the <c>-test-</c> archives are passed over.</summary>
-    public static OptiScalerBuild Janblade { get; } = new("janblade", "Janblade/OptiScaler-F5-DLSSNR-Multipass", ["-test-"], null, PublishesSums: false);
+    public static OptiScalerBuild Janblade { get; } = new("janblade", RowOf(ComponentRepositories.OptiScalerJanblade), ["-test-"], null);
 
     /// <summary>jlrouzies' fork of wilsjo2's, settings re-read while the game runs; a <c>SHA256SUMS</c> file in every release.</summary>
-    public static OptiScalerBuild Jlrouzies { get; } = new("jlrouzies", "jlrouzies-fr/OptiScaler-DLSSNR-PreSR-Multipass", ["rtx40-mfg"], null, PublishesSums: true);
+    public static OptiScalerBuild Jlrouzies { get; } = new("jlrouzies", RowOf(ComponentRepositories.OptiScalerJlrouzies), ["rtx40-mfg"], null);
+
+    /// <summary>The GitHub repository whose releases carry it, as its row names it.</summary>
+    internal GitHubRepository Repository => Row.Repository;
+
+    /// <summary>The publisher puts a <c>SHA256SUMS</c> file in every release: without one readable, nothing is installed.</summary>
+    public bool PublishesSums => Row.Check == ComponentCheck.SumsRequired;
 
     /// <summary>The six builds, the default first.</summary>
     public static IReadOnlyList<OptiScalerBuild> All { get; } = [Default, Y4my4my4m, Wilsjo2, Wilsjo2Mfg, Janblade, Jlrouzies];
@@ -52,19 +58,14 @@ public sealed record OptiScalerBuild(string Key, string Repository, IReadOnlyLis
         OnlyCardSm is { } only && card?.Sm is { } sm && sm != only ? Texts.Text("OptiScalerMfgCard") : null;
 
     /// <summary>
-    /// How <paramref name="archive"/> of <paramref name="release"/> proves itself: the catalog's OptiScaler
-    /// check for this build's own repository, which is the release's <c>SHA256SUMS</c> file, else the
-    /// API's digest, else only the magic bytes. A build that publishes sums in every release always
-    /// uses them, and without them nothing is installed unchecked.
+    /// How <paramref name="archive"/> of <paramref name="release"/> proves itself, as the build's row
+    /// says: the release's <c>SHA256SUMS</c> file, else the API's digest, else only the magic bytes.
+    /// A build that publishes sums in every release always uses them, and without them nothing is
+    /// installed unchecked.
     /// </summary>
     /// <exception cref="ComponentException">The build publishes sums and this release carries none.</exception>
-    internal Verification VerificationOf(GitHubRelease release, GitHubAsset archive)
-    {
-        CatalogEntry entry = ComponentCatalog.Of(ComponentIds.OptiScaler) with
-        {
-            Source = Repository,
-            Check = PublishesSums ? ComponentCheck.SumsRequired : ComponentCheck.SumsWhenPublished,
-        };
-        return entry.VerificationOf(release, archive, Texts.Format("OptiScalerSumsMissing", release.Tag, Repository));
-    }
+    internal Verification VerificationOf(GitHubRelease release, GitHubAsset archive) =>
+        Row.VerificationOf(release, archive, Texts.Format("OptiScalerSumsMissing", release.Tag, Repository));
+
+    private static CatalogEntry RowOf(string repository) => ComponentCatalog.Of(ComponentIds.OptiScaler, GitHubSource.Parse(repository));
 }

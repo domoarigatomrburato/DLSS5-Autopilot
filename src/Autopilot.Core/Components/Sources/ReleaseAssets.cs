@@ -57,15 +57,20 @@ internal static class ReleaseAssets
     public static bool Is(GitHubAsset asset, string name) => string.Equals(asset.Name, name, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Each file by GitHub's <c>latest/download</c> redirect: the version is <c>latest</c>, which is never compared.</summary>
-    public static ComponentRelease ByLatestRedirect(string id, IReadOnlyList<string> names)
+    public static ComponentRelease ByLatestRedirect(string id, IReadOnlyList<string> names) =>
+        ByDownload(id, ComponentVersion.Latest, ComponentCatalog.Of(id).Repository.LatestDownload, names);
+
+    /// <summary>
+    /// Each file named, downloaded from the address <paramref name="url"/> gives it, taken with no
+    /// release data: only its magic bytes are checked, and <paramref name="version"/> is recorded.
+    /// </summary>
+    public static ComponentRelease ByDownload(string id, ComponentVersion version, Func<string, Uri> url, IReadOnlyList<string> names)
     {
-        CatalogEntry entry = ComponentCatalog.Of(id);
-        GitHubRepository repository = entry.Repository;
-        NoVerification check = entry.Unchecked(NoReleaseData);
+        NoVerification check = ComponentCatalog.Of(id).Unchecked(NoReleaseData);
         return new(
             id,
-            ComponentVersion.Latest,
-            [.. names.Select(name => new ComponentDownload(name, repository.LatestDownload(name), check))],
+            version,
+            [.. names.Select(name => new ComponentDownload(name, url(name), check))],
             [.. names.Select(name => new ExpectedFile(name))],
             null);
     }
@@ -115,7 +120,7 @@ internal static class ReleaseAssets
     /// <exception cref="ComponentException">The repository has no release.</exception>
     public static async Task<ReleaseAnswer> LatestAsync(GitHubReleases releases, string id, CancellationToken cancellationToken)
     {
-        string repository = ComponentCatalog.Of(id).Source;
+        GitHubRepository repository = ComponentCatalog.Of(id).Repository;
         return await releases.GetLatestAsync(repository, cancellationToken)
             ?? throw new ComponentException(ComponentFailure.NoRelease, Texts.Format("ComponentNoRelease", repository));
     }
