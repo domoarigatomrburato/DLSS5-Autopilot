@@ -46,8 +46,8 @@ sub-tasks are in `rewrite.md`. M3's open questions, settled with Ale on
 - **NVIDIA redirect refusals:** kept; the mirror's copies carry NVIDIA's
   signature, the log warns and the report notes it; sub-task a.
 - **One catalog row per source** (`components.md`, "The catalog"); sub-task a.
-- **Mirror sort:** by version, then by tag, ordinal, where versions do not
-  compare; sub-task a.
+- **Mirror sort:** by version, then by tag, ordinal descending, where
+  versions tie or do not compare; sub-task a.
 
 **First sub-task, decided by Ale:** the mirror's `dlssd-` releases become
 the `dlssd` family (a `dlssd-` prefix before `dlss-` in `MirrorFamilies`),

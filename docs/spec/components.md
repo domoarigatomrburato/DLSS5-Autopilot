@@ -130,8 +130,10 @@ ray reconstruction had no build when NVIDIA's redirect failed. The label is the 
 leading `-` (`4.55`, `310.8.0-RTX40`, `310.8.SF-v2`). An entry is the
 release's `.zip` asset. Entries are sorted newest first by the integers in
 the tag (`310.8.0` is `(310, 8, 0)`); two entries whose versions cannot say
-which is newer (`310.8.SF` and `310.8.Lecram`) are ordered by tag, ordinal,
-so the order is strict and the same on every run. NVIDIA's entries are put in front of
+which is newer (`310.8.SF` and `310.8.Lecram`), or that have the same
+numbers (`310.9.16-nvidia` and `310.9.16`), are ordered by tag, ordinal,
+descending, so the order is strict and the same on every run, and NVIDIA's
+`310.9.16-nvidia` stays ahead of the community `310.9.16`. NVIDIA's entries are put in front of
 the mirror's in the `dlss`, `dlssd` and `dlssg` families, with the label
 `<sdk tag> (NVIDIA SDK)` (one SDK ships all three, and NVIDIA numbers each
 runtime separately, so the label names the SDK). The catalog is remembered
