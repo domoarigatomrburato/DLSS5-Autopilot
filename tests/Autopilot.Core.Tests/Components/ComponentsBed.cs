@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging.Testing;
 namespace Autopilot.Core.Tests.Components;
 
 /// <summary>
-/// ReShade, the feeder and OptiScaler on the network test bed: one fake server, one cache folder,
+/// ReShade, the feeder, OptiScaler and the other components on the network test bed: one fake server, one cache folder,
 /// the sources wired the way the composition root wires them.
 /// </summary>
 internal sealed class ComponentsBed : IDisposable
@@ -22,6 +22,8 @@ internal sealed class ComponentsBed : IDisposable
         ReShade = new(Net.Client, Cache, new FakeLogger<ReShadeSource>());
         Feeder = new(Releases, new FakeLogger<FeederSource>());
         OptiScaler = new(Releases, Cache, OptiScalerLog);
+        Sources = new(Releases, Net.Client, Net.Time, new FakeLogger<ComponentSources>());
+        Files = new(Cache);
     }
 
     public TestBed Net { get; }
@@ -37,6 +39,10 @@ internal sealed class ComponentsBed : IDisposable
     public FeederSource Feeder { get; }
 
     public FakeLogger<OptiScalerSource> OptiScalerLog { get; } = new();
+
+    public ComponentSources Sources { get; }
+
+    public ComponentFiles Files { get; }
 
     public OptiScalerSource OptiScaler { get; }
 
@@ -62,6 +68,22 @@ internal sealed class ComponentsBed : IDisposable
     {
         Server.Answer(url, HttpStatusCode.OK, json.ToJsonString());
         return this;
+    }
+
+    /// <summary>Sources of a later run: nothing remembered, the network's cache kept.</summary>
+    public ComponentSources NextRun() => new(Releases, Net.Client, Net.Time, new FakeLogger<ComponentSources>());
+
+    /// <summary>Moves the clock on by <paramref name="hours"/>.</summary>
+    public void Advance(double hours) => Net.Time.Advance(TimeSpan.FromHours(hours));
+
+    /// <summary>Resolves <paramref name="id"/> through the sources, as an install would.</summary>
+    public Task<ComponentRelease> Resolve(string id) => Sources.ResolveAsync(id, Cancellation);
+
+    /// <summary>The API, any kept answer and github.com's pages all fail for the repository's newest release.</summary>
+    public ComponentsBed NoReleaseData(string repository)
+    {
+        _ = Unreachable(Api(repository, "/latest"));
+        return Unreachable($"https://github.com/{repository}/releases/latest");
     }
 
     public ComponentsBed Unreachable(string url)

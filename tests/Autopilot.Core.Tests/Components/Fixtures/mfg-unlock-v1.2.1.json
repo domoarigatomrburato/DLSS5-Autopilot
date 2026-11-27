@@ -1,0 +1,18 @@
+{
+  "tag_name": "v1.2.1",
+  "draft": false,
+  "prerelease": false,
+  "published_at": "2026-09-09T15:17:12Z",
+  "assets": [
+    {
+      "name": "Universal-RTX-40-MFG-Unlock-v1.2.1.zip",
+      "browser_download_url": "https://github.com/dashdogy/MFG-Unlocker/releases/download/v1.2.1/Universal-RTX-40-MFG-Unlock-v1.2.1.zip",
+      "digest": "sha256:be13ef0cbe8bc8fc53bca9cc358c77bef183cc2d863a7c0c08764af682601f2d"
+    },
+    {
+      "name": "Universal-RTX-40-MFG-Unlock-v1.2.1.zip.sha256",
+      "browser_download_url": "https://github.com/dashdogy/MFG-Unlocker/releases/download/v1.2.1/Universal-RTX-40-MFG-Unlock-v1.2.1.zip.sha256",
+      "digest": "sha256:35666d10a2693e4da3cffd6476d893afdc95dfe3036f4d9f00f201bdeff2050d"
+    }
+  ]
+}

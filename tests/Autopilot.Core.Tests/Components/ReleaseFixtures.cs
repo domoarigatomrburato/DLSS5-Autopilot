@@ -8,7 +8,12 @@ namespace Autopilot.Core.Tests.Components;
 /// pre-releases, and GitHub's rate-limit answers, written by hand. Captured the same day for the
 /// feeder, ReShade and OptiScaler sources: reshade.me's home page (trimmed to its download block),
 /// <c>crosire/reshade</c>'s tags, the feeder's and the OptiScaler forks' release lists (trimmed to
-/// the fields read and four assets a release), and jlrouzies' sums file of v0.8.93.
+/// the fields read and four assets a release), and jlrouzies' sums file of v0.8.93. Captured the
+/// same day for the other components, trimmed to the fields read: the newest release of
+/// dlss5-bridge, neural-upstream, standalone-dlssnr, REFramework and the Remix runtime, DXVK v3.1.1
+/// (with its <c>native</c> sibling), the pinned MFG unlock and ASI Loader releases, GITC-Uplift's
+/// list (a draft and a pre-release added by hand on top) with v2.1.0's sums file, and LumeniteFX's
+/// branch head.
 /// </summary>
 internal static class ReleaseFixtures
 {

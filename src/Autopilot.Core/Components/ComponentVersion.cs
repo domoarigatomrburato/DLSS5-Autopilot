@@ -21,11 +21,15 @@ public enum VersionOrder
 /// <summary>
 /// A component's version label, compared by its integers: the first four, so <c>310.8.0</c> is
 /// newer than <c>310.7.9</c>, and a test build below its release (<c>v0.9.0-beta.1</c> before
-/// <c>v0.9.0</c>). <c>latest</c> and <c>nightly</c> name no version and compare with nothing.
+/// <c>v0.9.0</c>). <c>latest</c> and <c>nightly</c> name no version and compare with nothing; a
+/// commit (40 hex digits) is the same or different, never older.
 /// </summary>
 public sealed partial class ComponentVersion
 {
     private const int ComparedNumbers = 4;
+
+    // A git commit, the version of a component taken from a branch.
+    private const int CommitLength = 40;
 
     // The words a publisher marks a test build with in its tag (sources.py:253).
     private static readonly string[] _testWords = ["beta", "alpha", "-rc", "preview", "-pre"];
@@ -33,6 +37,7 @@ public sealed partial class ComponentVersion
 
     private readonly string[] _numbers;
     private readonly string[] _testNumbers;
+    private readonly bool _ordered;
 
     public ComponentVersion(string label)
     {
@@ -42,6 +47,9 @@ public sealed partial class ComponentVersion
         IsTestBuild = test >= 0;
         _numbers = Numbers(IsTestBuild ? label[..test] : label);
         _testNumbers = IsTestBuild ? Numbers(label[test..]) : [];
+
+        // A commit's digits are no order: two commits are the same or different, never older.
+        _ordered = _numbers.Length > 0 && !IsCommit(label);
     }
 
     /// <summary>The version recorded for a file taken from the <c>latest/download</c> redirect: whatever it pointed at.</summary>
@@ -63,7 +71,7 @@ public sealed partial class ComponentVersion
             return VersionOrder.NotComparable;
         }
 
-        if (_numbers.Length == 0 || other._numbers.Length == 0)
+        if (!_ordered || !other._ordered)
         {
             return string.Equals(Label.Trim(), other.Label.Trim(), StringComparison.OrdinalIgnoreCase) ? VersionOrder.Same : VersionOrder.Different;
         }
@@ -84,6 +92,8 @@ public sealed partial class ComponentVersion
     }
 
     public override string ToString() => Label;
+
+    private static bool IsCommit(string label) => label.Length == CommitLength && label.All(char.IsAsciiHexDigit);
 
     private static int TestWordAt(string label) =>
         _testWords.Select(word => label.IndexOf(word, StringComparison.OrdinalIgnoreCase)).Where(at => at >= 0).DefaultIfEmpty(-1).Min();

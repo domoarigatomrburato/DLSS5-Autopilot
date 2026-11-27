@@ -64,4 +64,14 @@ public sealed class ComponentVersionTests
     [TestMethod]
     public void The_label_is_kept_as_written() =>
         Assert.AreEqual("v0.9.0-beta.1", new ComponentVersion("v0.9.0-beta.1").ToString());
+
+    [TestMethod]
+    public void A_commit_is_the_same_or_different_never_older()
+    {
+        ComponentVersion one = new("a6d42fc9851b55fcb134ab8bb1199122fafbda13");
+
+        Assert.AreEqual(VersionOrder.Different, one.CompareTo(new("ff42fc9851b55fcb134ab8bb1199122fafbda131")));
+        Assert.AreEqual(VersionOrder.Same, one.CompareTo(new("A6D42FC9851B55FCB134AB8BB1199122FAFBDA13")));
+        Assert.AreEqual(VersionOrder.Different, new ComponentVersion("1.0.0").CompareTo(one));
+    }
 }

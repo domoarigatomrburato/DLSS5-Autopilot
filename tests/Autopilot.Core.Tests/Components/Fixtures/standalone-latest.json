@@ -1,0 +1,23 @@
+{
+  "tag_name": "v2.2.4",
+  "draft": false,
+  "prerelease": false,
+  "published_at": "2026-09-11T02:20:53Z",
+  "assets": [
+    {
+      "name": "DLSS5-ReShade-AIO-v2.2.4-32-bit.zip",
+      "browser_download_url": "https://github.com/kibblerz/DLSS5-Reshade-AIO/releases/download/v2.2.4/DLSS5-ReShade-AIO-v2.2.4-32-bit.zip",
+      "digest": "sha256:4fc48ccd5e6ca144b20d47fd049cfbc9b888d4f0fb7e87847a6d72a967491fed"
+    },
+    {
+      "name": "DLSS5-ReShade-AIO-v2.2.4-64-bit.zip",
+      "browser_download_url": "https://github.com/kibblerz/DLSS5-Reshade-AIO/releases/download/v2.2.4/DLSS5-ReShade-AIO-v2.2.4-64-bit.zip",
+      "digest": "sha256:38493d801646fce46c6caa5f0d9869c5079d09247c94368e163a7c5fb8fd38ee"
+    },
+    {
+      "name": "DLSS5-ReShade-AIO-v2.2.4-SHA256.txt",
+      "browser_download_url": "https://github.com/kibblerz/DLSS5-Reshade-AIO/releases/download/v2.2.4/DLSS5-ReShade-AIO-v2.2.4-SHA256.txt",
+      "digest": "sha256:8fceb9f75129b8285e5d8c6ab3988f4e78861b67e66f886d819196956b29065d"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "tag_name": "v0.3.0",
+  "draft": false,
+  "prerelease": false,
+  "published_at": "2026-09-02T17:25:13Z",
+  "assets": [
+    {
+      "name": "nvngx.dll.addon64",
+      "browser_download_url": "https://github.com/matiasLombo/neural-upstream/releases/download/v0.3.0/nvngx.dll.addon64",
+      "digest": "sha256:43c00412eb07339fbbeecea62c5d0c96595f7a7b5e41c4cc4a948618c2a100ec"
+    }
+  ]
+}

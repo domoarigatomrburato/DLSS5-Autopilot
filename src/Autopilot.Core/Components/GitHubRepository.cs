@@ -28,6 +28,19 @@ internal sealed partial record GitHubRepository(string Owner, string Name)
 
     public Uri LatestDownload(string assetName) => Page("releases/latest/download/" + Uri.EscapeDataString(assetName));
 
+    /// <summary>An asset of the release tagged <paramref name="tag"/>, by GitHub's download address.</summary>
+    public Uri ReleaseDownload(string tag, string assetName) =>
+        Page($"releases/download/{Uri.EscapeDataString(tag)}/{Uri.EscapeDataString(assetName)}");
+
+    /// <summary><c>api.github.com/repos/&lt;repo&gt;/commits/&lt;branch&gt;</c>: the commit at the head of a branch.</summary>
+    public Uri BranchHead(string branch) => new($"https://api.github.com/repos/{Owner}/{Name}/commits/{Uri.EscapeDataString(branch)}");
+
+    /// <summary>The whole repository at one commit, as a zip.</summary>
+    public Uri CommitArchive(string commit) => new($"https://codeload.github.com/{Owner}/{Name}/zip/{commit}");
+
+    /// <summary>One file of the repository at one commit.</summary>
+    public Uri RawFile(string commit, string path) => new($"https://raw.githubusercontent.com/{Owner}/{Name}/{commit}/{path}");
+
     /// <summary>The tag a github.com address names as one of this repository's releases (<c>/releases/tag/&lt;tag&gt;</c>), if it does.</summary>
     public string? TagIn(Uri url) => ReleasePath(url, "tag", 6) is [.., string tag] ? Uri.UnescapeDataString(tag) : null;
 

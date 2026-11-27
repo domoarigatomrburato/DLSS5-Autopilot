@@ -749,4 +749,25 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <data name="OptiScalerMfgCard" xml:space="preserve">
     <value>The RTX 40 MFG package unlocks multi-frame generation on RTX 40 cards only. On an RTX 50 it broke frame generation; on other cards it has not been tried. Choose "wilsjo2's fork" in 'optiscaler build' for the same neural pass without it.</value>
   </data>
+  <data name="ComponentNoRelease" xml:space="preserve">
+    <value>{0} has no release on GitHub. Try again later, or choose another route.</value>
+  </data>
+  <data name="ComponentNoTag" xml:space="preserve">
+    <value>{0} has no release {1} on GitHub, the release this tool places. Try again later.</value>
+  </data>
+  <data name="ComponentLayoutChanged" xml:space="preserve">
+    <value>{0} {1} does not carry {2}: the release changed its layout, and a newer layout is not taken on trust. Nothing was placed.</value>
+  </data>
+  <data name="ComponentNoneCarries" xml:space="preserve">
+    <value>No recent release of {0} carries {1} (newest: {2}): the project changed its layout, and a newer layout is not taken on trust. Nothing was placed.</value>
+  </data>
+  <data name="ComponentSumsMissing" xml:space="preserve">
+    <value>{0} release {1} carries no {2}. The publisher puts one in every release, so nothing is installed unchecked. Try again later.</value>
+  </data>
+  <data name="ComponentAddonBitness" xml:space="preserve">
+    <value>{0} from {1} {2} is not a {3}-bit Windows add-on. Nothing was placed.</value>
+  </data>
+  <data name="ComponentBranchUnavailable" xml:space="preserve">
+    <value>The newest commit of {0} (branch {1}) could not be read: {2}. Nothing was kept from an earlier run, and a moving branch is never installed without knowing its commit. Try again later.</value>
+  </data>
 </root>

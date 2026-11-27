@@ -1,0 +1,23 @@
+{
+  "tag_name": "nightly-01451-22c713cef9372b918c08d3c0550fcec0ea6714e4",
+  "draft": false,
+  "prerelease": false,
+  "published_at": "2026-11-23T07:43:50Z",
+  "assets": [
+    {
+      "name": "csharp-api.zip",
+      "browser_download_url": "https://github.com/praydog/REFramework-nightly/releases/download/nightly-01451-22c713cef9372b918c08d3c0550fcec0ea6714e4/csharp-api.zip",
+      "digest": "sha256:d813bc575dac93c2370ff7535f9fefb5a15ae18f2221671ec49d3a1ceaebcbaf"
+    },
+    {
+      "name": "REFramework.zip",
+      "browser_download_url": "https://github.com/praydog/REFramework-nightly/releases/download/nightly-01451-22c713cef9372b918c08d3c0550fcec0ea6714e4/REFramework.zip",
+      "digest": "sha256:1542fee2e5201ca5dc6d5e018cf2aa3ce66603f63879cc80669694bfa96faef6"
+    },
+    {
+      "name": "VR.zip",
+      "browser_download_url": "https://github.com/praydog/REFramework-nightly/releases/download/nightly-01451-22c713cef9372b918c08d3c0550fcec0ea6714e4/VR.zip",
+      "digest": "sha256:b4d147a4c8cc3801826a5b89f0cfe951d2128f8b4c46e01d4ff5ad4c5b1b3846"
+    }
+  ]
+}

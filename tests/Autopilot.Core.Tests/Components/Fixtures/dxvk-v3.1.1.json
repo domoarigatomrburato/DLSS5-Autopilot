@@ -1,0 +1,18 @@
+{
+  "tag_name": "v3.1.1",
+  "draft": false,
+  "prerelease": false,
+  "published_at": "2026-09-15T17:43:25Z",
+  "assets": [
+    {
+      "name": "dxvk-3.1.1.tar.gz",
+      "browser_download_url": "https://github.com/doitsujin/dxvk/releases/download/v3.1.1/dxvk-3.1.1.tar.gz",
+      "digest": "sha256:40565b4a724aadc4433fa4e010b4b23916d9b1f1baeee64e17186db94f54e608"
+    },
+    {
+      "name": "dxvk-native-3.1.1-steamrt-sniper.tar.gz",
+      "browser_download_url": "https://github.com/doitsujin/dxvk/releases/download/v3.1.1/dxvk-native-3.1.1-steamrt-sniper.tar.gz",
+      "digest": "sha256:506fa1ea5bb6ce9a89e11436f7ab5191bc0196e8a577e0cf0b16a45bbc9991b7"
+    }
+  ]
+}

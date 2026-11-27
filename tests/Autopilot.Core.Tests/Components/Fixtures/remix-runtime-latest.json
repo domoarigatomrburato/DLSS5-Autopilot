@@ -1,0 +1,23 @@
+{
+  "tag_name": "dlssnr-v1",
+  "draft": false,
+  "prerelease": false,
+  "published_at": "2026-08-29T16:31:12Z",
+  "assets": [
+    {
+      "name": "d3d9.dll",
+      "browser_download_url": "https://github.com/lunks/dxvk-remix-plus-dlssnr/releases/download/dlssnr-v1/d3d9.dll",
+      "digest": "sha256:266815aa70e1c314a98430fcf953d31709026c0634153399bcf033d7cba5b214"
+    },
+    {
+      "name": "remix_nvngx.dll",
+      "browser_download_url": "https://github.com/lunks/dxvk-remix-plus-dlssnr/releases/download/dlssnr-v1/remix_nvngx.dll",
+      "digest": "sha256:b3aa9600cb155cc3e2459507a98772c928d9f50127dfba1f360db04ef03c6684"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "browser_download_url": "https://github.com/lunks/dxvk-remix-plus-dlssnr/releases/download/dlssnr-v1/SHA256SUMS.txt",
+      "digest": "sha256:9fa49bf10b3180fccc80d7200ae7976deaa68b38b87c8a2121bffbc80ee14879"
+    }
+  ]
+}

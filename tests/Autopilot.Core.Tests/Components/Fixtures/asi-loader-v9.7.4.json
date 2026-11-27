@@ -1,0 +1,28 @@
+{
+  "tag_name": "v9.7.4",
+  "draft": false,
+  "prerelease": false,
+  "published_at": "2026-08-16T12:01:51Z",
+  "assets": [
+    {
+      "name": "Ultimate-ASI-Loader-NoPDB.zip",
+      "browser_download_url": "https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/v9.7.4/Ultimate-ASI-Loader-NoPDB.zip",
+      "digest": "sha256:14b3a1ad018899571ac9aa01482977f3c6d49e6cba99f552d01c5acacd1315e1"
+    },
+    {
+      "name": "Ultimate-ASI-Loader-NoPDB_x64.zip",
+      "browser_download_url": "https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/v9.7.4/Ultimate-ASI-Loader-NoPDB_x64.zip",
+      "digest": "sha256:e5860e7d9a1805267535b65749575b5e406cc6ea3325c7392189c578815045d1"
+    },
+    {
+      "name": "Ultimate-ASI-Loader.zip",
+      "browser_download_url": "https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/v9.7.4/Ultimate-ASI-Loader.zip",
+      "digest": "sha256:952cebfc30d525afc2bdbaca954329d405ded3aa688a83027354dae14dfd5c5f"
+    },
+    {
+      "name": "Ultimate-ASI-Loader_x64.zip",
+      "browser_download_url": "https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/v9.7.4/Ultimate-ASI-Loader_x64.zip",
+      "digest": "sha256:8272d83b2692662098746f2d0ad0e2d85f3c8358ab1d63f75fbe835c2c8135fd"
+    }
+  ]
+}
