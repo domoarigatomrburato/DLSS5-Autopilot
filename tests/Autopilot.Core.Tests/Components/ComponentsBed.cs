@@ -1,6 +1,9 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using Autopilot.Core.Components;
+using Autopilot.Core.Components.Catalog;
+using Autopilot.Core.Components.GitHub;
+using Autopilot.Core.Components.Sources;
 using Autopilot.Core.Net;
 using Autopilot.Core.Tests.Net;
 using Microsoft.Extensions.Logging.Testing;

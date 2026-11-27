@@ -1,3 +1,6 @@
+using Autopilot.Core.Components.Catalog;
+using Autopilot.Core.Components.GitHub;
+using Autopilot.Core.Components.Mirror;
 using Autopilot.Core.Net;
 using Autopilot.Core.Resources;
 

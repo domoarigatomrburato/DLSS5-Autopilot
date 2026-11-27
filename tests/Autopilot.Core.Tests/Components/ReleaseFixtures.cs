@@ -1,4 +1,4 @@
-using Autopilot.Core.Components;
+using Autopilot.Core.Components.GitHub;
 
 namespace Autopilot.Core.Tests.Components;
 

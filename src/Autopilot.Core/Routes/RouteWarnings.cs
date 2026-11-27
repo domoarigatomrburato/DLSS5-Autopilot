@@ -1,4 +1,4 @@
-using Autopilot.Core.Components;
+using Autopilot.Core.Components.Mirror;
 using Autopilot.Core.Gpu;
 
 namespace Autopilot.Core.Routes;

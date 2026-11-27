@@ -1,0 +1,106 @@
+using System.Buffers;
+using System.Globalization;
+using System.Text.Json;
+using Autopilot.Core.Net;
+using Autopilot.Core.Storage;
+
+namespace Autopilot.Core.Components.GitHub;
+
+/// <summary>
+/// Release data from the API's JSON, reading only the fields this tool needs. A malformed answer is
+/// a <see cref="ReleaseDataException"/>, never a crash.
+/// </summary>
+internal static class ReleaseJson
+{
+    private const string DigestPrefix = "sha256:";
+
+    private static readonly SearchValues<char> _hexDigits = SearchValues.Create("0123456789abcdefABCDEF");
+
+    /// <exception cref="ReleaseDataException">The answer is not one release.</exception>
+    public static GitHubRelease One(Uri url, string body)
+    {
+        using JsonDocument document = Parse(url, body);
+        return Release(url, document.RootElement);
+    }
+
+    /// <exception cref="ReleaseDataException">The answer is not a list of releases.</exception>
+    public static IReadOnlyList<GitHubRelease> List(Uri url, string body)
+    {
+        using JsonDocument document = Parse(url, body);
+        return document.RootElement.ValueKind == JsonValueKind.Array
+            ? [.. document.RootElement.EnumerateArray().Select(release => Release(url, release))]
+            : throw Malformed(url, "the answer is not a list");
+    }
+
+    /// <summary>The commit a <c>/commits/&lt;branch&gt;</c> answer names: its <c>sha</c>, 40 lowercase hex digits.</summary>
+    /// <exception cref="ReleaseDataException">The answer is not JSON, or names no commit.</exception>
+    public static string Commit(Uri api, string body)
+    {
+        string? commit;
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            commit = UntrustedJson.Text(document.RootElement, "sha");
+        }
+        catch (JsonException failure)
+        {
+            throw new ReleaseDataException(api, $"{api.AbsolutePath}: the answer is not JSON", failure);
+        }
+
+        return commit is { Length: ComponentVersion.CommitLength } && commit.All(char.IsAsciiHexDigitLower)
+            ? commit
+            : throw new ReleaseDataException(api, $"{api.AbsolutePath}: the answer names no commit");
+    }
+
+    private static JsonDocument Parse(Uri url, string body)
+    {
+        try
+        {
+            return JsonDocument.Parse(body);
+        }
+        catch (JsonException failure)
+        {
+            throw Malformed(url, failure.Message, failure);
+        }
+    }
+
+    private static GitHubRelease Release(Uri url, JsonElement release)
+    {
+        if (UntrustedJson.Text(release, "tag_name") is not { Length: > 0 } tag)
+        {
+            throw Malformed(url, "a release without a tag");
+        }
+
+        return new(
+            tag,
+            UntrustedJson.Flag(release, "prerelease"),
+            UntrustedJson.Flag(release, "draft"),
+            PublishedAt(UntrustedJson.Text(release, "published_at")),
+            [.. UntrustedJson.Array(release, "assets").Select(asset => Asset(url, tag, asset))]);
+    }
+
+    private static GitHubAsset Asset(Uri url, string tag, JsonElement asset) =>
+        UntrustedJson.Text(asset, "name") is { Length: > 0 } name
+        && Uri.TryCreate(UntrustedJson.Text(asset, "browser_download_url"), UriKind.Absolute, out Uri? download)
+            ? new(name, download, Digest(UntrustedJson.Text(asset, "digest")))
+            : throw Malformed(url, $"release {tag} has an asset without a name or a download address");
+
+    private static DateTimeOffset? PublishedAt(string? text) =>
+        DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out DateTimeOffset at) ? at : null;
+
+    /// <summary>
+    /// An asset's <c>sha256:&lt;hex&gt;</c> digest, as the API's <c>digest</c> field and github.com's asset
+    /// pages show it. GitHub names the algorithm; only a SHA-256 of 64 hex digits is a check this
+    /// tool can run, so anything else is no digest.
+    /// </summary>
+    public static Sha256Verification? Digest(string? digest) =>
+        digest is not null
+        && digest.StartsWith(DigestPrefix, StringComparison.OrdinalIgnoreCase)
+        && digest.Length == DigestPrefix.Length + 64
+        && !digest.AsSpan(DigestPrefix.Length).ContainsAnyExcept(_hexDigits)
+            ? new(digest[DigestPrefix.Length..])
+            : null;
+
+    private static ReleaseDataException Malformed(Uri url, string reason, Exception? inner = null) =>
+        new(url, $"{url.GetLeftPart(UriPartial.Path)} is not release data: {reason}", inner);
+}
