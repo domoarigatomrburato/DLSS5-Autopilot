@@ -55,8 +55,15 @@ internal sealed class OwnedFiles
     /// <exception cref="IOException">The file cannot be read.</exception>
     /// <exception cref="UnauthorizedAccessException">The file cannot be opened.</exception>
     /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
-    public async Task<bool> IsOursAsync(string path, CancellationToken cancellationToken) =>
-        Listed(path) is not null && IsOurs(path, await FileFacts.OfAsync(path, cancellationToken));
+    public async Task<bool> IsOursAsync(string path, CancellationToken cancellationToken) => Listed(path) switch
+    {
+        null => false,
+        { Class: EntryClass.Config } => File.Exists(path),
+
+        // The size is compared first: a file of another size is not hashed.
+        { Written: { } written } => await written.IsAtAsync(path, cancellationToken),
+        _ => false,
+    };
 
     /// <summary>Whether the file at <paramref name="path"/>, whose content is <paramref name="current"/> (null: no file), is ours, as <see cref="IsOursAsync"/> decides.</summary>
     public bool IsOurs(string path, FileFacts? current) =>

@@ -4,9 +4,10 @@ namespace Autopilot.Core.Install;
 
 /// <summary>One install's resolution and application, and on any failure its rollback and its note.</summary>
 /// <param name="newDisk">Makes a disk for the changes.</param>
+/// <param name="outside">Undoes the changes outside the files, as a rollback does.</param>
 /// <param name="logger">Where the run is logged.</param>
 /// <param name="failures">Keeps the note.</param>
-internal sealed class InstallRun(Func<InstallDisk> newDisk, ILogger logger, Failures failures)
+internal sealed class InstallRun(Func<InstallDisk> newDisk, IOutsideChanges outside, ILogger logger, Failures failures)
 {
     /// <summary>Resolves and applies <paramref name="plan"/> over <paramref name="recorded"/>; on a failure, rolls back and keeps the note.</summary>
     /// <exception cref="OperationCanceledException">The token was cancelled: rolled back, and the note kept.</exception>
@@ -35,7 +36,7 @@ internal sealed class InstallRun(Func<InstallDisk> newDisk, ILogger logger, Fail
         FailureOutcome outcome = FailureOutcome.NothingWritten;
         if (apply.Saved is { } journal)
         {
-            RollbackStop? stop = await InstallRollback.TryRunAsync(newDisk(), logger, journal, failures.Subject.GameFolder, failures.Subject.InstallFolder);
+            RollbackStop? stop = await InstallRollback.TryRunAsync(newDisk(), outside, logger, journal, failures.Subject.GameFolder, failures.Subject.InstallFolder);
             outcome = stop is not null ? FailureOutcome.RollbackIncomplete
                 : apply.Changed ? FailureOutcome.RolledBack
                 : FailureOutcome.NothingWritten;

@@ -1033,4 +1033,58 @@ Almost always this means the game (or its launcher) is running and holding the f
   <data name="PreviewNothingOutside" xml:space="preserve">
     <value>nothing is written outside this folder</value>
   </data>
+  <data name="UninstallLineRemoved" xml:space="preserve">
+    <value>removed: {0}</value>
+  </data>
+  <data name="UninstallLineRestored" xml:space="preserve">
+    <value>restored: {0} (the game's own file)</value>
+  </data>
+  <data name="UninstallLineChanged" xml:space="preserve">
+    <value>changed since install: not removed: {0}</value>
+  </data>
+  <data name="UninstallLineOriginalGone" xml:space="preserve">
+    <value>removed: {0}. The game's own {0} is gone: its backup was missing. Verifying the game's files in its store or launcher puts it back.</value>
+  </data>
+  <data name="UninstallLineStuck" xml:space="preserve">
+    <value>could not remove: {0} (in use - is the game or its launcher still running?)</value>
+  </data>
+  <data name="UninstallLineRestoreFailed" xml:space="preserve">
+    <value>could not restore: {0}. Its backup is missing or changed, so it was kept, and the file there was left as it is.</value>
+  </data>
+  <data name="UninstallLineOutside" xml:space="preserve">
+    <value>ignored: {0}: outside the game folder</value>
+  </data>
+  <data name="UninstallLineNotTold" xml:space="preserve">
+    <value>not removed: {0}: could not tell it from yours</value>
+  </data>
+  <data name="UninstallLineRemixRuntime" xml:space="preserve">
+    <value>RTX Remix is installed here: d3d9.dll is its runtime, left alone.</value>
+  </data>
+  <data name="UninstallDone" xml:space="preserve">
+    <value>Removed {0} items.</value>
+  </data>
+  <data name="UninstallLeft" xml:space="preserve">
+    <value>Removed {0} items; {1} could not be removed. Close the game and its launcher, then uninstall again.</value>
+  </data>
+  <data name="UninstallOutsideKept" xml:space="preserve">
+    <value>Changes this install made outside its files (shared layer registrations, the Windows graphics setting, config keys) are not undone yet: the install record keeps them.</value>
+  </data>
+  <data name="UninstallNoRecord" xml:space="preserve">
+    <value>No install record found; cleaning up by known filenames.</value>
+  </data>
+  <data name="UninstallDamagedKept" xml:space="preserve">
+    <value>The install record was damaged: it is kept as {0}, and nothing in it was trusted.</value>
+  </data>
+  <data name="UninstallRestoredNoRecord" xml:space="preserve">
+    <value>restored from a backup with no record; if the game updated since, verify its files</value>
+  </data>
+  <data name="UninstallOpeningStopped" xml:space="preserve">
+    <value>The uninstall stopped part way: what it had not removed yet is still on the install record, so uninstalling again finishes it.</value>
+  </data>
+  <data name="UninstallOpeningNothingChanged" xml:space="preserve">
+    <value>The uninstall stopped before it changed anything.</value>
+  </data>
+  <data name="UninstallError" xml:space="preserve">
+    <value>Windows gave this error: {0}</value>
+  </data>
 </root>

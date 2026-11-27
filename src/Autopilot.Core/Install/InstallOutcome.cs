@@ -21,7 +21,7 @@ public sealed record InstallCommitted(IReadOnlyList<string> Notes, IReadOnlyList
 public sealed record InstallFailed(FailureNote Note) : InstallOutcome
 {
     /// <summary>The result card's opening sentence: what became of the folder.</summary>
-    public string Opening => Failures.Opening(Note.Outcome);
+    public string Opening => Failures.Opening(Note.Operation, Note.Outcome);
 }
 
 /// <summary>The install was refused before anything was written.</summary>
@@ -46,6 +46,9 @@ public enum InstallRefusal
 
     /// <summary>The install names one path twice, or keeps an entry the previous install does not list.</summary>
     PlanConflict,
+
+    /// <summary>An uninstall left part way could not be finished (the game runs, or something is left): finish the uninstall first.</summary>
+    RemovalUnfinished,
 }
 
 /// <summary>Where an install stands, for its progress: step <paramref name="Step"/> of <paramref name="Count"/>, counted from 1.</summary>

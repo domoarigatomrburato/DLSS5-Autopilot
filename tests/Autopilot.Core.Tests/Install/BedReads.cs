@@ -63,6 +63,12 @@ internal static class BedReads
             && File.GetAttributes(bed.Tree.PathOf(backup)).HasFlag(FileAttributes.ReadOnly)
             && File.GetLastWriteTimeUtc(bed.Tree.PathOf(backup)) == Switches.GameTime.UtcDateTime;
     }
+
+    /// <summary>Whether a folder is at <paramref name="relative"/>.</summary>
+    public static bool HasFolder(this TransactionBed bed, string relative) => Directory.Exists(bed.Tree.PathOf(relative));
+
+    /// <summary>The file at <paramref name="relative"/>, read whole.</summary>
+    public static string Read(this TransactionBed bed, string relative) => File.ReadAllText(bed.Tree.PathOf(relative));
 }
 
 /// <summary>Plans and plan steps as tests write them.</summary>

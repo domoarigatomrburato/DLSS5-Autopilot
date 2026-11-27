@@ -22,6 +22,12 @@ internal static class KnownFiles
     /// <summary>An old original replaced by a newer one the game shipped; no restore ever touches it (a taken name gains <c>.2</c>, <c>.3</c> ...).</summary>
     public const string SupersededSuffix = ".invidia-claritatis-superseded";
 
+    /// <summary>A damaged file of the tool's, moved aside beside itself as evidence: the store's files and an install record alike.</summary>
+    public const string CorruptSuffix = ".corrupt";
+
+    /// <summary>The 32-bit feeder's helper folder, in the install folder: ours, never a game's.</summary>
+    public const string HelperFolder = "host64";
+
     public const string AgilityFolder = "D3D12";
 
     public const string AgilityCore = "D3D12Core.dll";

@@ -133,6 +133,13 @@ loss, killed process, forced close). The tool says so and completes the
 rollback or the removal from the record before doing anything else. It never
 installs over a half-finished transaction.
 
+A removal part way is finished as an uninstall would finish it, except that
+a held file is retried only for a moment, and never while a program from the
+game or install folder runs. When it cannot be finished (the game runs, or
+something is left), the record stays in `Removing` for the next uninstall,
+the game's per-game state stays with it, and an install into that folder is
+refused until an uninstall completes.
+
 **Reading it.**
 
 - A record whose format version is newer than the tool knows is refused for
@@ -145,10 +152,14 @@ installs over a half-finished transaction.
   an "uninstall, then install" button; it never guesses which files are
   ours, since treating it as no record would back up our own old files as
   the game's. Uninstall falls back to known names: see "Uninstall without a
-  record".
+  record". It first renames the damaged record to `<name>.corrupt` (the first
+  free of `.corrupt`, `.corrupt.2`, ...), kept as evidence and out of the next
+  install's way, and the report says so.
 - Entries naming a path that resolves outside the game folder are ignored
   with a line in the log, never followed (`installer.py:5530-5567`, SECURITY.md
-  first bullet).
+  first bullet). An uninstall drops such an entry from the record, with a line
+  "ignored: X: outside the game folder" in its report, so it never blocks the
+  record's removal; a rollback keeps it on the record.
 - **Two executables in one folder** (a game and its expansion launcher)
   share one record. Installing for the second one is a reinstall of the same
   folder, and the record names both executables; the report says "uninstalling

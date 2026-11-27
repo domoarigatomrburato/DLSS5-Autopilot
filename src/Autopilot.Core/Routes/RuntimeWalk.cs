@@ -33,7 +33,7 @@ internal static class RuntimeWalk
     ];
 
     // The asset folders and this walk's own; any folder starting with '.' is skipped as well.
-    private static readonly FrozenSet<string> _skipped = KnownFiles.Set([.. AssetFolders, "host64", "reshade-shaders"]);
+    private static readonly FrozenSet<string> _skipped = KnownFiles.Set([.. AssetFolders, KnownFiles.HelperFolder, "reshade-shaders"]);
 
     // A skipped folder is skipped for its size, not because no runtime can be under it: NBA 2K27 keeps
     // Streamline in data\streamline (#119). So a skipped folder is entered when one of its children
@@ -50,7 +50,14 @@ internal static class RuntimeWalk
     /// The files under <paramref name="root"/> named in <paramref name="names"/>, leaving out the files
     /// directly in <paramref name="listed"/> (already looked at), though their subfolders are walked.
     /// </summary>
-    public static List<RuntimeHit> Find(string root, FrozenSet<string> names, IReadOnlyList<string> listed, SharedListings listings, CancellationToken cancellationToken)
+    public static List<RuntimeHit> Find(string root, FrozenSet<string> names, IReadOnlyList<string> listed, SharedListings listings, CancellationToken cancellationToken) =>
+        Find(root, names.Contains, listed, listings, cancellationToken);
+
+    /// <summary>
+    /// The files under <paramref name="root"/> whose name <paramref name="matches"/>, within the same bounds, leaving
+    /// out the files directly in <paramref name="listed"/>.
+    /// </summary>
+    public static List<RuntimeHit> Find(string root, Func<string, bool> matches, IReadOnlyList<string> listed, SharedListings listings, CancellationToken cancellationToken)
     {
         FrozenSet<string> seen = KnownFiles.Set(listed.Select(Normal));
         List<RuntimeHit> hits = [];
@@ -62,7 +69,7 @@ internal static class RuntimeWalk
             if (!seen.Contains(Normal(folder.Path)))
             {
                 hits.AddRange(FolderListing.Files(folder.Path, cancellationToken)
-                    .Where(path => names.Contains(Path.GetFileName(path)))
+                    .Where(path => matches(Path.GetFileName(path)))
                     .Select(path => new RuntimeHit(path, folder.UnderUpscalerSkip)));
             }
 

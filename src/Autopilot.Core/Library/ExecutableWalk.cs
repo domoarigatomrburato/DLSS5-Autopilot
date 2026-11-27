@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using System.IO.Enumeration;
+using Autopilot.Core.Graphics;
 using Autopilot.Core.Platform;
 
 namespace Autopilot.Core.Library;
@@ -23,7 +24,7 @@ internal sealed class ExecutableWalk
         "vcredist", "vc_redist", "easyanticheat", "easyanticheat_eos", "battleye", "punkbuster", "installers",
         "installer", "prerequisites", "prereq", "support", "docs", "manual", "soundtrack", "artbook", "extras",
         "dxsetup", "crashreportclient", "epicwebhelper", "thirdparty", "steamvr", "openvr", "__installer",
-        "dotnetfx", "movies", "content", "data", "assets", "textures", "host64",
+        "dotnetfx", "movies", "content", "data", "assets", "textures", KnownFiles.HelperFolder,
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     // Hidden and system entries are executables and folders like any other.

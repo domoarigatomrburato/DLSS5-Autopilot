@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json.Nodes;
+using Autopilot.Core.Graphics;
 using Autopilot.Core.Platform;
 using Autopilot.Core.Resources;
 
@@ -124,7 +125,7 @@ public sealed class GameStateStore
     private static string Explain(StoreNoticeKind kind, string folder, string key) => kind switch
     {
         StoreNoticeKind.NewerVersion => Texts.Format("GameStateNewer", folder),
-        StoreNoticeKind.Damaged => Texts.Format("GameStateDamaged", folder, $"{key}{Extension}.corrupt"),
+        StoreNoticeKind.Damaged => Texts.Format("GameStateDamaged", folder, $"{key}{Extension}{KnownFiles.CorruptSuffix}"),
         StoreNoticeKind.Unreadable => Texts.Format("GameStateUnreadable", folder),
         StoreNoticeKind.DiskFull => Texts.Format("GameStateDiskFull", folder),
         _ => Texts.Format("GameStateNotSaved", folder),

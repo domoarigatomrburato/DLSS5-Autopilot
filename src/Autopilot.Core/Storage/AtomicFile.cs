@@ -20,7 +20,8 @@ internal static partial class AtomicFile
     /// <summary>An antivirus or an indexer holds a file for a moment: the replace is tried this many times.</summary>
     private const int MoveTries = 6;
 
-    private static readonly TimeSpan _moveRetryWait = TimeSpan.FromMilliseconds(100);
+    /// <summary>The waits between the tries of a rename or delete another program holds: 100 ms, so 6 tries in all.</summary>
+    internal static IReadOnlyList<TimeSpan> HeldWaits { get; } = [.. Enumerable.Repeat(TimeSpan.FromMilliseconds(100), MoveTries - 1)];
 
     /// <summary>
     /// Writes the content <paramref name="write"/> produces to a temporary file in the target's
@@ -101,16 +102,16 @@ internal static partial class AtomicFile
     // Windows asks for a write-through rename (MOVEFILE_WRITE_THROUGH) here; that needs a Windows API,
     // so it lands with the Windows implementations in M7.
     private static Task MoveAsync(string temporary, string path, TimeProvider time, Action<string, string> move, CancellationToken cancellationToken) =>
-        RetryWhileHeldAsync(() => move(temporary, path), time, cancellationToken);
+        RetryWhileHeldAsync(() => move(temporary, path), HeldWaits, time, cancellationToken);
 
     /// <summary>
-    /// Runs <paramref name="change"/> (a rename, a delete), trying again 100 ms apart, up to 6 times in all,
-    /// while another program holds the file, as antivirus and indexers do for a moment. The last failure is thrown.
+    /// Runs <paramref name="change"/> (a rename, a delete), trying again after each wait of <paramref name="waits"/>
+    /// in turn while another program holds the file, as antivirus and indexers do for a moment. The last failure is thrown.
     /// </summary>
     /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
-    internal static async Task RetryWhileHeldAsync(Action change, TimeProvider time, CancellationToken cancellationToken)
+    internal static async Task RetryWhileHeldAsync(Action change, IReadOnlyList<TimeSpan> waits, TimeProvider time, CancellationToken cancellationToken)
     {
-        for (int tried = 1; ; tried++)
+        for (int tried = 0; ; tried++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
@@ -118,9 +119,9 @@ internal static partial class AtomicFile
                 change();
                 return;
             }
-            catch (Exception held) when (tried < MoveTries && IsHeld(held))
+            catch (Exception held) when (tried < waits.Count && IsHeld(held))
             {
-                await Task.Delay(_moveRetryWait, time, cancellationToken);
+                await Task.Delay(waits[tried], time, cancellationToken);
             }
         }
     }

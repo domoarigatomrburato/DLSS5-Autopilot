@@ -18,11 +18,13 @@ internal sealed partial class Failures(GameStateStore store, IFreeSpace space, T
     /// <summary>What failed, where.</summary>
     public FailureSubject Subject => subject;
 
-    /// <summary>The result card's opening sentence: what became of the folder.</summary>
-    public static string Opening(FailureOutcome outcome) => Texts.Text(outcome switch
+    /// <summary>The result card's opening sentence: what <paramref name="operation"/> left of the folder.</summary>
+    public static string Opening(FailureOperation operation, FailureOutcome outcome) => Texts.Text((operation, outcome) switch
     {
-        FailureOutcome.NothingWritten => "InstallOpeningNothingWritten",
-        FailureOutcome.RolledBack => "InstallOpeningRolledBack",
+        (FailureOperation.Uninstall, FailureOutcome.NothingWritten) => "UninstallOpeningNothingChanged",
+        (FailureOperation.Uninstall, _) => "UninstallOpeningStopped",
+        (_, FailureOutcome.NothingWritten) => "InstallOpeningNothingWritten",
+        (_, FailureOutcome.RolledBack) => "InstallOpeningRolledBack",
         _ => "InstallOpeningIncomplete",
     });
 
@@ -33,6 +35,21 @@ internal sealed partial class Failures(GameStateStore store, IFreeSpace space, T
     /// <summary>Keeps the note for <paramref name="failure"/> and gives the result the person sees.</summary>
     public InstallFailed Failed(FailureOperation operation, Exception failure, FailureOutcome outcome) =>
         Keep(operation, Describe(failure), outcome, failure);
+
+    /// <summary>Keeps the note for an uninstall <paramref name="failure"/> stopped, and gives the note.</summary>
+    /// <param name="failure">What stopped it.</param>
+    /// <param name="changed">Whether it had changed anything before it stopped.</param>
+    public FailureNote UninstallStopped(Exception failure, bool changed)
+    {
+        Cause cause = Describe(failure);
+        if (cause.Kind is FailureKind.Locked or FailureKind.Unexpected)
+        {
+            cause = cause with { Text = Texts.Format("UninstallError", ExceptionChain.Of(failure).Last().Message) };
+        }
+
+        FailureOutcome outcome = changed ? FailureOutcome.RollbackIncomplete : FailureOutcome.NothingWritten;
+        return Keep(FailureOperation.Uninstall, cause, outcome, failure).Note;
+    }
 
     /// <summary>Keeps the note for a rollback that stopped at <paramref name="stop"/> and gives the result the person sees.</summary>
     public InstallFailed Failed(FailureOperation operation, RollbackStop stop, FailureOutcome outcome) =>
@@ -48,7 +65,7 @@ internal sealed partial class Failures(GameStateStore store, IFreeSpace space, T
             operation,
             cause.Kind,
             cause.Detail,
-            Opening(outcome) + "\n\n" + cause.Text,
+            Opening(operation, outcome) + "\n\n" + cause.Text,
             outcome,
             subject.Route,
             subject.ToolVersion,

@@ -6,6 +6,9 @@ namespace Autopilot.Core.Tests.TestBeds;
 /// <summary>Free space answering each path by the first folder it starts with.</summary>
 internal sealed class FakeFreeSpace(params (string Folder, DriveSpace Drive)[] drives) : IFreeSpace
 {
+    /// <summary>One drive, G:, with 1 KB free, for every path: a transaction's, whose drives only a full-drive failure names.</summary>
+    public static FakeFreeSpace OneDrive => new(("", new DriveSpace("G:", 1024)));
+
     public DriveSpace DriveOf(string path) =>
         drives.First(drive => path.StartsWith(drive.Folder, StringComparison.Ordinal)).Drive;
 }

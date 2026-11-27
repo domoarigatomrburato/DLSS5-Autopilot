@@ -1,3 +1,4 @@
+using Autopilot.Core.Platform;
 using Autopilot.Core.State;
 using Autopilot.Core.Storage;
 using Microsoft.Extensions.Logging;
@@ -15,27 +16,31 @@ internal sealed class InstallTransaction
     private readonly InstallRecords _records;
     private readonly GameStateStore _store;
     private readonly IFreeSpace _space;
+    private readonly IProcesses _processes;
     private readonly TimeProvider _time;
     private readonly ILogger _logger;
     private readonly IWriteSteps _steps;
     private readonly DiskSeam _seam;
+    private readonly IOutsideChanges _outside = OutsideChanges.NotUndoneYet;
 
     /// <param name="records">Reads and saves the record.</param>
     /// <param name="store">Keeps the failure note.</param>
     /// <param name="space">Names the drives of a full-drive failure.</param>
+    /// <param name="processes">The running programs: a removal left part way is not finished while the game runs.</param>
     /// <param name="time">The clock of the note and of the retries.</param>
     /// <param name="logger">Where the transaction's lines go.</param>
-    public InstallTransaction(InstallRecords records, GameStateStore store, IFreeSpace space, TimeProvider time, ILogger<InstallTransaction> logger)
-        : this(records, store, space, time, logger, NoWriteSteps.Instance, DiskSeam.Real)
+    public InstallTransaction(InstallRecords records, GameStateStore store, IFreeSpace space, IProcesses processes, TimeProvider time, ILogger<InstallTransaction> logger)
+        : this(records, store, space, processes, time, logger, NoWriteSteps.Instance, DiskSeam.Real)
     {
     }
 
     /// <summary>The transaction with every change told to <paramref name="steps"/> first and made through <paramref name="seam"/>: the tests' crash, full-drive and lock points.</summary>
-    internal InstallTransaction(InstallRecords records, GameStateStore store, IFreeSpace space, TimeProvider time, ILogger logger, IWriteSteps steps, DiskSeam seam)
+    internal InstallTransaction(InstallRecords records, GameStateStore store, IFreeSpace space, IProcesses processes, TimeProvider time, ILogger logger, IWriteSteps steps, DiskSeam seam)
     {
         _records = records;
         _store = store;
         _space = space;
+        _processes = processes;
         _time = time;
         _logger = logger;
         _steps = steps;
@@ -45,7 +50,8 @@ internal sealed class InstallTransaction
     /// <summary>
     /// Installs <paramref name="plan"/>. Refused, writing nothing, when the folder's record cannot be read or
     /// belongs elsewhere, or the plan reaches outside the game folder or names a path twice. Otherwise the
-    /// folder's failure note is cleared, an open transaction an earlier run left is finished, and the plan runs.
+    /// folder's failure note is cleared, an open transaction an earlier run left is finished, and the plan runs;
+    /// a removal left part way that cannot be finished now refuses it.
     /// </summary>
     /// <exception cref="OperationCanceledException">The token was cancelled: the install was rolled back and its note says so.</exception>
     /// <exception cref="ArgumentException">A step of the plan is still a pattern: only the preview reads such a plan.</exception>
@@ -70,20 +76,23 @@ internal sealed class InstallTransaction
     {
         Failures failures = FailuresOf(new(plan.GameFolder, installFolder, plan.Header.Route, plan.Header.ToolVersion));
         failures.ClearNote(cancellationToken);
-        Recovery recovery = await new TransactionRecovery(NewDisk, installFolder, failures, _logger).RunAsync(recorded);
+        Recovery recovery = await Recovery(installFolder, failures, RecordRemoval.NewDisk(_records, _steps, _time, _seam)).RunAsync(recorded, CancellationToken.None);
         InstallOutcome outcome = await AfterRecoveryAsync(plan, recovery.Ran ? await _records.FindAsync(installFolder, cancellationToken) : recorded, recovery, failures, progress, cancellationToken);
         return outcome with { Recovered = recovery.Ran };
     }
 
     // The failure when the open transaction could not be finished; else the plan, over the record as it now is.
     private async Task<InstallOutcome> AfterRecoveryAsync(InstallPlan plan, RecordedInstall? recorded, Recovery recovery, Failures failures, IProgress<InstallProgress>? progress, CancellationToken cancellationToken) =>
-        recovery.Failed
-            ?? (recovery.Ran ? InstallChecks.RefusalOf(plan, recorded) : null) as InstallOutcome
-            ?? await new InstallRun(NewDisk, _logger, failures).RunAsync(plan, recorded, progress, cancellationToken);
+        recovery.Blocking
+            ?? (recovery.Ran ? InstallChecks.RefusalOf(plan, recorded) : null)
+            ?? await new InstallRun(NewDisk, _outside, _logger, failures).RunAsync(plan, recorded, progress, cancellationToken);
 
     /// <summary>
     /// Finishes, and does nothing else, a transaction an earlier run left open in <paramref name="installFolder"/>
-    /// (as the tool does at start for the folders it knows). Null when the folder holds none, or it was finished;
+    /// (as the tool does at start for the folders it knows). A removal part way is finished as an uninstall
+    /// would, a held file tried only for a moment; while the game runs, or with something left, its record stays
+    /// for the next uninstall, and the per-game state, the failure note with it, stays too.
+    /// Null when the folder holds none, it was finished, or it was a removal;
     /// a refusal when its record cannot be read or lies outside <paramref name="gameFolder"/>; the failure when
     /// it cannot be finished, kept as the folder's note.
     /// </summary>
@@ -94,12 +103,23 @@ internal sealed class InstallTransaction
         RecordedInstall? recorded = await _records.FindAsync(installFolder, cancellationToken);
         return InstallChecks.RecordRefusal(new(gameFolder), recorded) is { } refused
             ? refused
-            : (await new TransactionRecovery(NewDisk, installFolder, FailuresOf(new(gameFolder, installFolder, recorded?.Record?.Route, toolVersion)), _logger).RunAsync(recorded)).Failed is { } failed
+            : (await Recovery(installFolder, FailuresOf(new(gameFolder, installFolder, recorded?.Record?.Route, toolVersion)), NewDisk()).RunAsync(recorded, CancellationToken.None)).Failed is { } failed
                 ? failed with { Recovered = true }
                 : null;
     }
 
     private Failures FailuresOf(FailureSubject subject) => new(_store, _space, _time, _logger, subject);
+
+    // A removal part way is finished on removalDisk, and only while no program from the game or install folder runs.
+    private TransactionRecovery Recovery(string installFolder, Failures failures, InstallDisk removalDisk) =>
+        new(
+            NewDisk,
+            installFolder,
+            failures,
+            _outside,
+            new RecordRemoval(removalDisk, _outside, _logger),
+            () => Uninstaller.IsGameRunning(_processes, failures.Subject.GameFolder, installFolder),
+            _logger);
 
     private InstallDisk NewDisk() => new(_records, _steps, _time, _seam);
 }

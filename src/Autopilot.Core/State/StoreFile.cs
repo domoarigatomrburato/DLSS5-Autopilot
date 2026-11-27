@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Autopilot.Core.Graphics;
 using Autopilot.Core.Platform;
 using Autopilot.Core.Storage;
 
@@ -310,7 +311,7 @@ internal sealed class StoreFile(
 
         try
         {
-            File.Move(path, path + ".corrupt", overwrite: true);
+            File.Move(path, path + KnownFiles.CorruptSuffix, overwrite: true);
             return true;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

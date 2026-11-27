@@ -39,6 +39,9 @@ internal sealed class TransactionBed : IDisposable
     /// <summary>The tool's data folder, where the store keeps its notes.</summary>
     public string DataFolder => _data.Root;
 
+    /// <summary>The programs running: start one from the game folder to see a refusal.</summary>
+    public FakeProcesses Processes { get; } = new();
+
     public FakeLogger Log { get; } = new();
 
     /// <summary>The install folder, relative to the game folder.</summary>
@@ -57,7 +60,7 @@ internal sealed class TransactionBed : IDisposable
     public IProgress<InstallProgress>? Progress { get; set; }
 
     public InstallTransaction Transaction() =>
-        new(new InstallRecords(NullLogger<InstallRecords>.Instance, Time), Store, new FakeFreeSpace(("", new DriveSpace("G:", 1024))), Time, Log, Steps, Seam);
+        new(new InstallRecords(NullLogger<InstallRecords>.Instance, Time), Store, FakeFreeSpace.OneDrive, Processes, Time, Log, Steps, Seam);
 
     public Task<InstallOutcome> InstallAsync(InstallPlan plan, CancellationToken cancellationToken) =>
         Transaction().RunAsync(plan, Progress, cancellationToken);
@@ -120,6 +123,12 @@ internal sealed class HeldPaths
         {
             Check(path);
             File.Delete(path);
+        },
+        (from, to) =>
+        {
+            Check(from);
+            Check(to);
+            File.Move(from, to, overwrite: true);
         });
 
     public HeldPaths Hold(string path)

@@ -4,7 +4,7 @@ using Autopilot.Core.Tests.TestBeds;
 
 namespace Autopilot.Core.Tests.Install;
 
-/// <summary>A rollback another program stopped: the next install finishes it first, and fails again while the file stays held.</summary>
+/// <summary>A rollback another program stopped: the next install finishes it first, as an uninstall would, and is refused while the file stays held.</summary>
 [TestClass]
 public sealed class StuckTests(TestContext testContext)
 {
@@ -18,7 +18,7 @@ public sealed class StuckTests(TestContext testContext)
         using TransactionBed bed = new(GameFolders.Empty);
         HeldPaths held = await StuckAsync(bed, Ct);
 
-        InstallFailed again = await bed.InstallAsAsync<InstallFailed>(OneFile(bed), Ct);
+        InstallRefused again = await bed.InstallAsAsync<InstallRefused>(OneFile(bed), Ct);
         held.Release(bed.Tree.PathOf("a.dll"));
         InstallCommitted next = await bed.CommitAsync(OneFile(bed), Ct);
 
@@ -39,9 +39,9 @@ public sealed class StuckTests(TestContext testContext)
 
     private static InstallPlan OneFile(TransactionBed bed) => bed.Plan(RouteId.Native, Plans.Place("a.dll", _ours));
 
-    private static void AssertFinished(InstallFailed again, InstallCommitted next, TransactionBed bed)
+    private static void AssertFinished(InstallRefused again, InstallCommitted next, TransactionBed bed)
     {
-        Assert.AreEqual(FailureOutcome.RollbackIncomplete, again.Note.Outcome);
+        Assert.AreEqual(InstallRefusal.RemovalUnfinished, again.Reason);
         Assert.IsTrue(again.Recovered);
         Assert.IsTrue(next.Recovered);
         Assert.IsTrue(bed.Holds("a.dll", _ours));

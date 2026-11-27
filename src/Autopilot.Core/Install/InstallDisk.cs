@@ -12,10 +12,20 @@ namespace Autopilot.Core.Install;
 /// <param name="steps">Told before each change; tests crash or fill the drive there.</param>
 /// <param name="time">The clock the retries wait on.</param>
 /// <param name="seam">The rename and delete the changes go through.</param>
-internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, TimeProvider time, DiskSeam seam)
+/// <param name="entryDeleteWaits">The waits between the tries of an entry's delete (<see cref="DeleteEntryAsync"/>) another program holds.</param>
+internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, TimeProvider time, DiskSeam seam, IReadOnlyList<TimeSpan> entryDeleteWaits)
 {
+    /// <summary>A disk whose every held file is tried with the atomic write's waits: a moment, five times.</summary>
+    public InstallDisk(InstallRecords records, IWriteSteps steps, TimeProvider time, DiskSeam seam)
+        : this(records, steps, time, seam, AtomicFile.HeldWaits)
+    {
+    }
+
+    /// <summary>How many changes other than a record save went ahead.</summary>
+    public int Changes { get; private set; }
+
     /// <summary>Whether any change other than a record save went ahead.</summary>
-    public bool Changed { get; private set; }
+    public bool Changed => Changes > 0;
 
     /// <summary>Makes <paramref name="change"/>.</summary>
     /// <exception cref="BackupFailedException">A game's file could not be renamed to its backup name.</exception>
@@ -40,10 +50,19 @@ internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, Tim
 
     /// <summary>Renames <paramref name="from"/> to <paramref name="to"/>, which must not exist.</summary>
     public Task MoveAsync(string from, string to, CancellationToken cancellationToken) =>
-        DoAsync(new(WriteKind.Move, from, to), () => AtomicFile.RetryWhileHeldAsync(() => seam.Move(from, to), time, cancellationToken));
+        DoAsync(new(WriteKind.Move, from, to), () => RetryAsync(() => seam.Move(from, to), AtomicFile.HeldWaits, cancellationToken));
+
+    /// <summary>Renames <paramref name="from"/> over <paramref name="to"/> in one step, replacing the file there.</summary>
+    public Task ReplaceAsync(string from, string to) =>
+        DoAsync(new(WriteKind.Replace, from, to), () => RetryAsync(() => seam.Replace(from, to), AtomicFile.HeldWaits, CancellationToken.None));
 
     /// <summary>Deletes the file at <paramref name="path"/>, clearing its read-only attribute first; a file already gone is deleted.</summary>
-    public async Task DeleteAsync(string path, CancellationToken cancellationToken)
+    public Task DeleteAsync(string path, CancellationToken cancellationToken) => DeleteAsync(path, AtomicFile.HeldWaits, cancellationToken);
+
+    /// <summary>Deletes an entry's file at <paramref name="path"/> as <see cref="DeleteAsync(string, CancellationToken)"/> does, trying a held file with the entry waits.</summary>
+    public Task DeleteEntryAsync(string path) => DeleteAsync(path, entryDeleteWaits, CancellationToken.None);
+
+    private async Task DeleteAsync(string path, IReadOnlyList<TimeSpan> waits, CancellationToken cancellationToken)
     {
         FileInfo file = new(path);
         if (!file.Exists)
@@ -51,7 +70,7 @@ internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, Tim
             return;
         }
 
-        if (file.Attributes.HasFlag(FileAttributes.ReadOnly))
+        if ((file.Attributes & FileAttributes.ReadOnly) != 0)
         {
             await DoAsync(new(WriteKind.SetAttributes, path), () =>
             {
@@ -60,7 +79,7 @@ internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, Tim
             });
         }
 
-        await DoAsync(new(WriteKind.Delete, path), () => AtomicFile.RetryWhileHeldAsync(() => Gone(() => seam.Delete(path)), time, cancellationToken));
+        await DoAsync(new(WriteKind.Delete, path), () => RetryAsync(() => Gone(() => seam.Delete(path)), waits, cancellationToken));
     }
 
     /// <summary>Removes the empty folder at <paramref name="path"/>.</summary>
@@ -97,6 +116,9 @@ internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, Tim
             cancellationToken));
     }
 
+    private Task RetryAsync(Action change, IReadOnlyList<TimeSpan> waits, CancellationToken cancellationToken) =>
+        AtomicFile.RetryWhileHeldAsync(change, waits, time, cancellationToken);
+
     private Task CreateFolderAsync(string path) =>
         DoAsync(new(WriteKind.CreateFolder, path), () =>
         {
@@ -123,7 +145,7 @@ internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, Tim
             steps.Before(step);
             if (step.Kind != WriteKind.SaveRecord)
             {
-                Changed = true;
+                Changes++;
             }
 
             await change();
@@ -142,10 +164,11 @@ internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, Tim
 /// <summary>The rename and the delete the install's changes go through: the seam a test holds a file with.</summary>
 /// <param name="Move">Renames a file to a name that must be free.</param>
 /// <param name="Delete">Deletes a file.</param>
-internal sealed record DiskSeam(Action<string, string> Move, Action<string> Delete)
+/// <param name="Replace">Renames a file over another, replacing it in one step.</param>
+internal sealed record DiskSeam(Action<string, string> Move, Action<string> Delete, Action<string, string> Replace)
 {
-    /// <summary>The file system's own: a rename never replaces a file.</summary>
-    public static DiskSeam Real { get; } = new(static (from, to) => File.Move(from, to, overwrite: false), File.Delete);
+    /// <summary>The file system's own: a move never replaces a file; a replace does.</summary>
+    public static DiskSeam Real { get; } = new(static (from, to) => File.Move(from, to, overwrite: false), File.Delete, static (from, to) => File.Move(from, to, overwrite: true));
 }
 
 /// <summary>A file another program held through every try: the install fails as locked, naming it.</summary>

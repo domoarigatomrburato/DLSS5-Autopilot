@@ -41,7 +41,10 @@ internal sealed partial class ListedComponents(GitHubReleases releases)
     private static readonly ExpectedFile[] _upliftLayout =
         [.. new[] { "gitc-uplift.addon64", "gitc-uplift.addon32", "gitc-uplift-helper64.exe", "Uplift.fx", "UpliftMask.fx" }.Select(name => new ExpectedFile(name))];
 
-    private static readonly ExpectedFile[] _mfgLayout = [.. new[] { "RTX40MFGCore.dll", "RTX40MFG.asi", "RTX40MFG-UI.addon64" }.Select(name => new ExpectedFile(name))];
+    /// <summary>The files an RTX40MFG-Unlock release carries, by name.</summary>
+    internal static readonly IReadOnlyList<string> MfgFiles = ["RTX40MFGCore.dll", "RTX40MFG.asi", "RTX40MFG-UI.addon64"];
+
+    private static readonly ExpectedFile[] _mfgLayout = [.. MfgFiles.Select(name => new ExpectedFile(name))];
 
     /// <summary>
     /// The newest release, drafts and pre-releases dropped, that carries <c>GITC-Uplift-&lt;version&gt;.zip</c>,
