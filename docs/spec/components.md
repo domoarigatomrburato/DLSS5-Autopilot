@@ -31,7 +31,7 @@ those come from.
 | `nvngx_dlssnr.dll` | the mirror, releases tagged `dlssnr-<label>` | `nvngx_dlssnr.dll` inside the zip, per card | every route |
 | `nvngx_dlss.dll`, `nvngx_dlssd.dll`, `nvngx_dlssg.dll` | NVIDIA, `NVIDIA/DLSS` repository, tree of the newest release tag, `lib/Windows_x86_64/rel/`; mirror releases `dlss-<v>`, `dlssd-<v>` and `dlssg-<v>` behind it | the DLL itself | super resolution, ray reconstruction, frame generation |
 | DLSS5-Feeder | `jlrouzies-fr/DLSS5-Feeder` | `dlss5-feed.addon64` or `.addon32` or `dlss5-feed-helper.addon64`, `dlss5-feed-host64.exe`, `DLSS5_Feed.fx`, loose or in one zip | feeder |
-| LumeniteFX | `umar-afzaal/LumeniteFX`, branch zip | one provider `.fx` (`lumenite_Kernel.fx` or `lumenite_QuantMotion.fx`), the four `.fxh` includes, `lumenite_bluenoise256.png` | feeder, provider 3 or 4 |
+| LumeniteFX | `umar-afzaal/LumeniteFX`, branch zip | `lumenite_Kernel.fx`, the four `.fxh` includes, `lumenite_bluenoise256.png` (provider 4's `lumenite_QuantMotion.fx` is gone upstream: see [routes](routes.md)) | feeder, provider 3 |
 | VORT shaders | `vortigern11/vort_Shaders`, branch zip | `vort_Motion.fx`, its includes under `Includes`, `vort_BlueNoise.png` | feeder provider 2, standalone |
 | dlss5-bridge | `NIGos/dlss5-bridge`, newest release | the `.addon64` asset | bridge |
 | neural-upstream | `matiasLombo/neural-upstream`, newest release | the asset `nvngx.dll.addon64` | neural-upstream |

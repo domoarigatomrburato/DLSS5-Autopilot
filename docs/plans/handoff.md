@@ -73,6 +73,13 @@ signature reader is `~/coding/claude-lab/dlssnr-arch/arch.py`), the pins
 become data beside `RenodxPins`, and `DlssnrBuilds._preferred` takes the new
 table.
 
+**Also decided by Ale:** motion provider 4 (LumeniteFX QuantMotion) leaves the
+choices (`routes.md`, motion-vector provider): LumeniteFX renamed it to
+PocketMV and the feeder does not bind it yet (jlrouzies-fr/DLSS5-Feeder#164).
+`MotionProvider.LumeniteQuantMotion` and its files go from the sources; a
+setting naming 4 stops before writing with the spec's message. When the
+feeder ships PocketMV, 4 returns with that release as its minimum.
+
 ## How we work (binding, besides AGENTS.md and the plan's Decisions)
 
 - Replies to Ale in Italian, short; code, docs, commits in English.
@@ -114,7 +121,5 @@ table.
 
 ## Questions for Ale from M3
 
-- LumeniteFX `mainline` no longer has `lumenite_QuantMotion.fx`, so motion
-  provider 4 answers "layout changed".
 - The Remix runtime's `/latest` is `dlssnr-v1`.
 - An oversized 5xx body that the caller accepts fails as `TooLarge` (M3a).
