@@ -1,48 +1,37 @@
 using Autopilot.Core.Library;
 using Autopilot.Core.Tests.Executables;
+using Autopilot.Core.Tests.TestBeds;
 
 namespace Autopilot.Core.Tests.Library;
 
 /// <summary>
-/// A game folder in a temp directory, named as the test needs (the folder name is part of the
-/// ranking), with executables by relative path and size. Sizes are sparse, so a large one costs
-/// nothing; a real header comes from <see cref="TestPe"/>. Disposing deletes it.
+/// A game folder on a <see cref="GameTree"/>, named as the test needs (the folder name is part of the
+/// ranking), with the Library tests' extras: executables by relative path and size, Unity's and
+/// Source's layouts, access taken away, and the candidate ranking. Sizes are sparse, so a large one
+/// costs nothing; a real header comes from <see cref="TestPe"/>. Disposing deletes it.
 /// </summary>
-internal sealed class GameFolder : IDisposable
+/// <param name="name">The folder's name; the default matches none of the short executable names the tests use.</param>
+internal sealed class GameFolder(string name = "Zq9 Arena") : IDisposable
 {
-    private readonly string _parent = Directory.CreateTempSubdirectory("autopilot-games-").FullName;
+    private readonly GameTree _tree = new(name);
 
-    /// <summary>The default name matches none of the short executable names the tests use.</summary>
-    public GameFolder(string name = "Zq9 Arena")
-    {
-        Root = Path.Join(_parent, name);
-        _ = Directory.CreateDirectory(Root);
-    }
-
-    public string Root { get; }
+    public string Root => _tree.Root;
 
     public const long Megabyte = 1024 * 1024;
 
-    public string PathOf(string relative) => Path.Join(Root, relative);
+    /// <summary>The full path of <paramref name="relative"/>, spelled with either slash.</summary>
+    public string PathOf(string relative) => _tree.PathOf(relative);
 
     public GameFolder Folder(string relative)
     {
-        _ = Directory.CreateDirectory(PathOf(relative));
+        _ = _tree.Folder(relative);
         return this;
     }
 
     /// <summary>An executable of <paramref name="size"/> bytes, with <paramref name="header"/> at its start when given.</summary>
     public GameFolder Exe(string relative, long size = 0, TestPe? header = null)
     {
-        string path = PathOf(relative);
-        _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        using FileStream file = File.Create(path);
-        header?.WriteTo(file);
-        if (size > file.Length)
-        {
-            file.SetLength(size);
-        }
-
+        _ = _tree.Add(new TreeFile(relative) { Content = header?.ToBytes(), Size = size });
         return this;
     }
 
@@ -63,7 +52,7 @@ internal sealed class GameFolder : IDisposable
 
         if (gameInfo)
         {
-            File.WriteAllText(Folder(game).PathOf($"{game}/gameinfo.txt"), "\"GameInfo\" {}");
+            _ = _tree.Add(TreeFile.Text($"{game}/gameinfo.txt", "\"GameInfo\" {}"));
         }
 
         return this;
@@ -97,24 +86,5 @@ internal sealed class GameFolder : IDisposable
     public string[] Relative(CandidateSearch search) =>
         [.. search.Candidates.Select(path => Path.GetRelativePath(Root, path).Replace(Path.DirectorySeparatorChar, '/'))];
 
-    public void Dispose()
-    {
-        UnlockAll(_parent);
-        Directory.Delete(_parent, recursive: true);
-    }
-
-    // A test that made a folder unreadable leaves it so; deleting needs the access back.
-    private static void UnlockAll(string folder)
-    {
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
-        foreach (string directory in Directory.EnumerateDirectories(folder, "*", SearchOption.TopDirectoryOnly))
-        {
-            File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-            UnlockAll(directory);
-        }
-    }
+    public void Dispose() => _tree.Dispose();
 }

@@ -11,15 +11,27 @@ namespace Autopilot.Core.Components.Sources;
 /// author publishes test builds with GitHub's pre-release flag off, so a test build is also told
 /// by its tag's own words, and "newest release" never lands on one while a release exists.
 /// </summary>
-public sealed partial class FeederSource(GitHubReleases releases, ILogger<FeederSource> logger)
+public sealed partial class FeederSource
 {
     /// <summary>How many of the newest releases are read, and the only ones an exact tag is looked for in.</summary>
     public const int ListedReleases = 15;
 
     private static readonly GitHubRepository _repository = ComponentCatalog.Of(ComponentIds.Feeder).Repository;
 
-    private readonly ResolutionMemory<FeederChoice, FeederRelease> _memory = new();
-    private readonly FeederPages _pages = new(releases, logger);
+    private readonly ResolutionMemory<FeederChoice, FeederRelease> _memory;
+    private readonly FeederPages _pages;
+
+    private readonly GitHubReleases _releases;
+    private readonly ILogger<FeederSource> _logger;
+
+    /// <summary>Built by a <see cref="ComponentRun"/>; <paramref name="run"/> is its token, which the shared resolutions run under.</summary>
+    internal FeederSource(GitHubReleases releases, ILogger<FeederSource> logger, CancellationToken run)
+    {
+        _memory = new(run);
+        _pages = new(releases, logger);
+        _releases = releases;
+        _logger = logger;
+    }
 
     /// <summary>The release <paramref name="choice"/> names; the same answer for the rest of the run once found.</summary>
     /// <exception cref="ComponentException">The tag is not among the 15 newest, there is no release, or the release carries no feeder files.</exception>
@@ -34,7 +46,7 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
     private async Task<FeederRelease> ResolveOnceAsync(FeederChoice choice, CancellationToken cancellationToken)
     {
         // Each choice picks from the same list: it is read once per run.
-        ReleaseListAnswer list = await releases.GetListOnceAsync(_repository, ListedReleases, cancellationToken);
+        ReleaseListAnswer list = await _releases.GetListOnceAsync(_repository, ListedReleases, cancellationToken);
         GitHubRelease[] published = [.. list.Releases.Where(release => release.Draft != true)];
         (GitHubRelease release, ReleaseSource source, string? notice) = choice.Pick switch
         {
@@ -43,9 +55,9 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
             _ => await NewestReleaseAsync(published, list.Source, cancellationToken),
         };
         var resolved = FeederRelease.Of(release, source, notice);
-        if (logger.IsEnabled(LogLevel.Information))
+        if (_logger.IsEnabled(LogLevel.Information))
         {
-            LogResolved(logger, release.Tag, choice.Pick, resolved.Package?.Name ?? "loose files");
+            LogResolved(_logger, release.Tag, choice.Pick, resolved.Package?.Name ?? "loose files");
         }
 
         return resolved;
@@ -76,7 +88,7 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
 
         // Every source answered a test build: GitHub's own "latest", else the newest of the list,
         // installed and said so rather than nothing installed.
-        ReleaseAnswer? latest = await releases.GetLatestAsync(_repository, cancellationToken);
+        ReleaseAnswer? latest = await _releases.GetLatestAsync(_repository, cancellationToken);
         (GitHubRelease release, ReleaseSource source) = latest is not null ? (latest.Release, latest.Source) : (Newest(published), listSource);
         return (release, source, IsTestBuild(release) ? Texts.Format("FeederEveryReleaseTest", release.Tag) : null);
     }

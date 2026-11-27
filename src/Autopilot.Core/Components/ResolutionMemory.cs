@@ -1,15 +1,16 @@
 namespace Autopilot.Core.Components;
 
 /// <summary>
-/// One resolution per key for the life of its owner, which the composition root keeps for the
-/// process: callers asking together share one request, a success is reused for the run, and a
-/// failure is forgotten so the next ask tries again (a network failure is no answer to keep). A
-/// success <paramref name="keep"/> turns down is handed to the callers that shared it and forgotten too.
-/// The shared resolution belongs to no caller: it runs uncancelled, and each caller stops waiting
-/// for it with its own token.
+/// One resolution per key for the life of its owner, which a <see cref="ComponentRun"/> keeps for one
+/// job: callers asking together share one request, a success is reused for the run, and a failure is
+/// forgotten so the next ask tries again (a network failure is no answer to keep). A success
+/// <paramref name="keep"/> turns down is handed to the callers that shared it and forgotten too.
+/// The shared resolution belongs to no caller: it runs under the run's token, a cancelled one is
+/// forgotten like a failure, and each caller stops waiting for it with its own token.
 /// </summary>
+/// <param name="run">The run's token, which the shared resolutions run under.</param>
 /// <param name="keep">Whether a success is kept for the run; unset, every one is.</param>
-internal sealed class ResolutionMemory<TKey, TValue>(Func<TValue, bool>? keep = null)
+internal sealed class ResolutionMemory<TKey, TValue>(CancellationToken run, Func<TValue, bool>? keep = null)
     where TKey : notnull
 {
     private readonly Dictionary<TKey, Lazy<Task<TValue>>> _kept = [];
@@ -23,7 +24,7 @@ internal sealed class ResolutionMemory<TKey, TValue>(Func<TValue, bool>? keep = 
             if (!_kept.TryGetValue(key, out pending))
             {
                 // Only stored here: the resolver starts outside the lock, on the first caller's Value.
-                pending = new(() => resolve(CancellationToken.None));
+                pending = new(() => resolve(run));
                 _kept[key] = pending;
             }
         }

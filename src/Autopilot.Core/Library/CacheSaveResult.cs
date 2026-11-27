@@ -14,7 +14,7 @@ public sealed record CacheSaveResult
     public bool Saved => Failure is null;
 
     /// <summary>Whether the save found its drive full.</summary>
-    public bool DriveFull => Failure is not null && DiskSpace.IsDiskFull(Failure);
+    public bool DriveFull => Failure is not null && IoErrors.IsDiskFull(Failure);
 
     /// <summary>The line for the log, or null when the cache was saved.</summary>
     public string? Explain() => Failure switch

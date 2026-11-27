@@ -1,4 +1,4 @@
-namespace Autopilot.Core.Tests.Storage;
+namespace Autopilot.Core.Tests.TestBeds;
 
 /// <summary>A clock whose timers fire at once, keeping how long each was set for, so a wait is asserted without waiting.</summary>
 /// <remarks>Not FakeTimeProvider: the write before the wait is real file I/O, so a test cannot tell when the timer exists to advance past it.</remarks>

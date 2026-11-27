@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using Autopilot.Core.Archives;
+using Autopilot.Core.Platform;
 
 namespace Autopilot.Core.Library.Emulators;
 
@@ -97,14 +98,8 @@ internal static class BackendSettings
         }
         catch (UnsafePathException)
         {
-            return Path.IsPathFullyQualified(named) && IsBelow(place.Folder, named) ? named : null;
+            return Path.IsPathFullyQualified(named) && PathParts.IsAtOrBelow(place.Folder, named) ? named : null;
         }
-    }
-
-    private static bool IsBelow(string folder, string path)
-    {
-        string relative = Path.GetRelativePath(folder, path);
-        return relative != ".." && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) && !Path.IsPathRooted(relative);
     }
 
     private static Func<ConfigPlace, CancellationToken, Task<IEnumerable<string?>>> Sync(Func<ConfigPlace, IEnumerable<string?>> locate) =>

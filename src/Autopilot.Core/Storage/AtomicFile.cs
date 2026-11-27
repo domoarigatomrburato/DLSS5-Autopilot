@@ -20,10 +20,6 @@ internal static partial class AtomicFile
     /// <summary>An antivirus or an indexer holds a file for a moment: the replace is tried this many times.</summary>
     private const int MoveTries = 6;
 
-    // Windows: ERROR_SHARING_VIOLATION and ERROR_LOCK_VIOLATION.
-    private const int SharingViolation = unchecked((int)0x80070020);
-    private const int LockViolation = unchecked((int)0x80070021);
-
     private static readonly TimeSpan _moveRetryWait = TimeSpan.FromMilliseconds(100);
 
     /// <summary>
@@ -123,7 +119,7 @@ internal static partial class AtomicFile
 
     // Windows reports a replace of a file another program holds open either way.
     private static bool IsHeld(Exception failure) =>
-        failure is IOException { HResult: SharingViolation or LockViolation } or UnauthorizedAccessException;
+        failure is UnauthorizedAccessException || IoErrors.IsSharingViolation(failure);
 
     // A temporary file that cannot be removed is left behind rather than hiding why the write failed.
     private static void Remove(string temporary)

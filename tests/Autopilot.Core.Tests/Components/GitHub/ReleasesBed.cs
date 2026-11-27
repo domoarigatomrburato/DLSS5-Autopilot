@@ -3,6 +3,7 @@ using System.Net;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Net;
 using Autopilot.Core.Tests.Net;
+using Autopilot.Core.Tests.TestBeds;
 using Microsoft.Extensions.Logging.Testing;
 
 namespace Autopilot.Core.Tests.Components.GitHub;
@@ -16,19 +17,21 @@ internal sealed class ReleasesBed : IDisposable
     public static readonly string LatestPage = ComponentsBed.LatestPage(Repo);
 
     private readonly CancellationToken _cancellation;
+    private readonly Runs _runs;
 
     public ReleasesBed(TestContext context, NetOptions? options = null)
     {
         _cancellation = context.CancellationToken;
         Net = new(context, options ?? TestBed.SingleAttempt);
-        Releases = new(Net.Client, Net.Time, Log);
+        _runs = new(Net);
+        Releases = _runs.Next(_cancellation).Releases;
     }
 
     public TestBed Net { get; }
 
     public FakeServer Server => Net.Server;
 
-    public FakeLogger<GitHubReleases> Log { get; } = new();
+    public FakeLogger Log => _runs.Loggers.Of<GitHubReleases>();
 
     public GitHubReleases Releases { get; }
 

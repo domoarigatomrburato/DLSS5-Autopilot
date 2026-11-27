@@ -1,3 +1,4 @@
+using Autopilot.Core.Platform;
 using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Tests.Storage;
@@ -69,16 +70,10 @@ public sealed class DiskFullPlacesTests
     [DataRow("/Volumes/GamesSSD/Arena", "/Volumes/Games", false)]
     [DataRow("/Volumes/GamesSSD", "/Volumes/Games/", false)]
     [DataRow("/Volumes/Games", "/", true)]
-    public void A_path_is_on_a_drive_by_whole_parts_not_by_prefix(string path, string root, bool expected)
-    {
-        if (OperatingSystem.IsWindows())
-        {
-            Assert.Inconclusive("the cases are Unix mount points");
-            return;
-        }
-
-        Assert.AreEqual(expected, DriveFreeSpace.IsUnder(path, root));
-    }
+    [DataRow(@"D:\Games\Arena", @"D:\", true)]
+    [DataRow(@"D:\GamesSSD\Arena", @"D:\Games", false)]
+    public void A_path_is_on_a_drive_by_whole_parts_not_by_prefix(string path, string root, bool expected) =>
+        Assert.AreEqual(expected, PathParts.IsAtOrBelow(root, path), "the drive choice's own comparison");
 
     /// <summary>Answers each path by the first folder it starts with.</summary>
     private sealed class FakeFreeSpace(params (string Folder, DriveSpace Drive)[] drives) : IFreeSpace

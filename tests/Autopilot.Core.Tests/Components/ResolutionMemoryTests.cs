@@ -9,7 +9,7 @@ public sealed class ResolutionMemoryTests(TestContext testContext)
     [TestMethod]
     public async Task Callers_asking_together_share_one_resolution()
     {
-        ResolutionMemory<string, string> memory = new();
+        ResolutionMemory<string, string> memory = new(testContext.CancellationToken);
         TaskCompletionSource<string> answer = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int resolutions = 0;
         Task<string> Resolve(CancellationToken _)
@@ -30,7 +30,7 @@ public sealed class ResolutionMemoryTests(TestContext testContext)
     [TestMethod]
     public async Task A_caller_that_stops_waiting_leaves_the_shared_resolution_running()
     {
-        ResolutionMemory<string, string> memory = new();
+        ResolutionMemory<string, string> memory = new(testContext.CancellationToken);
         TaskCompletionSource<string> answer = new(TaskCreationOptions.RunContinuationsAsynchronously);
         using CancellationTokenSource impatient = new();
         Task<string> Resolve(CancellationToken _) => answer.Task;
@@ -47,7 +47,7 @@ public sealed class ResolutionMemoryTests(TestContext testContext)
     [TestMethod]
     public async Task The_first_caller_cancelling_does_not_cancel_the_resolution_others_share()
     {
-        ResolutionMemory<string, string> memory = new();
+        ResolutionMemory<string, string> memory = new(testContext.CancellationToken);
         TaskCompletionSource<string> answer = new(TaskCreationOptions.RunContinuationsAsynchronously);
         using CancellationTokenSource impatient = new();
         int resolutions = 0;
@@ -70,7 +70,7 @@ public sealed class ResolutionMemoryTests(TestContext testContext)
     [TestMethod]
     public async Task A_success_the_owner_does_not_keep_is_asked_again()
     {
-        ResolutionMemory<string, string> memory = new(value => value != "pages");
+        ResolutionMemory<string, string> memory = new(testContext.CancellationToken, value => value != "pages");
         int resolutions = 0;
         Task<string> Resolve(CancellationToken _) => Task.FromResult(++resolutions == 1 ? "pages" : "api");
 
@@ -78,5 +78,36 @@ public sealed class ResolutionMemoryTests(TestContext testContext)
         Assert.AreEqual("api", await memory.GetAsync("mirror", Resolve, testContext.CancellationToken));
         Assert.AreEqual("api", await memory.GetAsync("mirror", Resolve, testContext.CancellationToken));
         Assert.AreEqual(2, resolutions);
+    }
+
+    [TestMethod]
+    public async Task A_cancelled_resolution_is_forgotten_like_a_failure()
+    {
+        ResolutionMemory<string, string> memory = new(testContext.CancellationToken);
+        int resolutions = 0;
+        Task<string> Resolve(CancellationToken _) =>
+            ++resolutions == 1 ? Task.FromCanceled<string>(new CancellationToken(canceled: true)) : Task.FromResult("v3.2");
+
+        _ = await Assert.ThrowsAsync<OperationCanceledException>(() => memory.GetAsync("dxvk", Resolve, testContext.CancellationToken));
+
+        Assert.AreEqual("v3.2", await memory.GetAsync("dxvk", Resolve, testContext.CancellationToken));
+        Assert.AreEqual(2, resolutions);
+    }
+
+    [TestMethod]
+    public async Task The_shared_resolution_runs_under_the_runs_token()
+    {
+        using CancellationTokenSource job = new();
+        ResolutionMemory<string, string> memory = new(job.Token);
+        CancellationToken seen = default;
+        Task<string> Resolve(CancellationToken token)
+        {
+            seen = token;
+            return Task.FromResult("6.8.0");
+        }
+
+        _ = await memory.GetAsync("reshade", Resolve, testContext.CancellationToken);
+
+        Assert.AreEqual(job.Token, seen);
     }
 }

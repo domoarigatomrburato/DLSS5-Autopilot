@@ -7,13 +7,14 @@ using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Components.Sources;
 using Autopilot.Core.Net;
 using Autopilot.Core.Tests.Net;
+using Autopilot.Core.Tests.TestBeds;
 using Microsoft.Extensions.Logging.Testing;
 
 namespace Autopilot.Core.Tests.Components;
 
 /// <summary>
 /// ReShade, the feeder, OptiScaler and the other components on the network test bed: one fake server, one cache folder,
-/// the sources wired the way the composition root wires them.
+/// and a <see cref="ComponentRun"/> under the test's token, as a job builds one.
 /// </summary>
 internal sealed class ComponentsBed : IDisposable
 {
@@ -30,12 +31,8 @@ internal sealed class ComponentsBed : IDisposable
     {
         Cancellation = context.CancellationToken;
         Net = new(context, options ?? TestBed.SingleAttempt);
-        Releases = new(Net.Client, Net.Time, new FakeLogger<GitHubReleases>());
-        Cache = new(Net.Client, Net.CacheRoot, new FakeSigner(), Net.Time, new FakeLogger<DownloadCache>());
-        ReShade = new(Net.Client, Cache, new FakeLogger<ReShadeSource>());
-        Feeder = new(Releases, new FakeLogger<FeederSource>());
-        OptiScaler = new(Releases, Cache, OptiScalerLog);
-        Sources = new(Releases, Net.Client, Net.Time, new FakeLogger<ComponentSources>());
+        Runs = new(Net);
+        Run = NextRun();
         Files = new(Cache);
     }
 
@@ -43,21 +40,27 @@ internal sealed class ComponentsBed : IDisposable
 
     public FakeServer Server => Net.Server;
 
-    public GitHubReleases Releases { get; }
+    /// <summary>The run the test's sources belong to.</summary>
+    public ComponentRun Run { get; }
 
-    public DownloadCache Cache { get; }
+    /// <summary>Builds the runs, and holds the cache and the loggers they share.</summary>
+    public Runs Runs { get; }
 
-    public ReShadeSource ReShade { get; }
+    public GitHubReleases Releases => Run.Releases;
 
-    public FeederSource Feeder { get; }
+    public DownloadCache Cache => Runs.Cache;
 
-    public FakeLogger<OptiScalerSource> OptiScalerLog { get; } = new();
+    public ReShadeSource ReShade => Run.ReShade;
 
-    public ComponentSources Sources { get; }
+    public FeederSource Feeder => Run.Feeder;
+
+    public FakeLogger OptiScalerLog => Runs.Loggers.Of<OptiScalerSource>();
+
+    public ComponentSources Sources => Run.Sources;
 
     public ComponentFiles Files { get; }
 
-    public OptiScalerSource OptiScaler { get; }
+    public OptiScalerSource OptiScaler => Run.OptiScaler;
 
     /// <summary>What the OptiScaler source logged, in order.</summary>
     public string[] OptiScalerLines => [.. OptiScalerLog.Collector.GetSnapshot().Select(record => record.Message)];
@@ -95,8 +98,11 @@ internal sealed class ComponentsBed : IDisposable
         return this;
     }
 
-    /// <summary>Sources of a later run: nothing remembered, the network's cache kept.</summary>
-    public ComponentSources NextRun() => new(Releases, Net.Client, Net.Time, new FakeLogger<ComponentSources>());
+    /// <summary>A later run under the test's token: nothing remembered, the network's cache kept.</summary>
+    public ComponentRun NextRun() => NextRun(Cancellation);
+
+    /// <summary>A later run under <paramref name="cancellation"/>, the job's own token.</summary>
+    public ComponentRun NextRun(CancellationToken cancellation) => Runs.Next(cancellation);
 
     /// <summary>Moves the clock on by <paramref name="hours"/>.</summary>
     public void Advance(double hours) => Net.Time.Advance(TimeSpan.FromHours(hours));

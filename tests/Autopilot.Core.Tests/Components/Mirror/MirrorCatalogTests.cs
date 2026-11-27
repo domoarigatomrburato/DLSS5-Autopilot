@@ -157,7 +157,7 @@ public sealed class MirrorCatalogTests(TestContext testContext)
     }
 
     [TestMethod]
-    public async Task The_catalog_is_remembered_for_the_process()
+    public async Task The_catalog_is_remembered_for_the_run()
     {
         using MirrorBed bed = new(testContext);
         _ = await bed.ApiAnswers().NvidiaRedirects().Get();

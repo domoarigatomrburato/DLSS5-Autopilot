@@ -10,16 +10,25 @@ namespace Autopilot.Core.Components.GitHub;
 /// the API fails; and from github.com's own release pages when nothing was kept. A refusal (a host
 /// off the list, a downgrade, an answer too large) is never covered by another source.
 /// </summary>
-public sealed class GitHubReleases(NetClient client, TimeProvider time, ILogger<GitHubReleases> logger)
+public sealed class GitHubReleases
 {
     /// <summary>The most releases the API lists in one answer.</summary>
     public const int MaxListCount = 100;
 
-    private readonly ReleasePages _pages = new(client, logger);
-    private readonly ReleaseResolver _resolver = new(client, time, logger);
+    private readonly ReleasePages _pages;
+    private readonly ReleaseResolver _resolver;
 
     // Several components pick from the same list (the feeder's choices, wilsjo2's two builds): it is read once per run.
-    private readonly ResolutionMemory<(GitHubRepository Repository, int Count), ReleaseListAnswer> _lists = new();
+    private readonly ResolutionMemory<(GitHubRepository Repository, int Count), ReleaseListAnswer> _lists;
+
+
+    /// <summary>Built by a <see cref="ComponentRun"/>; <paramref name="run"/> is its token, which the shared resolutions run under.</summary>
+    internal GitHubReleases(NetClient client, TimeProvider time, ILogger<GitHubReleases> logger, CancellationToken run)
+    {
+        _pages = new(client, logger, run);
+        _resolver = new(client, time, logger);
+        _lists = new(run);
+    }
 
     /// <summary>The newest release that is neither a draft nor a pre-release, as GitHub names it; <see langword="null"/> when the repository has none.</summary>
     /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>

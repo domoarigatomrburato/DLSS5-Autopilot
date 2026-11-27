@@ -13,7 +13,7 @@ namespace Autopilot.Core.Components.Sources;
 /// address is built from the version; then the newest installer already in the download cache.
 /// When all three fail, the error lists every reason.
 /// </summary>
-public sealed partial class ReShadeSource(NetClient client, DownloadCache cache, ILogger<ReShadeSource> logger)
+public sealed partial class ReShadeSource
 {
     private const string Home = "https://reshade.me/";
 
@@ -27,7 +27,20 @@ public sealed partial class ReShadeSource(NetClient client, DownloadCache cache,
     private static readonly TextRequest _homeRequest = new() { AcceptServerError = ReShadeVersions.HasSetupLink };
 
     // An installer found only in the cache stands in while the network is out, and is asked again next time.
-    private readonly ResolutionMemory<bool, ReShadeInstaller> _memory = new(installer => installer.Origin != ReShadeOrigin.Cache);
+    private readonly ResolutionMemory<bool, ReShadeInstaller> _memory;
+
+    private readonly NetClient _client;
+    private readonly DownloadCache _cache;
+    private readonly ILogger<ReShadeSource> _logger;
+
+    /// <summary>Built by a <see cref="ComponentRun"/>; <paramref name="run"/> is its token, which the shared resolutions run under.</summary>
+    internal ReShadeSource(NetClient client, DownloadCache cache, ILogger<ReShadeSource> logger, CancellationToken run)
+    {
+        _memory = new(run, installer => installer.Origin != ReShadeOrigin.Cache);
+        _client = client;
+        _cache = cache;
+        _logger = logger;
+    }
 
     /// <summary>The installer to download; the same answer for the rest of the run once found.</summary>
     /// <exception cref="ComponentException">No source named an installer (<see cref="ComponentFailure.InstallerNotFound"/>); the message and <see cref="ComponentException.Reasons"/> list why.</exception>
@@ -42,9 +55,9 @@ public sealed partial class ReShadeSource(NetClient client, DownloadCache cache,
             ?? await FromTagsAsync(reasons, cancellationToken)
             ?? FromCache(reasons)
             ?? throw new ComponentException(ComponentFailure.InstallerNotFound, Texts.Format("ReShadeNotFound", string.Join("; ", reasons))) { Reasons = reasons };
-        if (logger.IsEnabled(LogLevel.Information))
+        if (_logger.IsEnabled(LogLevel.Information))
         {
-            LogResolved(logger, installer.Version.Label, installer.Origin);
+            LogResolved(_logger, installer.Version.Label, installer.Origin);
         }
 
         return installer;
@@ -85,11 +98,11 @@ public sealed partial class ReShadeSource(NetClient client, DownloadCache cache,
 
     // The source's answer; null, with the failure added to the reasons, when the network failed. A refusal propagates.
     private Task<TextAnswer?> TryGetAsync(Uri url, TextRequest request, List<string> reasons, CancellationToken cancellationToken) =>
-        NetFallback.OrNullAsync(client.GetTextAsync(url, ComponentHosts.Allowlist, request, cancellationToken), failure => reasons.Add(failure.Message));
+        NetFallback.OrNullAsync(_client.GetTextAsync(url, ComponentHosts.Allowlist, request, cancellationToken), failure => reasons.Add(failure.Message));
 
     private ReShadeInstaller? FromCache(List<string> reasons)
     {
-        ComponentVersion? newest = ReShadeVersions.NewestCached(cache.CachedNames(ReShadeInstaller.CachedPattern));
+        ComponentVersion? newest = ReShadeVersions.NewestCached(_cache.CachedNames(ReShadeInstaller.CachedPattern));
         if (newest is null)
         {
             reasons.Add(Texts.Text("ReShadeNotCached"));

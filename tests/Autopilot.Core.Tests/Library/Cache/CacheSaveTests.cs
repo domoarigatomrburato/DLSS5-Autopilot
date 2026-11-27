@@ -1,4 +1,5 @@
 using Autopilot.Core.Library;
+using Autopilot.Core.Tests.TestBeds;
 
 namespace Autopilot.Core.Tests.Library.Cache;
 
@@ -6,8 +7,6 @@ namespace Autopilot.Core.Tests.Library.Cache;
 [TestClass]
 public sealed class CacheSaveTests(TestContext testContext) : IDisposable
 {
-    private const int WindowsDiskFull = unchecked((int)0x80070070);
-
     private readonly CacheBed _bed = new();
 
     private CancellationToken Ct => testContext.CancellationToken;
@@ -22,7 +21,7 @@ public sealed class CacheSaveTests(TestContext testContext) : IDisposable
         _ = await _bed.SaveAsync(Ct, arena);
         string before = await File.ReadAllTextAsync(_bed.CachePath, Ct);
 
-        CacheSaveResult result = await _bed.SaveThroughAsync(file => new FillingStream(file), Ct, arena, arena with { Name = "Again" });
+        CacheSaveResult result = await _bed.SaveThroughAsync(file => new FullDriveStream(file), Ct, arena, arena with { Name = "Again" });
 
         Assert.IsFalse(result.Saved);
         Assert.IsTrue(result.DriveFull);
@@ -76,45 +75,5 @@ public sealed class CacheSaveTests(TestContext testContext) : IDisposable
         await cancelled.CancelAsync();
 
         _ = await Assert.ThrowsAsync<OperationCanceledException>(() => LibraryCache.SaveAsync(_bed.CachePath, CacheBed.Key, [arena], _bed.Games.Clock, cancelled.Token));
-    }
-
-    /// <summary>Passes the first half of the first write to the file, then finds the drive full.</summary>
-    private sealed class FillingStream(Stream file) : Stream
-    {
-        public override bool CanRead => false;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => true;
-
-        public override long Length => file.Length;
-
-        public override long Position
-        {
-            get => file.Position;
-            set => throw new NotSupportedException();
-        }
-
-        public override void Flush() => file.Flush();
-
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-
-        public override void SetLength(long value) => throw new NotSupportedException();
-
-        public override void Write(byte[] buffer, int offset, int count) => Fill(buffer.AsSpan(offset, count));
-
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            Fill(buffer.Span);
-            return ValueTask.CompletedTask;
-        }
-
-        private void Fill(ReadOnlySpan<byte> bytes)
-        {
-            file.Write(bytes[..(bytes.Length / 2)]);
-            throw new IOException("There is not enough space on the disk.", WindowsDiskFull);
-        }
     }
 }

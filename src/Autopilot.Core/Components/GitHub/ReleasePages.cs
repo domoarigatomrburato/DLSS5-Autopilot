@@ -9,7 +9,7 @@ namespace Autopilot.Core.Components.GitHub;
 /// and "latest" from the <c>/releases/latest</c> redirect. Nothing here spends API allowance, and no
 /// flag or date is known. <see langword="null"/> means the pages could not answer.
 /// </summary>
-internal sealed partial class ReleasePages(NetClient client, ILogger logger)
+internal sealed partial class ReleasePages(NetClient client, ILogger logger, CancellationToken run)
 {
     public const int MaxPages = 4;
 
@@ -17,11 +17,11 @@ internal sealed partial class ReleasePages(NetClient client, ILogger logger)
     public const int MaxReleases = 12;
 
     // One redirect per repository for the run, shared by every caller; an answer naming no release is asked again.
-    private readonly ResolutionMemory<GitHubRepository, string?> _latestTags = new(tag => tag is not null);
+    private readonly ResolutionMemory<GitHubRepository, string?> _latestTags = new(run, tag => tag is not null);
 
     // One assets page per release for the run: the default OptiScaler build reads its latest tag's, then the list's.
     // A page listing no assets is asked again: its release may still be uploading them.
-    private readonly ResolutionMemory<(GitHubRepository Repo, string Tag), GitHubRelease?> _releases = new(release => release is { Assets.Count: > 0 });
+    private readonly ResolutionMemory<(GitHubRepository Repo, string Tag), GitHubRelease?> _releases = new(run, release => release is { Assets.Count: > 0 });
 
     /// <summary>The release the <c>latest</c> redirect points at.</summary>
     public async Task<GitHubRelease?> LatestAsync(GitHubRepository repo, CancellationToken cancellationToken) =>

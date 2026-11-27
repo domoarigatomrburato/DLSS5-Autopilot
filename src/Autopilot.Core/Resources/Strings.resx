@@ -844,4 +844,19 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <data name="ArchiveNotListable" xml:space="preserve">
     <value>{0} is a 7z archive, whose files cannot be listed without unpacking it.</value>
   </data>
+  <data name="GameStateNewer" xml:space="preserve">
+    <value>What the tool learned about {0} was saved by a newer version of Invidia Claritatis. This version reads what it can and saves nothing to it; update the tool to keep what it learns.</value>
+  </data>
+  <data name="GameStateDamaged" xml:space="preserve">
+    <value>What the tool learned about {0} could not be read, so it starts afresh for this game. The damaged file is kept as {1} in the tool's games folder.</value>
+  </data>
+  <data name="GameStateUnreadable" xml:space="preserve">
+    <value>What the tool learned about {0} is locked by another program. The tool uses what it read last and saves nothing over it until the file is free.</value>
+  </data>
+  <data name="GameStateDiskFull" xml:space="preserve">
+    <value>The drive is full, so what the tool learned about {0} could not be saved. It is kept until the tool closes; free some space to keep it.</value>
+  </data>
+  <data name="GameStateNotSaved" xml:space="preserve">
+    <value>What the tool learned about {0} could not be saved: its file cannot be written. It is kept until the tool closes.</value>
+  </data>
 </root>

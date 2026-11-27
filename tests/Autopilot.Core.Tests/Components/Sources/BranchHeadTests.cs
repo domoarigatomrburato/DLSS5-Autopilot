@@ -17,7 +17,7 @@ public sealed class BranchHeadTests(TestContext testContext)
         _ = await bed.Resolve(ComponentIds.Vort);
         bed.Advance(30);
 
-        ComponentRelease release = await bed.NextRun().ResolveAsync(ComponentIds.Vort, bed.Cancellation);
+        ComponentRelease release = await bed.NextRun().Sources.ResolveAsync(ComponentIds.Vort, bed.Cancellation);
 
         Assert.AreEqual(Commit, release.Version.Label);
         Assert.AreEqual(ReleaseOrigin.StaleCache, release.Source!.Origin);

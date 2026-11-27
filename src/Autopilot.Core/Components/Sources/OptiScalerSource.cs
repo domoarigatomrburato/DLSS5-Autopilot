@@ -12,10 +12,20 @@ namespace Autopilot.Core.Components.Sources;
 /// resolved once per build per run; then the package fetched, unpacked in the cache, and refused
 /// when it holds no root-level <c>OptiScaler.dll</c>, before anything is written to a game.
 /// </summary>
-public sealed partial class OptiScalerSource(GitHubReleases releases, DownloadCache cache, ILogger<OptiScalerSource> logger)
+public sealed partial class OptiScalerSource
 {
-    private readonly ResolutionMemory<string, OptiScalerRelease> _memory = new();
-    private readonly OptiScalerReleases _releases = new(releases, logger);
+    private readonly ResolutionMemory<string, OptiScalerRelease> _memory;
+    private readonly OptiScalerReleases _releases;
+
+    private readonly DownloadCache _cache;
+
+    /// <summary>Built by a <see cref="ComponentRun"/>; <paramref name="run"/> is its token, which the shared resolutions run under.</summary>
+    internal OptiScalerSource(GitHubReleases releases, DownloadCache cache, ILogger<OptiScalerSource> logger, CancellationToken run)
+    {
+        _memory = new(run);
+        _releases = new(releases, logger);
+        _cache = cache;
+    }
 
     /// <summary>The release and package <paramref name="build"/> installs; the same answer for the rest of the run once found.</summary>
     /// <exception cref="ComponentException">No recent release carries the package, or a build that publishes sums carries none.</exception>
@@ -38,7 +48,7 @@ public sealed partial class OptiScalerSource(GitHubReleases releases, DownloadCa
     public async Task<OptiScalerPackage> FetchAsync(OptiScalerRelease release, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(release);
-        CachedFile archive = await cache.DownloadAsync(
+        CachedFile archive = await _cache.DownloadAsync(
             release.Archive.Url,
             ComponentHosts.Allowlist,
             release.CacheName,
@@ -46,7 +56,7 @@ public sealed partial class OptiScalerSource(GitHubReleases releases, DownloadCa
             null,
             progress,
             cancellationToken);
-        string unpacked = await cache.UnpackAsync(archive, null, null, cancellationToken);
+        string unpacked = await _cache.UnpackAsync(archive, null, null, cancellationToken);
         return new(release, OptiScalerFolder.PackageRoot(unpacked, release.Tag), archive);
     }
 

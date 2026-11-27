@@ -1,3 +1,5 @@
+using Autopilot.Core.Storage;
+
 namespace Autopilot.Core.Net;
 
 /// <summary>
@@ -7,12 +9,6 @@ namespace Autopilot.Core.Net;
 internal static class CacheLock
 {
     private static readonly TimeSpan _wait = TimeSpan.FromMilliseconds(250);
-
-    // Windows: ERROR_SHARING_VIOLATION. Unix: .NET's FileShare.None is an flock, and a held one
-    // surfaces as EWOULDBLOCK with the raw errno in HResult (11 on Linux, 35 on macOS and BSD).
-    private static readonly int _sharingViolation = OperatingSystem.IsWindows() ? unchecked((int)0x80070020)
-        : OperatingSystem.IsLinux() || OperatingSystem.IsAndroid() ? 11
-        : 35;
 
     /// <summary>The lock of a cache entry or unpacked folder: <c>&lt;entry&gt;.lock</c>.</summary>
     public static string PathFor(string entry) => entry + ".lock";
@@ -28,7 +24,7 @@ internal static class CacheLock
             {
                 return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             }
-            catch (IOException held) when (held.HResult == _sharingViolation)
+            catch (IOException held) when (IoErrors.IsSharingViolation(held))
             {
                 await Task.Delay(_wait, time, cancellationToken);
             }

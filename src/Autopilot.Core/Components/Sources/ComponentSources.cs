@@ -12,17 +12,19 @@ namespace Autopilot.Core.Components.Sources;
 /// </summary>
 public sealed partial class ComponentSources
 {
-    private readonly ResolutionMemory<string, ComponentRelease> _memory = new();
+    private readonly ResolutionMemory<string, ComponentRelease> _memory;
     private readonly Dictionary<string, Func<CancellationToken, Task<ComponentRelease>>> _resolvers;
     private readonly BranchSnapshots _branches;
     private readonly ILogger<ComponentSources> _logger;
 
-    public ComponentSources(GitHubReleases releases, NetClient client, TimeProvider time, ILogger<ComponentSources> logger)
+    /// <summary>Built by a <see cref="ComponentRun"/>, whose token (<paramref name="run"/>) its shared resolutions run under.</summary>
+    internal ComponentSources(GitHubReleases releases, NetClient client, TimeProvider time, ILogger<ComponentSources> logger, CancellationToken run)
     {
+        _memory = new(run);
         ReleaseComponents fromReleases = new(releases);
         ListedComponents listed = new(releases);
         StandaloneComponent standalone = new(releases, client);
-        _branches = new(client, time, logger);
+        _branches = new(client, time, logger, run);
         _logger = logger;
         _resolvers = new(StringComparer.Ordinal)
         {

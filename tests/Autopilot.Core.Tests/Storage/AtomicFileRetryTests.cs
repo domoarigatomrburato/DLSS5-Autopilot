@@ -1,4 +1,5 @@
 using Autopilot.Core.Storage;
+using Autopilot.Core.Tests.TestBeds;
 
 namespace Autopilot.Core.Tests.Storage;
 

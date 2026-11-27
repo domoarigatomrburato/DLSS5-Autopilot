@@ -10,15 +10,27 @@ namespace Autopilot.Core.Components.Mirror;
 /// builds, grouped into families, with NVIDIA's own runtimes put in front. The mirror's list comes
 /// from the API's release list (one page of 100, with each pinned build it no longer reaches asked
 /// for by its tag), else github.com's pages, shortened to three builds per family, always keeping
-/// the builds the tool pins. The list is remembered for the process, except the shortened one and
+/// the builds the tool pins. The list is remembered for the run, except the shortened one and
 /// one that lacks a pin the network kept from it: the next install asks the API again.
 /// </summary>
-public sealed class MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia, ILogger<MirrorCatalog> logger)
+public sealed class MirrorCatalog
 {
     private static readonly GitHubRepository _repository = GitHubRepository.Parse(ComponentRepositories.Mirror);
 
-    private readonly MirrorPins _pins = new(releases, logger);
-    private readonly ResolutionMemory<bool, MirrorList> _memory = new(list => list.Complete);
+    private readonly MirrorPins _pins;
+    private readonly ResolutionMemory<bool, MirrorList> _memory;
+
+    private readonly GitHubReleases _releases;
+    private readonly NvidiaRuntimes _nvidia;
+
+    /// <summary>Built by a <see cref="ComponentRun"/>; <paramref name="run"/> is its token, which the shared resolutions run under.</summary>
+    internal MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia, ILogger<MirrorCatalog> logger, CancellationToken run)
+    {
+        _pins = new(releases, logger);
+        _memory = new(run, list => list.Complete);
+        _releases = releases;
+        _nvidia = nvidia;
+    }
 
     /// <summary>
     /// Every family's builds, newest first, NVIDIA's runtimes in front of the mirror's; with NVIDIA's
@@ -29,7 +41,7 @@ public sealed class MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia
     public async Task<BuildCatalog> GetAsync(CancellationToken cancellationToken)
     {
         MirrorList mirror = await _memory.GetAsync(true, ReadAsync, cancellationToken);
-        IReadOnlyList<BuildEntry> runtimes = await nvidia.GetAsync(cancellationToken);
+        IReadOnlyList<BuildEntry> runtimes = await _nvidia.GetAsync(cancellationToken);
         Dictionary<BuildFamily, IReadOnlyList<BuildEntry>> families = [with(mirror.Families)];
         foreach (IGrouping<BuildFamily, BuildEntry> own in runtimes.GroupBy(entry => entry.Family))
         {
@@ -53,7 +65,7 @@ public sealed class MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia
 
     // One page of 100 from the API, else the pages walked as far as needed.
     private Task<ReleaseListAnswer> ReadListAsync(CancellationToken cancellationToken) =>
-        releases.GetListAsync(
+        _releases.GetListAsync(
             _repository,
             GitHubReleases.MaxListCount,
             (pages, repo, token) => new MirrorPages(pages, repo).ReadAsync(token),

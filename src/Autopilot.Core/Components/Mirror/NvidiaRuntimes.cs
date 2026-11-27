@@ -10,7 +10,7 @@ namespace Autopilot.Core.Components.Mirror;
 /// tree of the <c>NVIDIA/DLSS</c> SDK's newest tag. The tag comes from the <c>releases/latest</c>
 /// redirect (one HEAD, no API allowance), so the list is there when the API is rate limited.
 /// </summary>
-public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<NvidiaRuntimes> logger)
+public sealed partial class NvidiaRuntimes
 {
     private const string Folder = "lib/Windows_x86_64/rel";
 
@@ -20,10 +20,21 @@ public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<Nvid
     private static readonly BuildFamily[] _families = [BuildFamily.Dlss, BuildFamily.Dlssd, BuildFamily.Dlssg];
 
     // An empty list is the redirect naming no release: not kept, like a failure.
-    private readonly ResolutionMemory<bool, IReadOnlyList<BuildEntry>> _memory = new(entries => entries.Count > 0);
+    private readonly ResolutionMemory<bool, IReadOnlyList<BuildEntry>> _memory;
+
+    private readonly GitHubReleases _releases;
+    private readonly ILogger<NvidiaRuntimes> _logger;
+
+    /// <summary>Built by a <see cref="ComponentRun"/>; <paramref name="run"/> is its token, which the shared resolutions run under.</summary>
+    internal NvidiaRuntimes(GitHubReleases releases, ILogger<NvidiaRuntimes> logger, CancellationToken run)
+    {
+        _memory = new(run, entries => entries.Count > 0);
+        _releases = releases;
+        _logger = logger;
+    }
 
     /// <summary>
-    /// One entry per runtime, labelled <c>&lt;sdk tag&gt; (NVIDIA SDK)</c>, remembered for the process;
+    /// One entry per runtime, labelled <c>&lt;sdk tag&gt; (NVIDIA SDK)</c>, remembered for the run;
     /// none when the redirect fails (a refusal included: a blocked host, a downgrade) or names no
     /// release, and that is not remembered: the next call asks again. The mirror alone then serves
     /// the families, and the catalog says so (<see cref="BuildCatalog.NvidiaListUnread"/>).
@@ -36,9 +47,9 @@ public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<Nvid
         }
         catch (NetException failure)
         {
-            if (logger.IsEnabled(LogLevel.Warning))
+            if (_logger.IsEnabled(LogLevel.Warning))
             {
-                LogFailed(logger, failure.Host, failure.Kind);
+                LogFailed(_logger, failure.Host, failure.Kind);
             }
 
             return [];
@@ -48,11 +59,11 @@ public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<Nvid
     /// <exception cref="NetException">The redirect could not be asked.</exception>
     private async Task<IReadOnlyList<BuildEntry>> ResolveAsync(CancellationToken cancellationToken)
     {
-        if (await releases.GetLatestTagAsync(_source.Repository, cancellationToken) is not { } tag)
+        if (await _releases.GetLatestTagAsync(_source.Repository, cancellationToken) is not { } tag)
         {
-            if (logger.IsEnabled(LogLevel.Warning))
+            if (_logger.IsEnabled(LogLevel.Warning))
             {
-                LogNoTag(logger);
+                LogNoTag(_logger);
             }
 
             return [];

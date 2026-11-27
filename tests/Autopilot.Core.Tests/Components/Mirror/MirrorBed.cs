@@ -1,36 +1,41 @@
 using System.Net;
+using Autopilot.Core.Components;
 using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Components.Mirror;
 using Autopilot.Core.Tests.Net;
+using Autopilot.Core.Tests.TestBeds;
 using Microsoft.Extensions.Logging.Testing;
 
 namespace Autopilot.Core.Tests.Components.Mirror;
 
-/// <summary><see cref="MirrorCatalog"/> and <see cref="NvidiaRuntimes"/> on the network test bed, one attempt per request, answering from <see cref="MirrorFixtures"/>.</summary>
+/// <summary><see cref="MirrorCatalog"/> and <see cref="NvidiaRuntimes"/> of one run on the network test bed, one attempt per request, answering from <see cref="MirrorFixtures"/>.</summary>
 internal sealed class MirrorBed : IDisposable
 {
     public static readonly string Api = ComponentsBed.ApiList(ComponentRepositories.Mirror, GitHubReleases.MaxListCount);
     public static readonly string NvidiaLatest = ComponentsBed.LatestPage(ComponentRepositories.Nvidia);
 
+    private readonly Runs _runs;
+
     public MirrorBed(TestContext context)
     {
         Cancellation = context.CancellationToken;
         Net = new(context, TestBed.SingleAttempt);
-        GitHubReleases releases = new(Net.Client, Net.Time, ReleasesLog);
-        Nvidia = new(releases, NvidiaLog);
-        Catalog = new(releases, Nvidia, Log);
+        _runs = new(Net);
+        ComponentRun run = _runs.Next(Cancellation);
+        Nvidia = run.Nvidia;
+        Catalog = run.Mirror;
     }
 
     public TestBed Net { get; }
 
     public FakeServer Server => Net.Server;
 
-    public FakeLogger<MirrorCatalog> Log { get; } = new();
+    public FakeLogger Log => _runs.Loggers.Of<MirrorCatalog>();
 
-    public FakeLogger<NvidiaRuntimes> NvidiaLog { get; } = new();
+    public FakeLogger NvidiaLog => _runs.Loggers.Of<NvidiaRuntimes>();
 
-    public FakeLogger<GitHubReleases> ReleasesLog { get; } = new();
+    public FakeLogger ReleasesLog => _runs.Loggers.Of<GitHubReleases>();
 
     public NvidiaRuntimes Nvidia { get; }
 

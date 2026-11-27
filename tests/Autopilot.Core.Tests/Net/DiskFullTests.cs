@@ -1,18 +1,19 @@
 using Autopilot.Core.Storage;
+using Autopilot.Core.Tests.TestBeds;
 
 namespace Autopilot.Core.Tests.Net;
 
 [TestClass]
 public sealed class DiskFullTests(TestContext testContext)
 {
-    private const int WindowsDiskFull = unchecked((int)0x80070070);
-    private const int WindowsHandleDiskFull = unchecked((int)0x80070027);
-    private const int UnixNoSpace = 28;
+    private static readonly int _windowsDiskFull = DiskFullPoints.Code(DiskFullError.Windows112);
+    private static readonly int _windowsHandleDiskFull = DiskFullPoints.Code(DiskFullError.Windows39);
+    private static readonly int _unixNoSpace = DiskFullPoints.Code(DiskFullError.Errno28);
     private const string Instruction = "free some up, then install again.";
 
     public static IEnumerable<object[]> EveryFullDrive()
     {
-        foreach (int code in new[] { WindowsDiskFull, WindowsHandleDiskFull, UnixNoSpace })
+        foreach (int code in new[] { _windowsDiskFull, _windowsHandleDiskFull, _unixNoSpace })
         {
             yield return [code, new IOException("full", code)];
             yield return [code, new IOException("could not write the file", new IOException("full", code))];
@@ -24,20 +25,20 @@ public sealed class DiskFullTests(TestContext testContext)
     [TestMethod]
     [DynamicData(nameof(EveryFullDrive))]
     public void A_full_drive_is_recognised_however_it_was_wrapped(int code, Exception failure) =>
-        Assert.AreEqual(code != UnixNoSpace || !OperatingSystem.IsWindows(), DiskSpace.IsDiskFull(failure));
+        Assert.AreEqual(code != _unixNoSpace || !OperatingSystem.IsWindows(), IoErrors.IsDiskFull(failure));
 
     [TestMethod]
     public void Other_write_failures_are_not_a_full_drive()
     {
-        Assert.IsFalse(DiskSpace.IsDiskFull(new IOException("denied", unchecked((int)0x80070005))));
-        Assert.IsFalse(DiskSpace.IsDiskFull(new InvalidOperationException("no", new UnauthorizedAccessException())));
+        Assert.IsFalse(IoErrors.IsDiskFull(new IOException("denied", unchecked((int)0x80070005))));
+        Assert.IsFalse(IoErrors.IsDiskFull(new InvalidOperationException("no", new UnauthorizedAccessException())));
     }
 
     [TestMethod]
     [DynamicData(nameof(EveryFullDrive))]
     public async Task A_download_that_fills_the_drive_is_removed_and_said_as_such(int code, Exception failure)
     {
-        if (code == UnixNoSpace && OperatingSystem.IsWindows())
+        if (code == _unixNoSpace && OperatingSystem.IsWindows())
         {
             return;
         }
@@ -55,7 +56,7 @@ public sealed class DiskFullTests(TestContext testContext)
     public async Task A_full_drive_names_the_drives_and_what_to_do()
     {
         using CacheBed bed = new CacheBed(testContext).Serve(CacheFixtures.Zip);
-        DiskFullException refused = await bed.DownloadFillsTheDrive(new FullDrive(new IOException("full", WindowsDiskFull)));
+        DiskFullException refused = await bed.DownloadFillsTheDrive(new FullDrive(new IOException("full", _windowsDiskFull)));
 
         string explanation = refused.Explain(gameFolder: Path.GetTempPath(), new DriveFreeSpace());
 

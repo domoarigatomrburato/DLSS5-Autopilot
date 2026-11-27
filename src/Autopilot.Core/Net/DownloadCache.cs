@@ -149,7 +149,7 @@ public sealed class DownloadCache
         {
             return await write();
         }
-        catch (Exception full) when (DiskSpace.IsDiskFull(full))
+        catch (Exception full) when (IoErrors.IsDiskFull(full))
         {
             if (Directory.Exists(part))
             {

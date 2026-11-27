@@ -18,25 +18,14 @@ public interface IFreeSpace
 public sealed class DriveFreeSpace : IFreeSpace
 {
     /// <summary>The mounted drive holding the path: the longest root it starts with.</summary>
+    /// <remarks>Roots are matched by Windows path rules (case-insensitive, either slash), which only approximate case-sensitive Unix mounts: those are development hosts only.</remarks>
     public DriveSpace DriveOf(string path)
     {
         string full = Path.GetFullPath(path);
         DriveInfo? drive = DriveInfo.GetDrives()
-            .Where(drive => IsUnder(full, drive.RootDirectory.FullName))
+            .Where(drive => PathParts.IsAtOrBelow(drive.RootDirectory.FullName, full))
             .MaxBy(drive => drive.RootDirectory.FullName.Length);
         return drive is null ? new(Path.GetPathRoot(full) ?? full, null) : new(DisplayName(drive), FreeOn(drive));
-    }
-
-    /// <summary>
-    /// Whether the absolute <paramref name="path"/> is <paramref name="root"/> or inside it, by whole
-    /// path parts: <c>/Volumes/GamesSSD</c> is not on the mount <c>/Volumes/Games</c>.
-    /// </summary>
-    internal static bool IsUnder(string path, string root)
-    {
-        StringComparison comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        string trimmed = Path.TrimEndingDirectorySeparator(root);
-        string folder = Path.EndsInDirectorySeparator(trimmed) ? trimmed : trimmed + Path.DirectorySeparatorChar;
-        return string.Equals(Path.TrimEndingDirectorySeparator(path), trimmed, comparison) || path.StartsWith(folder, comparison);
     }
 
     // "C:" rather than "C:\", as Windows names a drive in prose; "/" stays as it is.

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Autopilot.Core.Storage;
 
@@ -18,6 +19,22 @@ internal static class UntrustedJson
         try
         {
             return JsonDocument.Parse(Utf8(bytes));
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// The bytes parsed as one JSON object, to change and write back whole; null when they are not
+    /// JSON, hold a key twice, or are another kind of value. The caller caps the size it reads.
+    /// </summary>
+    public static JsonObject? ParseObject(byte[] bytes)
+    {
+        try
+        {
+            return JsonNode.Parse(Utf8(bytes).Span, null, new JsonDocumentOptions { AllowDuplicateProperties = false }) as JsonObject;
         }
         catch (JsonException)
         {

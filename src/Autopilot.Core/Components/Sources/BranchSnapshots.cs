@@ -14,7 +14,7 @@ namespace Autopilot.Core.Components.Sources;
 /// commit, and the commit is the version recorded. Without a commit nothing is downloaded: a moving
 /// branch is never installed with no record of what it was.
 /// </summary>
-internal sealed class BranchSnapshots(NetClient client, TimeProvider time, ILogger logger)
+internal sealed class BranchSnapshots(NetClient client, TimeProvider time, ILogger logger, CancellationToken run)
 {
     /// <summary>The four includes LumeniteFX's kernel needs.</summary>
     public static readonly string[] LumeniteIncludes =
@@ -24,7 +24,7 @@ internal sealed class BranchSnapshots(NetClient client, TimeProvider time, ILogg
     public static readonly string[] Headers = ["ReShade.fxh", "ReShadeUI.fxh", "DrawText.fxh"];
 
     // One head per repository and branch for the run.
-    private readonly ResolutionMemory<(GitHubRepository Repo, string Branch), (string Commit, ReleaseSource Source)> _heads = new();
+    private readonly ResolutionMemory<(GitHubRepository Repo, string Branch), (string Commit, ReleaseSource Source)> _heads = new(run);
 
     /// <summary>LumeniteFX at the head of <c>mainline</c>: <c>lumenite_Kernel.fx</c>, its includes and its texture.</summary>
     public Task<ComponentRelease> LumeniteAsync(CancellationToken cancellationToken) =>
