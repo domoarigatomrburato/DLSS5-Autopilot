@@ -92,7 +92,7 @@ internal sealed class FakeServer(TimeProvider time) : HttpMessageHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         Uri url = request.RequestUri ?? throw new InvalidOperationException("a request without a URL");
-        Requests.Add(new(url, request.Headers.UserAgent.ToString(), request.Headers.Range, time.GetUtcNow()));
+        Requests.Add(new(request.Method, url, request.Headers.UserAgent.ToString(), request.Headers.Range, time.GetUtcNow()));
         if (!_routes.TryGetValue(url.AbsoluteUri, out Queue<Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>>? queue))
         {
             throw new InvalidOperationException($"the fake server has no answer for {url}");
@@ -145,4 +145,4 @@ internal sealed class FakeServer(TimeProvider time) : HttpMessageHandler
     }
 }
 
-internal sealed record ReceivedRequest(Uri Url, string UserAgent, RangeHeaderValue? Range, DateTimeOffset At);
+internal sealed record ReceivedRequest(HttpMethod Method, Uri Url, string UserAgent, RangeHeaderValue? Range, DateTimeOffset At);

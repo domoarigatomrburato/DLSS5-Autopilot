@@ -4,7 +4,7 @@ using System.Net.Http.Headers;
 namespace Autopilot.Core.Net;
 
 /// <summary>
-/// Sends one GET and follows its redirects, checking every hop before it is asked, then sorts the
+/// Sends one GET and follows its redirects, or one HEAD that reports its redirect, checking every hop before it is asked, then sorts the
 /// final status: a hiccup worth another attempt, a rate limit, or the answer.
 /// </summary>
 internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvider time)
@@ -21,13 +21,10 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
         Uri current = url;
         for (int hop = 1; ; hop++)
         {
-            attempt.Url = current;
-            _gitHub.ThrowIfBlocked(current);
-            HttpResponseMessage response = await SendOnceAsync(current, resumeFrom, attempt);
+            HttpResponseMessage response = await AskAsync(current, HttpMethod.Get, resumeFrom, attempt);
             Uri? next;
             try
             {
-                ThrowIfApiRefused(current, response, _gitHub.Note(current, response));
                 next = RedirectTarget(response, current);
             }
             catch
@@ -46,13 +43,38 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
         }
     }
 
-    /// <summary>One attempt at a text answer: any final status, with its body.</summary>
-    public async Task<TextAnswer> GetTextOnceAsync(Uri url, HostAllowlist hosts, long maxBytes, Attempt attempt)
+    /// <summary>
+    /// One attempt at a text answer: any final status, with its body. A 5xx is retried unless
+    /// <paramref name="acceptServerError"/> accepts its body.
+    /// </summary>
+    public async Task<TextAnswer> GetTextOnceAsync(Uri url, HostAllowlist hosts, long maxBytes, Func<string, bool>? acceptServerError, Attempt attempt)
     {
         using Exchange exchange = await SendAsync(url, hosts, 0, attempt);
+        HttpStatusCode status = exchange.Response.StatusCode;
+        if (acceptServerError is not null && (int)status is >= 500 and <= 599)
+        {
+            string error = await Bodies.ReadTextAsync(exchange, maxBytes, attempt);
+            if (acceptServerError(error))
+            {
+                return new(status, error, time.GetUtcNow(), IsStale: false);
+            }
+        }
+
         ThrowIfRetryableStatus(exchange);
         string text = await Bodies.ReadTextAsync(exchange, maxBytes, attempt);
-        return new(exchange.Response.StatusCode, text, time.GetUtcNow(), IsStale: false);
+        return new(status, text, time.GetUtcNow(), IsStale: false);
+    }
+
+    /// <summary>
+    /// One attempt at a <c>HEAD</c>, never followed: a redirect's target is checked as the next
+    /// hop would be and reported.
+    /// </summary>
+    public async Task<HeadAnswer> HeadOnceAsync(Uri url, HostAllowlist hosts, Attempt attempt)
+    {
+        using Exchange exchange = new(await AskAsync(url, HttpMethod.Head, 0, attempt), url);
+        ThrowIfRetryableStatus(exchange);
+        Uri? location = RedirectTarget(exchange.Response, url) is { } target ? CheckHop(target, hosts, hop: 1) : null;
+        return new(exchange.Response.StatusCode, location, time.GetUtcNow());
     }
 
     /// <summary>One attempt at a download, resuming from what earlier attempts wrote when the server allows.</summary>
@@ -139,9 +161,27 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
             ? new Uri(current, location)
             : null;
 
-    private async Task<HttpResponseMessage> SendOnceAsync(Uri url, long resumeFrom, Attempt attempt)
+    /// <summary>Sends one request, unless the API is held back, and turns the API's refusal into a rate limit.</summary>
+    private async Task<HttpResponseMessage> AskAsync(Uri url, HttpMethod method, long resumeFrom, Attempt attempt)
     {
-        using HttpRequestMessage request = new(HttpMethod.Get, url);
+        attempt.Url = url;
+        _gitHub.ThrowIfBlocked(url);
+        HttpResponseMessage response = await SendOnceAsync(url, method, resumeFrom, attempt);
+        try
+        {
+            ThrowIfApiRefused(url, response, _gitHub.Note(url, response));
+            return response;
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
+    }
+
+    private async Task<HttpResponseMessage> SendOnceAsync(Uri url, HttpMethod method, long resumeFrom, Attempt attempt)
+    {
+        using HttpRequestMessage request = new(method, url);
         if (resumeFrom > 0)
         {
             request.Headers.Range = new(resumeFrom, null);

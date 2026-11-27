@@ -40,7 +40,7 @@ public sealed class NetClient : IDisposable
         RequestChecks.Check(url, hosts);
         if (!options.Cached)
         {
-            return await FetchTextAsync(url, hosts, timeout, maxBytes, cancellationToken);
+            return await FetchTextAsync(url, hosts, timeout, maxBytes, options.AcceptServerError, cancellationToken);
         }
 
         CachedText? kept = await _cache.ReadAsync(url, cancellationToken);
@@ -52,7 +52,7 @@ public sealed class NetClient : IDisposable
         TextAnswer answer;
         try
         {
-            answer = await FetchTextAsync(url, hosts, timeout, maxBytes, cancellationToken);
+            answer = await FetchTextAsync(url, hosts, timeout, maxBytes, options.AcceptServerError, cancellationToken);
         }
         catch (NetException failure) when (kept is not null && IsNetworkFailure(failure))
         {
@@ -65,6 +65,17 @@ public sealed class NetClient : IDisposable
         }
 
         return answer;
+    }
+
+    /// <summary>
+    /// Sends one <c>HEAD</c> and does not follow a redirect: the answer says where it points, made
+    /// absolute and checked as a hop would be (https only, a host on <paramref name="hosts"/>). It
+    /// has a text request's timeout, retries and rate-limit handling, and is never cached.
+    /// </summary>
+    public async Task<HeadAnswer> HeadAsync(Uri url, HostAllowlist hosts, CancellationToken cancellationToken)
+    {
+        RequestChecks.Check(url, hosts);
+        return await _retrier.RunAsync(url, _options.TextTimeout, attempt => _exchanges.HeadOnceAsync(url, hosts, attempt), cancellationToken);
     }
 
     /// <summary>
@@ -107,6 +118,12 @@ public sealed class NetClient : IDisposable
         return age >= TimeSpan.Zero && age < _options.ApiFreshFor;
     }
 
-    private Task<TextAnswer> FetchTextAsync(Uri url, HostAllowlist hosts, TimeSpan timeout, long maxBytes, CancellationToken cancellationToken) =>
-        _retrier.RunAsync(url, timeout, attempt => _exchanges.GetTextOnceAsync(url, hosts, maxBytes, attempt), cancellationToken);
+    private Task<TextAnswer> FetchTextAsync(
+        Uri url,
+        HostAllowlist hosts,
+        TimeSpan timeout,
+        long maxBytes,
+        Func<string, bool>? acceptServerError,
+        CancellationToken cancellationToken) =>
+        _retrier.RunAsync(url, timeout, attempt => _exchanges.GetTextOnceAsync(url, hosts, maxBytes, acceptServerError, attempt), cancellationToken);
 }

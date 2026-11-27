@@ -66,6 +66,12 @@ internal sealed class TestBed : IDisposable
     public Task<NetException> GetTextFails(string url, TextRequest? options = null, HostAllowlist? hosts = null) =>
         Assert.ThrowsAsync<NetException>(() => GetText(url, options, hosts));
 
+    public Task<HeadAnswer> Head(string url, HostAllowlist? hosts = null) =>
+        Client.HeadAsync(new(url), hosts ?? Hosts, _cancellation);
+
+    public Task<NetException> HeadFails(string url, HostAllowlist? hosts = null) =>
+        Assert.ThrowsAsync<NetException>(() => Head(url, hosts));
+
     public void Dispose()
     {
         Client.Dispose();
