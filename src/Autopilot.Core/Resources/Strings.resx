@@ -642,4 +642,53 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <data name="ReleasesFromLatestRedirect" xml:space="preserve">
     <value>GitHub's API could not be reached; this component came from its project's 'latest release' redirect, so the exact version is whatever that redirect points at, and it may be a test build.</value>
   </data>
+  <!-- Build lists. In BuildListEmpty {0} is the file or add-on the list is for. -->
+  <data name="BuildListEmpty" xml:space="preserve">
+    <value>The {0} build list could not be read: GitHub could not be reached and nothing is cached yet. Try again in a few minutes.</value>
+  </data>
+  <!-- {0} is the pinned label ("4.55"). -->
+  <data name="RenodxPinMissing" xml:space="preserve">
+    <value>renodx-dlss5 {0} is not on the build list; the newest build is the kind of build this pin exists to avoid. Pick the build by hand under 'dlss5 add-on' to go ahead.</value>
+  </data>
+  <!-- NVIDIA's raw runtime DLLs: {0} is the file's name, {1} its size in bytes. -->
+  <data name="RawDllTooSmall" xml:space="preserve">
+    <value>{0} is {1} bytes; NVIDIA's runtime is 200,000 bytes or more, so this is not it.</value>
+  </data>
+  <data name="RawDllNot64Bit" xml:space="preserve">
+    <value>{0} is a 32-bit DLL; NVIDIA's runtime is a 64-bit (x64) one.</value>
+  </data>
+  <!-- The nvngx_dlssnr.dll check against the card. {0} lists the architectures the file carries code for, unless said otherwise. -->
+  <data name="DlssnrCompatible" xml:space="preserve">
+    <value>compatible with your card (file supports: {0})</value>
+  </data>
+  <!-- {0} is the card's family ("RTX 40 (Ada Lovelace)"), {1} the file's architectures. -->
+  <data name="DlssnrIncompatible" xml:space="preserve">
+    <value>THIS BUILD WILL NOT RUN ON YOUR CARD. It contains no code for {0}. File supports: {1}</value>
+  </data>
+  <!-- {0} is why: DlssnrNoArchitectures or DlssnrCardUnknown. -->
+  <data name="DlssnrCannotVerify" xml:space="preserve">
+    <value>could not verify GPU compatibility ({0})</value>
+  </data>
+  <data name="DlssnrNoArchitectures" xml:space="preserve">
+    <value>no architectures could be read from the file</value>
+  </data>
+  <data name="DlssnrCardUnknown" xml:space="preserve">
+    <value>card not detected; file supports: {0}</value>
+  </data>
+  <!-- {0} is the build's label, {1} the card's name, {2} the check's words (DlssnrIncompatible). -->
+  <data name="DlssnrPinnedMismatch" xml:space="preserve">
+    <value>Build {0} will not run on {1}. {2}. Leave the version on Auto and the tool picks the newest build that supports your card.</value>
+  </data>
+  <!-- {0} is the card's name, {1} the labels tried. -->
+  <data name="DlssnrNoneMatched" xml:space="preserve">
+    <value>No suitable nvngx_dlssnr build found for {0}. Tried: {1}. DLSS 5 currently runs on NVIDIA RTX 20 series and newer.</value>
+  </data>
+  <!-- {0} is the labels skipped. -->
+  <data name="DlssnrSkipped" xml:space="preserve">
+    <value>skipped as incompatible: {0}</value>
+  </data>
+  <!-- {0} is the build's label. -->
+  <data name="DlssnrOverridden" xml:space="preserve">
+    <value>dlssnr {0} does not match your card - installed anyway</value>
+  </data>
 </root>

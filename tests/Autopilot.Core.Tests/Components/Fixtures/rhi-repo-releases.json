@@ -1,0 +1,1302 @@
+[
+  {
+    "tag_name": "DLSS-Enabler-4.10.0.27",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-11-25T09:53:32Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.10.0.27.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.10.0.27/DLSS-Enabler-4.10.0.27.zip",
+        "digest": "sha256:b547803b4fe8b9fd0985fde08ed9d07dc34881102ddc4dc211b33c90bfc2f918"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssnr-310.9.16-nvidia",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-11-16T16:36:00Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssnr_310.9.16-nvidia.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssnr-310.9.16-nvidia/nvngx_dlssnr_310.9.16-nvidia.zip",
+        "digest": "sha256:5277355f0578d36f2a25413d8c7ff4c6f9966cea5bad714305f23b20173e09f6"
+      }
+    ]
+  },
+  {
+    "tag_name": "DLSS-Enabler-4.10.0.23",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-11-11T19:54:37Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.10.0.23.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.10.0.23/DLSS-Enabler-4.10.0.23.zip",
+        "digest": "sha256:575c6b26e13e4cfc47e07e561bc319a61744794d39fc1c317cce54b2ebef3d81"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.1025.0009",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-11-03T01:03:25Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.1025.0009.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.1025.0009/renodx-dlss_SF_26.1025.0009.zip",
+        "digest": "sha256:9851d9fb959076d94f9877d34dc7cee82ce6591ce0df9a54f9d2a92ccaaa6b9a"
+      }
+    ]
+  },
+  {
+    "tag_name": "DLSS-Enabler-4.10.0.18",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-11-04T05:59:00Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.10.0.18.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.10.0.18/DLSS-Enabler-4.10.0.18.zip",
+        "digest": "sha256:a0bf92820b9504fd8436fd3822d514cbed0c247570d5e7461e04b2d22115a608"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.14.16.0-v2",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-26T16:23:03Z",
+    "assets": [
+      {
+        "name": "streamline_2.14.16.0-v2.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.14.16.0-v2/streamline_2.14.16.0-v2.zip",
+        "digest": "sha256:72bd6b55920eef6ac624d1b253e3b1a06927e84a6e34f1c85ebec0aafd3ffa07"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-10.8.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-27T18:10:14Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_10.8.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-10.8.0/renodx-dlss5_10.8.0.zip",
+        "digest": "sha256:faba7814fa90b6b21786c98a45732dbe80f01fa36745c46324472e14ac0f440d"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.1016.1304",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-26T13:18:41Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.1016.1304.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.1016.1304/renodx-dlss_SF_26.1016.1304.zip",
+        "digest": "sha256:bc4ec58d31565f6919c4e0c1aad8d8ea6443199e12b54f9e019b2ffd8afaaabf"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssnr-310.9.16",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-26T13:18:17Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssnr_310.9.16.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssnr-310.9.16/nvngx_dlssnr_310.9.16.zip",
+        "digest": "sha256:dbeb1f2790b5c621887db99b1a56ac8bd5cb35207e8c074cbb806710f7460cab"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.14.16.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-13T13:08:38Z",
+    "assets": [
+      {
+        "name": "streamline_2.14.16.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.14.16.0/streamline_2.14.16.0.zip",
+        "digest": "sha256:89c820475866d4dcb744c569f73f5c2d5fb81d90ec23ec397e711c2a24c4d227"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.9.16",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-13T13:07:56Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.9.16.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.9.16/nvngx_dlssg_310.9.16.zip",
+        "digest": "sha256:20f967c689e73803769df30a63b9d70fa6339257c1612d687b7414aabf847766"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssd-310.9.16",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-13T13:07:44Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssd_310.9.16.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssd-310.9.16/nvngx_dlssd_310.9.16.zip",
+        "digest": "sha256:33470176d595838fb8751023c56e1e2b56e0da8d19c5c140b1bb325a53984ff2"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlss-310.9.16",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-13T13:08:13Z",
+    "assets": [
+      {
+        "name": "nvngx_dlss_310.9.16.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlss-310.9.16/nvngx_dlss_310.9.16.zip",
+        "digest": "sha256:1823ec911c77482e6731447dfb0db3def8aa710e092f59f58c4c4c55285d492d"
+      }
+    ]
+  },
+  {
+    "tag_name": "DLSS-Enabler-4.10.0.8",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-08T16:35:35Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.10.0.8.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.10.0.8/DLSS-Enabler-4.10.0.8.zip",
+        "digest": "sha256:1e9e3248baaf340a49a0a4fbc4ba9d3ccc505aea4237ea4f4bff44fb11049fd6"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.1003.2350",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-10-04T07:59:13Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.1003.2350.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.1003.2350/renodx-dlss_SF_26.1003.2350.zip",
+        "digest": "sha256:34ef92d6742bf6d05df42ff81c04b70f5138b0a0a970a93f1a04295ac83f7f0f"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.0928.0205",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-29T14:22:19Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.0928.0205.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.0928.0205/renodx-dlss_SF_26.0928.0205.zip",
+        "digest": "sha256:6091f47a2248854eb1779b2c3b97939f1fbe53adbae7d1642ada236fcc0b6f52"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.0927.2125",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-28T05:38:17Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.0927.2125.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.0927.2125/renodx-dlss_SF_26.0927.2125.zip",
+        "digest": "sha256:2ccf4605ea8fd2b3be72d1aee13fad1ae4ef66845845f5db97503eb6f70b00bf"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-8.5.0-rc5",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-26T19:02:14Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_8.5.0-rc5.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-8.5.0-rc5/renodx-dlss5_8.5.0-rc5.zip",
+        "digest": "sha256:8b56eeb0be64e97b30120bee9da40117a77a41245d1d6d1ca0dc78c6b1f1e1eb"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-8.5.0-rc4",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-26T15:58:39Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_8.5.0-rc4.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-8.5.0-rc4/renodx-dlss5_8.5.0-rc4.zip",
+        "digest": "sha256:5c4af85a93af81bb02d2c755fe4cef83ef7e420bb0d9cb7f65b475dccfc72980"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-8.5.0-rc10",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-26T23:09:45Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_8.5.0-rc10.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-8.5.0-rc10/renodx-dlss5_8.5.0-rc10.zip",
+        "digest": "sha256:a745040cb2e93e3a1500a6c5a322972acc4c5c667108fcea31c748285d6364a9"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssnr-310.8.Lecram",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-24T15:00:01Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssnr_310.8.Lecram.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssnr-310.8.Lecram/nvngx_dlssnr_310.8.Lecram.zip",
+        "digest": "sha256:ddb64e5545ba3f217c32555d2eb8fdfe76b9510d2256f13e8a5ecb1a9650ca54"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-7.0.0-rc8",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-23T19:22:22Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_7.0.0-rc8.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-7.0.0-rc8/renodx-dlss5_7.0.0-rc8.zip",
+        "digest": "sha256:c0821162ebcc24db29dfd1ad6e45214e9f118e40de510f05f0981e0c9ea70639"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-7.0.0-rc1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-23T06:09:27Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_7.0.0-rc1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-7.0.0-rc1/renodx-dlss5_7.0.0-rc1.zip",
+        "digest": "sha256:0d4d6d893a3868b9fc441ca3be31238105459038d819dcaa2c264d447c785ad0"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.0922.0041",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-23T12:19:49Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.0922.0041.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.0922.0041/renodx-dlss_SF_26.0922.0041.zip",
+        "digest": "sha256:ee24bfb96de2fa9fab6ae9188507870dafbd8ed55343f9f5cbbe92531a5bab70"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-6.5.3",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-19T17:09:53Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_6.5.3.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-6.5.3/renodx-dlss5_6.5.3.zip",
+        "digest": "sha256:553b1619b9e5ddfbcb4ebc7f2f3bffff9256a48a25b988f4817f5c63f4caa1de"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-6.4.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-18T22:45:36Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_6.4.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-6.4.1/renodx-dlss5_6.4.1.zip",
+        "digest": "sha256:d7f2a77e4df3298ebc5cae63910e3a60553e499b440a1f332da07caeb604bc9e"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.0919.2025",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-20T12:24:35Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.0919.2025.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.0919.2025/renodx-dlss_SF_26.0919.2025.zip",
+        "digest": "sha256:d0f0d05a1eafdff080844de4b43745c54da0aa313cb23c4b20c54977eb99bc37"
+      }
+    ]
+  },
+  {
+    "tag_name": "DLSS-Enabler-4.10.0.7",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-21T05:02:09Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.10.0.7.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.10.0.7/DLSS-Enabler-4.10.0.7.zip",
+        "digest": "sha256:138d4738599d2ae083db5b9e25cc19dfe9603bc49ee92a4bdf8ad26c7a459465"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.0917.1904",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-18T05:54:53Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.0917.1904.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.0917.1904/renodx-dlss_SF_26.0917.1904.zip",
+        "digest": "sha256:a2856a44aa7138a784cdd1b1300a609cae4b5b0b218101ec3b700b7454a54ebf"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.0917.1436",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-17T20:57:59Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.0917.1436.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.0917.1436/renodx-dlss_SF_26.0917.1436.zip",
+        "digest": "sha256:846278e1e80764a12360933632b353e3c23a2c787574664b9ccc65bf227cd498"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-26.0917.1145",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-17T16:48:47Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_26.0917.1145.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-26.0917.1145/renodx-dlss_SF_26.0917.1145.zip",
+        "digest": "sha256:8404144c24f1a7bb0f8fa4216a897a460c588099bac13c6fcc11e3621f643f97"
+      }
+    ]
+  },
+  {
+    "tag_name": "DLSS-Enabler-4.10.0.6",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-16T19:36:04Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.10.0.6.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.10.0.6/DLSS-Enabler-4.10.0.6.zip",
+        "digest": "sha256:42c49efba407a868f592fac2bd3e42452e3bb8b5d8cd17933156fbbd06c2bb79"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-5.2.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-11T18:57:49Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_5.2.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-5.2.1/renodx-dlss5_5.2.1.zip",
+        "digest": "sha256:125506b22edd8e0d6f8117579fe2a516288440fc068a5310680065db5d027129"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.55",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-11T20:35:44Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.55.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.55/renodx-dlss_SF_0.55.zip",
+        "digest": "sha256:a08d6afa0291d3a185beb35ea4b34ed7b01e3e312a072206090f286d52cf5990"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.14.1.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-08T15:42:15Z",
+    "assets": [
+      {
+        "name": "streamline_2.14.1.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.14.1.0/streamline_2.14.1.0.zip",
+        "digest": "sha256:381da20bc36010c0bc589839795af4a86b3d3dc71966237b8dba9d4610b5b827"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.54",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-08T14:38:56Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.54.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.54/renodx-dlss_SF_0.54.zip",
+        "digest": "sha256:ae1e768228a5a9df04d86c1a839a6a7b110e8029d47431161ea7563fe9e5d36e"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.9.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-08T15:42:00Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.9.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.9.1/nvngx_dlssg_310.9.1.zip",
+        "digest": "sha256:b42d4b89a8ba652d0ca038e0e1d4a241b1569d00559ef01dc772c2ec38e4e550"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssd-310.9.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-08T15:41:51Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssd_310.9.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssd-310.9.1/nvngx_dlssd_310.9.1.zip",
+        "digest": "sha256:51ffe1a5302d08451bef0820d52e2f3e36516cc31dff9fde2bb6543be214658c"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlss-310.9.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-08T15:41:40Z",
+    "assets": [
+      {
+        "name": "nvngx_dlss_310.9.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlss-310.9.1/nvngx_dlss_310.9.1.zip",
+        "digest": "sha256:aaba83b288bd145c3808e8d7a0ba03cc8c8676d18ad984b1bfa6563046a3ba37"
+      }
+    ]
+  },
+  {
+    "tag_name": "DLSS-Enabler-4.10.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-07T12:18:47Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.10.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.10.0/DLSS-Enabler-4.10.0.zip",
+        "digest": "sha256:6df8f963ff84c548c1015de036a9ba02008a7d30a942d1e25f34768bf14c47be"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.14.0.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-04T16:53:32Z",
+    "assets": [
+      {
+        "name": "streamline_2.14.0.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.14.0.0/streamline_2.14.0.0.zip",
+        "digest": "sha256:53612b7bda770e3067aa61e6abc2db883aac1358f58907aecb09d05c8c72219d"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.13.0.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-27T05:48:41Z",
+    "assets": [
+      {
+        "name": "streamline_2.13.0.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.13.0.0/streamline_2.13.0.0.zip",
+        "digest": "sha256:7f38b5b2b7cc83ae859ccb3266160b8e5e517f379f81987fe3c758ae5c9e8c02"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.12.129.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-26T19:38:04Z",
+    "assets": [
+      {
+        "name": "streamline_2.12.129.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.12.129.0/streamline_2.12.129.0.zip",
+        "digest": "sha256:3e2393bdfa48502f6ed5c3302a12a7a18c002198657a2cf76532644348f84d88"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.12.128.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-21T21:15:42Z",
+    "assets": [
+      {
+        "name": "streamline_2.12.128.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.12.128.0/streamline_2.12.128.0.zip",
+        "digest": "sha256:4bf0ef38f0a6a1af479b168565b6f681d99272265972371042f20ceb2d931201"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-4.70",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-01T14:10:18Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_4.70.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-4.70/renodx-dlss5_4.70.zip",
+        "digest": "sha256:d6e356d01b429af6288f488a4926c44f1d779a7d4586ee8c79d04d3a09a536e6"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-4.60",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-31T11:09:29Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_4.60.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-4.60/renodx-dlss5_4.60.zip",
+        "digest": "sha256:ad30994ba898f3eed5a4c7953927db9759c680a71bc9d9855cac93e9ccc1e3c6"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-4.55",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-30T12:46:40Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_4.55.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-4.55/renodx-dlss5_4.55.zip",
+        "digest": "sha256:15481c492db76682e9a88917e7f78897351ecf088bfae9bca74a0c5b74ddd033"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-4.5",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-29T22:55:19Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_4.5.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-4.5/renodx-dlss5_4.5.zip",
+        "digest": "sha256:c6626cf227b07b31d417f45c43f072d754b8a85fd63ed8761ca817823fc539ca"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-3.3.4",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-29T17:12:06Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_3.3.4.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-3.3.4/renodx-dlss5_3.3.4.zip",
+        "digest": "sha256:9e23b4d4b896060ed989c92dff211ad8365892c3872cb41b219f3c600d6081d4"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-3.3.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-29T15:39:32Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_3.3.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-3.3.1/renodx-dlss5_3.3.1.zip",
+        "digest": "sha256:60900570846576fd621bf0b408e94a300ebacb2fad099ba9ea4f8aa706175589"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss5-2.5",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-28T15:04:38Z",
+    "assets": [
+      {
+        "name": "renodx-dlss5_2.5.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss5-2.5/renodx-dlss5_2.5.zip",
+        "digest": "sha256:8476f88b765683b31096d6650820c1adacb4792ccfa7f229c01e4218aa695f44"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.53",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-05T22:14:59Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.53.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.53/renodx-dlss_SF_0.53.zip",
+        "digest": "sha256:c8f3d940fd33d724d871bfff81a207bf75943d1e95296fd29520e2cfa5dec5e8"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.52",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-04T14:03:39Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.52.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.52/renodx-dlss_SF_0.52.zip",
+        "digest": "sha256:933680c4660b951aecf7b7ecfaa85b91b0b4d06ab57f38daf68902a98dbd6e5a"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.51",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-03T04:41:23Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.51.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.51/renodx-dlss_SF_0.51.zip",
+        "digest": "sha256:272f885020fbedd24ac0d134d9d6db4eebb49423c32e23056efe1770e913e2a6"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.5",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-02T03:27:02Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.5.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.5/renodx-dlss_SF_0.5.zip",
+        "digest": "sha256:a789d45a09c71f0a2117df7231418cbf789bf748be341d016d37ac6cecd25d28"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.4",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-01T21:54:06Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.4.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.4/renodx-dlss_SF_0.4.zip",
+        "digest": "sha256:0a65999296766a62334b0bd1a7081dc1a94f3e3e1a2d7fffe8ebc798148ced04"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.3",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-01T10:15:32Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.3.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.3/renodx-dlss_SF_0.3.zip",
+        "digest": "sha256:ec457ad16db80e7fa737f78fc771b46285992cf36bc4f879a4368fda1d5b74c8"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.2",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-01T05:53:50Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.2.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.2/renodx-dlss_SF_0.2.zip",
+        "digest": "sha256:1a71a4c2dd15005cca34648f761c2d88f8e2e41a101f40758affe8483f9996bb"
+      }
+    ]
+  },
+  {
+    "tag_name": "renodx-dlss-SF-0.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-31T16:14:02Z",
+    "assets": [
+      {
+        "name": "renodx-dlss_SF_0.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/renodx-dlss-SF-0.1/renodx-dlss_SF_0.1.zip",
+        "digest": "sha256:5445f9d4bf302a0bd42388c617bf9ddb02c5b25a84cb7dc3e17684de452a0100"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssnr-310.8.SF-v2",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-30T21:18:05Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssnr_310.8.SF-v2.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssnr-310.8.SF-v2/nvngx_dlssnr_310.8.SF-v2.zip",
+        "digest": "sha256:1da35941894994eb087e017577829e492454e9bae3a6a9397027069ceb74955c"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssnr-310.8.SF",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-30T16:34:27Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssnr_310.8.SF.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssnr-310.8.SF/nvngx_dlssnr_310.8.SF.zip",
+        "digest": "sha256:4de991bf3a1cf5ba95c6621c2a5203299e823ea11bf1702513281b85aa4dc449"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssnr-310.8.0-RTX40",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-30T00:23:03Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssnr_310.8.0-RTX40.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssnr-310.8.0-RTX40/nvngx_dlssnr_310.8.0-RTX40.zip",
+        "digest": "sha256:46124cfaef532ad5f6da07494772ea8c1b3e719f934e254385697f38d1289e3f"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssnr-310.8.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-27T10:42:02Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssnr_310.8.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssnr-310.8.0/nvngx_dlssnr_310.8.0.zip",
+        "digest": "sha256:388c0a7912e15ec911b9c9e11a692142b11fe387ddf2b637d8c358138fffb3ac"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.9.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-03T15:36:27Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.9.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.9.0/nvngx_dlssg_310.9.0.zip",
+        "digest": "sha256:546a107a92352fa0955eb0d57a51e7b8eeaa79c8f094836949c395b9d14f8b53"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.8.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-27T05:44:22Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.8.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.8.0/nvngx_dlssg_310.8.0.zip",
+        "digest": "sha256:b16ce6a4456be14f8e5437024fde04c209a895e58a5d93577154fed46d1d7f9e"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.7.129",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-25T17:18:42Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.7.129.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.7.129/nvngx_dlssg_310.7.129.zip",
+        "digest": "sha256:3d78aea4d8686024a730a22d7da798fe89608baf696262ee65302c070705e515"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.7.128",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-21T21:06:21Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.7.128.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.7.128/nvngx_dlssg_310.7.128.zip",
+        "digest": "sha256:839b140e8b7f11f933b12285c104f8278f9226f9bbb7d3068be00d969755c060"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssd-310.9.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-03T15:36:18Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssd_310.9.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssd-310.9.0/nvngx_dlssd_310.9.0.zip",
+        "digest": "sha256:ee394f72f9db85408e3fcdfa703afa1cee0fbaaa28b784a5bd71415cefc14277"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssd-310.7.129",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-25T17:18:35Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssd_310.7.129.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssd-310.7.129/nvngx_dlssd_310.7.129.zip",
+        "digest": "sha256:3cb87c7dce5042b0a814a149ed42f52da407a31892294435ed00a162a6009f26"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssd-310.7.128",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-21T21:06:14Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssd_310.7.128.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssd-310.7.128/nvngx_dlssd_310.7.128.zip",
+        "digest": "sha256:f23dedb80e796bd61ad485fb1fdf4a62c42e82fb38caa2fd689c17cae9e750d6"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlss-310.9.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-03T15:25:04Z",
+    "assets": [
+      {
+        "name": "nvngx_dlss_310.9.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlss-310.9.0/nvngx_dlss_310.9.0.zip",
+        "digest": "sha256:84495b99c987cffeed2be122a0e519319f648f4c2f275109948a5fb4fdd3f493"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlss-310.8.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-27T05:44:33Z",
+    "assets": [
+      {
+        "name": "nvngx_dlss_310.8.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlss-310.8.0/nvngx_dlss_310.8.0.zip",
+        "digest": "sha256:fb481660f7e952b87f91760e3afd7f9dc14cd2c3361b470e948d6346e4323009"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlss-310.7.129",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-25T17:18:22Z",
+    "assets": [
+      {
+        "name": "nvngx_dlss_310.7.129.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlss-310.7.129/nvngx_dlss_310.7.129.zip",
+        "digest": "sha256:1eb347ecf31fa2c4ecde5069088b52109f8ab39e1f7da3eb143e751b61f0d90f"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlss-310.7.128",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-21T21:06:04Z",
+    "assets": [
+      {
+        "name": "nvngx_dlss_310.7.128.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlss-310.7.128/nvngx_dlss_310.7.128.zip",
+        "digest": "sha256:3fed3adf702eed8f9d38a9a1f9655782570fbd38540c6c39d61a46ba42881000"
+      }
+    ]
+  },
+  {
+    "tag_name": "DLSS-Enabler-4.9.0.7",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-18T13:12:48Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.9.0.7.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.9.0.7/DLSS-Enabler-4.9.0.7.zip",
+        "digest": "sha256:d96def39d45311fe5289d94fbdc686505ce56e87e93ba28b62c5ba7b384c357e"
+      }
+    ]
+  },
+  {
+    "tag_name": "DLSS-Enabler-4.9.0.15",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-09-01T17:41:17Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.9.0.15.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.9.0.15/DLSS-Enabler-4.9.0.15.zip",
+        "digest": "sha256:6ff1ff8fab240557cbee48a7ae67e08264d42b435b3b0bd24bcdea9903ade9f7"
+      }
+    ]
+  },
+  {
+    "tag_name": "DLSS-Enabler-4.9.0.10",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-08-24T21:47:57Z",
+    "assets": [
+      {
+        "name": "DLSS-Enabler-4.9.0.10.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/DLSS-Enabler-4.9.0.10/DLSS-Enabler-4.9.0.10.zip",
+        "digest": "sha256:99a5859ddd8b51c3eced0c533d1c8006b9643e81357a4f7d7435cdfee72d882c"
+      }
+    ]
+  },
+  {
+    "tag_name": "ue-dof-fix-1.0.2",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-07-03T12:10:50Z",
+    "assets": [
+      {
+        "name": "renodx-universal_ue-dof-fix.addon64",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/ue-dof-fix-1.0.2/renodx-universal_ue-dof-fix.addon64",
+        "digest": "sha256:7070408dc7b4065677a9db163a82e8b3887c021d7ce435db28a5248e9f8621d4"
+      }
+    ]
+  },
+  {
+    "tag_name": "ue-dof-fix-1.0.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-06-28T13:53:30Z",
+    "assets": [
+      {
+        "name": "renodx-universal_ue-dof-fix.addon64",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/ue-dof-fix-1.0.1/renodx-universal_ue-dof-fix.addon64",
+        "digest": "sha256:bda6d96923f232e7441902c3cc088869384f1c25d09b69856578909218c5a8d2"
+      }
+    ]
+  },
+  {
+    "tag_name": "ue-dof-fix-1.0.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-06-27T15:32:51Z",
+    "assets": [
+      {
+        "name": "renodx-universal_ue-dof-fix.addon64",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/ue-dof-fix-1.0.0/renodx-universal_ue-dof-fix.addon64",
+        "digest": "sha256:ba98b9e1ecc26855692a9f92646f2d288dc40f743debd73070648b46cfd98166"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.9.0.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:41:23Z",
+    "assets": [
+      {
+        "name": "streamline_2.9.0.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.9.0.0/streamline_2.9.0.0.zip",
+        "digest": "sha256:71570829c74dc5c7aabec34c3b6d5c1fd876010d962d234ae07fe86e6d99df3f"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.8.0.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:41:20Z",
+    "assets": [
+      {
+        "name": "streamline_2.8.0.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.8.0.0/streamline_2.8.0.0.zip",
+        "digest": "sha256:f2322348ba57918749f7bc578f8f94d928ec36a7d2d8c5dd1f5d00190b87d41f"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.7.32.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:41:17Z",
+    "assets": [
+      {
+        "name": "streamline_2.7.32.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.7.32.0/streamline_2.7.32.0.zip",
+        "digest": "sha256:ab7cf950b4ca964666f05d7a0dbc4d316913e4f01c08a7d7463608b924d17944"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.12.0.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-06-23T16:59:06Z",
+    "assets": [
+      {
+        "name": "streamline_2.12.0.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.12.0.0/streamline_2.12.0.0.zip",
+        "digest": "sha256:184fd8fbc73ee29fd308da1d3068bc5681a7cfac9ca4b3cfec9f52fc969aea39"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.11.3.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:41:15Z",
+    "assets": [
+      {
+        "name": "streamline_2.11.3.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.11.3.0/streamline_2.11.3.0.zip",
+        "digest": "sha256:c6f152d1a8606759fb28a752d39b35f3a6295deac3d818de363b2fee97608ae7"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.11.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:41:12Z",
+    "assets": [
+      {
+        "name": "streamline_2.11.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.11.1/streamline_2.11.1.zip",
+        "digest": "sha256:bcbb0808e56c025f89f47c49627fe837e9d0e6ed9a0fcc4ea8b1f6545d8d4411"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.10.3.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:41:09Z",
+    "assets": [
+      {
+        "name": "streamline_2.10.3.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.10.3.0/streamline_2.10.3.0.zip",
+        "digest": "sha256:419d898b25069762bf9cc9f08c8380a1d43edbb42bc47928e377283cfdd31d0d"
+      }
+    ]
+  },
+  {
+    "tag_name": "streamline-2.10.0.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:41:07Z",
+    "assets": [
+      {
+        "name": "streamline_2.10.0.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/streamline-2.10.0.0/streamline_2.10.0.0.zip",
+        "digest": "sha256:f59d70fd31f8d827790515706c2e1e376961e0c120d32a448766a7d1096b0404"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.7.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-06-23T16:59:01Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.7.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.7.0/nvngx_dlssg_310.7.0.zip",
+        "digest": "sha256:bfa977fb4451718c7d4a2217518dfc1ad30d77ce0ea026253c82be96f5b9d35a"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.6.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:59Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.6.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.6.0/nvngx_dlssg_310.6.0.zip",
+        "digest": "sha256:ab76c673fa16eee3dbe3fe9f256d47ff1bbe8cd4f6c9772671a46f09bd0ecb06"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.5.3",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:56Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.5.3.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.5.3/nvngx_dlssg_310.5.3.zip",
+        "digest": "sha256:a9947debda759c8844079fb7cb78aec25ac2378a72686da97fd5ad2eb7c32772"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.5.2",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:53Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.5.2.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.5.2/nvngx_dlssg_310.5.2.zip",
+        "digest": "sha256:2c5447126ed944cb9f2f2a155bb2343c61e20a4ffb6f9c0cca5e641b9b95a7c2"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.5.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:49Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.5.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.5.0/nvngx_dlssg_310.5.0.zip",
+        "digest": "sha256:0c99e1aba3ed02069e77267948a67dfebc436b6506d3aeab6d55b1ed5e97a5d4"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.4.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:47Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.4.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.4.0/nvngx_dlssg_310.4.0.zip",
+        "digest": "sha256:b765154e32e0c407e06547d788f8245c730b280cdc2c47a5a55fac7365a76d66"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.3.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:43Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.3.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.3.0/nvngx_dlssg_310.3.0.zip",
+        "digest": "sha256:4a4748686c69ba064a3e77d0b3373091c9f6d2c46c2748439b2473e650152abd"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.2.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:37Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.2.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.2.1/nvngx_dlssg_310.2.1.zip",
+        "digest": "sha256:2a035f7ec47c84e68a7cefe40b7cd66c6abfd146e8ba1257f96b8b2e287c9644"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.2",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:40Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.2.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.2/nvngx_dlssg_310.2.zip",
+        "digest": "sha256:1916f659a26fcd85cd2b752f26948a80c8165b01bd03fb95bec66ffe73646621"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:34Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.1/nvngx_dlssg_310.1.zip",
+        "digest": "sha256:9c74e825123a2fc88e7bde1c738ac38b74570c98ea1020eb7353c72f0cf89087"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-310.0",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:31Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_310.0.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-310.0/nvngx_dlssg_310.0.zip",
+        "digest": "sha256:2b9b9ad9b0d7ce062d7d98b40fa8ee47ed9f19ee97720df78fd5e587da74d7c2"
+      }
+    ]
+  },
+  {
+    "tag_name": "dlssg-3.8.1",
+    "prerelease": false,
+    "draft": false,
+    "published_at": "2026-05-20T13:39:29Z",
+    "assets": [
+      {
+        "name": "nvngx_dlssg_3.8.1.zip",
+        "browser_download_url": "https://github.com/RankFTW/rhi-repo/releases/download/dlssg-3.8.1/nvngx_dlssg_3.8.1.zip",
+        "digest": "sha256:4c250d869bf8aa93c4cb0963f3a4e235b0383518ee2605204baa9888c9477bf9"
+      }
+    ]
+  }
+]

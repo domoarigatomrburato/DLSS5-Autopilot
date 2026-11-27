@@ -72,7 +72,7 @@ internal sealed partial class ReleasePages(NetClient client, ILogger logger)
     /// One list page's tags, none when it does not answer. A network failure on the first page
     /// fails the pages; on a later one it ends the list there.
     /// </summary>
-    private async Task<IReadOnlyList<string>> TagsOnPageAsync(GitHubRepository repo, int page, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<string>> TagsOnPageAsync(GitHubRepository repo, int page, CancellationToken cancellationToken)
     {
         Uri url = repo.ReleasesPage(page);
         try

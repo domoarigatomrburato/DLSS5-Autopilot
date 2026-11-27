@@ -68,8 +68,12 @@ internal static class ReleaseJson
     private static DateTimeOffset? PublishedAt(string? text) =>
         DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out DateTimeOffset at) ? at : null;
 
-    // GitHub names the algorithm; only a SHA-256 is a check this tool can run.
-    private static Sha256Verification? Digest(string? digest) =>
+    /// <summary>
+    /// An asset's <c>sha256:&lt;hex&gt;</c> digest, as the API's <c>digest</c> field and github.com's asset
+    /// pages show it. GitHub names the algorithm; only a SHA-256 of 64 hex digits is a check this
+    /// tool can run, so anything else is no digest.
+    /// </summary>
+    public static Sha256Verification? Digest(string? digest) =>
         digest is not null
         && digest.StartsWith(DigestPrefix, StringComparison.OrdinalIgnoreCase)
         && digest.Length == DigestPrefix.Length + 64

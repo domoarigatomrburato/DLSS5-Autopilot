@@ -37,7 +37,7 @@ public sealed class ReleaseListPagesTests(TestContext testContext)
         Assert.IsNull(newest.Draft);
         Assert.IsNull(newest.PublishedAt);
         GitHubAsset asset = Assert.ContainsSingle(newest.Assets, "the source archives are not assets");
-        Assert.AreEqual(new GitHubAsset("dxvk-3.2.tar.gz", new("https://github.com/doitsujin/dxvk/releases/download/v3.2/dxvk-3.2.tar.gz"), null), asset);
+        Assert.AreEqual(new GitHubAsset("dxvk-3.2.tar.gz", new("https://github.com/doitsujin/dxvk/releases/download/v3.2/dxvk-3.2.tar.gz"), new Sha256Verification("17449ed21602377971289eb2984750699825ac1bac3bbfa2426b2bba0f355692")), asset);
     }
 
     [TestMethod]

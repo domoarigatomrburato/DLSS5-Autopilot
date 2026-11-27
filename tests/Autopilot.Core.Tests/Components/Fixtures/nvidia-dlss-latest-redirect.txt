@@ -1,0 +1,2 @@
+HTTP/2 302
+location: https://github.com/NVIDIA/DLSS/releases/tag/v310.9.16
