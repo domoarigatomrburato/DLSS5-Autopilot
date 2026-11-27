@@ -152,7 +152,7 @@ public sealed class RedirectTests(TestContext testContext)
 
         await bed.GetText("https://example.test/a");
 
-        Assert.AreEqual("dlss5-autopilot/1.2.3", bed.Server.Requests[0].UserAgent);
+        Assert.AreEqual("invidia-claritatis/1.2.3", bed.Server.Requests[0].UserAgent);
     }
 
     private static RedirectProblem ProblemOf(NetException failure) =>

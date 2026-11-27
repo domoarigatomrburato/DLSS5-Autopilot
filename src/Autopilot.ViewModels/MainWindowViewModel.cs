@@ -4,5 +4,5 @@ namespace Autopilot.ViewModels;
 
 public sealed class MainWindowViewModel : ObservableObject
 {
-    public string Title { get; } = "DLSS5 Autopilot";
+    public string Title { get; } = "Invidia Claritatis";
 }

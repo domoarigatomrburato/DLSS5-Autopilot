@@ -8,6 +8,6 @@ public sealed class MainWindowViewModelTests
     {
         var viewModel = new MainWindowViewModel();
 
-        Assert.AreEqual("DLSS5 Autopilot", viewModel.Title);
+        Assert.AreEqual("Invidia Claritatis", viewModel.Title);
     }
 }

@@ -4,7 +4,7 @@ namespace Autopilot.Core.Net;
 /// <param name="Version">The running version, sent in the user agent.</param>
 public sealed record NetOptions(string Version)
 {
-    public string UserAgent => $"dlss5-autopilot/{Version}";
+    public string UserAgent => $"invidia-claritatis/{Version}";
 
     public TimeSpan ConnectTimeout { get; init; } = TimeSpan.FromSeconds(15);
 

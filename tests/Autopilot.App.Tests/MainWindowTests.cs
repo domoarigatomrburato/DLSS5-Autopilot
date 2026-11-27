@@ -22,6 +22,6 @@ public sealed class MainWindowTests(TestContext testContext)
             },
             testContext.CancellationToken);
 
-        Assert.AreEqual("DLSS5 Autopilot", title);
+        Assert.AreEqual("Invidia Claritatis", title);
     }
 }

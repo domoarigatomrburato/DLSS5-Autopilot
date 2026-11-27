@@ -24,9 +24,9 @@ public sealed class DownloadCache
         _parts = new(client, _verifier);
     }
 
-    /// <summary><c>%LOCALAPPDATA%\dlss5-autopilot\cache</c>, shared with <see cref="NetClient"/>'s API answers.</summary>
+    /// <summary><c>%LOCALAPPDATA%\invidia-claritatis\cache</c>, shared with <see cref="NetClient"/>'s API answers.</summary>
     public static string DefaultRoot =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "dlss5-autopilot", "cache");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "invidia-claritatis", "cache");
 
     /// <summary>The cached file for <paramref name="url"/>, fetched into the cache first when it is missing or bad.</summary>
     /// <exception cref="UnsafePathException"><paramref name="fileName"/> is not a safe file name; nothing was asked.</exception>
