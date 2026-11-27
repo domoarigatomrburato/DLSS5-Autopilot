@@ -1,8 +1,11 @@
 using System.Text.Json.Serialization;
+using Autopilot.Core.Components.Catalog;
+using Autopilot.Core.Components.Sources;
 using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
 using Autopilot.Core.Library.Stores;
 using Autopilot.Core.Net;
+using Autopilot.Core.Routes;
 using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Install;
@@ -35,6 +38,17 @@ namespace Autopilot.Core.Install;
         typeof(KebabNamedOnly<FailureOutcome>),
         typeof(KebabNamedOnly<NetErrorKind>),
         typeof(KebabNamedOnly<DriveRoles>),
+        typeof(KebabNamedOnly<ReShadeProxy>),
+        typeof(KebabNamedOnly<OptiScalerProxy>),
+        typeof(KebabNamedOnly<OptiScalerBuildKey>),
+        typeof(KebabNamedOnly<NeuralPreset>),
+        typeof(KebabNamedOnly<NeuralStyle>),
+        typeof(KebabNamedOnly<NeuralPasses>),
+        typeof(KebabNamedOnly<OwnFrameGeneration>),
+        typeof(KebabNamedOnly<MotionProvider>),
+        typeof(KebabNamedOnly<DlssPreset>),
+        typeof(KebabNamedOnly<FeederHdr>),
+        typeof(KebabNamedOnly<FeederPick>),
     ])]
 [JsonSerializable(typeof(InstallRecord))]
 [JsonSerializable(typeof(FailureNote))]

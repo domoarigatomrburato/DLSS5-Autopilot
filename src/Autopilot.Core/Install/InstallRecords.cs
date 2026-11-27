@@ -19,7 +19,7 @@ public sealed partial class InstallRecords(ILogger<InstallRecords> logger, TimeP
     internal const int Format = 1;
 
     /// <summary>A record larger than this is not one of ours.</summary>
-    private const int MaxBytes = 1024 * 1024;
+    internal const int MaxBytes = 1024 * 1024;
 
     /// <summary>
     /// The record in <paramref name="folder"/>: null when there is none; <see cref="InstallState.Unreadable"/>

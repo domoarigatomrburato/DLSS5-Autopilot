@@ -20,8 +20,14 @@ internal sealed record ResolvedInstall(InstallPaths Paths, string InstallFolder,
     /// <summary>The steps of progress: the journal, one per group, the check and the commit.</summary>
     public int ProgressSteps => Groups.Count + 3;
 
+    /// <summary>Every group's actions, in order.</summary>
+    public IEnumerable<InstallAction> Actions => Groups.SelectMany(group => group.Actions);
+
+    /// <summary>Every action's changes on disk, in order.</summary>
+    public IEnumerable<DiskChange> Changes => Actions.SelectMany(action => action.Changes(Paths));
+
     /// <summary>The entries this install journals, in order.</summary>
-    public IEnumerable<RecordEntry> Journaled => Groups.SelectMany(group => group.Actions).SelectMany(action => action.Journal);
+    public IEnumerable<RecordEntry> Journaled => Actions.SelectMany(action => action.Journal);
 
     /// <summary>
     /// Every change on disk the transaction makes when nothing fails, in order: the record's saves, each

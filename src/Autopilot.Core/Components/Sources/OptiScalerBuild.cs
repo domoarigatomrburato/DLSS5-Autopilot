@@ -25,16 +25,19 @@ public sealed record OptiScalerBuild(string Key, CatalogEntry Row, IReadOnlyList
     public static OptiScalerBuild Y4my4my4m { get; } = new("y4my4my4m", RowOf(ComponentRepositories.OptiScalerY4my4my4m), ["with_dlss"], null);
 
     /// <summary>wilsjo2's pass before super resolution; the RTX 40 MFG package is passed over.</summary>
-    public static OptiScalerBuild Wilsjo2 { get; } = new("wilsjo2", RowOf(ComponentRepositories.OptiScalerWilsjo2), ["rtx40-mfg"], null);
+    public static OptiScalerBuild Wilsjo2 { get; } = new("wilsjo2", RowOf(ComponentRepositories.OptiScalerWilsjo2), ["rtx40-mfg"], null) { RunsBeforeSuperResolution = true };
 
     /// <summary>wilsjo2's RTX 40 MFG package only, from the same page; refused on any card but RTX 40.</summary>
-    public static OptiScalerBuild Wilsjo2Mfg { get; } = new("wilsjo2-mfg", RowOf(ComponentRepositories.OptiScalerWilsjo2), [], "rtx40-mfg", OnlyCardSm: 89);
+    public static OptiScalerBuild Wilsjo2Mfg { get; } = new("wilsjo2-mfg", RowOf(ComponentRepositories.OptiScalerWilsjo2), [], "rtx40-mfg", OnlyCardSm: CardNames.Rtx40) { RunsBeforeSuperResolution = true };
 
     /// <summary>Janblade's fork of wilsjo2's; the <c>-test-</c> archives are passed over.</summary>
-    public static OptiScalerBuild Janblade { get; } = new("janblade", RowOf(ComponentRepositories.OptiScalerJanblade), ["-test-"], null);
+    public static OptiScalerBuild Janblade { get; } = new("janblade", RowOf(ComponentRepositories.OptiScalerJanblade), ["-test-"], null) { RunsBeforeSuperResolution = true };
 
     /// <summary>jlrouzies' fork of wilsjo2's, settings re-read while the game runs; a <c>SHA256SUMS</c> file in every release.</summary>
-    public static OptiScalerBuild Jlrouzies { get; } = new("jlrouzies", RowOf(ComponentRepositories.OptiScalerJlrouzies), ["rtx40-mfg"], null);
+    public static OptiScalerBuild Jlrouzies { get; } = new("jlrouzies", RowOf(ComponentRepositories.OptiScalerJlrouzies), ["rtx40-mfg"], null) { RunsBeforeSuperResolution = true };
+
+    /// <summary>The build runs its neural pass before super resolution, so the person chooses its passes (routes.md).</summary>
+    public bool RunsBeforeSuperResolution { get; init; }
 
     /// <summary>The GitHub repository whose releases carry it, as its row names it.</summary>
     internal GitHubRepository Repository => Row.Repository;

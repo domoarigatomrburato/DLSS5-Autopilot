@@ -22,7 +22,17 @@ internal sealed partial class InstallResolver(ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(plan);
         InstallPaths paths = new(plan.GameFolder);
-        return new Resolution(plan, paths, PriorInstall.Of(recorded, paths, logger), logger).RunAsync(cancellationToken);
+        return ResolveAsync(plan, paths, PriorInstall.Of(recorded, paths, logger), cancellationToken);
+    }
+
+    /// <summary>The plan made concrete over <paramref name="prior"/>, already read from the folder's record over <paramref name="paths"/> (the plan's game folder).</summary>
+    /// <exception cref="IOException">A file could not be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">A file could not be opened.</exception>
+    /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
+    public Task<ResolvedInstall> ResolveAsync(InstallPlan plan, InstallPaths paths, PriorInstall prior, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        return new Resolution(plan, paths, prior, logger).RunAsync(cancellationToken);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The install record names {Path}, which leads outside the game folder: ignored")]
@@ -89,16 +99,26 @@ internal sealed partial class InstallResolver(ILogger logger)
 
         private Task<IReadOnlyList<InstallAction>> StepAsync(PlanStep step, CancellationToken cancellationToken)
         {
-            string full = _paths.Full(step.Path);
+            string full = step.FullIn(_paths);
             _ = _named.Add(full);
+
             return step switch
             {
                 PlaceFile place => _files.PlaceAsync(place, full, cancellationToken),
                 MoveAside aside => _files.AsideAsync(aside, full, cancellationToken),
                 CreateFolder => Task.FromResult<IReadOnlyList<InstallAction>>(_files.FoldersOf(full)),
                 KeepEntry => Task.FromResult(_files.Keep(full)),
+                PlacePattern => Task.FromResult(Pattern(full)),
                 _ => throw new NotSupportedException($"no resolution for {step.GetType().Name}"),
             };
+        }
+
+        // The folders a pattern's files need, and the pattern. The previous install's files it stands for are the
+        // download's to replace, never set aside.
+        private IReadOnlyList<InstallAction> Pattern(string full)
+        {
+            _named.UnionWith(_prior.Entries.Select(entry => entry.Key).Where(previous => PlacePattern.Matches(full, previous)));
+            return [.. _files.FoldersOf(Path.GetDirectoryName(full)!), new WritePattern(_paths.Relative(full))];
         }
     }
 }

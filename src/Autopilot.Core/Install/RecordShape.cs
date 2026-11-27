@@ -79,7 +79,8 @@ internal static partial class RecordShape
         && record.Components.Values.All(version => version is not null)
         && AllPresent(record.Entries, record.ConfigEdits, record.Registrations, record.GraphicsPreferences)
         && record.Entries.All(entry => entry is null or { Superseded: null or >= 1 })
-        && AllPresent(record.CreatedFolders, record.Notes, record.Warnings, record.Skipped);
+        && AllPresent(record.CreatedFolders, record.Notes, record.Warnings, record.Skipped)
+        && record.Choices.IsValid;
 
     private static bool AllPresent(params IEnumerable<IEnumerable<object?>> lists) =>
         lists.All(list => list.All(item => item is not null));

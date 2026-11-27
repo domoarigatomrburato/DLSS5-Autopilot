@@ -907,4 +907,130 @@ Almost always this means the game (or its launcher) is running and holding the f
   <data name="InstallStepCommit" xml:space="preserve">
     <value>Finishing the install</value>
   </data>
+  <!-- Refusals before an install (install.md, "Refusal checks"): each ends with what to do. {0} is a folder, a file or a reason as named. -->
+  <data name="RefusalGame" xml:space="preserve">
+    <value>{0} Nothing was installed; set it in the game's settings, then install again.</value>
+  </data>
+  <data name="RefusalApi" xml:space="preserve">
+    <value>The graphics API this game draws with is not settled. Choose it under 'graphics api' in the game's settings, then install.</value>
+  </data>
+  <data name="RefusalFolderMissing" xml:space="preserve">
+    <value>{0} does not exist. Check the game's folder (rescan the library, or add the game again), then install.</value>
+  </data>
+  <data name="RefusalFolderDenied" xml:space="preserve">
+    <value>No permission to write into {0}. Close the game if it is running, then try again; if that is not it, run the tool as administrator: some games sit in folders only an administrator can write to.</value>
+  </data>
+  <data name="RefusalStoreFolder" xml:space="preserve">
+    <value>Windows does not let anything write into this Xbox / Game Pass folder ({0}), as administrator or not. Only games whose publisher allows modding have 'Enable mods' in the Xbox app: if yours has it, turn it on and rescan. If it does not, no tool can change this folder, and the game's Steam version is the one that can be set up.</value>
+  </data>
+  <data name="RefusalGameRunning" xml:space="preserve">
+    <value>{0} is running. Close the game first: Windows does not let anything replace files a running program has open, and a half-finished install is worse than none.</value>
+  </data>
+  <data name="RefusalLocked" xml:space="preserve">
+    <value>{0} is held open by another program (often the game's launcher). Close it, then install again.</value>
+  </data>
+  <data name="RefusalRecordUnreadable" xml:space="preserve">
+    <value>This folder's install record is damaged, or from a newer version of the tool. Uninstall first, then install.</value>
+  </data>
+  <data name="RefusalRecordElsewhere" xml:space="preserve">
+    <value>This folder's install record belongs to another game folder. Uninstall from there first, then install here.</value>
+  </data>
+  <data name="RefusalPlan" xml:space="preserve">
+    <value>This install would write outside the game folder, or twice to one file, so it was stopped before anything was written. Please report it with the log.</value>
+  </data>
+  <data name="RefusalUnreadable" xml:space="preserve">
+    <value>A file the install must read first could not be read ({0}). Close the game and its launcher, then install again.</value>
+  </data>
+  <data name="RefusalFreeSpace" xml:space="preserve">
+    <value>Not enough space on {0}: {1} free, and the install needs {2}. Free some space on it, then install again.</value>
+  </data>
+  <data name="RefusalRemixOnly" xml:space="preserve">
+    <value>This game has an RTX Remix mod installed. Only the remix route works here: every other route installs ReShade, which crashes a Remix game before it draws a frame, and on DirectX 9 it would write over the Remix runtime itself. Choose the remix route.</value>
+  </data>
+  <data name="RefusalNoRemixRuntime" xml:space="preserve">
+    <value>No RTX Remix runtime (a '.trex' folder) was found in this game. This route is only for a game that already has an RTX Remix mod installed: choose another route.</value>
+  </data>
+  <data name="RefusalRemixNoNeuralPass" xml:space="preserve">
+    <value>This game's Remix runtime has no DLSS 5 neural pass (NVIDIA's own runtime has none). Turn on 'swap the Remix runtime' to replace it with a community one - experimental: it also replaces any game-specific fixes the mod's own runtime carries.</value>
+  </data>
+  <data name="RefusalRemixRuntimeMissing" xml:space="preserve">
+    <value>{0} is missing: the Remix runtime in this folder is incomplete. Reinstall the RTX Remix mod for this game, or turn on 'swap the Remix runtime', then install again.</value>
+  </data>
+  <data name="RefusalRemixRuntimeUnreadable" xml:space="preserve">
+    <value>{0} could not be opened: another program may hold it, or Windows denies access. Close the game and any mod tool, then install again.</value>
+  </data>
+  <data name="RefusalCard" xml:space="preserve">
+    <value>{0} To install anyway, choose 'install anyway'.</value>
+  </data>
+  <data name="RefusalOwnFilesName" xml:space="preserve">
+    <value>OptiScaler would load as {0} here, the name {1} needs. Choose another name under 'OptiScaler loads as', then install again.</value>
+  </data>
+  <data name="RefusalOwnFilesGone" xml:space="preserve">
+    <value>The {0} files you added are no longer in the tool's folder. Add them again under 'frame generation files', or set it to none.</value>
+  </data>
+  <data name="RefusalOwnFilesTaken" xml:space="preserve">
+    <value>{0} is already in {2} and it is not the {1} file you added, nor one this tool placed. Move it out of the folder and install again, or set 'frame generation files' to none.</value>
+  </data>
+  <data name="RefusalLocalAddOnMissing" xml:space="preserve">
+    <value>Your own dlss5 add-on {0} is not there any more. Pick it again under 'dlss5 add-on', or choose a build from the list.</value>
+  </data>
+  <data name="RefusalLocalAddOnNot64" xml:space="preserve">
+    <value>Your own dlss5 add-on {0} is not a 64-bit add-on, which is what ReShade loads here. Pick the .addon64 file under 'dlss5 add-on', or choose a build from the list.</value>
+  </data>
+  <data name="RefusalUpliftReShade" xml:space="preserve">
+    <value>GITC-Uplift needs ReShade {1} or newer on Vulkan and OpenGL games, and the newest this PC can get is {0}. Try again later, or choose another route.</value>
+  </data>
+  <!-- Warnings before an install: they do not stop it. {0} is a route's or a file's name. -->
+  <data name="WarningBeta" xml:space="preserve">
+    <value>{0} is beta on this game: it works in many games, not all. If nothing changes in the game, try another route.</value>
+  </data>
+  <data name="WarningExperimental" xml:space="preserve">
+    <value>{0} is experimental on this game: few games were tried, and it may do nothing or crash. If it does, try another route.</value>
+  </data>
+  <data name="WarningLauncher" xml:space="preserve">
+    <value>{0} looks like a launcher, not the game; {1} looks like the real one. Pick it under 'executable' if nothing changes in the game.</value>
+  </data>
+  <data name="WarningLauncherAlone" xml:space="preserve">
+    <value>{0} looks like a launcher, not the game. If nothing changes in the game, pick the executable that draws under 'executable'.</value>
+  </data>
+  <data name="WarningOtherHooks" xml:space="preserve">
+    <value>Another DLSS hook is in the folder ({0}): expect flicker, greyed-out frame generation, or nothing at all. Take it out if the result looks wrong.</value>
+  </data>
+  <data name="WarningUnfinishedInstall" xml:space="preserve">
+    <value>An earlier install or uninstall in this folder was interrupted: it is rolled back first, then this install runs.</value>
+  </data>
+  <data name="WarningUnfinishedRemoval" xml:space="preserve">
+    <value>An earlier install or uninstall in this folder was interrupted: it is removed first, then this install runs.</value>
+  </data>
+  <!-- The "what will happen?" preview's lines (install.md). {0} is a text, a count or a list joined by ", ". -->
+  <data name="PreviewCannotInstall" xml:space="preserve">
+    <value>cannot install: {0}</value>
+  </data>
+  <data name="PreviewWarning" xml:space="preserve">
+    <value>warning: {0}</value>
+  </data>
+  <data name="PreviewCleanUp" xml:space="preserve">
+    <value>will clean up first: {0}</value>
+  </data>
+  <data name="PreviewWrite" xml:space="preserve">
+    <value>will write {0} file(s){1}</value>
+  </data>
+  <data name="PreviewWriteFirst" xml:space="preserve">
+    <value> ({0})</value>
+  </data>
+  <data name="PreviewPattern" xml:space="preserve">
+    <value>{0} (a pattern: the list is known after the download)</value>
+  </data>
+  <data name="PreviewBackUp" xml:space="preserve">
+    <value>will back up: {0}</value>
+  </data>
+  <data name="PreviewNoBackups" xml:space="preserve">
+    <value>nothing of yours is overwritten - no backups needed</value>
+  </data>
+  <data name="PreviewOutside" xml:space="preserve">
+    <value>outside: {0}</value>
+  </data>
+  <data name="PreviewNothingOutside" xml:space="preserve">
+    <value>nothing is written outside this folder</value>
+  </data>
 </root>

@@ -37,24 +37,36 @@ internal sealed class TreeSnapshot
     /// </summary>
     public string? Difference(TreeSnapshot after, params IReadOnlyCollection<string> rewritten)
     {
-        ArgumentNullException.ThrowIfNull(after);
-        HashSet<string> timeFree = [with(StringComparer.OrdinalIgnoreCase), .. rewritten];
-        string[] added = [.. after._files.Keys.Where(path => !_files.ContainsKey(path)).Order(StringComparer.OrdinalIgnoreCase)];
-        string[] removed = [.. _files.Keys.Where(path => !after._files.ContainsKey(path)).Order(StringComparer.OrdinalIgnoreCase)];
-        string[] changed =
-        [
-            .. _files
-                .Where(file => after._files.TryGetValue(file.Key, out FileFacts? facts)
-                    && (timeFree.Contains(file.Key) ? facts with { LastWriteUtc = file.Value.LastWriteUtc } : facts) != file.Value)
-                .Select(file => $"{file.Key} ({file.Value.Change(after._files[file.Key])})")
-                .Order(StringComparer.OrdinalIgnoreCase),
-        ];
+        TreeChange change = Change(after, rewritten);
         List<string> parts = [];
-        AddPart(parts, "added", added);
-        AddPart(parts, "removed", removed);
-        AddPart(parts, "changed", changed);
+        AddPart(parts, "added", change.Added);
+        AddPart(parts, "removed", change.Removed);
+        AddPart(parts, "changed", [.. change.Changed.Select(path => $"{path} ({_files[path].Change(after._files[path])})")]);
         return parts.Count == 0 ? null : string.Join("; ", parts);
     }
+
+    /// <summary>
+    /// The paths added, removed and changed from this snapshot to <paramref name="after"/>, each sorted. The files of
+    /// <paramref name="rewritten"/> may carry a new modified time.
+    /// </summary>
+    public TreeChange Change(TreeSnapshot after, params IReadOnlyCollection<string> rewritten)
+    {
+        ArgumentNullException.ThrowIfNull(after);
+        HashSet<string> timeFree = [with(StringComparer.OrdinalIgnoreCase), .. rewritten];
+        return new(
+            [.. after._files.Keys.Where(path => !_files.ContainsKey(path)).Order(StringComparer.OrdinalIgnoreCase)],
+            [.. _files.Keys.Where(path => !after._files.ContainsKey(path)).Order(StringComparer.OrdinalIgnoreCase)],
+            [
+                .. _files
+                    .Where(file => after._files.TryGetValue(file.Key, out FileFacts? facts)
+                        && (timeFree.Contains(file.Key) ? facts with { LastWriteUtc = file.Value.LastWriteUtc } : facts) != file.Value)
+                    .Select(file => file.Key)
+                    .Order(StringComparer.OrdinalIgnoreCase),
+            ]);
+    }
+
+    /// <summary>The SHA-256 of the file at <paramref name="path"/>, hex; null when the tree has none there.</summary>
+    public string? HashOf(string path) => _files.GetValueOrDefault(path)?.Sha256;
 
     /// <summary>
     /// Fails the test, listing the added, removed and changed paths, unless <paramref name="after"/> is the same
@@ -68,9 +80,9 @@ internal sealed class TreeSnapshot
         }
     }
 
-    private static void AddPart(List<string> parts, string label, string[] paths)
+    private static void AddPart(List<string> parts, string label, IReadOnlyList<string> paths)
     {
-        if (paths.Length > 0)
+        if (paths.Count > 0)
         {
             parts.Add($"{label}: {string.Join(", ", paths)}");
         }
@@ -86,3 +98,9 @@ internal sealed class TreeSnapshot
         }.OfType<string>());
     }
 }
+
+/// <summary>What changed in a tree, by relative <c>/</c> separated path, each list sorted.</summary>
+/// <param name="Added">The files that are new.</param>
+/// <param name="Removed">The files gone.</param>
+/// <param name="Changed">The files whose content, attributes or modified time changed.</param>
+internal sealed record TreeChange(IReadOnlyList<string> Added, IReadOnlyList<string> Removed, IReadOnlyList<string> Changed);

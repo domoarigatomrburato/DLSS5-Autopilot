@@ -18,7 +18,7 @@ internal static class InstallChecks
             return refused;
         }
 
-        if (!paths.Contains(plan.InstallFolder) || !plan.Groups.SelectMany(group => group.Steps).All(step => IsInside(paths, step.Path)))
+        if (!paths.Contains(plan.InstallFolder) || !plan.Groups.SelectMany(group => group.Steps).All(step => IsInside(paths, step)))
         {
             return new(InstallRefusal.PathOutsideGameFolder);
         }
@@ -39,11 +39,11 @@ internal static class InstallChecks
             : null;
     }
 
-    private static bool IsInside(InstallPaths paths, string relative)
+    private static bool IsInside(InstallPaths paths, PlanStep step)
     {
         try
         {
-            return paths.Contains(paths.Full(relative));
+            return paths.Contains(step.FullIn(paths));
         }
         catch (UnsafePathException)
         {
@@ -59,7 +59,7 @@ internal static class InstallChecks
         HashSet<string> named = [with(StringComparer.OrdinalIgnoreCase)];
         foreach (PlanStep step in plan.Groups.SelectMany(group => group.Steps))
         {
-            string full = paths.Full(step.Path);
+            string full = step.FullIn(paths);
             if (!named.Add(full) || (step is KeepEntry && prior.At(full) is null))
             {
                 return true;

@@ -1,3 +1,5 @@
+using Autopilot.Core.Routes;
+
 namespace Autopilot.Core.Install;
 
 /// <summary>
@@ -13,6 +15,49 @@ internal abstract record InstallAction(string Path)
 
     /// <summary>The changes on disk, in the order they are made.</summary>
     public abstract IReadOnlyList<DiskChange> Changes(InstallPaths paths);
+
+    /// <summary>Which of the preview's lists name the action's path: every kind says it, so a new kind cannot be left out of the preview.</summary>
+    public abstract PreviewLists Preview { get; }
+
+    /// <summary>
+    /// What the action changes outside the game folder (a registration, a Windows setting, a config file), as the
+    /// preview's <c>outside:</c> line says it, with its scope and how it is undone; null for an action that stays inside it.
+    /// </summary>
+    public virtual RouteMessage? Outside => null;
+}
+
+/// <summary>The preview's lists of files an action can be in.</summary>
+[Flags]
+internal enum PreviewLists
+{
+    /// <summary>In none: a folder made, a change outside the folder.</summary>
+    None = 0,
+
+    /// <summary>Files written, created or overwritten.</summary>
+    Written = 1,
+
+    /// <summary>Files of the game's or the person's kept under a backup name.</summary>
+    BackedUp = 2,
+
+    /// <summary>Things taken out of the way first: the previous install's files, other routes' add-ons, the sidelined compiler.</summary>
+    CleanedUp = 4,
+
+    /// <summary>Its path is a pattern only a download resolves.</summary>
+    Pattern = 8,
+}
+
+/// <summary>
+/// Files a download reveals, not yet known (the archive is not in the cache): the preview shows them as a pattern.
+/// It changes nothing: a plan holding one is a preview's, never a transaction's.
+/// </summary>
+/// <param name="Path">The folder they go into and their names' pattern (<c>reshade-shaders/Shaders/lumenite_*.fxh</c>).</param>
+internal sealed record WritePattern(string Path) : InstallAction(Path)
+{
+    public override IEnumerable<RecordEntry> Journal => [];
+
+    public override PreviewLists Preview => PreviewLists.Written | PreviewLists.Pattern;
+
+    public override IReadOnlyList<DiskChange> Changes(InstallPaths paths) => [];
 }
 
 /// <summary>A file written where nothing is.</summary>
@@ -23,6 +68,8 @@ internal abstract record InstallAction(string Path)
 /// <param name="Carried">The game's original the previous install kept in a backup behind this path, which stays; null when none.</param>
 internal sealed record WriteNew(string Path, EntryClass Class, FileFacts Facts, FileSource Source, OriginalFile? Carried) : InstallAction(Path)
 {
+    public override PreviewLists Preview => PreviewLists.Written;
+
     public override IEnumerable<RecordEntry> Journal => [new(Path, Class, EntryState.Pending, Facts, Carried)];
 
     public override IReadOnlyList<DiskChange> Changes(InstallPaths paths) => [new WriteFile(paths.Full(Path), Facts, Source)];
@@ -39,6 +86,8 @@ internal sealed record WriteNew(string Path, EntryClass Class, FileFacts Facts, 
 /// <param name="Previous">The previous install's entry for the path, relative to this install's game folder.</param>
 internal sealed record ReplaceOurs(string Path, EntryClass Class, FileFacts Facts, FileSource Source, RecordEntry Previous) : InstallAction(Path)
 {
+    public override PreviewLists Preview => PreviewLists.Written;
+
     public override IEnumerable<RecordEntry> Journal =>
     [
         Previous with { State = EntryState.Held, Original = null },
@@ -60,6 +109,8 @@ internal sealed record ReplaceOurs(string Path, EntryClass Class, FileFacts Fact
 /// <param name="Original">The game's file, as read before any change.</param>
 internal sealed record BackUpThenWrite(string Path, EntryClass Class, FileFacts Facts, FileSource Source, OriginalFile Original) : InstallAction(Path)
 {
+    public override PreviewLists Preview => PreviewLists.Written | PreviewLists.BackedUp;
+
     public override IEnumerable<RecordEntry> Journal => [new(Path, Class, EntryState.Pending, Facts, Original)];
 
     public override IReadOnlyList<DiskChange> Changes(InstallPaths paths)
@@ -74,6 +125,8 @@ internal sealed record BackUpThenWrite(string Path, EntryClass Class, FileFacts 
 /// <param name="Original">The file, as read before any change.</param>
 internal sealed record MoveAsideFile(string Path, OriginalFile Original) : InstallAction(Path)
 {
+    public override PreviewLists Preview => PreviewLists.BackedUp | PreviewLists.CleanedUp;
+
     public override IEnumerable<RecordEntry> Journal => [new(Path, EntryClass.Component, EntryState.Pending, null, Original)];
 
     public override IReadOnlyList<DiskChange> Changes(InstallPaths paths)
@@ -91,6 +144,8 @@ internal sealed record MoveAsideFile(string Path, OriginalFile Original) : Insta
 /// <param name="Entry">Its held entry.</param>
 internal sealed record HoldFile(string Path, RecordEntry Entry) : InstallAction(Path)
 {
+    public override PreviewLists Preview => PreviewLists.CleanedUp;
+
     public override IEnumerable<RecordEntry> Journal => [Entry];
 
     public override IReadOnlyList<DiskChange> Changes(InstallPaths paths)
@@ -115,6 +170,8 @@ internal sealed record HoldFile(string Path, RecordEntry Entry) : InstallAction(
 /// <param name="Superseded">The superseded name's number it goes to; null when it goes back under the path.</param>
 internal sealed record RestoreOriginal(string Path, OriginalFile Original, int? Superseded) : InstallAction(Path)
 {
+    public override PreviewLists Preview => PreviewLists.CleanedUp;
+
     public override IEnumerable<RecordEntry> Journal => [new(Path, EntryClass.Component, EntryState.Restored, null, Original) { Superseded = Superseded }];
 
     public override IReadOnlyList<DiskChange> Changes(InstallPaths paths)
@@ -129,6 +186,8 @@ internal sealed record RestoreOriginal(string Path, OriginalFile Original, int? 
 /// <param name="Path">The folder.</param>
 internal sealed record MakeFolder(string Path) : InstallAction(Path)
 {
+    public override PreviewLists Preview => PreviewLists.None;
+
     public override IEnumerable<RecordEntry> Journal => [];
 
     public override IReadOnlyList<DiskChange> Changes(InstallPaths paths) => [new CreateFolderChange(paths.Full(Path))];

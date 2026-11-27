@@ -36,6 +36,9 @@ internal sealed class TransactionBed : IDisposable
 
     public GameStateStore Store { get; }
 
+    /// <summary>The tool's data folder, where the store keeps its notes.</summary>
+    public string DataFolder => _data.Root;
+
     public FakeLogger Log { get; } = new();
 
     /// <summary>The install folder, relative to the game folder.</summary>

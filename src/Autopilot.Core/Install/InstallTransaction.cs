@@ -48,9 +48,15 @@ internal sealed class InstallTransaction
     /// folder's failure note is cleared, an open transaction an earlier run left is finished, and the plan runs.
     /// </summary>
     /// <exception cref="OperationCanceledException">The token was cancelled: the install was rolled back and its note says so.</exception>
+    /// <exception cref="ArgumentException">A step of the plan is still a pattern: only the preview reads such a plan.</exception>
     public async Task<InstallOutcome> RunAsync(InstallPlan plan, IProgress<InstallProgress>? progress, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(plan);
+        if (plan.HasPatterns)
+        {
+            throw new ArgumentException("a plan with patterns is the preview's: gather the real file lists first", nameof(plan));
+        }
+
         string installFolder = Path.GetFullPath(plan.InstallFolder);
         RecordedInstall? recorded = await _records.FindAsync(installFolder, cancellationToken);
         return InstallChecks.RefusalOf(plan, recorded) is { } refused

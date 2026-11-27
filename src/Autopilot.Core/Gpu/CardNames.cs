@@ -9,6 +9,9 @@ internal static partial class CardNames
     /// <summary>The first architecture with tensor cores in consumer cards: RTX 20.</summary>
     public const int Turing = 75;
 
+    /// <summary>RTX 40 (Ada Lovelace): the cards the multi-frame-generation unlock and OptiScaler's RTX 40 MFG package are for.</summary>
+    public const int Rtx40 = 89;
+
     /// <summary>RTX 50 (Blackwell): the cards OptiScaler's author tested, and the only ones the routes steer to it.</summary>
     public const int Rtx50 = 120;
 

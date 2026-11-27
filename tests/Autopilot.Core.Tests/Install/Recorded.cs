@@ -26,7 +26,7 @@ internal static class Recorded
         installFolder,
         new RecordedGame(["Game.exe"], Bitness.Bits64, GraphicsApi.DX12, GameSource.Steam),
         RouteId.Native,
-        [],
+        RouteSettings.Default,
         new Dictionary<string, string>(),
         [.. entries],
         [],

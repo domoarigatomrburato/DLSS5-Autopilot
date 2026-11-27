@@ -140,4 +140,18 @@ public sealed class AdapterListTests
         Assert.AreEqual("NVIDIA GeForce RTX 2060", second.Card?.Name);
         Assert.IsNull(first.Refusal);
     }
+
+    [TestMethod]
+    [DataRow(Intel, "Intel(R) UHD Graphics 770", true, DisplayName = "NVIDIA and Intel")]
+    [DataRow(Amd, "AMD Radeon(TM) Graphics", true, DisplayName = "NVIDIA and AMD")]
+    [DataRow(Nvidia, "NVIDIA GeForce RTX 3060", false, DisplayName = "two NVIDIA cards")]
+    public void Two_gpus_are_an_nvidia_card_and_an_intel_or_amd_one(int vendor, string name, bool twoGpus) =>
+        Assert.AreEqual(twoGpus, Facts(Card(Rtx4070), Adapter(vendor, name)).TwoGpus);
+
+    [TestMethod]
+    public void An_nvidia_card_alone_or_beside_a_software_adapter_is_not_two_gpus()
+    {
+        Assert.IsFalse(Facts(Card(Rtx4070)).TwoGpus);
+        Assert.IsFalse(Facts(Card(Rtx4070), new GraphicsAdapter(MicrosoftVendor, "Microsoft Basic Render Driver", Software: true)).TwoGpus);
+    }
 }

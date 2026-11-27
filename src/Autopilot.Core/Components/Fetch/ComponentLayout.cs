@@ -56,7 +56,7 @@ internal static class ComponentLayout
             Bitness? wanted = name.EndsWith(".addon64", StringComparison.OrdinalIgnoreCase) ? Bitness.Bits64
                 : name.EndsWith(".addon32", StringComparison.OrdinalIgnoreCase) ? Bitness.Bits32
                 : null;
-            if (wanted is { } bitness && await BitnessOfAsync(path, cancellationToken) != bitness)
+            if (wanted is { } bitness && await PeImage.BitnessOfAsync(path, cancellationToken) != bitness)
             {
                 throw new ComponentException(
                     ComponentFailure.WrongBitness,
@@ -68,17 +68,4 @@ internal static class ComponentLayout
     private static bool Ends(string relative, string expected) =>
         string.Equals(relative, expected, StringComparison.OrdinalIgnoreCase)
         || relative.EndsWith("/" + expected, StringComparison.OrdinalIgnoreCase);
-
-    private static async Task<Bitness?> BitnessOfAsync(string path, CancellationToken cancellationToken)
-    {
-        try
-        {
-            using PeImage image = await PeImage.OpenAsync(path, cancellationToken);
-            return image.Bitness;
-        }
-        catch (PeException)
-        {
-            return null;
-        }
-    }
 }

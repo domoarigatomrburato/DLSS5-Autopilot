@@ -17,6 +17,9 @@ public sealed record GpuFacts
     /// <summary>The driver's version as people know it ("616.92"); null when it cannot be read.</summary>
     public string? Driver { get; private init; }
 
+    /// <summary>Windows has an NVIDIA card and an Intel or AMD one, so the graphics preference picks between them; two NVIDIA cards are not.</summary>
+    public bool TwoGpus { get; private init; }
+
     /// <summary>Why no route can run DLSS 5 here; null when nothing is refused, which includes every case the reading cannot tell.</summary>
     public GpuRefusal? Refusal { get; private init; }
 
@@ -36,6 +39,7 @@ public sealed record GpuFacts
             Vendor = vendor,
             Driver = NvidiaDriver.Version(reading),
             Refusal = RefusalOf(vendor, card, nvidia),
+            TwoGpus = nvidia.Length > 0 && hardware.Any(adapter => adapter.VendorId is IntelVendor or AmdVendor or AmdAltVendor),
         };
     }
 

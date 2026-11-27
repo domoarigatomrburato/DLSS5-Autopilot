@@ -1,6 +1,6 @@
 using System.Buffers;
+using System.IO.Enumeration;
 using System.Security.Cryptography;
-using System.Text.Json.Nodes;
 using Autopilot.Core.Routes;
 
 namespace Autopilot.Core.Install;
@@ -13,13 +13,17 @@ namespace Autopilot.Core.Install;
 /// <param name="InstallFolder">The folder holding the game's executable and the record, at or below <paramref name="GameFolder"/>.</param>
 /// <param name="Header">What the record says about the install as a whole.</param>
 /// <param name="Groups">The steps, one group per component or route-specific step, in the order they run.</param>
-internal sealed record InstallPlan(string GameFolder, string InstallFolder, PlanHeader Header, IReadOnlyList<PlanGroup> Groups);
+internal sealed record InstallPlan(string GameFolder, string InstallFolder, PlanHeader Header, IReadOnlyList<PlanGroup> Groups)
+{
+    /// <summary>Whether a step is still a pattern: such a plan is a preview's, and the transaction refuses to run it.</summary>
+    public bool HasPatterns => Groups.Any(group => group.Steps.Any(step => step is PlacePattern));
+}
 
 /// <summary>What the record says about an install as a whole.</summary>
 /// <param name="ToolVersion">The build installing.</param>
 /// <param name="Game">The game installed for.</param>
 /// <param name="Route">The route installed.</param>
-/// <param name="Choices">Every choice needed to repeat the install.</param>
+/// <param name="Choices">The person's settings the install read: every choice needed to repeat it.</param>
 /// <param name="Components">Each component's id and the version installed.</param>
 /// <param name="Notes">What the install says, for the report.</param>
 /// <param name="Warnings">The warnings it gives.</param>
@@ -28,7 +32,7 @@ internal sealed record PlanHeader(
     string ToolVersion,
     RecordedGame Game,
     RouteId Route,
-    JsonObject Choices,
+    RouteSettings Choices,
     IReadOnlyDictionary<string, string> Components,
     IReadOnlyList<string> Notes,
     IReadOnlyList<string> Warnings,
@@ -44,7 +48,12 @@ internal sealed record PlanGroup(string Name, IReadOnlyList<PlanStep> Steps);
 /// into the actions that get there; a new kind adds its record here and its case there.
 /// </summary>
 /// <param name="Path">The path, relative to the game folder.</param>
-internal abstract record PlanStep(string Path);
+internal abstract record PlanStep(string Path)
+{
+    /// <summary>The step's path, full, below <paramref name="paths"/>' game folder.</summary>
+    /// <exception cref="Archives.UnsafePathException">The path is absolute, climbs out, or is not a valid Windows name.</exception>
+    public virtual string FullIn(InstallPaths paths) => paths.Full(Path);
+}
 
 /// <summary>A file placed at <paramref name="Path"/>, whose bytes are known and verified before the install starts.</summary>
 /// <param name="Path">Where it goes.</param>
@@ -72,6 +81,31 @@ internal sealed record CreateFolder(string Path) : PlanStep(Path);
 /// </summary>
 /// <param name="Path">The entry's path.</param>
 internal sealed record KeepEntry(string Path) : PlanStep(Path);
+
+/// <summary>
+/// Files known only by a pattern until a download reveals them (a shader pack, an OptiScaler package not in the cache):
+/// the preview shows them as a pattern line. A plan holding one is never run: once gathered, each becomes the
+/// <see cref="PlaceFile"/> steps of the real list.
+/// </summary>
+/// <param name="Path">
+/// The folder the files go into and their names' pattern, relative to the game folder
+/// (<c>reshade-shaders/Shaders/lumenite_*.fxh</c>; <c>*</c> for "the rest of the package"); the pattern is the last part.
+/// </param>
+internal sealed record PlacePattern(string Path) : PlanStep(Path)
+{
+    /// <summary>The folder checked as any step's path, the pattern joined to it as it is, since <c>*</c> and <c>?</c> are no name's characters.</summary>
+    public override string FullIn(InstallPaths paths)
+    {
+        int last = Path.LastIndexOfAny(['/', '\\']);
+        string folder = last < 0 ? paths.GameFolder : paths.Full(Path[..last]);
+        return System.IO.Path.Join(folder, Path[(last + 1)..]);
+    }
+
+    /// <summary>Whether the file at <paramref name="full"/> is one <paramref name="pattern"/> (a full pattern, from <see cref="FullIn"/>) stands for: in its folder, its name matching.</summary>
+    public static bool Matches(string pattern, string full) =>
+        string.Equals(System.IO.Path.GetDirectoryName(pattern), System.IO.Path.GetDirectoryName(full), StringComparison.OrdinalIgnoreCase)
+        && FileSystemName.MatchesSimpleExpression(System.IO.Path.GetFileName(pattern), System.IO.Path.GetFileName(full));
+}
 
 /// <summary>Where a placed file's bytes come from.</summary>
 internal abstract record FileSource

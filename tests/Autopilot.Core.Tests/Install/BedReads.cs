@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
 using Autopilot.Core.Install;
@@ -79,7 +78,7 @@ internal static class Plans
             "1.0.0-test",
             new RecordedGame(["Game.exe"], Bitness.Bits64, GraphicsApi.DX12, GameSource.Steam),
             route,
-            new JsonObject { ["route"] = route.Id() },
+            RouteSettings.Default,
             new Dictionary<string, string> { ["component"] = "1.0" },
             [$"installed {route.Id()}"],
             [],

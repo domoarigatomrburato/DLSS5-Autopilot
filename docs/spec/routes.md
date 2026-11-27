@@ -188,8 +188,8 @@ when the route changes. The reference's table (`ctl_game.py:862`), as rules:
 | ReShade loads as | a ReShade route, API not Vulkan, no DXVK in use, API not D3D9/D3D8 |
 | `renodx-dlss5` build | native, bridge, feeder, renodx |
 | `nvngx_dlssnr` build | every route |
-| `nvngx_dlss` build | not upstream, remix, uplift; and not when "keep the game's own" is on and a game file sits beside the executable |
-| keep the game's own `nvngx_dlss` | not upstream, remix, uplift; not 32-bit |
+| `nvngx_dlss` build | not upstream, remix, uplift; not optiscaler on a game with its own DLSS (it places none there); and not when "keep the game's own" is on and a game file sits beside the executable |
+| keep the game's own `nvngx_dlss` | not upstream, remix, uplift; not optiscaler on a game with its own DLSS; not 32-bit |
 | ray reconstruction | the game ships `nvngx_dlssd.dll` and the route is a ReShade route |
 | DXVK | native, bridge, feeder; and API D3D11 or an executable known to need it |
 | RTX 40 multi-frame generation | a ReShade route, and the card/game test below passes |
@@ -438,6 +438,7 @@ refusal says what to do:
 | a Remix game (`.trex` found) and the route is not remix | refused: ReShade crashes it before it draws a frame and, on D3D9, would overwrite the runtime |
 | remix and no `.trex` found | refused |
 | remix and the runtime has no neural pass and "swap" is off | refused, naming the swap |
+| remix and the runtime `d3d9.dll` is missing from `.trex` or cannot be read | refused, naming the file (never read as "no neural pass") |
 | the card cannot run DLSS (the no-DLSS-here rule of [gpu](gpu.md)) | refused unless "ignore" |
 | the OptiScaler build `wilsjo2-mfg` on a card other than RTX 40 | refused |
 | own frame generation files cannot be placed | refused (above) |

@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Install;
 using Autopilot.Core.Library;
 using Autopilot.Core.Net;
@@ -46,6 +47,29 @@ public sealed class JsonContextEnumTests
 
             _ = Assert.ThrowsExactly<JsonException>(() => JsonSerializer.Deserialize("0", info), $"{type.Name} is read from a number");
         }
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(EveryContext))]
+    public void Every_value_of_every_enum_a_context_reaches_round_trips_by_name(JsonSerializerContext context)
+    {
+        foreach (Type type in EnumsReachedBy(context))
+        {
+            JsonTypeInfo info = context.GetTypeInfo(type)!;
+            foreach (object value in Enum.GetValues(type))
+            {
+                string json = JsonSerializer.Serialize(value, info);
+
+                Assert.AreEqual(value, JsonSerializer.Deserialize(json, info), $"{type.Name}.{value} is written as {json}");
+            }
+        }
+    }
+
+    [TestMethod]
+    public void The_record_names_quantmotion_so_the_install_can_refuse_it()
+    {
+        Assert.Contains(typeof(MotionProvider), EnumsReachedBy(InstallJsonContext.Default));
+        Assert.AreEqual("\"quant-motion\"", JsonSerializer.Serialize(MotionProvider.QuantMotion, InstallJsonContext.Default.MotionProvider));
     }
 
     [TestMethod]

@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
@@ -21,7 +20,7 @@ namespace Autopilot.Core.Install;
 /// </param>
 /// <param name="Game">What the install was made for.</param>
 /// <param name="Route">The route installed.</param>
-/// <param name="Choices">Every choice needed to repeat the install, kept verbatim until each route's options are typed.</param>
+/// <param name="Choices">The person's settings the install read: every choice needed to repeat it.</param>
 /// <param name="Components">Each component's id and the version installed.</param>
 /// <param name="Entries">One per path the install touches.</param>
 /// <param name="ConfigEdits">Key-level edits to files the person owns.</param>
@@ -38,7 +37,7 @@ public sealed record InstallRecord(
     string InstallFolder,
     RecordedGame Game,
     RouteId Route,
-    JsonObject Choices,
+    RouteSettings Choices,
     IReadOnlyDictionary<string, string> Components,
     IReadOnlyList<RecordEntry> Entries,
     IReadOnlyList<ConfigEdit> ConfigEdits,

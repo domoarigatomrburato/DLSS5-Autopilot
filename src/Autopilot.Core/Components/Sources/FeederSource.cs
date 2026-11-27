@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Net;
@@ -113,7 +114,9 @@ public enum FeederPick
 /// <summary>A feeder build choice: one of the two "newest" picks, or an exact tag.</summary>
 public sealed record FeederChoice
 {
-    private FeederChoice(FeederPick pick, string? tag)
+    /// <summary>A pick and its tag, as a record reads them back; <see cref="IsWhole"/> says whether they go together.</summary>
+    [JsonConstructor]
+    internal FeederChoice(FeederPick pick, string? tag)
     {
         Pick = pick;
         Tag = tag;
@@ -129,6 +132,9 @@ public sealed record FeederChoice
 
     /// <summary>The exact tag; <see langword="null"/> for the "newest" picks.</summary>
     public string? Tag { get; }
+
+    /// <summary>Whether the tag goes with the pick: an exact tag names one, the "newest" picks none.</summary>
+    internal bool IsWhole => Pick == FeederPick.ExactTag ? !string.IsNullOrWhiteSpace(Tag) : Tag is null && Enum.IsDefined(Pick);
 
     /// <summary>One release by its exact tag.</summary>
     /// <exception cref="ArgumentException">The tag is empty.</exception>

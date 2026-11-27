@@ -210,7 +210,7 @@ REFramework are written).
 | nothing locked | each existing file the plan will overwrite, move or delete can be opened for writing; a locked one (a launcher holding the proxy DLL) is named now | new |
 | a non-ReShade file under the proxy name | refused ("`dxgi.dll` already exists but is not ReShade; DXVK, Special K or another injector? Remove it first"), except our own file from the recorded previous route and a hand-installed OptiScaler (backed up and moved, by the rules below) | `:3705-3737` |
 | the record is usable | the reader answers `Unreadable`: a newer format, or a damaged record ("this folder's install record is damaged: uninstall first, then install") | new |
-| free space | the game's drive has room for every byte to write, plus temporary copies, plus any backups made by copy, plus a margin for the record | new |
+| free space | the game's drive has room for every byte to write (each file is written to a temporary name beside it and renamed, so its bytes count once; backups are renames and cost nothing), plus a margin for the record. Files known only as a pattern are counted once gathered, so the check runs again before phase 3 | new |
 | route-specific refusals | each route spec lists its own; they all run here. From the reference: a pinned feeder older than the D3D10 relay, the 64-bit helper mode and the built-in motion vectors (`:3759-3813`); GITC-Uplift on Vulkan/OpenGL needs ReShade 6.8 (`:3815-3830`); the RTX 40 MFG package on another card, the person's own frame-generation slot taken (`:3832-3843`); Remix with no runtime, or a runtime without the neural pass and no swap chosen (`:3953-3968`); a local add-on file missing or not 64-bit (`:4686-4696`) | |
 
 Not refusals, stated in the preview and the report (route and diagnosis
@@ -262,6 +262,10 @@ network request.
   | `will back up: a, b, ...` or `nothing of yours is overwritten - no backups needed` | always one of the two |
   | `outside: <text>` per effect, or `nothing is written outside this folder` | always |
 
+- **An interrupted operation.** When the folder's record is still open (an
+  install or a removal an earlier run left part way), the first warning says
+  that it is finished first (rolled back, or removed) before this install
+  runs; the preview does not simulate that recovery.
 - **Effects outside the folder** are always listed, each with its scope and
   how it is undone: the Vulkan layer ("loads into EVERY Vulkan application
   until 'uninstall' removes it"; reused when one exists; per user only, so

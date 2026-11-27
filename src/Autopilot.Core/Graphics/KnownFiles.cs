@@ -59,6 +59,27 @@ internal static class KnownFiles
     /// <summary>The loader name ASI loaders and REFramework take.</summary>
     public const string Dinput8 = "dinput8.dll";
 
+    /// <summary>Windows' multimedia library, a name proxies load as.</summary>
+    public const string Winmm = "winmm.dll";
+
+    /// <summary>Windows' version library, a name proxies load as.</summary>
+    public const string Version = "version.dll";
+
+    /// <summary>Windows' debug-help library, a name proxies load as.</summary>
+    public const string Dbghelp = "dbghelp.dll";
+
+    /// <summary>Windows' internet library, a name proxies load as.</summary>
+    public const string Wininet = "wininet.dll";
+
+    /// <summary>Windows' HTTP library, a name proxies load as.</summary>
+    public const string Winhttp = "winhttp.dll";
+
+    /// <summary>DLSS Enabler's headless DLL, as the person's own frame generation files name it.</summary>
+    public const string DlssEnablerHeadless = "dlss-enabler-headless.dll";
+
+    /// <summary>dlssg_for_sm86's settings file.</summary>
+    public const string Sm86Ini = "dlssg_sm86.ini";
+
     /// <summary>The proxy DLLs DXVK ships per architecture folder.</summary>
     public static readonly IReadOnlyList<string> DxvkProxies = [Dxgi, D3d11, D3d9, D3d8];
 
@@ -136,7 +157,7 @@ internal static class KnownFiles
         "dlssg_to_fsr3_amd_is_better.dll",
         "dlssg_to_fsr3.ini",
         "nvngx.dll_dlssnr.dll",
-        "dlssg_sm86.ini",
+        Sm86Ini,
         "nvngx_dlssnr.ini",
         "gitc-uplift-helper64.exe",
         "uplift-helper64.exe");
@@ -144,8 +165,11 @@ internal static class KnownFiles
     /// <summary>Words that make a ReShade add-on another DLSS tool's ("dlss" covers dlssg and dlssd, "ngx" nvngx).</summary>
     public static readonly IReadOnlyList<string> NgxAddonWords = ["dlss", "ngx", "swapper"];
 
-    /// <summary>ReShade add-on extensions.</summary>
+    /// <summary>The add-on extensions pe.md's rule for another tool's NGX add-on counts.</summary>
     public static readonly IReadOnlyList<string> AddonExtensions = [".addon64", ".addon32"];
+
+    /// <summary>Every extension ReShade loads an add-on from: <see cref="AddonExtensions"/> and the plain <c>.addon</c>.</summary>
+    public static readonly IReadOnlyList<string> AnyAddonExtensions = [.. AddonExtensions, ".addon"];
 
     /// <summary>
     /// DLLs beside a game whose imports and strings say nothing about it: proxies (DXVK, ReShade,
@@ -156,11 +180,11 @@ internal static class KnownFiles
         .. Renderers.Select(renderer => renderer.Name),
         .. Streamline,
         .. XessRuntimes,
-        "reshade32.dll", "reshade64.dll", "reshade.dll", "ddraw.dll", Dinput8, "winmm.dll",
-        "version.dll", "dbghelp.dll", "winhttp.dll", "wininet.dll", "d3dcompiler_47.dll",
+        "reshade32.dll", "reshade64.dll", "reshade.dll", "ddraw.dll", Dinput8, Winmm,
+        Version, Dbghelp, Winhttp, Wininet, "d3dcompiler_47.dll",
         NeuralRendering, Dlss, RayReconstruction, FrameGeneration, "_nvngx.dll", "nvngx-wrapper.dll",
         RemixNgx, "optiscaler.dll", "dlss5-bridge.dll", "dlss-enabler.dll",
-        "dlss-enabler-headless.dll", "rtx40mfgcore.dll", "sl.dlss_d.dll", "sl.pcl.dll", "libxell.dll", "amd_fidelityfx_dx12.dll",
+        DlssEnablerHeadless, "rtx40mfgcore.dll", "sl.dlss_d.dll", "sl.pcl.dll", "libxell.dll", "amd_fidelityfx_dx12.dll",
         "amd_fidelityfx_vk.dll", "amd_fidelityfx_upscaler_dx12.dll",
         "amd_fidelityfx_framegeneration_dx12.dll", "amd_fidelityfx_loader_dx12.dll",
         "ffx_fsr2_api_x64.dll", "ffx_fsr2_api_dx12_x64.dll", "ffx_fsr2_api_vk_x64.dll",
@@ -176,13 +200,26 @@ internal static class KnownFiles
         "eossdk-win64-shipping.dll",
         "eossdk-win32-shipping.dll");
 
-    /// <summary>Whether a file in a game's folder belongs to another DLSS or NGX tool.</summary>
+    /// <summary>Whether a file in a game's folder belongs to another DLSS or NGX tool (pe.md: an add-on only when its name says so).</summary>
     public static bool IsForeignNgx(string name) =>
         ForeignNgxFiles.Contains(name)
-        || (AddonExtensions.Any(extension => name.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+        || (EndsWithAny(name, AddonExtensions)
             && !OurAddons.Contains(name)
             && NgxAddonWords.Any(word => name.Contains(word, StringComparison.OrdinalIgnoreCase)));
 
+    /// <summary>
+    /// Whether a file in a game's folder is another hook, which the install warns about (routes.md): another DLSS
+    /// or NGX tool's file, or any ReShade add-on that is not ours.
+    /// </summary>
+    public static bool IsAnotherHook(string name) =>
+        ForeignNgxFiles.Contains(name) || (IsAddon(name) && !OurAddons.Contains(name));
+
+    /// <summary>Whether <paramref name="name"/> is a ReShade add-on, by any of <see cref="AnyAddonExtensions"/>.</summary>
+    public static bool IsAddon(string name) => EndsWithAny(name, AnyAddonExtensions);
+
     /// <summary>A set of file names, case ignored.</summary>
     public static FrozenSet<string> Set(params IEnumerable<string> names) => names.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
+    private static bool EndsWithAny(string name, IReadOnlyList<string> extensions) =>
+        extensions.Any(extension => name.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
 }

@@ -70,6 +70,24 @@ internal sealed class PeImage : IDisposable
         }
     }
 
+    /// <summary>
+    /// The architecture of the image at <paramref name="path"/>; null when it is not a PE image, cannot be read, or
+    /// Windows refuses to open it.
+    /// </summary>
+    /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
+    public static async Task<Bitness?> BitnessOfAsync(string path, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using PeImage image = await OpenAsync(path, cancellationToken);
+            return image.Bitness;
+        }
+        catch (Exception e) when (e is PeException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
     public void Dispose() => _file.Dispose();
 
     /// <summary>The data directory's RVA, or null when the image has no such table.</summary>

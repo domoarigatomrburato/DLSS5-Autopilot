@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
 using Autopilot.Core.Install;
@@ -22,7 +21,7 @@ internal static class FullRecord
         State = RecordState.Installing,
         Game = new RecordedGame(["Game.exe", "GameExpansion.exe"], Bitness.Bits64, GraphicsApi.DX12, GameSource.BattleNet),
         Route = RouteId.OptiScaler,
-        Choices = new JsonObject { ["provider"] = "dlss", ["dials"] = new JsonObject { ["sharpness"] = 0.25, ["modes"] = new JsonArray("a", "b") } },
+        Choices = FullChoices.Value,
         Components = new Dictionary<string, string> { ["reshade"] = "6.4.1", ["optiscaler"] = "0.7.9" },
         Previous = Recorded.Install("Binaries/Win64", Recorded.Ours("Binaries/Win64/dxgi.dll", _ours)) with { ToolVersion = "1.1.0", Route = RouteId.Native },
     });
@@ -55,7 +54,7 @@ internal static class FullRecord
     {
         Assert.AreEqual((expected.FormatVersion, expected.ToolVersion, expected.State, expected.InstallFolder, expected.Route), (actual.FormatVersion, actual.ToolVersion, actual.State, actual.InstallFolder, actual.Route));
         Assert.AreEqual(expected.Game with { Executables = [] }, actual.Game with { Executables = [] });
-        Assert.IsTrue(JsonNode.DeepEquals(expected.Choices, actual.Choices), actual.Choices.ToJsonString());
+        Assert.AreEqual(expected.Choices, actual.Choices);
         CollectionAssert.AreEquivalent(expected.Components.ToList(), actual.Components.ToList());
         SameLists(expected, actual);
         Assert.AreEqual(expected.Previous is null, actual.Previous is null, "a previous install on one side only");

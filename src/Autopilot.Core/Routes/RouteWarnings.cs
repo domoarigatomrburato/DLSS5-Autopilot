@@ -35,8 +35,7 @@ internal static class RouteWarnings
         }
 
         RouteMessage fault = Fault(route, driver);
-        bool loadsRenodx = route is RouteId.Native or RouteId.Bridge or RouteId.Feeder or RouteId.Renodx;
-        return loadsRenodx && standaloneOffered ? [fault, new RouteMessage("RouteDriverTryStandalone")] : [fault];
+        return RouteComponents.LoadsRenodx(route) && standaloneOffered ? [fault, new RouteMessage("RouteDriverTryStandalone")] : [fault];
     }
 
     private static RouteMessage Fault(RouteId route, string driver) => route switch

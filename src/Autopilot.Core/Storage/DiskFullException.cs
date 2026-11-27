@@ -57,7 +57,7 @@ public sealed class DiskFullException(string failedPath, string? cacheFolder, Ex
     }
 
     /// <summary>A size as people read it: "1.5 GB", "120 MB", "512 bytes".</summary>
-    private static string HumanSize(long bytes)
+    internal static string HumanSize(long bytes)
     {
         string[] units = ["SizeKilobytes", "SizeMegabytes", "SizeGigabytes", "SizeTerabytes"];
         double size = bytes;
