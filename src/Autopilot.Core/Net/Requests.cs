@@ -14,8 +14,9 @@ public sealed record TextRequest
 
     /// <summary>
     /// Whether a 5xx answer is still the answer, judged on its body (read within the size limit):
-    /// true returns it at once with its status, false retries it as any other 5xx. Unset, every 5xx
-    /// is retried. An accepted 5xx is never kept in the cache.
+    /// true returns it at once with its status, false retries it as any other 5xx, and so does a body
+    /// past the limit, which is never asked about. Unset, every 5xx is retried. An accepted 5xx is
+    /// never kept in the cache.
     /// </summary>
     public Func<string, bool>? AcceptServerError { get; init; }
 }

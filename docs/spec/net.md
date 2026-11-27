@@ -183,7 +183,9 @@ value is injectable, so tests do not wait.
   cache is used, and the caller is told its age. With none, the caller's own
   fallback runs (the github.com pages, see [components](components.md)).
 - Never retried: programming errors, a refused redirect, a size limit, a
-  failed verification, a cancellation.
+  failed verification, a cancellation. The one exception: a 5xx whose body a
+  caller would judge (reshade.me's page) and that is past the limit is
+  retried as any other 5xx, not refused.
 
 ## Extraction
 

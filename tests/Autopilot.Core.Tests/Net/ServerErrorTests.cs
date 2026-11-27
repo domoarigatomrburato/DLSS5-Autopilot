@@ -67,6 +67,32 @@ public sealed class ServerErrorTests(TestContext testContext)
     }
 
     [TestMethod]
+    public async Task A_server_error_whose_body_is_over_the_limit_is_retried_as_any_other()
+    {
+        using TestBed bed = new(testContext);
+        bed.Server.Answer(Url, HttpStatusCode.InternalServerError, "a page far over the limit").Answer(Url, HttpStatusCode.OK, "fine");
+        bool asked = false;
+        TextRequest options = new()
+        {
+            MaxBytes = 8,
+            AcceptServerError = _ =>
+            {
+                asked = true;
+                return true;
+            },
+        };
+
+        Task<TextAnswer> pending = bed.GetText(Url, options);
+        bed.Advance(1);
+        TextAnswer answer = await pending;
+
+        Assert.AreEqual("fine", answer.Body);
+        Assert.IsFalse(asked);
+        Assert.HasCount(2, bed.Server.Requests);
+        Assert.IsTrue(bed.Server.EveryBodyDisposed);
+    }
+
+    [TestMethod]
     public async Task A_request_timeout_is_not_a_server_error_the_caller_can_accept()
     {
         using TestBed bed = new(testContext, TestBed.SingleAttempt);

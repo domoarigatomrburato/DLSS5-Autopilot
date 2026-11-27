@@ -51,18 +51,31 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
     {
         using Exchange exchange = await SendAsync(url, hosts, 0, attempt);
         HttpStatusCode status = exchange.Response.StatusCode;
-        if (acceptServerError is not null && (int)status is >= 500 and <= 599)
+        if (acceptServerError is not null
+            && (int)status is >= 500 and <= 599
+            && await ServerErrorBodyAsync(exchange, maxBytes, attempt) is { } error
+            && acceptServerError(error))
         {
-            string error = await Bodies.ReadTextAsync(exchange, maxBytes, attempt);
-            if (acceptServerError(error))
-            {
-                return new(status, error, time.GetUtcNow(), IsStale: false);
-            }
+            return new(status, error, time.GetUtcNow(), IsStale: false);
         }
 
         ThrowIfRetryableStatus(exchange);
         string text = await Bodies.ReadTextAsync(exchange, maxBytes, attempt);
         return new(status, text, time.GetUtcNow(), IsStale: false);
+    }
+
+    // A 5xx body past the limit is none the caller can accept: the status is retried as any other,
+    // never refused as an answer the caller asked for.
+    private static async Task<string?> ServerErrorBodyAsync(Exchange exchange, long maxBytes, Attempt attempt)
+    {
+        try
+        {
+            return await Bodies.ReadTextAsync(exchange, maxBytes, attempt);
+        }
+        catch (NetException failure) when (failure.Kind == NetErrorKind.TooLarge)
+        {
+            return null;
+        }
     }
 
     /// <summary>

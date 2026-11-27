@@ -125,7 +125,3 @@ proves too old for the mods in use.
   `dlssnr` label preference and the steering rules treat differently.
 - **Windows:** the "To verify" sections of `docs/spec/net.md`, `pe.md` and
   `library.md` become checkable with the Windows implementations in M7.
-
-## Questions for Ale from M3
-
-- An oversized 5xx body that the caller accepts fails as `TooLarge` (M3a).
