@@ -136,6 +136,30 @@ specified.
 - [ ] **M9. Parity.** Every behaviour of the reference is either done or
       dropped on purpose and listed. The README is written for users.
 
+## After parity
+
+Ideas to expand into specs once M9 is done; none of them is in scope before
+it.
+
+- **Frame generation on its own**, configurable per game: OptiScaler used only
+  for frame generation, without neural rendering, in any game that ships an
+  upscaler (DLSS, FSR 2+, XeSS), on any card. Frame generation needs the
+  upscaler's motion vectors and depth, so a game without one is not covered.
+  The first to do.
+- **DLSS preset per game** through the driver profile (render preset, the
+  transformer model), next to M5: an updated runtime without the preset it
+  was built for gives half the gain.
+- **NVIDIA Smooth Motion per game** through the driver profile, for games
+  with no upscaler (D3D11 and D3D12, RTX 40 and 50); the routes already say
+  where it must be off.
+- **Per-game profiles** exported and shared, on top of M8's shared results.
+- **One in-game panel**: today each route shows its own overlay and keys
+  (ReShade's, OptiScaler's, the add-ons' hotkeys, Remix's Alt+X); one place
+  that shows what is active and switches each feature on or off.
+- Every feature that injects into a game refuses games with anti-cheat, as
+  DLSS 5 does.
+- **A new name** for the tool.
+
 ## Dropped
 
 Out of scope: the tool is about games.
