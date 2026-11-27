@@ -146,7 +146,7 @@ specified.
   - [x] b2. platform seams for install (processes, access and lock checks),
         the per-game state store, the run, the test beds (game folders from
         a description, tree snapshots, crash points);
-  - [ ] c. the install record: contract, reader (states, `Unreadable`),
+  - [x] c. the install record: contract, reader (states, `Unreadable`),
         writer, `IInstallRecords`; the one home of which files are ours;
   - [ ] d. the transaction: journal before every write, one backup
         mechanism, rollback, hold until commit, verify, recovery,
@@ -181,7 +181,8 @@ specified.
       Checked on Windows: `FileLocks`' write open reports a DLL another
       process has loaded; the per-game store's named mutex, created by the
       elevated CLI, still opens from the unelevated app (and the reverse);
-      `GameIdentity` expands 8.3 path parts.
+      `GameIdentity` expands 8.3 path parts; an install record set read-only
+      is replaced and removed.
 - [ ] **M8. Beyond the core.** "Aim for" and compare; RTX Remix; VR; the
       tray; the shared compatibility results (the Cloudflare Worker);
       emulator config edits; itch; verdicts outside the report corpus, as

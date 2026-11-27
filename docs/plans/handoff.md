@@ -1,7 +1,7 @@
 # Handoff: Invidia Claritatis during M4
 
 Written 2026-11-27 at the end of the session that planned M4 and did its
-sub-task a, updated after sub-tasks b1 and b2. Start the next session from
+sub-task a, updated after sub-task c. Start the next session from
 this file.
 
 ## State
@@ -13,8 +13,8 @@ this file.
 - The Python reference is tag `python-reference`, checked out read-only beside
   the repository as `invidia-claritatis-reference`.
 - M0–M3 ticked in `docs/plans/rewrite.md`; M4 planned there as sub-tasks
-  a–j, with **a, b1 and b2 done** (b2: 046295c). Gate green: 2224 tests,
-  98.57% line coverage, floor 98 in `coverage-floor.txt`.
+  a–j, with **a, b1, b2 and c done** (c: 5d03ef9). Gate green: 2335 Core
+  tests, 98.61% line coverage, floor 98 in `coverage-floor.txt`.
 - **The tool is now Invidia Claritatis** (Decisions in `rewrite.md`); every
   name the tool gives is `invidia-claritatis`, in the specs and in the code.
 - **Greenfield, never published:** nothing reads the reference's records,
@@ -23,19 +23,23 @@ this file.
 - The `nvngx_dlssnr.dll` digests behind `DlssnrPins` were measured in
   `~/coding/claude-lab/dlssnr-digests/results.md`.
 
-## Next: M4 sub-task c, the install record
+## Next: M4 sub-task d, the transaction
 
 Plan and order in `rewrite.md` (a → b1∥b2 → c → d → e∥f∥i → g → h → j).
-c runs alone (d builds on it): one Opus implementer, in the main checkout or
-one worktree. The open questions of `install.md` are settled (its "Open
-questions" section).
+d runs alone (e, f and i build on it): one Opus implementer. The open
+questions of `install.md` are settled (its "Open questions" section).
 
-What b1 and b2 left for the next sub-tasks:
+What b1, b2 and c left for the next sub-tasks:
 
-- **c:** read the record with `Storage/VersionedJson` (version key
-  `"version"`), as the per-game store reads its files; compare paths with
-  `Platform/PathParts` and fold `Routes/OwnedFiles`' own normalisation into
-  it; write through `AtomicFile`.
+- **The record** is `Install/InstallRecord`, read and written by
+  `Install/InstallRecords` (`SaveAsync`, `DeleteAsync`); which files are
+  ours is `Install/OwnedFiles` (`IsOursAsync` by hash, `IsBackupValidAsync`);
+  the failure note is `Install/FailureNotes` in the per-game state store.
+- **d/e must check** that the record's derived game folder
+  (`RecordedInstall.GameFolder`) is at or below the library's game folder
+  before following any entry: the reader only refuses a root.
+- **d:** capture an original's attributes through `OriginalFile` (it keeps
+  only ReadOnly, Hidden, System, Archive).
 - **d:** call `Storage/IWriteSteps.Before` before every change on disk; the
   test beds' `CrashPoints` and `DiskFullPoints` drive it. Leftover temp
   files of a crashed run are matched by `AtomicFile.IsTemporary`.
@@ -50,9 +54,6 @@ What b1 and b2 left for the next sub-tasks:
 
 Carry into later sub-tasks:
 
-- **c:** the install record replaces `Graphics/InstallRecord`, a stand-in
-  that reads a `files` list from `invidia-claritatis.json`; `pe.md`'s folder
-  evidence and `OwnedFiles` read the record through its reader.
 - **g/h:** a `ComponentRelease` for an id with several catalog rows (`dlss`,
   `dlssd`, `dlssg`, `optiscaler`) must carry its row: `ComponentLayout` and
   `ReleaseAssets` look rows up by id, and `ComponentCatalog.Of(id)` refuses
