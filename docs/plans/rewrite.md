@@ -100,10 +100,11 @@ specified.
       Epic, GOG, EA, Ubisoft, Battle.net, Rockstar, Xbox, Amazon, Heroic,
       folders added by hand, emulators (detection only). itch waits for M8.
       Cover art and the library's search, hiding and sorting moved to M7.
-- [ ] **M3. Routes.** Which route a game gets and why, from what was read;
+- [x] **M3. Routes.** Which route a game gets and why, from what was read;
       the components each route needs, and where they come from. Net gains
       a HEAD that reports a redirect without following it, and a 5xx body
-      read when the caller asks (reshade.me).
+      read when the caller asks (reshade.me). The shared compatibility
+      results are an input type until M8 fetches them.
 - [ ] **M4. Install and uninstall.** The record written first; backups;
       rollback; the preview ("what will happen?") that writes nothing;
       uninstall from the record alone. Implements `IInstallRecords`, and the
@@ -113,7 +114,12 @@ specified.
       gains cache-only reads and deleting an entry under its lock; storage
       gains a free-space seam tests can fake, structured drive data on
       `DiskFullException`, one atomic-write helper, and archive failure
-      texts from resources.
+      texts from resources. From M3: each route's settings and option
+      types (the DXVK box, MFG, the ray-reconstruction swap, the motion
+      provider, today plain parameters), the refusals before an install
+      beyond the reliability level, and the staleness check ("check
+      versions"), which needs the record. Decide what a "run" is: the
+      component memories live for the process today.
 - [ ] **M5. DLSS files kept current.** Every game's DLSS runtimes against
       NVIDIA's newest; update and restore original. The Authenticode
       verifier reports who signed and why a check failed, not only yes or

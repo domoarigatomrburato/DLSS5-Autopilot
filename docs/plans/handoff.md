@@ -1,30 +1,60 @@
-# Handoff: DLSS5 Autopilot after M2
+# Handoff: DLSS5 Autopilot after M3
 
-Written 2026-11-27 at the end of the session that did the specs, M0, M1 and M2.
-Start the next session from this file.
+Written 2026-11-27 at the end of the session that did M3. Start the next
+session from this file.
 
 ## State
 
-- Repository `domoarigatomrburato/DLSS5-Autopilot`, checkout
-  `/Users/ale/coding/DLSS5-Autopilot`, branch `rewrite/scaffold` at 6ed3b12,
-  clean and in sync with origin. `main` is the Python app (b84e39c).
-- The Python reference is tag `python-reference`, checked out read-only at
-  `~/coding/DLSS5-Autopilot-reference`.
-- M0, M1, M2 are ticked in `docs/plans/rewrite.md`. Gate green: 1339 tests,
-  98.54% line coverage, floor 98 in `coverage-floor.txt`.
-- No GitHub CI on the branch (no `.github/workflows`; first CI release is M7).
-- No worktrees or extra branches left.
+- Repository `domoarigatomrburato/DLSS5-Autopilot`, branch
+  `rewrite/scaffold`, in sync with origin. `main` is the Python app (b84e39c).
+- The Python reference is tag `python-reference`, checked out read-only beside
+  the repository as `DLSS5-Autopilot-reference`.
+- M0–M3 are ticked in `docs/plans/rewrite.md`. Gate green: 2002 tests,
+  98.74% line coverage, floor 98 in `coverage-floor.txt`.
+- No GitHub CI on the branch (first CI release is M7). No worktrees or extra
+  branches left.
 
-## Next: M3, Routes
+## What M3 left
 
-Spec: `docs/spec/routes.md`, plus `components.md` for where each component
-comes from. Plan line: which route a game gets and why, from what was read;
-the components each route needs; Net gains a HEAD that reports a redirect
-without following it and a 5xx body read on request (reshade.me).
+- `Routes/`: the route decision and why (`routes.md`), the warnings, the
+  components each route needs (`RouteComponents`, from `RouteFacts`).
+- `Gpu/`: the card and the driver as facts.
+- `Components/`, one way down:
+  root (`ComponentRelease`, `ComponentException`, `ComponentVersion`,
+  `ReleaseSource`, `ResolutionMemory`, `ComponentHosts`) → `GitHub/`
+  (API, cache, pages fallback) → `Catalog/` (the one table of sources and
+  checks) → `Fetch/` (download into the cache, layout check), `Mirror/`
+  (the mirror and NVIDIA's runtimes), `Sources/` (ReShade, feeder,
+  OptiScaler and the rest) → `Routes/`.
+- Net: a HEAD that reports a redirect, a 5xx body read on request,
+  `NetFallback.OrNullAsync`, `TextAnswer.IsSuccess`.
 
-M3 builds on M2's output: `GameEntry` (API decision, bitness, emulator
-profile, anti-cheat and RE Engine findings in `Library/Protection`), and
-M1's `NetClient` / `DownloadCache`. Like M2 it is all testable on macOS.
+## Next: M4, Install and uninstall
+
+Spec: `docs/spec/install.md` and the M4 line of the plan, which now also
+carries M3's leftovers (route settings and option types, refusals before an
+install, the staleness check of `components.md`). Open questions to settle
+first:
+
+- **What a "run" is.** `ResolutionMemory`, the latest-tag, list and
+  release-page memories live for the process: a long-running app never sees
+  new releases, and shared resolutions run uncancelled. M4 (install) and M7
+  (autopilot) need a run object that owns them.
+- **`OwnedFiles` vs `GameFolder`:** the rule of which files the tool owns is
+  written twice; M4's record should become its one home.
+- **`CatalogEntry.Repository`** throws for a web-site source (ReShade's
+  `reshade.me`); callers must not reach it for that row.
+- **NVIDIA redirect refusals:** `NvidiaRuntimes` swallows every
+  `NetException`, refusals included, and the mirror serves alone
+  (`MirrorCatalog` tests encode it on purpose). Keep or narrow, decided with
+  the install's error texts.
+- **Catalog rows per source:** OptiScaler's six repositories and the
+  mirror's `dlss`/`dlssg` borrow one row each and are rewritten in code.
+  One row per source would make the catalog the whole truth; it changes
+  `components.md`'s table, so it needs Ale.
+- **Mirror sort:** `ComponentVersion.Order` ties labels that do not compare,
+  so it is not a strict order when a family mixes numeric and other labels.
+  Check the mirror's real tags or sort comparable labels first.
 
 ## How we work (binding, besides AGENTS.md and the plan's Decisions)
 
@@ -32,47 +62,45 @@ M1's `NetClient` / `DownloadCache`. Like M2 it is all testable on macOS.
   Commits as ale.burato@icloud.com, trailer
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - Maximum autonomy; no polling; minor calls decided and reported.
-- Split a milestone into sub-tasks (M2 was M2a–M2i), one brief each in the
-  scratchpad: context and spec sections to read, settled design, tests
-  first, the stop sentence, checks (`dotnet test --project ...` while
-  iterating, `dotnet run gate.cs -- fix` once at the end), report with the
-  tree fingerprint. Review each diff, recompute the fingerprint, commit per
-  sub-task.
+- **Implementers on Opus, never Sonnet:** medium for moderate, well-specified
+  sub-tasks, high for complex ones. Sonnet's output ends up rewritten.
+- **Shared infrastructure first.** Plan the milestone so the pieces every
+  sub-task needs (memories, helpers, exception kinds, test beds) land in a
+  first, sequential sub-task. Parallel sub-tasks then reuse them; in M3,
+  parallel implementers solved the same problem three to six ways.
+- **Review per sub-task, on small diffs.** Size each sub-task so its diff
+  stays at a few thousand lines at most, and run `/simplify` (fixes gated)
+  then `/code-review` at `high` on it before merging. At the end of the
+  milestone run one narrow cross-cutting `/simplify` (reuse and altitude)
+  over the whole milestone. M3 was reviewed once over about 15k lines and
+  needed two `/simplify` rounds plus a third after the namespace split.
+- One brief per sub-task in the scratchpad: context and spec sections to
+  read, settled design, tests first, the stop sentence, checks
+  (`dotnet test --project ...` while iterating, `dotnet run gate.cs -- fix`
+  once at the end), report with the tree fingerprint. Review each diff,
+  recompute the fingerprint, commit per sub-task.
 - Independent sub-tasks may run in parallel in hand-made worktrees
   (`git worktree add -b <branch> ../DLSS5-Autopilot-<x> <commit>`); LSP does
-  not answer there, use grep.
-- End of milestone: `/simplify` (fixes gated), then `/code-review` at `high`,
-  fixes, full gate once, commit, push, tick the plan.
+  not answer there, use grep and ast-grep.
 - Internals are tested through `InternalsVisibleTo`; nothing becomes public
-  for tests (project memory `no-public-api-for-tests.md`).
+  for tests.
 - Stores and similar knowledge: follow Playnite (MIT) where it applies;
-  GPL code (GameFinder) may be read, never copied. Only MIT-compatible
-  packages; the project stays MIT. Read-only clones of both, and the store
-  formats research, are in `~/coding/dlss5-lab/`.
+  GPL code may be read, never copied. Only MIT-compatible packages.
 
-## Token budget (Ale's Pro weekly quota)
+## Manual checks
 
-The session so far cost about 87M input-equivalent tokens, about 31% of the
-weekly quota. M2 alone was about a fifth of a week. To spend less:
+- **Low end:** Ale has an old gaming laptop with a power-limited RTX 2080
+  (sm 75). From M4 on, check installs there too: it is the card the
+  `dlssnr` label preference and the steering rules treat differently.
+- **Windows:** the "To verify" sections of `docs/spec/net.md`, `pe.md` and
+  `library.md` become checkable with the Windows implementations in M7.
 
-- one fresh session per milestone (this handoff instead of a long context);
-- implementers on Opus, by the usual tiers (medium for moderate,
-  well-specified sub-tasks; high for complex ones), never Sonnet: its output
-  ends up rewritten, which costs more than it saved;
-- smaller briefs, so each implementer runs fewer turns (the costliest ran
-  11–48M each).
+## Questions for Ale from M3
 
-## Open, needing Windows (Ale's PC is coming)
-
-The "To verify" sections of `docs/spec/net.md`, `pe.md` and `library.md`:
-real store registry keys and files, the EA app key on a real `IS` file, the
-WMI hardware values, emulator configs. They become checkable with the
-Windows implementations in M7.
-
-## Plan changes made during M2
-
-- Cover art and the library's search, hiding and sorting moved to M7.
-- M4 implements `IInstallRecords`; the graphics decision's reading of the
-  record goes through it then.
-- The atomic-write helper M4 asked for already exists
-  (`Storage/AtomicFile`, M2i).
+- The mirror's `dlssd-…` releases are ignored, as the spec says. Keep?
+- Newer `nvngx_dlssnr` builds exist than the label preference names
+  (`gpu.md` Q1): prefer by label or by version?
+- LumeniteFX `mainline` no longer has `lumenite_QuantMotion.fx`, so motion
+  provider 4 answers "layout changed".
+- The Remix runtime's `/latest` is `dlssnr-v1`.
+- An oversized 5xx body that the caller accepts fails as `TooLarge` (M3a).
