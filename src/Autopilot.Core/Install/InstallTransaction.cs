@@ -21,7 +21,6 @@ internal sealed class InstallTransaction
     private readonly ILogger _logger;
     private readonly IWriteSteps _steps;
     private readonly DiskSeam _seam;
-    private readonly IOutsideChanges _outside = OutsideChanges.NotUndoneYet;
 
     /// <param name="records">Reads and saves the record.</param>
     /// <param name="store">Keeps the failure note.</param>
@@ -48,6 +47,15 @@ internal sealed class InstallTransaction
     }
 
     /// <summary>
+    /// The registry and the layer folder a plan's layer and graphics preference steps change, and its rollback undoes; null
+    /// when there are none, and a plan with such steps is refused before anything is written.
+    /// </summary>
+    internal SharedPlaces? Shared { get; init; }
+
+    // Built once, at first use: after Shared is set.
+    private TransactionDisks Disks => field ??= new(_records, _steps, _time, _seam, _store, _logger, Shared);
+
+    /// <summary>
     /// Installs <paramref name="plan"/>. Refused, writing nothing, when the folder's record cannot be read or
     /// belongs elsewhere, or the plan reaches outside the game folder or names a path twice. Otherwise the
     /// folder's failure note is cleared, an open transaction an earlier run left is finished, and the plan runs;
@@ -65,7 +73,7 @@ internal sealed class InstallTransaction
 
         string installFolder = Path.GetFullPath(plan.InstallFolder);
         RecordedInstall? recorded = await _records.FindAsync(installFolder, cancellationToken);
-        return InstallChecks.RefusalOf(plan, recorded) is { } refused
+        return InstallChecks.RefusalOf(plan, recorded, Shared) is { } refused
             ? refused
             : await RunCheckedAsync(plan, recorded, installFolder, progress, cancellationToken);
     }
@@ -76,16 +84,16 @@ internal sealed class InstallTransaction
     {
         Failures failures = FailuresOf(new(plan.GameFolder, installFolder, plan.Header.Route, plan.Header.ToolVersion));
         failures.ClearNote(cancellationToken);
-        Recovery recovery = await Recovery(installFolder, failures, RecordRemoval.NewDisk(_records, _steps, _time, _seam)).RunAsync(recorded, CancellationToken.None);
+        Recovery recovery = await Recovery(installFolder, failures, removal: true).RunAsync(recorded, CancellationToken.None);
         InstallOutcome outcome = await AfterRecoveryAsync(plan, recovery.Ran ? await _records.FindAsync(installFolder, cancellationToken) : recorded, recovery, failures, progress, cancellationToken);
-        return outcome with { Recovered = recovery.Ran };
+        return outcome with { Recovered = recovery.Recovered };
     }
 
     // The failure when the open transaction could not be finished; else the plan, over the record as it now is.
     private async Task<InstallOutcome> AfterRecoveryAsync(InstallPlan plan, RecordedInstall? recorded, Recovery recovery, Failures failures, IProgress<InstallProgress>? progress, CancellationToken cancellationToken) =>
         recovery.Blocking
-            ?? (recovery.Ran ? InstallChecks.RefusalOf(plan, recorded) : null)
-            ?? await new InstallRun(NewDisk, _outside, _logger, failures).RunAsync(plan, recorded, progress, cancellationToken);
+            ?? (recovery.Ran ? InstallChecks.RefusalOf(plan, recorded, Shared) : null)
+            ?? await Disks.Run(failures).RunAsync(plan, recorded, progress, cancellationToken);
 
     /// <summary>
     /// Finishes, and does nothing else, a transaction an earlier run left open in <paramref name="installFolder"/>
@@ -103,23 +111,20 @@ internal sealed class InstallTransaction
         RecordedInstall? recorded = await _records.FindAsync(installFolder, cancellationToken);
         return InstallChecks.RecordRefusal(new(gameFolder), recorded) is { } refused
             ? refused
-            : (await Recovery(installFolder, FailuresOf(new(gameFolder, installFolder, recorded?.Record?.Route, toolVersion)), NewDisk()).RunAsync(recorded, CancellationToken.None)).Failed is { } failed
+            : (await Recovery(installFolder, FailuresOf(new(gameFolder, installFolder, recorded?.Record?.Route, toolVersion)), removal: false).RunAsync(recorded, CancellationToken.None)).Failed is { } failed
                 ? failed with { Recovered = true }
                 : null;
     }
 
+    /// <summary>
+    /// Deletes the layer folder's files no registration needs any more, which an uninstall left because a running Vulkan or
+    /// OpenXR program held them: what the app calls at start. Nothing without a layer folder.
+    /// </summary>
+    internal Task CleanUpLayerFilesAsync() => Disks.CleanUpLayerFilesAsync();
+
     private Failures FailuresOf(FailureSubject subject) => new(_store, _space, _time, _logger, subject);
 
-    // A removal part way is finished on removalDisk, and only while no program from the game or install folder runs.
-    private TransactionRecovery Recovery(string installFolder, Failures failures, InstallDisk removalDisk) =>
-        new(
-            NewDisk,
-            installFolder,
-            failures,
-            _outside,
-            new RecordRemoval(removalDisk, _outside, _logger),
-            () => Uninstaller.IsGameRunning(_processes, failures.Subject.GameFolder, installFolder),
-            _logger);
-
-    private InstallDisk NewDisk() => new(_records, _steps, _time, _seam);
+    // A removal part way is finished only while no program from the game or install folder runs.
+    private TransactionRecovery Recovery(string installFolder, Failures failures, bool removal) =>
+        Disks.Recovery(installFolder, failures, removal, () => Uninstaller.IsGameRunning(_processes, failures.Subject.GameFolder, installFolder));
 }

@@ -51,3 +51,112 @@ internal sealed class FakeElevation : IElevation
 {
     public bool IsElevated { get; set; }
 }
+
+/// <summary>
+/// The current user's registry in memory: keys and value names ignore case, as Windows does. A key or one value
+/// can be made to refuse writes, and a key to refuse reads, with the exceptions Windows gives.
+/// </summary>
+internal sealed class FakeUserRegistry : IUserRegistry
+{
+    private readonly Dictionary<string, Dictionary<string, object>> _keys = [with(StringComparer.OrdinalIgnoreCase)];
+    private readonly HashSet<string> _refusingWrites = [with(StringComparer.OrdinalIgnoreCase)];
+    private readonly HashSet<string> _refusingReads = [with(StringComparer.OrdinalIgnoreCase)];
+
+    /// <summary>Sets a value as another program would, never refused.</summary>
+    public FakeUserRegistry Set(string path, string name, object value)
+    {
+        KeyOf(path)[name] = value;
+        return this;
+    }
+
+    /// <summary>Deletes a value as another program would.</summary>
+    public FakeUserRegistry Remove(string path, string name)
+    {
+        _ = KeyOf(path).Remove(name);
+        return this;
+    }
+
+    /// <summary>Writes to the key at <paramref name="path"/> (only to its value <paramref name="name"/>, when given) are denied.</summary>
+    public FakeUserRegistry RefuseWrites(string path, string? name = null)
+    {
+        _ = _refusingWrites.Add(Id(path, name));
+        return this;
+    }
+
+    /// <summary>Reads of the key at <paramref name="path"/> are denied.</summary>
+    public FakeUserRegistry RefuseReads(string path)
+    {
+        _ = _refusingReads.Add(Id(path, null));
+        return this;
+    }
+
+    /// <summary>Lets every write and read through again.</summary>
+    public void Allow()
+    {
+        _refusingWrites.Clear();
+        _refusingReads.Clear();
+    }
+
+    /// <summary>The value, as the test reads it; null when it is not there.</summary>
+    public object? Value(string path, string name) => _keys.GetValueOrDefault(Id(path, null))?.GetValueOrDefault(name);
+
+    /// <summary>Every value, as <c>key\name=value</c> lines sorted: what a test compares before and after.</summary>
+    public string Snapshot() =>
+        string.Join("\n", _keys.SelectMany(key => key.Value.Select(value => $"{key.Key}\\{value.Key}={value.Value}")).Order(StringComparer.OrdinalIgnoreCase));
+
+    public IReadOnlyList<string> ValueNames(string path)
+    {
+        Readable(path);
+        return _keys.TryGetValue(Id(path, null), out Dictionary<string, object>? values) ? [.. values.Keys] : [];
+    }
+
+    public int? ReadDword(string path, string name)
+    {
+        Readable(path);
+        return Value(path, name) as int?;
+    }
+
+    public string? ReadString(string path, string name)
+    {
+        Readable(path);
+        return Value(path, name) as string;
+    }
+
+    public void SetDword(string path, string name, int value) => Write(path, name, values => values[name] = value);
+
+    public void SetString(string path, string name, string value) => Write(path, name, values => values[name] = value);
+
+    public void DeleteValue(string path, string name) => Write(path, name, values => values.Remove(name));
+
+    private void Write(string path, string name, Action<Dictionary<string, object>> change)
+    {
+        if (_refusingWrites.Contains(Id(path, null)) || _refusingWrites.Contains(Id(path, name)))
+        {
+            throw new UnauthorizedAccessException($@"Access to the registry key 'HKEY_CURRENT_USER\{path}' is denied.");
+        }
+
+        change(KeyOf(path));
+    }
+
+    private void Readable(string path)
+    {
+        if (_refusingReads.Contains(Id(path, null)))
+        {
+            throw new System.Security.SecurityException($@"Requested registry access is not allowed: HKEY_CURRENT_USER\{path}");
+        }
+    }
+
+    private Dictionary<string, object> KeyOf(string path)
+    {
+        string id = Id(path, null);
+        if (!_keys.TryGetValue(id, out Dictionary<string, object>? values))
+        {
+            values = [with(StringComparer.OrdinalIgnoreCase)];
+            _keys[id] = values;
+        }
+
+        return values;
+    }
+
+    private static string Id(string path, string? name) => name is null ? path.Trim('\\') : $"{path.Trim('\\')}\n{name}";
+}

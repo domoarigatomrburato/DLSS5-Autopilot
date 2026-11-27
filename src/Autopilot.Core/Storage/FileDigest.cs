@@ -18,6 +18,9 @@ internal static class FileDigest
         return Convert.ToHexStringLower(await SHA256.HashDataAsync(file, cancellationToken));
     }
 
+    /// <summary>The SHA-256 of <paramref name="bytes"/> held in memory, as lowercase hex.</summary>
+    public static string Sha256(ReadOnlySpan<byte> bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
+
     /// <summary>Whether the file at <paramref name="path"/> is there, <paramref name="size"/> bytes long, and hashes to <paramref name="sha256"/>.</summary>
     /// <exception cref="IOException">The file cannot be read.</exception>
     /// <exception cref="UnauthorizedAccessException">The file cannot be opened.</exception>

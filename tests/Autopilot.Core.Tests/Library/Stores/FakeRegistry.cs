@@ -47,6 +47,12 @@ internal sealed class FakeRegistry : IRegistry
     public string? ReadString(RegistryRoot root, RegistryView view, string path, string name) =>
         _keys.TryGetValue(Id(root, view, path), out Dictionary<string, object>? values) && values.TryGetValue(name, out object? value) ? value as string : null;
 
+    public IReadOnlyList<string> ValueNames(RegistryRoot root, RegistryView view, string path) =>
+        _keys.TryGetValue(Id(root, view, path), out Dictionary<string, object>? values) ? [.. values.Keys] : [];
+
+    public int? ReadDword(RegistryRoot root, RegistryView view, string path, string name) =>
+        _keys.TryGetValue(Id(root, view, path), out Dictionary<string, object>? values) && values.TryGetValue(name, out object? value) && value is int dword ? dword : null;
+
     private Dictionary<string, object> Key(RegistryRoot root, RegistryView view, string path)
     {
         string[] parts = path.Split('\\');

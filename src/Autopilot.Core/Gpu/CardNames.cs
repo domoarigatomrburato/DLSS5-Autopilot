@@ -102,7 +102,8 @@ internal static partial class CardNames
             && int.Parse(match.Groups["number"].ValueSpan, CultureInfo.InvariantCulture) < 1600;
     }
 
-    private static bool IsNvidiaName(string upper) =>
+    /// <summary>Whether an upper-cased adapter name is NVIDIA's.</summary>
+    internal static bool IsNvidiaName(string upper) =>
         upper.Contains("NVIDIA", StringComparison.Ordinal)
         || upper.Contains("GEFORCE", StringComparison.Ordinal)
         || upper.Contains("RTX", StringComparison.Ordinal)

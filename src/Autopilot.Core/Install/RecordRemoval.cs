@@ -101,7 +101,8 @@ internal sealed class RecordRemoval(InstallDisk disk, IOutsideChanges outside, I
         private bool OutsideUndone(InstallRecord left) =>
             left.ConfigEdits.Count != record.ConfigEdits.Count
             || left.GraphicsPreferences.Count != record.GraphicsPreferences.Count
-            || left.Registrations.Count != record.Registrations.Count;
+            || left.Registrations.Count != record.Registrations.Count
+            || Releases.Count(left.Releasing) != Releases.Count(record.Releasing);
 
         // A path reaching outside the game folder is never followed: it leaves the record, which is saved by the next path or at the end.
         private void Outside(string path)

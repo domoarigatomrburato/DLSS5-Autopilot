@@ -30,14 +30,17 @@ internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, Tim
     /// <summary>Makes <paramref name="change"/>.</summary>
     /// <exception cref="BackupFailedException">A game's file could not be renamed to its backup name.</exception>
     /// <exception cref="NotVerifiedException">The bytes written are not the verified ones.</exception>
+    /// <exception cref="ExplainedException">Windows refused a registry change, or another program holds a file of the layer folder.</exception>
     public Task RunAsync(DiskChange change, CancellationToken cancellationToken) => change switch
     {
+        RegistryChange registry => DoAsync(new(registry.Kind, registry.Place), registry.ApplyAsync),
+        WriteLayerFile layer => WriteOverAsync(layer, cancellationToken),
         MoveFile move => MoveAsync(move.From, move.To, cancellationToken),
         BackUpFile backup => BackUpAsync(backup.From, backup.To, cancellationToken),
         WriteFile write => WriteAsync(write.Path, write.Facts, write.Source, cancellationToken),
         DeleteFile delete => DeleteAsync(delete.Path, cancellationToken),
         CreateFolderChange folder => CreateFolderAsync(folder.Path),
-        _ => throw new NotSupportedException($"no change of kind {change.GetType().Name}"),
+        _ => throw new NotSupportedException($"no such change: {change}"),
     };
 
     /// <summary>Saves <paramref name="record"/> as the record of <paramref name="installFolder"/>.</summary>
@@ -70,11 +73,11 @@ internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, Tim
             return;
         }
 
-        if ((file.Attributes & FileAttributes.ReadOnly) != 0)
+        if (file.IsReadOnly)
         {
             await DoAsync(new(WriteKind.SetAttributes, path), () =>
             {
-                Gone(() => file.Attributes &= ~FileAttributes.ReadOnly);
+                Gone(() => file.IsReadOnly = false);
                 return Task.CompletedTask;
             });
         }
@@ -103,21 +106,38 @@ internal sealed class InstallDisk(InstallRecords records, IWriteSteps steps, Tim
         }
     }
 
-    // Written through a temporary file, hashed as it is copied, which takes the name only with the facts expected.
-    private Task WriteAsync(string path, FileFacts facts, FileSource source, CancellationToken cancellationToken)
+    // Written through a temporary file, hashed as it is copied, which takes the name through move only with the facts
+    // expected; told to the write steps as kind.
+    private Task WriteAsync(string path, FileFacts facts, FileSource source, Action<string, string> move, WriteKind kind, CancellationToken cancellationToken)
     {
         FileFacts? copied = null;
-        return DoAsync(new(WriteKind.Create, path), () => AtomicFile.WriteAsync(
+        return DoAsync(new(kind, path), () => AtomicFile.WriteAsync(
             path,
             async (stream, token) => copied = await source.CopyToAsync(stream, token),
             (_, _) => facts.Matches(copied) ? Task.CompletedTask : throw new NotVerifiedException(path),
             time,
-            seam.Move,
+            move,
             cancellationToken));
     }
 
     private Task RetryAsync(Action change, IReadOnlyList<TimeSpan> waits, CancellationToken cancellationToken) =>
         AtomicFile.RetryWhileHeldAsync(change, waits, time, cancellationToken);
+
+    private Task WriteAsync(string path, FileFacts facts, FileSource source, CancellationToken cancellationToken) =>
+        WriteAsync(path, facts, source, seam.Move, WriteKind.Create, cancellationToken);
+
+    // A layer file is written over what is there; held by a running program, it says so as a layer file.
+    private async Task WriteOverAsync(WriteLayerFile layer, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await WriteAsync(layer.Path, layer.Facts, layer.Source, seam.Replace, WriteKind.Replace, cancellationToken);
+        }
+        catch (FileHeldException held)
+        {
+            throw layer.Held(held);
+        }
+    }
 
     private Task CreateFolderAsync(string path) =>
         DoAsync(new(WriteKind.CreateFolder, path), () =>

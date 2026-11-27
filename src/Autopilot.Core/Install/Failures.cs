@@ -34,15 +34,16 @@ internal sealed partial class Failures(GameStateStore store, IFreeSpace space, T
 
     /// <summary>Keeps the note for <paramref name="failure"/> and gives the result the person sees.</summary>
     public InstallFailed Failed(FailureOperation operation, Exception failure, FailureOutcome outcome) =>
-        Keep(operation, Describe(failure), outcome, failure);
+        Keep(operation, NoteCauses.Describe(failure, subject.GameFolder, space), outcome, failure);
 
     /// <summary>Keeps the note for an uninstall <paramref name="failure"/> stopped, and gives the note.</summary>
     /// <param name="failure">What stopped it.</param>
     /// <param name="changed">Whether it had changed anything before it stopped.</param>
     public FailureNote UninstallStopped(Exception failure, bool changed)
     {
-        Cause cause = Describe(failure);
-        if (cause.Kind is FailureKind.Locked or FailureKind.Unexpected)
+        NoteCause cause = NoteCauses.Describe(failure, subject.GameFolder, space);
+        // A refused registry change and a held layer file keep their own words.
+        if (cause.Kind is FailureKind.Locked or FailureKind.Unexpected && ExceptionChain.Find<ExplainedException>(failure) is null)
         {
             cause = cause with { Text = Texts.Format("UninstallError", ExceptionChain.Of(failure).Last().Message) };
         }
@@ -57,7 +58,7 @@ internal sealed partial class Failures(GameStateStore store, IFreeSpace space, T
             ? Failed(operation, error, outcome)
             : Keep(operation, new(FailureKind.Unexpected, new FailureCause(Path: stop.Path), Texts.Format("InstallNotPutBack", Path.GetFileName(stop.Path))), outcome, null);
 
-    private InstallFailed Keep(FailureOperation operation, Cause cause, FailureOutcome outcome, Exception? failure)
+    private InstallFailed Keep(FailureOperation operation, NoteCause cause, FailureOutcome outcome, Exception? failure)
     {
         Log(operation, failure, cause.Kind, outcome);
         FailureNote note = new(
@@ -74,28 +75,6 @@ internal sealed partial class Failures(GameStateStore store, IFreeSpace space, T
         FailureNotes.Keep(store, subject.Game, note, CancellationToken.None);
         return new InstallFailed(note);
     }
-
-    // The kind, the detail and the cause paragraph, however the failure was wrapped: a full drive with the drives
-    // involved, a held file with the error Windows gave, a backup that could not be made, a cancellation.
-    private Cause Describe(Exception failure)
-    {
-        Cause cause = failure switch
-        {
-            OperationCanceledException => new(FailureKind.Cancelled, null, Texts.Text("InstallCancelled")),
-            _ when ExceptionChain.Find<DiskFullException>(failure) is { } full =>
-                new(FailureKind.DiskFull, new FailureCause(Drives: full.Places(subject.GameFolder, space)), full.Explain(subject.GameFolder, space)),
-            _ when ExceptionChain.Find<FileHeldException>(failure) is { } held =>
-                new(FailureKind.Locked, new FailureCause(Path: held.FilePath), Texts.Format("InstallWriteRefused", Innermost(held).Message)),
-            _ when ExceptionChain.Find<NotVerifiedException>(failure) is { } unverified =>
-                new(FailureKind.Verification, null, Texts.Format("InstallNotVerified", Path.GetFileName(unverified.FilePath))),
-            _ => new(FailureKind.Unexpected, null, Texts.Format("InstallUnexpected", failure.Message)),
-        };
-        return ExceptionChain.Find<BackupFailedException>(failure) is { } backup
-            ? cause with { Text = Texts.Format("InstallBackupFailed", Path.GetFileName(backup.FilePath), Innermost(backup).Message) }
-            : cause;
-    }
-
-    private static Exception Innermost(Exception failure) => ExceptionChain.Of(failure).Last();
 
     // A cancellation is never logged as an error.
     private void Log(FailureOperation operation, Exception? failure, FailureKind kind, FailureOutcome outcome)
@@ -115,13 +94,42 @@ internal sealed partial class Failures(GameStateStore store, IFreeSpace space, T
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The {Operation} in {Folder} failed ({Kind}, {Outcome})")]
     private static partial void LogFailed(ILogger logger, Exception? failure, string folder, FailureOperation operation, FailureKind kind, FailureOutcome outcome);
-
-    /// <summary>A failure as the note keeps it: the cause value every note is built from.</summary>
-    /// <param name="Kind">What stopped the install.</param>
-    /// <param name="Detail">The drives, or the held file.</param>
-    /// <param name="Text">The cause paragraph, which follows the opening sentence.</param>
-    private sealed record Cause(FailureKind Kind, FailureCause? Detail, string Text);
 }
+
+/// <summary>How a failure reads on its note.</summary>
+internal static class NoteCauses
+{
+    /// <summary>
+    /// The kind, the detail and the cause paragraph, however the failure was wrapped: a full drive with the drives
+    /// involved, a held file with the error Windows gave, a backup that could not be made, a cancellation.
+    /// </summary>
+    public static NoteCause Describe(Exception failure, string gameFolder, IFreeSpace space)
+    {
+        NoteCause cause = failure switch
+        {
+            OperationCanceledException => new(FailureKind.Cancelled, null, Texts.Text("InstallCancelled")),
+            _ when ExceptionChain.Find<DiskFullException>(failure) is { } full =>
+                new(FailureKind.DiskFull, new FailureCause(Drives: full.Places(gameFolder, space)), full.Explain(gameFolder, space)),
+            _ when ExceptionChain.Find<ExplainedException>(failure) is { } explained => new(explained.Kind, explained.Cause, explained.Text),
+            _ when ExceptionChain.Find<FileHeldException>(failure) is { } held =>
+                new(FailureKind.Locked, new FailureCause(Path: held.FilePath), Texts.Format("InstallWriteRefused", Innermost(held).Message)),
+            _ when ExceptionChain.Find<NotVerifiedException>(failure) is { } unverified =>
+                new(FailureKind.Verification, null, Texts.Format("InstallNotVerified", Path.GetFileName(unverified.FilePath))),
+            _ => new(FailureKind.Unexpected, null, Texts.Format("InstallUnexpected", failure.Message)),
+        };
+        return ExceptionChain.Find<BackupFailedException>(failure) is { } backup
+            ? cause with { Text = Texts.Format("InstallBackupFailed", Path.GetFileName(backup.FilePath), Innermost(backup).Message) }
+            : cause;
+    }
+
+    private static Exception Innermost(Exception failure) => ExceptionChain.Of(failure).Last();
+}
+
+/// <summary>A failure as the note keeps it: the cause value every note is built from.</summary>
+/// <param name="Kind">What stopped the install.</param>
+/// <param name="Detail">The drives, or the held file.</param>
+/// <param name="Text">The cause paragraph, which follows the opening sentence.</param>
+internal sealed record NoteCause(FailureKind Kind, FailureCause? Detail, string Text);
 
 /// <summary>What a failure note is about.</summary>
 /// <param name="GameFolder">The game folder.</param>

@@ -78,9 +78,12 @@ internal static partial class RecordShape
         && record.Game.Executables.All(name => name is not null)
         && record.Components.Values.All(version => version is not null)
         && AllPresent(record.Entries, record.ConfigEdits, record.Registrations, record.GraphicsPreferences)
+        && IsWhole(record.Releasing)
         && record.Entries.All(entry => entry is null or { Superseded: null or >= 1 })
         && AllPresent(record.CreatedFolders, record.Notes, record.Warnings, record.Skipped)
         && record.Choices.IsValid;
+
+    private static bool IsWhole(SharedRelease? releasing) => releasing is null || AllPresent(releasing.Registrations, releasing.GraphicsPreferences);
 
     private static bool AllPresent(params IEnumerable<IEnumerable<object?>> lists) =>
         lists.All(list => list.All(item => item is not null));

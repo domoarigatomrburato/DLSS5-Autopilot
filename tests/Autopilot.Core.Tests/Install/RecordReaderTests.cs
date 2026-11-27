@@ -119,6 +119,8 @@ public sealed class RecordReaderTests(TestContext testContext)
     [DataRow("entries", /*lang=json,strict*/ "[{\"path\": \"dxgi.dll\", \"class\": 0, \"state\": \"written\", \"written\": null, \"original\": null}]")]
     [DataRow("entries", /*lang=json,strict*/ "[{\"path\": null, \"class\": \"component\", \"state\": \"written\", \"written\": null, \"original\": null}]")]
     [DataRow("entries", /*lang=json,strict*/ "[{\"path\": \"dxgi.dll\", \"class\": \"component\", \"state\": \"written\", \"written\": null}]")]
+    [DataRow("releasing", /*lang=json,strict*/ "{\"registrations\": [null], \"graphicsPreferences\": []}")]
+    [DataRow("releasing", /*lang=json,strict*/ "{\"registrations\": [], \"graphicsPreferences\": [null]}")]
     public async Task A_record_with_a_field_of_the_wrong_type_is_the_wrong_shape(string field, string json)
     {
         using RecordBed bed = new();

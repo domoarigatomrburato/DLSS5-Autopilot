@@ -57,6 +57,13 @@ public sealed record InstallRecord(
     /// </summary>
     public InstallRecord? Previous { get; init; }
 
+    /// <summary>
+    /// On a committed record, until the commit's last save, and on the record of its uninstall: the previous install's
+    /// registrations and graphics preferences the new install no longer relies on, still to be released; null when there
+    /// are none.
+    /// </summary>
+    public SharedRelease? Releasing { get; init; }
+
     /// <summary>The entries standing for the files at their paths: every one but the held files' and the originals put back.</summary>
     internal IEnumerable<RecordEntry> Placed => Entries.Where(entry => entry.IsPlaced);
 }
@@ -144,6 +151,9 @@ public sealed record FileFacts(string Sha256, long Size)
         return file.Exists ? new(await FileDigest.Sha256Async(path, cancellationToken), file.Length) : null;
     }
 
+    /// <summary>The facts of <paramref name="bytes"/> held in memory.</summary>
+    internal static FileFacts Of(ReadOnlySpan<byte> bytes) => new(FileDigest.Sha256(bytes), bytes.Length);
+
     /// <summary>Whether <paramref name="other"/> is the same content: same size, same hash whatever its case.</summary>
     internal bool Matches(FileFacts? other) => other is not null && Size == other.Size && FileDigest.SameHash(Sha256, other.Sha256);
 
@@ -217,6 +227,11 @@ public enum RegisteredLayer
     /// <summary>The OpenXR API layer (64-bit games only).</summary>
     OpenXr,
 }
+
+/// <summary>What a committed install still has to release of the install it replaced.</summary>
+/// <param name="Registrations">The shared layer registrations, removed unless another install depends on them.</param>
+/// <param name="GraphicsPreferences">The graphics preference values, restored by the restore rules.</param>
+public sealed record SharedRelease(IReadOnlyList<LayerRegistration> Registrations, IReadOnlyList<GraphicsPreferenceEdit> GraphicsPreferences);
 
 /// <summary>One value written under the Windows graphics preference key.</summary>
 /// <param name="Program">The program's full path, the value's name.</param>

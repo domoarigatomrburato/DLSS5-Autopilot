@@ -38,26 +38,38 @@ internal static class FolderRefusals
             ? new(BlockerKind.GameRunning, Texts.Format("RefusalGameRunning", Path.GetFileName(image)))
             : null;
 
-    /// <summary>The files <paramref name="resolved"/> overwrites, renames or deletes that another program holds now, each named.</summary>
+    /// <summary>
+    /// The files <paramref name="resolved"/> overwrites, renames or deletes that another program holds now, each named: relative
+    /// to the game folder, or in full for a layer file outside it.
+    /// </summary>
     public static IEnumerable<InstallBlocker> Locked(ResolvedInstall resolved) =>
         FileLocks.Held(Touched(resolved))
-            .Select(held => new InstallBlocker(BlockerKind.Locked, Texts.Format("RefusalLocked", resolved.Paths.Relative(held.Path))));
+            .Select(held => new InstallBlocker(BlockerKind.Locked, Texts.Format("RefusalLocked", resolved.Paths.Relative(held.Path) is { Length: > 0 } relative ? relative : held.Path)));
 
     /// <summary>
-    /// Why the game's drive cannot take <paramref name="resolved"/>: every byte it writes, plus the record's margin.
-    /// A file is written to a temporary name beside its own and renamed, so its bytes are counted once; backups are
-    /// renames and cost nothing. Null when there is room, or when the drive's free space is not known.
+    /// Why a drive cannot take <paramref name="resolved"/>, one refusal per drive short of room: the game's takes every byte
+    /// written in the game folder plus the record's margin, and each layer file counts on its own drive. A file is written to
+    /// a temporary name beside its own and renamed, so its bytes are counted once; backups are renames and cost nothing.
+    /// None when there is room, or when a drive's free space is not known.
     /// </summary>
-    public static InstallBlocker? FreeSpace(IFreeSpace space, ResolvedInstall resolved)
+    public static IEnumerable<InstallBlocker> FreeSpace(IFreeSpace space, ResolvedInstall resolved)
     {
-        long needed = RecordMargin + resolved.Changes
-            .OfType<WriteFile>()
-            .Sum(write => write.Facts.Size);
-        DriveSpace drive = space.DriveOf(resolved.Paths.GameFolder);
-        return drive.FreeBytes is { } free && free < needed
+        long game = RecordMargin + resolved.Changes.OfType<WriteFile>().Sum(write => write.Facts.Size);
+        IEnumerable<(DriveSpace Drive, long Bytes)> needs = [
+            (space.DriveOf(resolved.Paths.GameFolder), game),
+            .. resolved.Changes.OfType<WriteLayerFile>().Select(layer => (space.DriveOf(layer.Path), layer.Facts.Size)),
+        ];
+        return needs
+            .GroupBy(need => need.Drive.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(drive => Short(drive.First().Drive, drive.Sum(need => need.Bytes)))
+            .OfType<InstallBlocker>();
+    }
+
+    // The refusal of a drive with less room than needed; null when it has the room or its free space is not known.
+    private static InstallBlocker? Short(DriveSpace drive, long needed) =>
+        drive.FreeBytes is { } free && free < needed
             ? new(BlockerKind.FreeSpace, Texts.Format("RefusalFreeSpace", drive.Name, DiskFullException.HumanSize(free), DiskFullException.HumanSize(needed)))
             : null;
-    }
 
     // The existing files the install renames away or deletes: every file it overwrites is renamed first (backed up or held).
     private static IEnumerable<string> Touched(ResolvedInstall resolved) =>
@@ -67,6 +79,7 @@ internal static class FolderRefusals
                 MoveFile move => move.From,
                 BackUpFile backup => backup.From,
                 DeleteFile delete => delete.Path,
+                WriteLayerFile layer => layer.Path,
                 _ => null,
             })
             .OfType<string>()

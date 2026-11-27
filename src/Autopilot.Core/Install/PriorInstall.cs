@@ -68,8 +68,8 @@ internal sealed class PriorInstall
 
     /// <summary>
     /// The record an install's journal opens with: state <see cref="RecordState.Installing"/>, <paramref name="header"/>'s
-    /// parts, <paramref name="carried"/> as its first entries, and what the previous install recorded beyond its
-    /// entries carried over, with the previous record whole.
+    /// parts, <paramref name="carried"/> as its first entries, and the previous install's config edits carried over (its registrations
+    /// and graphics preferences only as the plan journals them again), with the previous record whole.
     /// </summary>
     public InstallRecord Opening(PlanHeader header, string installFolder, IReadOnlyList<RecordEntry> carried) => new(
         InstallRecords.Format,
@@ -82,8 +82,9 @@ internal sealed class PriorInstall
         header.Components,
         carried,
         Record?.ConfigEdits.Select(edit => edit with { File = Rebased(edit.File) }).ToList() ?? [],
-        Record?.Registrations ?? [],
-        Record?.GraphicsPreferences ?? [],
+        // Registrations and graphics preferences are the plan's to journal again; the rest are released at commit.
+        [],
+        [],
         [.. CreatedFolders.Select(_paths.Relative)],
         header.Notes,
         header.Warnings,

@@ -42,6 +42,12 @@ internal enum WriteKind
 
     /// <summary>The install record saved.</summary>
     SaveRecord,
+
+    /// <summary>A value of the current user's registry set; the path is the key, then the value's name.</summary>
+    SetRegistryValue,
+
+    /// <summary>A value of the current user's registry deleted; the path is the key, then the value's name.</summary>
+    DeleteRegistryValue,
 }
 
 /// <summary>The production <see cref="IWriteSteps"/>: every step goes ahead.</summary>

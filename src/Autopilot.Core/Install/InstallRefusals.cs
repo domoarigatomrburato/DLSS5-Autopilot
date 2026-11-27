@@ -17,13 +17,16 @@ namespace Autopilot.Core.Install;
 /// <param name="logger">Where record entries leading outside the game folder are logged.</param>
 internal sealed class InstallRefusals(InstallRecords records, IFolderAccess access, IProcesses processes, IFreeSpace space, ILogger logger)
 {
+    /// <summary>The registry and the layer folder a plan's layer and graphics preference steps are resolved against, as the transaction's.</summary>
+    internal SharedPlaces? Shared { get; init; }
+
     /// <summary>Every blocker of <paramref name="request"/> and its warnings, with the plan made concrete when its record and paths allow.</summary>
     /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
     public async Task<InstallCheck> CheckAsync(RefusalRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         RecordedInstall? recorded = await records.FindAsync(request.InstallFolder, cancellationToken);
-        InstallRefused? planRefusal = InstallChecks.RefusalOf(request.Plan, recorded);
+        InstallRefused? planRefusal = InstallChecks.RefusalOf(request.Plan, recorded, Shared);
         InstallPaths paths = new(request.Plan.GameFolder);
         var prior = PriorInstall.Of(planRefusal is null ? recorded : null, paths, logger);
         Task<IReadOnlyList<string>> warnings = InstallWarnings.ForAsync(request, prior, cancellationToken);
@@ -61,6 +64,7 @@ internal sealed class InstallRefusals(InstallRecords records, IFolderAccess acce
     {
         InstallRefusal.RecordUnreadable => new(BlockerKind.Record, Texts.Text("RefusalRecordUnreadable")),
         InstallRefusal.RecordOutsideGameFolder => new(BlockerKind.Record, Texts.Text("RefusalRecordElsewhere")),
+        InstallRefusal.SharedPlacesMissing => new(BlockerKind.Plan, Texts.Text("RefusalSharedPlaces")),
         _ => new(BlockerKind.Plan, Texts.Text("RefusalPlan")),
     };
 
@@ -72,7 +76,7 @@ internal sealed class InstallRefusals(InstallRecords records, IFolderAccess acce
         ResolvedInstall resolved;
         try
         {
-            resolved = await new InstallResolver(logger).ResolveAsync(plan, paths, prior, cancellationToken);
+            resolved = await new InstallResolver(logger) { Shared = Shared }.ResolveAsync(plan, paths, prior, cancellationToken);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -83,7 +87,7 @@ internal sealed class InstallRefusals(InstallRecords records, IFolderAccess acce
         if (writable)
         {
             blockers.AddRange(FolderRefusals.Locked(resolved));
-            blockers.AddIfAny(FolderRefusals.FreeSpace(space, resolved));
+            blockers.AddRange(FolderRefusals.FreeSpace(space, resolved));
         }
 
         return resolved;

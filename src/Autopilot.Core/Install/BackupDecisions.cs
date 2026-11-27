@@ -45,6 +45,18 @@ internal sealed partial class BackupDecisions(InstallPaths paths, PriorInstall p
         return actions;
     }
 
+    /// <summary>The previous install's entries outside <paramref name="named"/>, each released as <see cref="ReleaseAsync"/> says.</summary>
+    public async Task<List<InstallAction>> ReleasedAsync(IReadOnlySet<string> named, CancellationToken cancellationToken)
+    {
+        List<InstallAction> released = [];
+        foreach ((string full, Prior before) in prior.Entries.Where(entry => !named.Contains(entry.Key)))
+        {
+            released.AddRange(await ReleaseAsync(full, before, cancellationToken));
+        }
+
+        return released;
+    }
+
     /// <summary>
     /// An entry of the previous install the new one does not name: our file, still ours, is held until commit;
     /// the game's original comes back from a valid backup where nothing else is; a file the game replaced since

@@ -16,6 +16,18 @@ internal abstract record InstallAction(string Path)
     /// <summary>The changes on disk, in the order they are made.</summary>
     public abstract IReadOnlyList<DiskChange> Changes(InstallPaths paths);
 
+    /// <summary>The shared layer registrations the record gains, before the group's first change.</summary>
+    public virtual IEnumerable<LayerRegistration> Registrations => [];
+
+    /// <summary>The graphics preference values the record gains, before the group's first change.</summary>
+    public virtual IEnumerable<GraphicsPreferenceEdit> Preferences => [];
+
+    /// <summary>
+    /// The record once <paramref name="failure"/> of one of this action's changes is accounted for, when it does not stop
+    /// the install (a graphics preference Windows refused); null when it stops it, which is every failure by default.
+    /// </summary>
+    public virtual InstallRecord? Tolerate(InstallRecord record, Exception failure) => null;
+
     /// <summary>Which of the preview's lists name the action's path: every kind says it, so a new kind cannot be left out of the preview.</summary>
     public abstract PreviewLists Preview { get; }
 

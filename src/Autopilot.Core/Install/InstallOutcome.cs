@@ -49,6 +49,9 @@ public enum InstallRefusal
 
     /// <summary>An uninstall left part way could not be finished (the game runs, or something is left): finish the uninstall first.</summary>
     RemovalUnfinished,
+
+    /// <summary>The install registers a layer or sets the graphics preference, and has no registry or layer folder to do it with.</summary>
+    SharedPlacesMissing,
 }
 
 /// <summary>Where an install stands, for its progress: step <paramref name="Step"/> of <paramref name="Count"/>, counted from 1.</summary>

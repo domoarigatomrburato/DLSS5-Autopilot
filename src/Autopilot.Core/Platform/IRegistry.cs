@@ -8,4 +8,10 @@ public interface IRegistry
 
     /// <summary>A string value of a key; null when the key or the value is missing, unreadable or not a string.</summary>
     string? ReadString(RegistryRoot root, RegistryView view, string path, string name);
+
+    /// <summary>The names of the values of a key; empty when the key is missing or cannot be opened.</summary>
+    IReadOnlyList<string> ValueNames(RegistryRoot root, RegistryView view, string path);
+
+    /// <summary>A DWORD value of a key; null when the key or the value is missing, unreadable or not a DWORD.</summary>
+    int? ReadDword(RegistryRoot root, RegistryView view, string path, string name);
 }

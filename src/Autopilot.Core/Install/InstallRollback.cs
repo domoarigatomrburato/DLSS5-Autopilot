@@ -44,13 +44,14 @@ internal sealed partial class InstallRollback(InstallDisk disk, IOutsideChanges 
     private Task UndoEntriesAsync(InstallRecord record, EntryWalk walk, InstallPaths paths, Undoing undoing) =>
         new EntryUndo(disk, paths, new OwnedFiles(record, paths.GameFolder)).WalkAsync(walk, undoing.Prepare, undoing.AfterPathAsync, outside: null, logger, CancellationToken.None);
 
-    // The previous install's record back when everything was undone; else what is left, which an install with none
+    // The previous install's record back when everything was undone, with what this one added outside the files taken
+    // back out; else what is left, which an install with none
     // under it gives its changes outside the files up from first; the record goes when nothing is left.
     private async Task FinishAsync(InstallRecord record, InstallRecord left, InstallPaths paths, string installFolder, RollbackStop? stop)
     {
         if (stop is null && record.Previous is { } previous)
         {
-            await disk.SaveRecordAsync(installFolder, previous, CancellationToken.None);
+            await disk.SaveRecordAsync(installFolder, await outside.PreviousBackAsync(record, previous), CancellationToken.None);
             return;
         }
 

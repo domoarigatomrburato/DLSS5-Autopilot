@@ -7,9 +7,19 @@ namespace Autopilot.Core.Tests.Install;
 /// <summary>Uninstalls run on a transaction bed, with its steps, seam, clock and running programs.</summary>
 internal static class Uninstalls
 {
-    /// <summary>An uninstall over the bed; <paramref name="outside"/> undoes the changes outside the files (by default none is, as today).</summary>
-    public static Uninstaller Uninstaller(this TransactionBed bed, IOutsideChanges? outside = null) =>
-        new(new InstallRecords(NullLogger<InstallRecords>.Instance, bed.Time), bed.Store, FakeFreeSpace.OneDrive, bed.Processes, bed.Time, bed.Log, bed.Steps, bed.Seam, outside ?? OutsideChanges.NotUndoneYet);
+    /// <summary>
+    /// An uninstall over the bed; <paramref name="outside"/> undoes the changes outside the files. By default the bed's
+    /// shared places do, and with none, none is.
+    /// </summary>
+    public static Uninstaller Uninstaller(this TransactionBed bed, IOutsideChanges? outside = null)
+    {
+        InstallRecords records = new(NullLogger<InstallRecords>.Instance, bed.Time);
+        return new(records, bed.Store, FakeFreeSpace.OneDrive, bed.Processes, bed.Time, bed.Log, bed.Steps, bed.Seam, Outside(bed, records, outside));
+    }
+
+    // The outside changes given, else those over the bed's shared places.
+    private static IOutsideWork Outside(TransactionBed bed, InstallRecords records, IOutsideChanges? outside) =>
+        outside is null ? OutsideWork.Of(bed.Shared, bed.Store, records, bed.Log) : new FixedOutside(outside);
 
     /// <summary>Uninstalls the bed's install folder.</summary>
     public static Task<UninstallOutcome> UninstallAsync(this TransactionBed bed, CancellationToken cancellationToken, IOutsideChanges? outside = null) =>
@@ -30,4 +40,12 @@ internal static class Uninstalls
     /// <summary>Uninstalls, which the test expects to run to its end.</summary>
     public static Task<UninstallFinished> UninstallFinishedAsync(this TransactionBed bed, CancellationToken cancellationToken, IOutsideChanges? outside = null) =>
         bed.UninstallAsAsync<UninstallFinished>(cancellationToken, outside);
+}
+
+/// <summary>The same outside changes for every run, whatever its disk and folder.</summary>
+internal sealed class FixedOutside(IOutsideChanges changes) : IOutsideWork
+{
+    public IOutsideChanges For(InstallDisk disk, string installFolder) => changes;
+
+    public Task CleanUpLayerFilesAsync(InstallDisk disk) => Task.CompletedTask;
 }

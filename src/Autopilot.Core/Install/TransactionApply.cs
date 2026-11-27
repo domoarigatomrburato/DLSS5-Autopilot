@@ -10,7 +10,8 @@ namespace Autopilot.Core.Install;
 /// <param name="disk">Makes the changes.</param>
 /// <param name="installFolder">Where the record is.</param>
 /// <param name="logger">Where vanished files and the commit's tail are logged.</param>
-internal sealed partial class TransactionApply(InstallDisk disk, string installFolder, ILogger logger)
+/// <param name="outside">Releases at commit what the previous install relied on outside the game folder and this one does not.</param>
+internal sealed partial class TransactionApply(InstallDisk disk, string installFolder, ILogger logger, IOutsideChanges outside)
 {
     private const int LoggedVanished = 8;
     private const int NamedVanished = 4;
@@ -43,7 +44,11 @@ internal sealed partial class TransactionApply(InstallDisk disk, string installF
         cancellationToken.ThrowIfCancellationRequested();
         IReadOnlyList<string> warnings = vanished.Count == 0 ? record.Warnings : [.. record.Warnings, Quarantined(vanished)];
         // The originals put back are the game's again: nothing of them stays on the record.
-        record = record with { State = RecordState.Installed, Previous = null, Warnings = warnings, Entries = [.. record.Entries.Where(entry => entry.State != EntryState.Restored)] };
+        record = Releases.Committed(record) with
+        {
+            Warnings = warnings,
+            Entries = [.. record.Entries.Where(entry => entry.State != EntryState.Restored)],
+        };
         await SaveAsync(record, cancellationToken);
         await FinishCommitAsync(record, resolved.Paths);
         return new InstallCommitted(record.Notes, warnings);
@@ -57,21 +62,36 @@ internal sealed partial class TransactionApply(InstallDisk disk, string installF
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        record = record with
-        {
-            Entries = [.. record.Entries, .. group.Actions.SelectMany(action => action.Journal)],
-            CreatedFolders = [.. record.CreatedFolders, .. group.Actions.OfType<MakeFolder>().Select(folder => folder.Path)],
-        };
+        record = group.JournaledOnto(record);
         await SaveAsync(record, cancellationToken);
-        foreach (DiskChange change in group.Actions.SelectMany(action => action.Changes(paths)))
+        foreach (InstallAction action in group.Actions)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            await disk.RunAsync(change, cancellationToken);
+            record = await ActionAsync(paths, action, record, cancellationToken);
         }
 
         record = record with { Entries = [.. record.Entries.Select(Settled)] };
         await SaveAsync(record, cancellationToken);
         return record;
+    }
+
+    // An action's changes, in order; a failure the action tolerates ends them and is accounted for on the record.
+    private async Task<InstallRecord> ActionAsync(InstallPaths paths, InstallAction action, InstallRecord record, CancellationToken cancellationToken)
+    {
+        InstallRecord? tolerated = null;
+        try
+        {
+            foreach (DiskChange change in action.Changes(paths))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await disk.RunAsync(change, cancellationToken);
+            }
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException && (tolerated = action.Tolerate(record, failure)) is not null)
+        {
+            LogTolerated(logger, failure, action.Path);
+        }
+
+        return tolerated ?? record;
     }
 
     // A pending entry, once its group ran, is written, or moved aside when nothing was written at it.
@@ -108,24 +128,26 @@ internal sealed partial class TransactionApply(InstallDisk disk, string installF
     private static string Quarantined(IReadOnlyList<string> vanished) =>
         Texts.Format("InstallQuarantined", vanished.Count, string.Join(", ", vanished.Take(NamedVanished)) + (vanished.Count > NamedVanished ? "..." : ""));
 
-    // Committed: the held files go, and the record is saved without them. Nothing here fails the install:
-    // what is left, the next transaction on the folder finishes first.
+    // Committed: what the previous install relied on outside the folder is released, the held files go, and the record
+    // is saved without them. Nothing here fails the install: what is left, the next transaction on the folder finishes first.
     private async Task FinishCommitAsync(InstallRecord record, InstallPaths paths)
     {
-        if (!record.Entries.Any(HeldFiles.IsHeld))
-        {
-            return;
-        }
-
         try
         {
-            _ = await HeldFiles.DeleteAsync(record, paths, disk, installFolder, logger);
+            record = await Releases.ReleaseAsync(record, disk, installFolder, outside);
+            if (record.Entries.Any(HeldFiles.IsHeld))
+            {
+                _ = await HeldFiles.DeleteAsync(record, paths, disk, installFolder, logger);
+            }
         }
         catch (Exception failure) when (failure is not OperationCanceledException)
         {
             LogCommitTail(logger, failure, installFolder);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{Path} could not be set; the install goes on without it")]
+    private static partial void LogTolerated(ILogger logger, Exception failure, string path);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "{Path} was written and is no longer there as written")]
     private static partial void LogVanished(ILogger logger, string path);
@@ -188,4 +210,59 @@ internal static partial class HeldFiles
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The held file {Path} could not be deleted; the next install of the folder deletes it")]
     private static partial void LogHeldLeft(ILogger logger, string path);
+}
+
+/// <summary>What a committed install releases of the one it replaced: the registrations and graphics preferences it no longer relies on.</summary>
+internal static class Releases
+{
+    /// <summary>The committed form of <paramref name="record"/>: installed, the previous install dropped, and what it releases of it kept until it is.</summary>
+    public static InstallRecord Committed(InstallRecord record) => record with { State = RecordState.Installed, Previous = null, Releasing = Of(record) };
+
+    /// <summary>What <paramref name="record"/>, about to commit, releases of its previous install; null when nothing.</summary>
+    public static SharedRelease? Of(InstallRecord record) => record.Previous is { } previous ? Leftover(previous, record) : null;
+
+    /// <summary>
+    /// What <paramref name="from"/> made outside its files, and still had to release, that <paramref name="kept"/> does not rely
+    /// on: the registrations it does not list, and the graphics preferences of programs it holds none for, compared as resolved
+    /// paths; null when nothing.
+    /// </summary>
+    public static SharedRelease? Leftover(InstallRecord from, InstallRecord kept)
+    {
+        LayerRegistration[] registrations =
+        [
+            .. from.Registrations.Concat(from.Releasing?.Registrations ?? [])
+                .Where(registration => !LayerDependents.Names(kept.Registrations, registration)),
+        ];
+        GraphicsPreferenceEdit[] preferences =
+        [
+            .. from.GraphicsPreferences.Concat(from.Releasing?.GraphicsPreferences ?? [])
+                .Where(edit => !kept.GraphicsPreferences.Any(held => SharedPaths.Same(held.Program, edit.Program))),
+        ];
+        return registrations.Length + preferences.Length > 0 ? new(registrations, preferences) : null;
+    }
+
+    /// <summary>How many registrations and graphics preferences <paramref name="release"/> holds; none when null.</summary>
+    public static int Count(SharedRelease? release) => release is null ? 0 : release.Registrations.Count + release.GraphicsPreferences.Count;
+
+    /// <summary>
+    /// Releases what the committed <paramref name="record"/> still has to, and saves it with only what could not be released
+    /// left (none: no <see cref="InstallRecord.Releasing"/>); unsaved when nothing could be released.
+    /// </summary>
+    public static async Task<InstallRecord> ReleaseAsync(InstallRecord record, InstallDisk disk, string installFolder, IOutsideChanges outside)
+    {
+        if (record.Releasing is not { } releasing)
+        {
+            return record;
+        }
+
+        SharedRelease? left = await outside.UndoAsync(releasing);
+        if (left is not null && Count(left) == Count(releasing))
+        {
+            return record;
+        }
+
+        record = record with { Releasing = left };
+        await disk.SaveRecordAsync(installFolder, record, CancellationToken.None);
+        return record;
+    }
 }

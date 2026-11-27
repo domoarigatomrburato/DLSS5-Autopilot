@@ -27,8 +27,12 @@ internal sealed class RefusalBed(params IEnumerable<TreeFile> files) : IDisposab
     /// <summary>The game's drive; a terabyte free unless the test says otherwise.</summary>
     public DriveSpace Drive { get; set; } = new("G:", 1L << 40);
 
+    /// <summary>Drives other than the game's, each for the paths below its folder.</summary>
+    public (string Folder, DriveSpace Drive)[] OtherDrives { get; set; } = [];
+
+    /// <summary>The first phase over the bed, with its registries and layer folder when it has them.</summary>
     public InstallRefusals Refusals() =>
-        new(new InstallRecords(NullLogger<InstallRecords>.Instance, Bed.Time), Access, Processes, new FakeFreeSpace(("", Drive)), NullLogger.Instance);
+        new(new InstallRecords(NullLogger<InstallRecords>.Instance, Bed.Time), Access, Processes, new FakeFreeSpace([.. OtherDrives, ("", Drive)]), NullLogger.Instance) { Shared = Bed.Shared };
 
     /// <summary>The game as the library read it: <c>Game.exe</c> in the game folder, 64-bit, Direct3D 12.</summary>
     public GameEntry Game => new()

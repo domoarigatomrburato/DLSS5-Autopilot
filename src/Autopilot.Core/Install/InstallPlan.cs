@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.IO.Enumeration;
 using System.Security.Cryptography;
+using Autopilot.Core.Gpu;
 using Autopilot.Core.Routes;
 
 namespace Autopilot.Core.Install;
@@ -53,6 +54,16 @@ internal abstract record PlanStep(string Path)
     /// <summary>The step's path, full, below <paramref name="paths"/>' game folder.</summary>
     /// <exception cref="Archives.UnsafePathException">The path is absolute, climbs out, or is not a valid Windows name.</exception>
     public virtual string FullIn(InstallPaths paths) => paths.Full(Path);
+
+    /// <summary>
+    /// The key a change outside the game folder's entries (a layer, a program's graphics preference) is named once under in a
+    /// plan, apart from the entries' paths; null for a step of an entry, named once by its full path.
+    /// </summary>
+    /// <exception cref="Archives.UnsafePathException">The path is absolute, climbs out, or is not a valid Windows name.</exception>
+    public virtual string? SharedKeyIn(InstallPaths paths) => null;
+
+    /// <summary>Whether the step names a path of the game folder, which the checks keep inside it; a layer names none.</summary>
+    public virtual bool NamesPath => true;
 }
 
 /// <summary>A file placed at <paramref name="Path"/>, whose bytes are known and verified before the install starts.</summary>
@@ -105,6 +116,50 @@ internal sealed record PlacePattern(string Path) : PlanStep(Path)
     public static bool Matches(string pattern, string full) =>
         string.Equals(System.IO.Path.GetDirectoryName(pattern), System.IO.Path.GetDirectoryName(full), StringComparison.OrdinalIgnoreCase)
         && FileSystemName.MatchesSimpleExpression(System.IO.Path.GetFileName(pattern), System.IO.Path.GetFileName(full));
+}
+
+/// <summary>
+/// A shared layer this install needs, registered for the current user unless a usable one is: its files go into
+/// the layer folder outside the game folder, the one place outside it a plan writes files. Reused, refreshed or
+/// registered as <see cref="InstallResolver"/> decides; the OpenXR layer only for a 64-bit game.
+/// </summary>
+/// <param name="Layer">Which layer.</param>
+/// <param name="LibraryFacts">The DLL's hash and size.</param>
+/// <param name="Library">The DLL's bytes, from ReShade's setup.</param>
+/// <param name="Manifest">The manifest as ReShade's setup holds it; its <c>library_path</c> is rewritten.</param>
+/// <remarks>Its path is empty: a layer names no path of the game folder.</remarks>
+internal sealed record RegisterLayer(RegisteredLayer Layer, FileFacts LibraryFacts, FileSource Library, ReadOnlyMemory<byte> Manifest)
+    : PlanStep(string.Empty)
+{
+    public override bool NamesPath => false;
+
+    public override string SharedKeyIn(InstallPaths paths) => $"layer\n{Layer}";
+}
+
+/// <summary>
+/// Windows' graphics preference set to "High performance" for a program in the game folder, so it draws on the
+/// NVIDIA card; a choice the person already made is kept. The plan names one only on a PC with an NVIDIA card and
+/// another GPU, with the option on: see <see cref="GraphicsPreferenceSteps"/>.
+/// </summary>
+/// <param name="Path">The program, relative to the game folder.</param>
+/// <param name="Other">The other GPU, which the program is kept off.</param>
+internal sealed record SetGraphicsPreference(string Path, GpuVendor Other) : PlanStep(Path)
+{
+    public override string SharedKeyIn(InstallPaths paths) => $"preference\n{FullIn(paths)}";
+}
+
+/// <summary>The graphics preference steps of a plan.</summary>
+internal static class GraphicsPreferenceSteps
+{
+    /// <summary>
+    /// One step per program of <paramref name="programs"/> (the game's executable, and the helpers the route runs) when
+    /// <paramref name="gpu"/> has another GPU beside the NVIDIA card and the option is on; none otherwise.
+    /// </summary>
+    public static IReadOnlyList<PlanStep> Of(GpuFacts gpu, bool optionOn, params IEnumerable<string> programs)
+    {
+        ArgumentNullException.ThrowIfNull(gpu);
+        return optionOn && gpu.OtherGpu is { } other ? [.. programs.Select(program => new SetGraphicsPreference(program, other))] : [];
+    }
 }
 
 /// <summary>Where a placed file's bytes come from.</summary>

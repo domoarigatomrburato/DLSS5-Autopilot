@@ -23,6 +23,8 @@ internal sealed class TransactionBed : IDisposable
     {
     }
 
+    private readonly bool _ownsData = true;
+
     private TransactionBed(GameTree tree, GameTree data)
     {
         Tree = tree;
@@ -30,9 +32,29 @@ internal sealed class TransactionBed : IDisposable
         Store = new GameStateStore(_data.Root, Time);
     }
 
+    // Another game folder beside first's: the same data folder, per-game state, clock and shared places.
+    private TransactionBed(GameTree tree, TransactionBed first)
+    {
+        Tree = tree;
+        _data = first._data;
+        _ownsData = false;
+        Store = first.Store;
+        Time = first.Time;
+        Shared = first.Shared;
+    }
+
+    /// <summary>The tool's data folder.</summary>
+    public string DataRoot => _data.Root;
+
+    /// <summary>The registry and layer folder the next transaction's layer and graphics preference steps change; none by default.</summary>
+    public SharedPlaces? Shared { get; set; }
+
+    /// <summary>A bed for another game holding <paramref name="files"/>, sharing this one's data folder, state store and shared places.</summary>
+    public TransactionBed Beside(params IEnumerable<TreeFile> files) => new(GameTree.Of(files), this);
+
     public GameTree Tree { get; }
 
-    public RecordingTimers Time { get; } = new();
+    public RecordingTimers Time { get; private init; } = new();
 
     public GameStateStore Store { get; }
 
@@ -60,7 +82,7 @@ internal sealed class TransactionBed : IDisposable
     public IProgress<InstallProgress>? Progress { get; set; }
 
     public InstallTransaction Transaction() =>
-        new(new InstallRecords(NullLogger<InstallRecords>.Instance, Time), Store, FakeFreeSpace.OneDrive, Processes, Time, Log, Steps, Seam);
+        new(new InstallRecords(NullLogger<InstallRecords>.Instance, Time), Store, FakeFreeSpace.OneDrive, Processes, Time, Log, Steps, Seam) { Shared = Shared };
 
     public Task<InstallOutcome> InstallAsync(InstallPlan plan, CancellationToken cancellationToken) =>
         Transaction().RunAsync(plan, Progress, cancellationToken);
@@ -86,7 +108,10 @@ internal sealed class TransactionBed : IDisposable
     public void Dispose()
     {
         Tree.Dispose();
-        _data.Dispose();
+        if (_ownsData)
+        {
+            _data.Dispose();
+        }
     }
 
     private static void Copy(string from, string to)

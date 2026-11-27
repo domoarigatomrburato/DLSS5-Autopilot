@@ -181,6 +181,11 @@ specified.
       Windows' write-through flag (`MOVEFILE_WRITE_THROUGH`). The job queue
       and the cross-process job lock ([platform](../spec/platform.md),
       "Jobs") come with the app; M4's run owns only the component memories.
+      `IUserRegistry`, the current user's 64-bit registry the install
+      writes (layer values, the graphics preference), and `IRegistry`'s
+      value-name and DWORD reads get their Windows implementations; the
+      transaction's shared places (that registry, the machine's and the
+      layer folder) and the start-up layer-file cleanup are wired.
       Checked on Windows: `FileLocks`' write open reports a DLL another
       process has loaded; the per-game store's named mutex, created by the
       elevated CLI, still opens from the unelevated app (and the reverse);

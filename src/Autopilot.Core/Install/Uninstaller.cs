@@ -22,7 +22,6 @@ public sealed class Uninstaller
     private readonly ILogger _logger;
     private readonly IWriteSteps _steps;
     private readonly DiskSeam _seam;
-    private readonly IOutsideChanges _outside;
 
     /// <param name="records">Reads and saves the record.</param>
     /// <param name="store">The per-game state: the failure note, dropped with the rest once nothing is left.</param>
@@ -31,12 +30,15 @@ public sealed class Uninstaller
     /// <param name="time">The clock of the note and of the retries.</param>
     /// <param name="logger">Where the uninstall's lines go.</param>
     public Uninstaller(InstallRecords records, GameStateStore store, IFreeSpace space, IProcesses processes, TimeProvider time, ILogger<Uninstaller> logger)
-        : this(records, store, space, processes, time, logger, NoWriteSteps.Instance, DiskSeam.Real, OutsideChanges.NotUndoneYet)
+        : this(records, store, space, processes, time, logger, NoWriteSteps.Instance, DiskSeam.Real, NoOutsideWork.Instance)
     {
     }
 
-    /// <summary>The uninstall with every change told to <paramref name="steps"/> first and made through <paramref name="seam"/>, and the changes outside the files undone by <paramref name="outside"/>.</summary>
-    internal Uninstaller(InstallRecords records, GameStateStore store, IFreeSpace space, IProcesses processes, TimeProvider time, ILogger logger, IWriteSteps steps, DiskSeam seam, IOutsideChanges outside)
+    /// <summary>
+    /// The uninstall with every change told to <paramref name="steps"/> first and made through <paramref name="seam"/>, and the
+    /// changes outside the files undone by <paramref name="outside"/>; with no registry, none is, and they stay on the record.
+    /// </summary>
+    internal Uninstaller(InstallRecords records, GameStateStore store, IFreeSpace space, IProcesses processes, TimeProvider time, ILogger logger, IWriteSteps steps, DiskSeam seam, IOutsideWork outside)
     {
         _records = records;
         _store = store;
@@ -46,8 +48,11 @@ public sealed class Uninstaller
         _logger = logger;
         _steps = steps;
         _seam = seam;
-        _outside = outside;
+        Outside = outside;
     }
+
+    // The undo of the changes outside the files.
+    private IOutsideWork Outside { get; }
 
     /// <summary>
     /// Uninstalls what was installed in <paramref name="installFolder"/>. Refused, changing nothing, while a program
@@ -126,7 +131,7 @@ public sealed class Uninstaller
         // An open transaction goes first: a removal part way is this uninstall's own; after a rollback or a commit, the record as it then is goes.
         private async Task<UninstallOutcome> FromRecordAsync(Failures failures, CancellationToken cancellationToken)
         {
-            RecordRemoval removal = new(_disk, owner._outside, owner._logger);
+            RecordRemoval removal = new(_disk, owner.Outside.For(_disk, installFolder), owner._logger);
             Recovery recovery = await RecoverAsync(failures, removal, cancellationToken);
             if (recovery.Failed is { } failed)
             {
@@ -148,11 +153,11 @@ public sealed class Uninstaller
             UninstallFinished finished = found is { Record: { } record, GameFolder: { } recordGameFolder }
                 ? await removal.RunAsync(record, recordGameFolder, installFolder, cancellationToken)
                 : new(0, [], 0);
-            return finished with { Recovered = recovery.Ran };
+            return finished with { Recovered = recovery.Recovered };
         }
 
         // The game was found not running as the uninstall started.
         private Task<Recovery> RecoverAsync(Failures failures, RecordRemoval removal, CancellationToken cancellationToken) =>
-            new TransactionRecovery(() => _disk, installFolder, failures, owner._outside, removal, static () => false, owner._logger).RunAsync(recorded, cancellationToken);
+            new TransactionRecovery(() => _disk, installFolder, failures, owner.Outside, removal, static () => false, owner._logger).RunAsync(recorded, cancellationToken);
     }
 }

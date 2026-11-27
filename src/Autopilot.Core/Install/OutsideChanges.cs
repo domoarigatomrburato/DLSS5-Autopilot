@@ -20,31 +20,15 @@ internal interface IOutsideChanges
     Task<IReadOnlyList<LayerRegistration>> UndoRegistrationsAsync(IReadOnlyList<LayerRegistration> registrations, CancellationToken cancellationToken);
 }
 
-/// <summary>
-/// Today's outside changes: none is undone yet, so every one stays on the record. Config edits come with the
-/// route plans that make them, the registrations and the graphics preference with their own sub-task.
-/// </summary>
-internal sealed class OutsideChanges : IOutsideChanges
+/// <summary>What a record names outside its files.</summary>
+internal static class OutsideChanges
 {
-    private OutsideChanges()
-    {
-    }
-
-    /// <summary>The one instance.</summary>
-    public static OutsideChanges NotUndoneYet { get; } = new();
-
-    /// <summary>Whether <paramref name="record"/> names any change outside its files: a record that does is not deleted while it does.</summary>
+    /// <summary>
+    /// Whether <paramref name="record"/> names any change outside its files, its own or one it still releases: a record that
+    /// does is not deleted while it does.
+    /// </summary>
     public static bool Carries(InstallRecord record) =>
-        record.ConfigEdits.Count > 0 || record.Registrations.Count > 0 || record.GraphicsPreferences.Count > 0;
-
-    public Task<IReadOnlyList<ConfigEdit>> UndoConfigEditsAsync(IReadOnlyList<ConfigEdit> edits, InstallPaths paths, CancellationToken cancellationToken) =>
-        Task.FromResult(edits);
-
-    public Task<IReadOnlyList<GraphicsPreferenceEdit>> UndoGraphicsPreferencesAsync(IReadOnlyList<GraphicsPreferenceEdit> preferences, CancellationToken cancellationToken) =>
-        Task.FromResult(preferences);
-
-    public Task<IReadOnlyList<LayerRegistration>> UndoRegistrationsAsync(IReadOnlyList<LayerRegistration> registrations, CancellationToken cancellationToken) =>
-        Task.FromResult(registrations);
+        record.ConfigEdits.Count > 0 || record.Registrations.Count > 0 || record.GraphicsPreferences.Count > 0 || record.Releasing is not null;
 }
 
 /// <summary>A record's changes outside its files undone through an <see cref="IOutsideChanges"/>, the rollback's and the uninstall's alike.</summary>
@@ -54,11 +38,24 @@ internal static class OutsideChangesUndo
     public static async Task<InstallRecord> ConfigEditsUndoneAsync(this IOutsideChanges outside, InstallRecord record, InstallPaths paths) =>
         record with { ConfigEdits = await outside.UndoConfigEditsAsync(record.ConfigEdits, paths, CancellationToken.None) };
 
-    /// <summary><paramref name="record"/> with only the graphics preferences and registrations <paramref name="outside"/> could not undo.</summary>
+    /// <summary>
+    /// <paramref name="record"/> with only the graphics preferences and registrations <paramref name="outside"/> could not undo:
+    /// what it still releases of the install it replaced first, then its own.
+    /// </summary>
     public static async Task<InstallRecord> SystemChangesUndoneAsync(this IOutsideChanges outside, InstallRecord record) =>
         record with
         {
+            Releasing = record.Releasing is { } releasing ? await outside.UndoAsync(releasing) : null,
             GraphicsPreferences = await outside.UndoGraphicsPreferencesAsync(record.GraphicsPreferences, CancellationToken.None),
             Registrations = await outside.UndoRegistrationsAsync(record.Registrations, CancellationToken.None),
         };
+
+    /// <summary>Undoes <paramref name="release"/>, its graphics preferences first, then its registrations.</summary>
+    /// <returns>What could not be undone; null when nothing.</returns>
+    public static async Task<SharedRelease?> UndoAsync(this IOutsideChanges outside, SharedRelease release)
+    {
+        IReadOnlyList<GraphicsPreferenceEdit> preferences = await outside.UndoGraphicsPreferencesAsync(release.GraphicsPreferences, CancellationToken.None);
+        IReadOnlyList<LayerRegistration> registrations = await outside.UndoRegistrationsAsync(release.Registrations, CancellationToken.None);
+        return registrations.Count + preferences.Count > 0 ? new(registrations, preferences) : null;
+    }
 }

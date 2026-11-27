@@ -40,6 +40,16 @@ internal sealed class FileSteps(InstallPaths paths, PriorInstall prior, BackupDe
         return [.. await backups.ClearBackupNameAsync(full, before, aside.Backup, cancellationToken), new MoveAsideFile(relative, original)];
     }
 
+    /// <summary>
+    /// The folders a pattern's files need, and the pattern. The previous install's files it stands for join
+    /// <paramref name="named"/>: they are the download's to replace, never set aside.
+    /// </summary>
+    public IReadOnlyList<InstallAction> Pattern(string full, HashSet<string> named)
+    {
+        named.UnionWith(prior.Entries.Select(entry => entry.Key).Where(previous => PlacePattern.Matches(full, previous)));
+        return [.. FoldersOf(Path.GetDirectoryName(full)!), new WritePattern(paths.Relative(full))];
+    }
+
     /// <summary>The previous install's entry at <paramref name="full"/>, kept as it is.</summary>
     public IReadOnlyList<InstallAction> Keep(string full)
     {

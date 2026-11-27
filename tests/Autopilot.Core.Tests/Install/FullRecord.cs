@@ -27,11 +27,9 @@ internal static class FullRecord
     });
 
     // What the install did beyond its entries, and what it said.
-    private static InstallRecord WithEffects(InstallRecord record) => record with
+    private static InstallRecord WithEffects(InstallRecord record) => FullShared.Onto(record) with
     {
         ConfigEdits = [new("rtx.conf", null, GameFolders.RtxNeuralKey, $"{GameFolders.RtxNeuralKey} = False", false, false, "True", false)],
-        Registrations = [new(RegisteredLayer.VulkanLayer64, false, @"C:\Users\p\AppData\Local\invidia-claritatis\reshade-vulkan\ReShade64.json"), new(RegisteredLayer.OpenXr, true, @"C:\Program Files\ReShade\ReShade64_XR.json")],
-        GraphicsPreferences = [new(@"C:\Games\Game\Binaries\Win64\Game.exe", "SwapEffectUpgradeEnable=1;", "SwapEffectUpgradeEnable=1;GpuPreference=2;"), new(@"C:\Games\Game\host64\dlss5-feed-host64.exe", null, "GpuPreference=2;")],
         CreatedFolders = ["Binaries/Win64/reshade-shaders", "Binaries/Win64/reshade-shaders/Shaders"],
         Notes = ["ReShade loads into this game only."],
         Warnings = ["The layer loads into every Vulkan application."],
@@ -57,6 +55,7 @@ internal static class FullRecord
         Assert.AreEqual(expected.Choices, actual.Choices);
         CollectionAssert.AreEquivalent(expected.Components.ToList(), actual.Components.ToList());
         SameLists(expected, actual);
+        FullShared.AssertSame(expected, actual);
         Assert.AreEqual(expected.Previous is null, actual.Previous is null, "a previous install on one side only");
         if (expected.Previous is { } previous)
         {
@@ -69,8 +68,6 @@ internal static class FullRecord
         CollectionAssert.AreEqual(expected.Game.Executables.ToList(), actual.Game.Executables.ToList());
         CollectionAssert.AreEqual(expected.Entries.ToList(), actual.Entries.ToList());
         CollectionAssert.AreEqual(expected.ConfigEdits.ToList(), actual.ConfigEdits.ToList());
-        CollectionAssert.AreEqual(expected.Registrations.ToList(), actual.Registrations.ToList());
-        CollectionAssert.AreEqual(expected.GraphicsPreferences.ToList(), actual.GraphicsPreferences.ToList());
         CollectionAssert.AreEqual(expected.CreatedFolders.ToList(), actual.CreatedFolders.ToList());
         CollectionAssert.AreEqual(expected.Notes.ToList(), actual.Notes.ToList());
         CollectionAssert.AreEqual(expected.Warnings.ToList(), actual.Warnings.ToList());
@@ -79,4 +76,32 @@ internal static class FullRecord
 
     private static OriginalFile Original(FileAttributes attributes, BackupKind kind) =>
         new(_games, attributes, new DateTime(2025, 3, 4, 5, 6, 7, DateTimeKind.Utc), kind);
+}
+
+/// <summary>
+/// What a record says outside the game folder, holding something in every part: registrations, graphics preferences and
+/// what a committed install still releases; and a check that two records say the same there.
+/// </summary>
+internal static class FullShared
+{
+    public static InstallRecord Onto(InstallRecord record) => record with
+    {
+        Registrations = [new(RegisteredLayer.VulkanLayer64, false, @"C:\Users\p\AppData\Local\invidia-claritatis\reshade-vulkan\ReShade64.json"), new(RegisteredLayer.OpenXr, true, @"C:\Program Files\ReShade\ReShade64_XR.json")],
+        GraphicsPreferences = [new(@"C:\Games\Game\Binaries\Win64\Game.exe", "SwapEffectUpgradeEnable=1;", "SwapEffectUpgradeEnable=1;GpuPreference=2;"), new(@"C:\Games\Game\host64\dlss5-feed-host64.exe", null, "GpuPreference=2;")],
+        Releasing = new(
+            [new(RegisteredLayer.VulkanLayer32, false, @"C:\Users\p\AppData\Local\invidia-claritatis\reshade-vulkan\ReShade32.json")],
+            [new(@"C:\Games\Game\gitc-uplift-helper64.exe", "GpuPreference=0;", "GpuPreference=0;GpuPreference=2;")]),
+    };
+
+    public static void AssertSame(InstallRecord expected, InstallRecord actual)
+    {
+        CollectionAssert.AreEqual(expected.Registrations.ToList(), actual.Registrations.ToList());
+        CollectionAssert.AreEqual(expected.GraphicsPreferences.ToList(), actual.GraphicsPreferences.ToList());
+        Assert.AreEqual(expected.Releasing is null, actual.Releasing is null, "something to release on one side only");
+        if (expected.Releasing is { } releasing)
+        {
+            CollectionAssert.AreEqual(releasing.Registrations.ToList(), actual.Releasing!.Registrations.ToList());
+            CollectionAssert.AreEqual(releasing.GraphicsPreferences.ToList(), actual.Releasing.GraphicsPreferences.ToList());
+        }
+    }
 }

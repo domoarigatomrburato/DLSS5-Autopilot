@@ -938,6 +938,9 @@ Almost always this means the game (or its launcher) is running and holding the f
   <data name="RefusalPlan" xml:space="preserve">
     <value>This install would write outside the game folder, or twice to one file, so it was stopped before anything was written. Please report it with the log.</value>
   </data>
+  <data name="RefusalSharedPlaces" xml:space="preserve">
+    <value>This install would register a ReShade layer or set a Windows graphics setting, and the tool cannot reach the registry or the layer folder it needs, so it was stopped before anything was written. Please report it with the log.</value>
+  </data>
   <data name="RefusalUnreadable" xml:space="preserve">
     <value>A file the install must read first could not be read ({0}). Close the game and its launcher, then install again.</value>
   </data>
@@ -1086,5 +1089,50 @@ Almost always this means the game (or its launcher) is running and holding the f
   </data>
   <data name="UninstallError" xml:space="preserve">
     <value>Windows gave this error: {0}</value>
+  </data>
+  <data name="InstallLayerHeld" xml:space="preserve">
+    <value>{0} is in use by a running Vulkan or OpenXR program - close it and install again ({1})</value>
+  </data>
+  <data name="InstallRegistryRefused" xml:space="preserve">
+    <value>Windows refused to change the registry value {0}: {1}. Install again; if it keeps failing, something on this PC is blocking changes to your registry.</value>
+  </data>
+  <data name="InstallRegistryUnreadable" xml:space="preserve">
+    <value>Windows refused to read the registry key {0}: {1}. Install again; if it keeps failing, something on this PC is blocking access to your registry.</value>
+  </data>
+  <data name="InstallLayerNoteVulkan" xml:space="preserve">
+    <value>Registered ReShade as a Vulkan layer for this user: it loads into EVERY Vulkan application, not just this game, until 'uninstall' removes it. Programs started as administrator do not get it.</value>
+  </data>
+  <data name="InstallLayerNoteOpenXr" xml:space="preserve">
+    <value>Registered ReShade as an OpenXR layer for this user, so the pass reaches the headset's image; it loads into EVERY OpenXR application until 'uninstall' removes it.</value>
+  </data>
+  <data name="InstallLayerWarningOpenXr" xml:space="preserve">
+    <value>VR through OpenXR has not been tried with a headset by the author; OpenXR games only. If the headset shows nothing new, or the game refuses to start, untick 'VR headset' and install again - and say what happened in a report.</value>
+  </data>
+  <data name="InstallLayerReused" xml:space="preserve">
+    <value>Reused the existing ReShade {0} layer ({1}).</value>
+  </data>
+  <data name="InstallOpenXr32Bit" xml:space="preserve">
+    <value>VR: the OpenXR layer is 64-bit only - nothing is registered for this 32-bit game.</value>
+  </data>
+  <data name="InstallPreferenceKept" xml:space="preserve">
+    <value>{0} already had a Windows graphics setting (Settings &gt; System &gt; Display &gt; Graphics); it was left as it is.</value>
+  </data>
+  <data name="InstallPreferenceKeptNotHigh" xml:space="preserve">
+    <value>{0} already had a Windows graphics setting (Settings &gt; System &gt; Display &gt; Graphics); it was left as it is. It is not 'High performance', so the game may draw on the {1} GPU, where DLSS 5 does not run: set it to 'High performance' there.</value>
+  </data>
+  <data name="InstallPreferenceRefused" xml:space="preserve">
+    <value>Could not set the Windows graphics setting to High performance for {0} ({1}); set it by hand in Settings &gt; System &gt; Display &gt; Graphics if the game runs on the other GPU.</value>
+  </data>
+  <data name="OutsideVulkanLayer" xml:space="preserve">
+    <value>Vulkan layer: {0} registered for this user (files in {1}) - it loads into EVERY Vulkan application until 'uninstall' removes it. Per user only: programs started as administrator do not get it.</value>
+  </data>
+  <data name="OutsideOpenXrLayer" xml:space="preserve">
+    <value>OpenXR layer (VR): XR_APILAYER_reshade registered for this user (files in {0}) - it loads into EVERY OpenXR application until the last VR install is removed.</value>
+  </data>
+  <data name="OutsideLayerReused" xml:space="preserve">
+    <value>reuses the existing ReShade {0} layer ({1}); it is never removed by this tool</value>
+  </data>
+  <data name="OutsideGraphicsPreference" xml:space="preserve">
+    <value>Windows graphics setting: {0} set to 'High performance' (the NVIDIA card, not the {1} one) for this user. A choice you already made there is kept. 'uninstall' takes it back out.</value>
   </data>
 </root>

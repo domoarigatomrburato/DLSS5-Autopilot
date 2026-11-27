@@ -11,11 +11,11 @@ namespace Autopilot.Core.Install;
 /// <param name="newDisk">Makes a disk for the changes.</param>
 /// <param name="installFolder">Where the record is.</param>
 /// <param name="failures">Keeps the note when the folder cannot be put right.</param>
-/// <param name="outside">Undoes the changes outside the files, as a rollback does.</param>
+/// <param name="outside">Undoes the changes outside the files, as a rollback and a commit's release do.</param>
 /// <param name="removal">Finishes a removal part way.</param>
 /// <param name="gameRuns">Whether the game runs now, which leaves a removal part way for later; the caller checks it.</param>
 /// <param name="logger">Where the recovery is logged.</param>
-internal sealed partial class TransactionRecovery(Func<InstallDisk> newDisk, string installFolder, Failures failures, IOutsideChanges outside, RecordRemoval removal, Func<bool> gameRuns, ILogger logger)
+internal sealed partial class TransactionRecovery(Func<InstallDisk> newDisk, string installFolder, Failures failures, IOutsideWork outside, RecordRemoval removal, Func<bool> gameRuns, ILogger logger)
 {
     /// <summary>Finishes what <paramref name="recorded"/> left open.</summary>
     /// <param name="recorded">The folder's record as read.</param>
@@ -39,6 +39,13 @@ internal sealed partial class TransactionRecovery(Func<InstallDisk> newDisk, str
         {
             LogRecovering(logger, installFolder);
             return new(RecoveryKind.Commit, await FinishCommitAsync(done, new InstallPaths(doneFolder)));
+        }
+
+        // What an earlier commit could not release yet is tried again: no transaction was left open.
+        if (recorded is { State: InstallState.Installed, Record: { Releasing: not null } releasing, GameFolder: { } releasingFolder })
+        {
+            LogReleasing(logger, installFolder);
+            return new(RecoveryKind.Release, await FinishCommitAsync(releasing, new InstallPaths(releasingFolder)));
         }
 
         return Recovery.None;
@@ -71,17 +78,23 @@ internal sealed partial class TransactionRecovery(Func<InstallDisk> newDisk, str
         }
     }
 
-    private async Task<InstallFailed?> RollBackAsync(InstallRecord open, string gameFolder) =>
-        await InstallRollback.TryRunAsync(newDisk(), outside, logger, open, gameFolder, installFolder) is { } stop
+    private async Task<InstallFailed?> RollBackAsync(InstallRecord open, string gameFolder)
+    {
+        InstallDisk disk = newDisk();
+        return await InstallRollback.TryRunAsync(disk, outside.For(disk, installFolder), logger, open, gameFolder, installFolder) is { } stop
             ? failures.Failed(FailureOperation.Rollback, stop, FailureOutcome.RollbackIncomplete)
             : null;
+    }
 
-    // A commit an earlier run left between its two saves: its held files go before anything else.
+    // A commit an earlier run left between its saves: what it released and its held files go before anything else. What
+    // could not be released stays on the record, and does not stop the next install: a graphics preference never does.
     private async Task<InstallFailed?> FinishCommitAsync(InstallRecord done, InstallPaths paths)
     {
         try
         {
-            FileHeldException? kept = await HeldFiles.DeleteAsync(done, paths, newDisk(), installFolder, logger);
+            InstallDisk disk = newDisk();
+            done = await ReleaseAsync(done, disk);
+            FileHeldException? kept = done.Entries.Any(HeldFiles.IsHeld) ? await HeldFiles.DeleteAsync(done, paths, disk, installFolder, logger) : null;
             return kept is null ? null : failures.Failed(FailureOperation.Install, kept, FailureOutcome.NothingWritten);
         }
         catch (Exception stopped) when (stopped is not OperationCanceledException)
@@ -96,6 +109,11 @@ internal sealed partial class TransactionRecovery(Func<InstallDisk> newDisk, str
     [LoggerMessage(Level = LogLevel.Error, Message = "Finishing the removal in {Folder} stopped: its record stays for the next uninstall")]
     private static partial void LogRemovalStopped(ILogger logger, Exception failure, string folder);
 
+    private Task<InstallRecord> ReleaseAsync(InstallRecord done, InstallDisk disk) => Releases.ReleaseAsync(done, disk, installFolder, outside.For(disk, installFolder));
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The install in {Folder} still has shared layers or graphics settings to release: trying again first")]
+    private static partial void LogReleasing(ILogger logger, string folder);
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "The install record in {Folder} was left open by an earlier run: finishing it first")]
     private static partial void LogRecovering(ILogger logger, string folder);
 }
@@ -108,8 +126,11 @@ internal sealed record Recovery(RecoveryKind Kind, InstallFailed? Failed)
     /// <summary>Nothing was open.</summary>
     public static Recovery None { get; } = new(RecoveryKind.None, null);
 
-    /// <summary>Whether the folder held a transaction, which was finished first.</summary>
+    /// <summary>Whether anything ran first, a release tried again included: the folder's record is read again after it.</summary>
     public bool Ran => Kind != RecoveryKind.None;
+
+    /// <summary>Whether the folder held a transaction an earlier run left open, which was finished first: what the outcome reports.</summary>
+    public bool Recovered => Kind is not (RecoveryKind.None or RecoveryKind.Release);
 
     /// <summary>For a removal part way, what finishing it came to; null when it did not run (the game runs) or stopped.</summary>
     public UninstallFinished? Removal { get; init; }
@@ -137,6 +158,9 @@ internal enum RecoveryKind
     /// <summary>A removal part way, an uninstall or the rollback of a fresh install: finished by the uninstall's path.</summary>
     Removal,
 
-    /// <summary>A commit stopped between its two saves: its held files deleted.</summary>
+    /// <summary>A commit stopped between its two saves: its held files deleted, and what it releases released.</summary>
     Commit,
+
+    /// <summary>A committed install with only what it could not release yet left: released again, and no recovery.</summary>
+    Release,
 }

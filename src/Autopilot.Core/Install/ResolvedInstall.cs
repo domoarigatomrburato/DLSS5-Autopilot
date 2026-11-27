@@ -66,4 +66,14 @@ internal sealed record ResolvedInstall(InstallPaths Paths, string InstallFolder,
 /// <summary>One group made concrete.</summary>
 /// <param name="Name">The step's name, as progress shows it.</param>
 /// <param name="Actions">The actions, in order; none when everything the group wants is already so.</param>
-internal sealed record ResolvedGroup(string Name, IReadOnlyList<InstallAction> Actions);
+internal sealed record ResolvedGroup(string Name, IReadOnlyList<InstallAction> Actions)
+{
+    /// <summary><paramref name="record"/> with what this group's actions journal added: entries, created folders, registrations and graphics preferences.</summary>
+    public InstallRecord JournaledOnto(InstallRecord record) => record with
+    {
+        Entries = [.. record.Entries, .. Actions.SelectMany(action => action.Journal)],
+        CreatedFolders = [.. record.CreatedFolders, .. Actions.OfType<MakeFolder>().Select(folder => folder.Path)],
+        Registrations = [.. record.Registrations, .. Actions.SelectMany(action => action.Registrations)],
+        GraphicsPreferences = [.. record.GraphicsPreferences, .. Actions.SelectMany(action => action.Preferences)],
+    };
+}

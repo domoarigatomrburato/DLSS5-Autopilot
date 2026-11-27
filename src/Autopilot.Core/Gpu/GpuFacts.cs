@@ -18,7 +18,14 @@ public sealed record GpuFacts
     public string? Driver { get; private init; }
 
     /// <summary>Windows has an NVIDIA card and an Intel or AMD one, so the graphics preference picks between them; two NVIDIA cards are not.</summary>
-    public bool TwoGpus { get; private init; }
+    public bool TwoGpus => OtherGpu is not null;
+
+    /// <summary>
+    /// The other GPU beside an NVIDIA card (<see cref="GpuVendor.Intel"/> or <see cref="GpuVendor.Amd"/>), on which
+    /// Windows may run a game where NGX does not exist; null on a PC without both. From the hardware adapters, or
+    /// from the display class's names when Windows listed no adapter.
+    /// </summary>
+    public GpuVendor? OtherGpu { get; private init; }
 
     /// <summary>Why no route can run DLSS 5 here; null when nothing is refused, which includes every case the reading cannot tell.</summary>
     public GpuRefusal? Refusal { get; private init; }
@@ -28,7 +35,8 @@ public sealed record GpuFacts
     {
         GraphicsAdapter[] hardware = [.. reading.Adapters.Where(adapter => !adapter.Software)];
         GpuCard[] nvidia = [.. hardware.Where(adapter => adapter.VendorId == NvidiaVendor).Select(adapter => CardNames.Read(adapter.Description))];
-        GpuVendor vendor = VendorOf(hardware, nvidia.Length > 0);
+        GpuVendor[] vendors = [.. hardware.Select(adapter => VendorOfId(adapter.VendorId))];
+        GpuVendor vendor = VendorOf(vendors);
         GpuCard? card = nvidia
             .OrderByDescending(candidate => candidate.Sm ?? -1)
             .ThenByDescending(candidate => candidate.HasTensorCores == true)
@@ -39,24 +47,46 @@ public sealed record GpuFacts
             Vendor = vendor,
             Driver = NvidiaDriver.Version(reading),
             Refusal = RefusalOf(vendor, card, nvidia),
-            TwoGpus = nvidia.Length > 0 && hardware.Any(adapter => adapter.VendorId is IntelVendor or AmdVendor or AmdAltVendor),
+            OtherGpu = reading.Adapters.Count > 0
+                ? OtherOf(vendors)
+                : OtherOf([.. reading.DisplayClass.Select(entry => VendorOfName(entry.Description))]),
         };
     }
 
-    private static GpuVendor VendorOf(GraphicsAdapter[] hardware, bool anyNvidia)
+    // The other GPU of a pair: Intel or AMD, when an NVIDIA one is there too.
+    private static GpuVendor? OtherOf(GpuVendor[] vendors) =>
+        vendors.Contains(GpuVendor.Nvidia) ? vendors.Cast<GpuVendor?>().FirstOrDefault(vendor => vendor is GpuVendor.Intel or GpuVendor.Amd) : null;
+
+    private static GpuVendor VendorOfId(int id) => id switch
     {
-        if (anyNvidia)
+        NvidiaVendor => GpuVendor.Nvidia,
+        AmdVendor or AmdAltVendor => GpuVendor.Amd,
+        IntelVendor => GpuVendor.Intel,
+        _ => GpuVendor.None,
+    };
+
+    // The registry's names, when DXGI could not be asked: the card table's NVIDIA names, then Intel's and AMD's.
+    private static GpuVendor VendorOfName(string name)
+    {
+        string upper = name.ToUpperInvariant();
+        if (CardNames.IsNvidiaName(upper))
         {
             return GpuVendor.Nvidia;
         }
 
-        if (hardware.Any(adapter => adapter.VendorId is AmdVendor or AmdAltVendor))
+        if (upper.Contains("INTEL", StringComparison.Ordinal))
         {
-            return GpuVendor.Amd;
+            return GpuVendor.Intel;
         }
 
-        return hardware.Any(adapter => adapter.VendorId == IntelVendor) ? GpuVendor.Intel : GpuVendor.None;
+        return upper.Contains("RADEON", StringComparison.Ordinal) || upper.Contains("AMD ", StringComparison.Ordinal) || upper.Contains("ADVANCED MICRO", StringComparison.Ordinal)
+            ? GpuVendor.Amd
+            : GpuVendor.None;
     }
+
+    // Whose hardware decides: NVIDIA's whenever one is there, then AMD's, then Intel's.
+    private static GpuVendor VendorOf(GpuVendor[] vendors) =>
+        new[] { GpuVendor.Nvidia, GpuVendor.Amd, GpuVendor.Intel }.FirstOrDefault(vendors.Contains, GpuVendor.None);
 
     private static GpuRefusal? RefusalOf(GpuVendor vendor, GpuCard? card, GpuCard[] nvidia)
     {
