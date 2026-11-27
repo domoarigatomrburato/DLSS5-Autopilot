@@ -61,6 +61,18 @@ the `dlssd` family (a `dlssd-` prefix before `dlss-` in `MirrorFamilies`),
 behind NVIDIA's own entry and checked by NVIDIA's signer like `dlss` and
 `dlssg`. `components.md` already says so.
 
+**Also in the first sub-task, decided by Ale:** the `nvngx_dlssnr.dll` trust
+rule and preference of `components.md` ("The mirror is accepted") and `gpu.md`
+("The `nvngx_dlssnr.dll` build for the card"). Today `CatalogEntry`'s dlssnr
+row asks NVIDIA's signer of every build, which refuses every build for RTX
+20, 30 and 40 (all community builds, unsigned or with a broken signature).
+The new rule: a label with a pinned DLL SHA-256 is checked against it, any
+other needs NVIDIA's signer. The orchestrator measures the digests first
+(download each community build into the lab, hash the DLL; the arch and
+signature reader is `~/coding/claude-lab/dlssnr-arch/arch.py`), the pins
+become data beside `RenodxPins`, and `DlssnrBuilds._preferred` takes the new
+table.
+
 ## How we work (binding, besides AGENTS.md and the plan's Decisions)
 
 - Replies to Ale in Italian, short; code, docs, commits in English.
@@ -102,8 +114,6 @@ behind NVIDIA's own entry and checked by NVIDIA's signer like `dlss` and
 
 ## Questions for Ale from M3
 
-- Newer `nvngx_dlssnr` builds exist than the label preference names
-  (`gpu.md` Q1): prefer by label or by version?
 - LumeniteFX `mainline` no longer has `lumenite_QuantMotion.fx`, so motion
   provider 4 answers "layout changed".
 - The Remix runtime's `/latest` is `dlssnr-v1`.

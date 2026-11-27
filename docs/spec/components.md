@@ -331,7 +331,9 @@ What the reference verifies, and what it does not:
      one small file must not turn the check off.
   2. Where a publisher signs the file (NVIDIA signs its runtimes), the
      Authenticode signer must be that publisher. This runs behind a platform
-     interface.
+     interface. A community `nvngx_dlssnr.dll` build, which no one signs, is
+     checked against the digest pinned for its label instead (see "The
+     mirror is accepted").
   3. An `.addon64` or `.addon32` is checked to be a 64-bit or 32-bit PE
      respectively before it is placed (the bridge and upstream add-ons were
      only checked for `MZ`).
@@ -344,9 +346,25 @@ What the reference verifies, and what it does not:
   asset under the same tag is served the old one forever.
 - **The mirror is accepted** as the single source of the neural-rendering
   runtime and the RenoDX add-ons, because no publisher offers them elsewhere.
-  A `nvngx_dlssnr.dll` from it is placed only when it carries NVIDIA's
-  Authenticode signature (net's signer kind): the mirror republishes
-  NVIDIA's file, and the signature proves it was not changed on the way.
+  A `nvngx_dlssnr.dll` from it is placed only when it is one of two kinds:
+  - **NVIDIA's own build** (RTX 50 only: `310.8.0`, `310.9.16-nvidia`) carries
+    NVIDIA's Authenticode signature (net's signer kind): the mirror
+    republishes NVIDIA's file, and the signature proves it was not changed on
+    the way.
+  - **A community build** (the ones that add code for RTX 20, 30 and 40:
+    `310.8.0-RTX40`, `310.8.SF`, `310.8.SF-v2`, `310.8.Lecram`, `310.9.16`)
+    is a modified file, so its signature is broken or missing. Its DLL's
+    SHA-256 must equal the one pinned for its label in the release's data
+    (a digest pin, like the version pins).
+  A build with a pinned digest is checked against the pin; any other must
+  carry NVIDIA's signature. So a new NVIDIA build works the day it is
+  published, and a new community build only after a release pins it; until
+  then picking it by hand stops the install with "<label> is a community
+  build this release has no digest for; pick another build or update the
+  tool."
+  - Changed from the reference: it placed any build, and the spec before
+    this measurement asked for NVIDIA's signature on every build, which no
+    build for RTX 20, 30 or 40 carries.
 - **Pins are data shipped with the release.** A pin changes with a release,
   so it is reviewed like code; no pins document is fetched at run time,
   which would add a trust root.

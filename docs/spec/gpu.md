@@ -151,8 +151,8 @@ downloaded, and its contents are checked against the card before it is used.
 
 | Card | Preferred build (label) | What the tool says (`gpu.py:483`) |
 | --- | --- | --- |
-| sm 120 or newer | `310.8.0` (NVIDIA's own, FP8) | "full speed ... a game still needs the add-on to ask for neural rendering - swapping DLSS DLLs alone does nothing" |
-| sm 89 | `310.8.0-RTX40` (community, sm_89 kernels) | "works; expect a moderate frame-time cost" |
+| sm 120 or newer | `310.9.16-nvidia`, then `310.8.0` (NVIDIA's own, FP8) | "full speed ... a game still needs the add-on to ask for neural rendering - swapping DLSS DLLs alone does nothing" |
+| sm 89 | `310.8.0-RTX40`, then `310.9.16` (community, sm_89 kernels) | "works; expect a moderate frame-time cost" |
 | sm 75 or 86 | `310.8.SF-v2`, then `310.8.SF` (community FP16) | "heavy: roughly half your fps at full model resolution. Lower the work area / model resolution" |
 | any other sm | none preferred: the mirror's order | "This card is below RTX 20; DLSS 5 will not run on it." |
 | unknown card | none preferred | no sentence |
@@ -160,7 +160,23 @@ downloaded, and its contents are checked against the card before it is used.
 - **The order** (`gpu.py:466`): the preferred labels first, in the order
   above, then every other build in the mirror's order (newest first). The
   preference is by label because a patched build can also list sm_120, and an
-  RTX 50 must get NVIDIA's original.
+  RTX 50 must get NVIDIA's original. The labels are data shipped with the
+  release and move only when a build has been tried on that card family.
+  Measured on the mirror (2026-11-27), by fatbin records and signature:
+
+  | Label | Code for | Signed by NVIDIA |
+  | --- | --- | --- |
+  | `310.8.0`, `310.9.16-nvidia` | sm 120 | yes |
+  | `310.8.0-RTX40` | sm 89, 120 | no (modified) |
+  | `310.8.SF-v2`, `310.8.Lecram`, `310.9.16` | sm 75, 86, 89, 120 | no (modified or unsigned) |
+  | `310.8.SF` | sm 75, 86, 89, 120 (the reference's notes, not measured) | not measured |
+
+  Only NVIDIA's own builds carry its signature, and they carry code for RTX 50
+  alone: every build for RTX 20, 30 and 40 is a community build, placed only
+  against the digest pinned for its label ([components](components.md),
+  "The mirror is accepted"). `310.9.16` is the RTX 40 fallback after
+  `310.8.0-RTX40`; for RTX 20 and 30 it and `310.8.Lecram` come only by hand
+  or after the preferred labels, until someone has run them on those cards.
 - **A pinned build** (the user chose a label in "nvngx_dlssnr") is the only
   candidate. If it does not match the card the install stops: "Build <label>
   will not run on <card>. <reason>. Leave the version on Auto and the tool
@@ -277,10 +293,8 @@ sets this by hand; the tool sets it for them, only when it makes sense.
   if it mismatches (`installer.py:4287`). One policy (the loop).
 - **The preferred build is chosen by label text** (`gpu.py:466`): a new
   release labelled differently is not preferred, so an RTX 50 may get a
-  patched build. Keep the label order as data, and also prefer, among
-  compatible builds, the one that carries code for the card natively over one
-  that merely lists it only through other architectures (to verify, see
-  below).
+  patched build. Keep the label order as data, updated with each release
+  (Q1, answered: the label order stays).
 - **Ghost adapters**: the registry display class (see above).
 - **`no_dlss` misses pre-Turing GTX cards with a three-digit number**
   (GTX 980, GTX 750 Ti): their name does not match any range, so the card is
@@ -335,10 +349,10 @@ sets this by hand; the tool sets it for them, only when it makes sense.
   a current 616.92.
 - **Fatbin files:** synthetic buffers with one fatbin carrying sm 75/86/89/120
   in each offset variant (20, 24, 28), a corrupt size, a buffer with no
-  magic, and a magic inside a larger file. The four real build labels
-  (`310.8.0`, `310.8.0-RTX40`, `310.8.SF`, `310.8.SF-v2`) with the sm sets the
-  module comment lists: RTX 50 only; RTX 40 and 50; RTX 20, 30, 40 and 50 for
-  both SF builds (`gpu.py:7`). Do not commit the 165 MB DLLs; commit the
+  magic, and a magic inside a larger file. The real build labels with the sm
+  sets measured above (`310.8.0` and `310.9.16-nvidia`: RTX 50 only;
+  `310.8.0-RTX40`: RTX 40 and 50; `310.8.SF`, `310.8.SF-v2`, `310.8.Lecram`,
+  `310.9.16`: RTX 20, 30, 40 and 50). Do not commit the 165 MB DLLs; commit the
   derived sm sets and a trimmed synthetic fatbin.
 - **Graphics preference:** registry values as dictionaries: none; `GpuPreference=2;`;
   `GpuPreference=1;`; `SwapEffectUpgradeEnable=1;GpuPreference=2;`; a value
@@ -354,10 +368,10 @@ sets this by hand; the tool sets it for them, only when it makes sense.
 
 ## Open questions
 
-- **Q1.** Is the label-ordered preference to stay (an RTX 50 always gets
-  `310.8.0` even when a newer NVIDIA-native build is published), or should it
-  become "the newest build whose fatbin carries native SASS for the card,
-  preferring the publisher's own"? The second needs the verification above.
+- **Q1, answered.** The label-ordered preference stays, as data updated with
+  each release: the newest build is not always the best one, and every build
+  for RTX 20, 30 and 40 is a community build that must be pinned by digest
+  anyway (see "The `nvngx_dlssnr.dll` build for the card").
 - **Q2.** Two NVIDIA GPUs in one PC (a desktop RTX 4090 beside an RTX 3060):
   the reference picks the newest architecture and the driver of System32's
   `nvapi64.dll`. Should the tool pick the adapter the game's preference
