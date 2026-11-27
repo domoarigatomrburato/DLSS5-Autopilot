@@ -56,8 +56,9 @@ The session so far cost about 87M input-equivalent tokens, about 31% of the
 weekly quota. M2 alone was about a fifth of a week. To spend less:
 
 - one fresh session per milestone (this handoff instead of a long context);
-- Sonnet/high implementers by default, Opus/medium only for crypto,
-  security and multi-file refactors;
+- implementers on Opus, by the usual tiers (medium for moderate,
+  well-specified sub-tasks; high for complex ones), never Sonnet: its output
+  ends up rewritten, which costs more than it saved;
 - smaller briefs, so each implementer runs fewer turns (the costliest ran
   11–48M each).
 
