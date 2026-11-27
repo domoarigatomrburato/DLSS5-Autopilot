@@ -140,13 +140,15 @@ public static class RouteComponents
         }
     }
 
-    // DXVK on native, bridge and the feeder only: forced for Direct3D 9 and 8, by the box for 11.
+    // DXVK on native, bridge and the feeder only: forced for Direct3D 9 and 8, by the box for 11. A
+    // game known to need it keeps it by default whatever API was set by hand: the detected one decides.
     private static bool UsesDxvk(RouteId route, RouteFacts facts, bool? box) =>
         route is RouteId.Native or RouteId.Bridge or RouteId.Feeder
         && facts.Api switch
         {
             GraphicsApi.DX9 or GraphicsApi.DX8 => true,
-            GraphicsApi.DX11 => box ?? NeedsDxvk(facts.ExecutableName),
+            _ when NeedsDxvk(facts.ExecutableName) => box ?? true,
+            GraphicsApi.DX11 => box ?? false,
             _ => false,
         };
 }

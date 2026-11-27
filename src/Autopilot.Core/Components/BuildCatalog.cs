@@ -1,5 +1,3 @@
-using Autopilot.Core.Resources;
-
 namespace Autopilot.Core.Components;
 
 /// <summary>
@@ -26,13 +24,13 @@ public sealed class BuildCatalog
     /// The entry whose label or tag is <paramref name="wanted"/>, else the newest. Taking the newest
     /// in place of a wanted one is not said here: the result carries it for the caller to say.
     /// </summary>
-    /// <exception cref="BuildListUnavailableException">The family has no builds.</exception>
+    /// <exception cref="ComponentException">The family has no builds (<see cref="ComponentFailure.BuildListUnavailable"/>).</exception>
     public PickedBuild Pick(BuildFamily family, string? wanted)
     {
         IReadOnlyList<BuildEntry> entries = Entries(family);
         if (entries.Count == 0)
         {
-            throw new BuildListUnavailableException(family);
+            throw ComponentException.BuildListUnavailable(family);
         }
 
         if (string.IsNullOrEmpty(wanted))
@@ -67,12 +65,4 @@ public sealed class BuildCatalog
 
         return -1;
     }
-}
-
-/// <summary>A family's build list came back empty: GitHub could not be reached and nothing was kept.</summary>
-public sealed class BuildListUnavailableException(BuildFamily family)
-    : Exception(Texts.Format("BuildListEmpty", MirrorFamilies.NameOf(family)))
-{
-    /// <summary>The family that has no builds.</summary>
-    public BuildFamily Family { get; } = family;
 }

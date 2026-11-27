@@ -45,8 +45,9 @@ public sealed class BuildPickTests(TestContext testContext)
         using MirrorBed bed = new(testContext);
         BuildCatalog catalog = await bed.ApiAnswers().Unreachable(MirrorBed.NvidiaLatest).Get();
 
-        BuildListUnavailableException failure = Assert.Throws<BuildListUnavailableException>(() => catalog.Pick(BuildFamily.Dlssd, null));
+        ComponentException failure = Assert.Throws<ComponentException>(() => catalog.Pick(BuildFamily.Dlssd, null));
 
+        Assert.AreEqual(ComponentFailure.BuildListUnavailable, failure.Reason);
         Assert.AreEqual(BuildFamily.Dlssd, failure.Family);
         Assert.AreEqual(
             "The nvngx_dlssd.dll build list could not be read: GitHub could not be reached and nothing is cached yet. Try again in a few minutes.",
@@ -58,8 +59,8 @@ public sealed class BuildPickTests(TestContext testContext)
     {
         BuildCatalog catalog = await MirrorBed.Captured(testContext);
 
-        Assert.AreEqual("4.60, 4.55", Labels(catalog.Candidates(catalog.Pick(BuildFamily.Renodx, "4.60"))));
-        Assert.AreEqual("310.9.16 (NVIDIA SDK), 310.9.16", Labels(catalog.Candidates(catalog.Pick(BuildFamily.Dlss, null))));
+        Assert.AreEqual("4.60, 4.55", MirrorBed.Labels(catalog.Candidates(catalog.Pick(BuildFamily.Renodx, "4.60"))));
+        Assert.AreEqual("310.9.16 (NVIDIA SDK), 310.9.16", MirrorBed.Labels(catalog.Candidates(catalog.Pick(BuildFamily.Dlss, null))));
     }
 
     [TestMethod]
@@ -70,6 +71,4 @@ public sealed class BuildPickTests(TestContext testContext)
         Assert.ContainsSingle(catalog.Candidates(catalog.Pick(BuildFamily.Renodx, "2.5")));
         Assert.ContainsSingle(catalog.Candidates(catalog.Pick(BuildFamily.Dlssd, null)));
     }
-
-    private static string Labels(IEnumerable<BuildEntry> entries) => string.Join(", ", entries.Select(entry => entry.Label));
 }

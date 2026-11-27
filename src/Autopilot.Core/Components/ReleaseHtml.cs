@@ -41,10 +41,11 @@ internal static class ReleaseHtml
     private static List<(Uri Url, IElement Anchor)> Links(string html, Uri page)
     {
         using IDocument document = new HtmlParser().ParseDocument(html);
+        HashSet<IElement> inNotes = [.. document.QuerySelectorAll(".markdown-body a[href], a.markdown-body[href]")];
         List<(Uri, IElement)> links = [];
         foreach (IElement anchor in document.QuerySelectorAll("a[href]"))
         {
-            if (anchor.Closest(".markdown-body") is null && Uri.TryCreate(page, anchor.GetAttribute("href"), out Uri? url))
+            if (!inNotes.Contains(anchor) && Uri.TryCreate(page, anchor.GetAttribute("href"), out Uri? url))
             {
                 links.Add((url, anchor));
             }

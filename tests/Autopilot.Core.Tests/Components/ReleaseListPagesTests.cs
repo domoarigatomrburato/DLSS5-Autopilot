@@ -21,7 +21,7 @@ public sealed class ReleaseListPagesTests(TestContext testContext)
         Assert.AreEqual(new ReleaseSource(ReleaseOrigin.Pages, TimeSpan.Zero), answer.Source);
         Assert.AreEqual(PagesNotice, answer.Source.Notice);
         Assert.AreEqual(0, bed.RequestsTo(ReleasesBed.ListPage(2)), "one page held enough tags");
-        Assert.AreEqual(5, bed.AssetPageRequests);
+        Assert.AreEqual(5, ReleaseFixtures.AssetPageRequests(bed.Server));
         Assert.AreEqual(1, bed.RequestsTo(ReleasesBed.Expanded("v3.0.1")));
     }
 
@@ -64,7 +64,7 @@ public sealed class ReleaseListPagesTests(TestContext testContext)
         CollectionAssert.AreEqual(ReleaseFixtures.PageTags.Concat(older[..2]).ToArray(), ReleaseFixtures.Tags(answer.Releases));
         Assert.AreEqual(0, bed.RequestsTo(ReleasesBed.ListPage(3)));
         Assert.AreEqual(0, bed.RequestsTo(ReleasesBed.Expanded("v2.5.2")), "no asset page past the twelfth release");
-        Assert.AreEqual(12, bed.AssetPageRequests);
+        Assert.AreEqual(12, ReleaseFixtures.AssetPageRequests(bed.Server));
     }
 
     [TestMethod]

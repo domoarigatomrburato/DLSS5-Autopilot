@@ -12,17 +12,17 @@ namespace Autopilot.Core.Routes;
 public static class GameRuntimesReader
 {
     // Any one of these means the game ships super-resolution DLSS.
-    private static readonly FrozenSet<string> _superResolution = Set([.. KnownFiles.Streamline, .. KnownFiles.RenamedDlss, KnownFiles.Dlss]);
+    private static readonly FrozenSet<string> _superResolution = KnownFiles.Set([.. KnownFiles.Streamline, .. KnownFiles.RenamedDlss, KnownFiles.Dlss]);
 
-    private static readonly FrozenSet<string> _dlssNames = Set([.. _superResolution, KnownFiles.FrameGeneration, KnownFiles.RayReconstruction]);
+    private static readonly FrozenSet<string> _dlssNames = KnownFiles.Set([.. _superResolution, KnownFiles.FrameGeneration, KnownFiles.RayReconstruction]);
 
-    private static readonly FrozenSet<string> _frameGeneration = Set(KnownFiles.FrameGeneration, KnownFiles.StreamlineFrameGeneration);
+    private static readonly FrozenSet<string> _frameGeneration = KnownFiles.Set(KnownFiles.FrameGeneration, KnownFiles.StreamlineFrameGeneration);
 
-    private static readonly FrozenSet<string> _fsr = Set(KnownFiles.FsrRuntimes);
+    private static readonly FrozenSet<string> _fsr = KnownFiles.Set(KnownFiles.FsrRuntimes);
 
-    private static readonly FrozenSet<string> _upscalerNames = Set([.. KnownFiles.FsrRuntimes, .. KnownFiles.XessRuntimes]);
+    private static readonly FrozenSet<string> _upscalerNames = KnownFiles.Set([.. KnownFiles.FsrRuntimes, .. KnownFiles.XessRuntimes]);
 
-    private static readonly FrozenSet<string> _names = Set([.. _dlssNames, .. _upscalerNames]);
+    private static readonly FrozenSet<string> _names = KnownFiles.Set([.. _dlssNames, .. _upscalerNames]);
 
     /// <summary>What the game whose executable is at <paramref name="executablePath"/> ships of its own.</summary>
     /// <param name="executablePath">The game's executable.</param>
@@ -43,12 +43,13 @@ public static class GameRuntimesReader
         OwnedFiles owned = new(install, record?.Files ?? []);
 
         List<RuntimeHit> besideHits = [.. beside.SelectMany(folder => Beside(folder, cancellationToken)).Where(hit => owned.IsGames(hit.Path))];
-        List<RuntimeHit> walkHits = [.. RuntimeWalk.Find(game, _names, beside, cancellationToken).Where(hit => owned.IsGames(hit.Path))];
+        SharedListings listings = new();
+        List<RuntimeHit> walkHits = [.. RuntimeWalk.Find(game, _names, beside, listings, cancellationToken).Where(hit => owned.IsGames(hit.Path))];
 
         string[] dlss = Evidence(game, besideHits.Concat(walkHits).Where(hit => _dlssNames.Contains(hit.Name)));
         bool own = dlss.Any(path => _superResolution.Contains(Path.GetFileName(path)));
         string[] upscaler = own ? [] : UpscalerEvidence(game, besideHits, walkHits);
-        string? remix = RemixRuntime.Find([exeFolder, install, game], cancellationToken);
+        string? remix = RemixRuntime.Find([exeFolder, install, game], listings, cancellationToken);
         return new GameRuntimes(
             own,
             dlss,
@@ -78,6 +79,4 @@ public static class GameRuntimesReader
 
     private static string[] Evidence(string game, IEnumerable<RuntimeHit> hits) =>
         [.. hits.Select(hit => Path.GetRelativePath(game, hit.Path)).Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase)];
-
-    private static FrozenSet<string> Set(params IEnumerable<string> names) => names.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 }

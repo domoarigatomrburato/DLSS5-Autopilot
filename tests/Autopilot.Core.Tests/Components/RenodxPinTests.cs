@@ -86,8 +86,9 @@ public sealed class RenodxPinTests(TestContext testContext)
         BuildCatalog catalog = await MirrorBed.Captured(testContext, "renodx-dlss5-4.55", "renodx-dlss5-4.60");
         RenodxDecision decision = RenodxPins.Decide(new(null, OwnFile: false, driver, api, null));
 
-        RenodxPinMissingException failure = Assert.Throws<RenodxPinMissingException>(() => RenodxPins.Pick(catalog, decision));
+        ComponentException failure = Assert.Throws<ComponentException>(() => RenodxPins.Pick(catalog, decision));
 
+        Assert.AreEqual(ComponentFailure.PinMissing, failure.Reason);
         Assert.AreEqual(pin, failure.Label);
         Assert.AreEqual(
             $"renodx-dlss5 {pin} is not on the build list; the newest build is the kind of build this pin exists to avoid. Pick the build by hand under 'dlss5 add-on' to go ahead.",

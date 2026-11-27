@@ -24,12 +24,11 @@ public sealed partial class ReShadeSource(NetClient client, DownloadCache cache,
     // client's own attempts (three, with growing waits), so no loop of our own is needed here.
     private static readonly TextRequest _homeRequest = new() { AcceptServerError = ReShadeVersions.HasSetupLink };
 
-    private static readonly TextRequest _tagsRequest = new() { Cached = true };
-
-    private readonly ResolutionMemory<bool, ReShadeInstaller> _memory = new();
+    // An installer found only in the cache stands in while the network is out, and is asked again next time.
+    private readonly ResolutionMemory<bool, ReShadeInstaller> _memory = new(installer => installer.Origin != ReShadeOrigin.Cache);
 
     /// <summary>The installer to download; the same answer for the rest of the run once found.</summary>
-    /// <exception cref="ReShadeNotFoundException">No source named an installer; the message lists why.</exception>
+    /// <exception cref="ComponentException">No source named an installer (<see cref="ComponentFailure.InstallerNotFound"/>); the message and <see cref="ComponentException.Reasons"/> list why.</exception>
     /// <exception cref="NetException">A source was refused (a redirect off the list, a downgrade): never covered by another.</exception>
     public Task<ReShadeInstaller> ResolveAsync(CancellationToken cancellationToken) =>
         _memory.GetAsync(true, ResolveOnceAsync, cancellationToken);
@@ -40,7 +39,7 @@ public sealed partial class ReShadeSource(NetClient client, DownloadCache cache,
         ReShadeInstaller installer = await FromHomePageAsync(reasons, cancellationToken)
             ?? await FromTagsAsync(reasons, cancellationToken)
             ?? FromCache(reasons)
-            ?? throw new ReShadeNotFoundException(reasons);
+            ?? throw new ComponentException(ComponentFailure.InstallerNotFound, Texts.Format("ReShadeNotFound", string.Join("; ", reasons))) { Reasons = reasons };
         if (logger.IsEnabled(LogLevel.Information))
         {
             LogResolved(logger, installer.Version.Label, installer.Origin);
@@ -51,14 +50,8 @@ public sealed partial class ReShadeSource(NetClient client, DownloadCache cache,
 
     private async Task<ReShadeInstaller?> FromHomePageAsync(List<string> reasons, CancellationToken cancellationToken)
     {
-        TextAnswer answer;
-        try
+        if (await TryGetAsync(new(Home), _homeRequest, reasons, cancellationToken) is not { } answer)
         {
-            answer = await client.GetTextAsync(new(Home), ComponentHosts.Allowlist, _homeRequest, cancellationToken);
-        }
-        catch (NetException failure) when (!failure.IsRefusal)
-        {
-            reasons.Add(failure.Message);
             return null;
         }
 
@@ -73,14 +66,8 @@ public sealed partial class ReShadeSource(NetClient client, DownloadCache cache,
 
     private async Task<ReShadeInstaller?> FromTagsAsync(List<string> reasons, CancellationToken cancellationToken)
     {
-        TextAnswer answer;
-        try
+        if (await TryGetAsync(_tags, ReleaseResolver.ApiRequest, reasons, cancellationToken) is not { } answer)
         {
-            answer = await client.GetTextAsync(_tags, ComponentHosts.Allowlist, _tagsRequest, cancellationToken);
-        }
-        catch (NetException failure) when (!failure.IsRefusal)
-        {
-            reasons.Add(failure.Message);
             return null;
         }
 
@@ -93,6 +80,10 @@ public sealed partial class ReShadeSource(NetClient client, DownloadCache cache,
 
         return new(newest, ReShadeOrigin.GitHubTag);
     }
+
+    // The source's answer; null, with the failure added to the reasons, when the network failed. A refusal propagates.
+    private Task<TextAnswer?> TryGetAsync(Uri url, TextRequest request, List<string> reasons, CancellationToken cancellationToken) =>
+        NetFallback.OrNullAsync(client.GetTextAsync(url, ComponentHosts.Allowlist, request, cancellationToken), failure => reasons.Add(failure.Message));
 
     private ReShadeInstaller? FromCache(List<string> reasons)
     {
@@ -139,13 +130,5 @@ public sealed record ReShadeInstaller(ComponentVersion Version, ReShadeOrigin Or
     /// Only the <c>MZ</c> check runs: reshade.me publishes no sums, and whether the installer is
     /// signed, and by whom, is still to be verified.
     /// </summary>
-    public Verification Verification { get; } = new NoVerification("no publisher sums or signature verified");
-}
-
-/// <summary>No source named a ReShade installer: reshade.me, GitHub's tags and the download cache all failed.</summary>
-public sealed class ReShadeNotFoundException(IReadOnlyList<string> reasons)
-    : Exception(Texts.Format("ReShadeNotFound", string.Join("; ", reasons)))
-{
-    /// <summary>Why each source failed, in the order they were asked.</summary>
-    public IReadOnlyList<string> Reasons { get; } = reasons;
+    public Verification Verification { get; } = ComponentCatalog.Of(ComponentIds.ReShade).Unchecked();
 }

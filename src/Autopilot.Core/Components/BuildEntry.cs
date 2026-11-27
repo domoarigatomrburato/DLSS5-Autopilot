@@ -17,10 +17,15 @@ public sealed record BuildEntry(BuildFamily Family, BuildPublisher Publisher, st
 
     /// <summary>
     /// The check the file taken out of the download must pass before it is placed:
-    /// NVIDIA's signature on a mirror <c>nvngx_dlssnr.dll</c>, which the mirror republishes
-    /// unchanged; <see langword="null"/> when nothing beyond the download's own check applies.
+    /// NVIDIA's signature on a file of NVIDIA's the mirror republishes unchanged
+    /// (<c>nvngx_dlssnr.dll</c>, <c>nvngx_dlss.dll</c>, <c>nvngx_dlssg.dll</c>); <see langword="null"/> when
+    /// nothing beyond the download's own check applies (the RenoDX add-ons, and NVIDIA's own DLL,
+    /// whose download is that check).
     /// </summary>
-    public Verification? Contents => Publisher == BuildPublisher.Mirror && Family == BuildFamily.Dlssnr ? NvidiaFiles.Signer : null;
+    public Verification? Contents =>
+        Publisher == BuildPublisher.Mirror && MirrorFamilies.EntryOf(Family) is { Check: ComponentCheck.NvidiaSigner } entry
+            ? ComponentCatalog.Signer(entry.Id)
+            : null;
 }
 
 /// <summary>The entry chosen from a family.</summary>

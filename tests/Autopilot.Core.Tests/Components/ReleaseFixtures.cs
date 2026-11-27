@@ -22,18 +22,25 @@ internal static class ReleaseFixtures
 
     public static string Fixture(string name) => File.ReadAllText(Path.Join(AppContext.BaseDirectory, "Components", "Fixtures", name));
 
-    /// <summary>A list page with the captured page's markup around other tags.</summary>
-    public static string ListPageWith(params string[] tags)
+    /// <summary>A list page with the captured DXVK page's markup around other tags.</summary>
+    public static string ListPageWith(params string[] tags) => ListPageWith("dxvk-releases-page.html", "v3.2", tags);
+
+    /// <summary>A captured list page with its first release's markup repeated for each of <paramref name="tags"/>, in place of <paramref name="placeholderTag"/>.</summary>
+    public static string ListPageWith(string fixture, string placeholderTag, params string[] tags)
     {
-        string page = Fixture("dxvk-releases-page.html");
+        string page = Fixture(fixture);
         int first = page.IndexOf("  <section", StringComparison.Ordinal);
         int end = page.LastIndexOf("</section>", StringComparison.Ordinal) + "</section>".Length;
         string section = page[first..(page.IndexOf("</section>", first, StringComparison.Ordinal) + "</section>".Length)];
-        return page[..first] + string.Concat(tags.Select(tag => section.Replace("v3.2", tag, StringComparison.Ordinal) + "\n")) + page[end..];
+        return page[..first] + string.Concat(tags.Select(tag => section.Replace(placeholderTag, tag, StringComparison.Ordinal) + "\n")) + page[end..];
     }
 
     /// <summary>An asset fragment: the captured one for v3.2, the same markup under another tag otherwise.</summary>
     public static string ExpandedFor(string tag) => Fixture("dxvk-expanded-assets-v3.2.html").Replace("v3.2", tag, StringComparison.Ordinal);
+
+    /// <summary>The <c>location</c> header of a captured redirect.</summary>
+    public static string LocationIn(string fixture) =>
+        Fixture(fixture).Split('\n').Single(line => line.StartsWith("location: ", StringComparison.Ordinal))["location: ".Length..];
 
     public static string[] Tags(IEnumerable<GitHubRelease> releases) => [.. releases.Select(release => release.Tag)];
 

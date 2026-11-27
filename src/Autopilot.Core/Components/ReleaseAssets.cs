@@ -11,17 +11,35 @@ internal static class ReleaseAssets
 
     /// <summary>The component from <paramref name="assets"/> of the answer's release, each checked as the catalog says.</summary>
     /// <exception cref="ComponentException">The publisher puts sums in every release and this one carries none.</exception>
-    public static ComponentRelease Of(string id, ReleaseAnswer answer, IReadOnlyList<GitHubAsset> assets, IReadOnlyList<ExpectedFile> files) =>
-        new(
+    public static ComponentRelease Of(string id, ReleaseAnswer answer, IReadOnlyList<GitHubAsset> assets, IReadOnlyList<ExpectedFile> files)
+    {
+        CatalogEntry entry = ComponentCatalog.Of(id);
+        return new(
             id,
             new(answer.Release.Tag),
-            [.. assets.Select(asset => new ComponentDownload(asset.Name, asset.Url, ComponentCatalog.VerificationOf(id, answer.Release, asset)))],
+            [.. assets.Select(asset => new ComponentDownload(asset.Name, asset.Url, entry.VerificationOf(answer.Release, asset)))],
             files,
             answer.Source);
+    }
+
+    /// <summary>
+    /// The assets named, from the newest release, each also a file the downloads hold; with no
+    /// release data, each by GitHub's <c>latest/download</c> redirect.
+    /// </summary>
+    /// <exception cref="ComponentException">The release lacks one: it is of another shape.</exception>
+    public static async Task<ComponentRelease> ByNameAsync(GitHubReleases releases, string id, IReadOnlyList<string> names, CancellationToken cancellationToken) =>
+        await LatestOrNoneAsync(releases, id, cancellationToken) is { } latest
+            ? ByName(id, latest, names, [.. names.Select(name => new ExpectedFile(name))])
+            : ByLatestRedirect(id, names);
+
+    /// <summary>The assets named, from the answer's release, holding <paramref name="files"/>.</summary>
+    /// <exception cref="ComponentException">The release lacks one, or the publisher puts sums in every release and this one carries none.</exception>
+    public static ComponentRelease ByName(string id, ReleaseAnswer answer, IReadOnlyList<string> names, IReadOnlyList<ExpectedFile> files) =>
+        Of(id, answer, Named(id, answer.Release, names), files);
 
     /// <summary>Every asset named, case ignored.</summary>
     /// <exception cref="ComponentException">One is missing: the release is of another shape.</exception>
-    public static GitHubAsset[] Named(string id, GitHubRelease release, IReadOnlyList<string> names)
+    private static GitHubAsset[] Named(string id, GitHubRelease release, IReadOnlyList<string> names)
     {
         string[] missing = [.. names.Where(name => !release.Assets.Any(asset => Is(asset, name)))];
         return missing.Length == 0
@@ -29,17 +47,23 @@ internal static class ReleaseAssets
             : throw LayoutChanged(id, release.Tag, string.Join(", ", missing));
     }
 
+    /// <summary>The first asset of <paramref name="release"/> that <paramref name="predicate"/> accepts.</summary>
+    /// <exception cref="ComponentException">None does: the release is of another shape (<paramref name="what"/> names what was looked for).</exception>
+    public static GitHubAsset First(string id, GitHubRelease release, Func<GitHubAsset, bool> predicate, string what) =>
+        release.Assets.FirstOrDefault(predicate) ?? throw LayoutChanged(id, release.Tag, what);
+
     public static bool Is(GitHubAsset asset, string name) => string.Equals(asset.Name, name, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Each file by GitHub's <c>latest/download</c> redirect: the version is <c>latest</c>, which is never compared.</summary>
     public static ComponentRelease ByLatestRedirect(string id, IReadOnlyList<string> names)
     {
-        string repository = ComponentCatalog.Of(id).Source;
-        NoVerification check = ComponentCatalog.Unchecked(id, NoReleaseData);
+        CatalogEntry entry = ComponentCatalog.Of(id);
+        GitHubRepository repository = entry.Repository;
+        NoVerification check = entry.Unchecked(NoReleaseData);
         return new(
             id,
             ComponentVersion.Latest,
-            [.. names.Select(name => new ComponentDownload(name, GitHubReleases.LatestDownloadOf(repository, name).Url, check))],
+            [.. names.Select(name => new ComponentDownload(name, repository.LatestDownload(name), check))],
             [.. names.Select(name => new ExpectedFile(name))],
             null);
     }
@@ -52,18 +76,38 @@ internal static class ReleaseAssets
         list.Where(release => release.Draft != true && !(release.Prerelease ?? new ComponentVersion(release.Tag).IsTestBuild))
             .OrderByDescending(release => release.PublishedAt ?? DateTimeOffset.MinValue);
 
-    /// <summary>The newest release; <see langword="null"/> when neither the API, a kept answer nor the pages could answer.</summary>
-    public static async Task<ReleaseAnswer?> LatestOrNoneAsync(GitHubReleases releases, string id, CancellationToken cancellationToken)
+    /// <summary>
+    /// The component from the first published release of <paramref name="list"/> carrying an asset
+    /// <paramref name="find"/> finds, newest published first.
+    /// </summary>
+    /// <exception cref="ComponentException">None carries it (<paramref name="asset"/> names it), or the publisher puts sums in every release and that one carries none.</exception>
+    public static ComponentRelease FirstPublishedCarrying(
+        string id,
+        ReleaseListAnswer list,
+        Func<GitHubRelease, GitHubAsset?> find,
+        string asset,
+        IReadOnlyList<ExpectedFile> files) =>
+        FirstCarrying(Published(list.Releases), find) is var (release, found)
+            ? Of(id, new(release, list.Source), [found], files)
+            : throw NoneCarries(id, asset, list.Releases);
+
+    /// <summary>The first of <paramref name="releases"/> carrying an asset <paramref name="find"/> finds, and that asset; <see langword="null"/> when none does.</summary>
+    public static (GitHubRelease Release, GitHubAsset Asset)? FirstCarrying(IEnumerable<GitHubRelease> releases, Func<GitHubRelease, GitHubAsset?> find)
     {
-        try
+        foreach (GitHubRelease release in releases)
         {
-            return await LatestAsync(releases, id, cancellationToken);
+            if (find(release) is { } asset)
+            {
+                return (release, asset);
+            }
         }
-        catch (NetException failure) when (!failure.IsRefusal)
-        {
-            return null;
-        }
+
+        return null;
     }
+
+    /// <summary>The newest release; <see langword="null"/> when neither the API, a kept answer nor the pages could answer.</summary>
+    public static Task<ReleaseAnswer?> LatestOrNoneAsync(GitHubReleases releases, string id, CancellationToken cancellationToken) =>
+        NetFallback.OrNullAsync(LatestAsync(releases, id, cancellationToken));
 
     /// <summary>The newest release.</summary>
     /// <exception cref="ComponentException">The repository has no release.</exception>
@@ -77,6 +121,6 @@ internal static class ReleaseAssets
     public static ComponentException LayoutChanged(string id, string tag, string missing) =>
         new(ComponentFailure.LayoutChanged, Texts.Format("ComponentLayoutChanged", ComponentCatalog.Of(id).Source, tag, missing));
 
-    public static ComponentException NoneCarries(string id, string asset, IReadOnlyList<GitHubRelease> list) =>
+    private static ComponentException NoneCarries(string id, string asset, IReadOnlyList<GitHubRelease> list) =>
         new(ComponentFailure.LayoutChanged, Texts.Format("ComponentNoneCarries", ComponentCatalog.Of(id).Source, asset, list.Count > 0 ? list[0].Tag : "none"));
 }

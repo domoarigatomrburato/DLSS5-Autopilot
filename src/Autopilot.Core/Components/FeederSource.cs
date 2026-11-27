@@ -23,7 +23,7 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
     private readonly ResolutionMemory<FeederChoice, FeederRelease> _memory = new();
 
     /// <summary>The release <paramref name="choice"/> names; the same answer for the rest of the run once found.</summary>
-    /// <exception cref="FeederException">The tag is not among the 15 newest, there is no release, or the release carries no feeder files.</exception>
+    /// <exception cref="ComponentException">The tag is not among the 15 newest, there is no release, or the release carries no feeder files.</exception>
     /// <exception cref="NetException">Neither GitHub's API, nor a kept answer, nor the pages could answer.</exception>
     /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
     public Task<FeederRelease> ResolveAsync(FeederChoice choice, CancellationToken cancellationToken) =>
@@ -34,7 +34,8 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
 
     private async Task<FeederRelease> ResolveOnceAsync(FeederChoice choice, CancellationToken cancellationToken)
     {
-        ReleaseListAnswer list = await releases.GetListAsync(Repository, ListedReleases, cancellationToken);
+        // Each choice picks from the same list: it is read once per run.
+        ReleaseListAnswer list = await releases.GetListOnceAsync(Repository, ListedReleases, cancellationToken);
         GitHubRelease[] published = [.. list.Releases.Where(release => release.Draft != true)];
         (GitHubRelease release, ReleaseSource source, string? notice) = choice.Pick switch
         {
@@ -53,10 +54,10 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
 
     private static GitHubRelease Exact(GitHubRelease[] published, string tag) =>
         Array.Find(published, release => release.Tag == tag)
-        ?? throw new FeederException(FeederFailure.TagNotListed, Texts.Format("FeederTagNotListed", tag, ListedReleases));
+        ?? throw new ComponentException(ComponentFailure.TagNotListed, Texts.Format("FeederTagNotListed", tag, ListedReleases));
 
     private static GitHubRelease Newest(GitHubRelease[] published) =>
-        published.Length > 0 ? published[0] : throw new FeederException(FeederFailure.NoRelease, Texts.Text("FeederNoRelease"));
+        published.Length > 0 ? published[0] : throw new ComponentException(ComponentFailure.NoRelease, Texts.Text("FeederNoRelease"));
 
     private async Task<(GitHubRelease Release, ReleaseSource Source, string? Notice)> NewestReleaseAsync(
         GitHubRelease[] published,
@@ -83,22 +84,14 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
 
     private async Task<ReleaseAnswer?> WalkPagesAsync(CancellationToken cancellationToken)
     {
-        IReadOnlyList<string> tags;
-        try
-        {
-            tags = await releases.GetPageTagsAsync(Repository, WalkedPages, cancellationToken);
-        }
-        catch (NetException failure) when (!failure.IsRefusal)
+        IReadOnlyList<string>? tags = await NetFallback.OrNullAsync(releases.GetPageTagsAsync(Repository, WalkedPages, cancellationToken), failure =>
         {
             if (logger.IsEnabled(LogLevel.Warning))
             {
                 LogWalkFailed(logger, failure.Kind);
             }
-
-            return null;
-        }
-
-        string? tag = tags.FirstOrDefault(tag => !new ComponentVersion(tag).IsTestBuild);
+        });
+        string? tag = tags?.FirstOrDefault(tag => !new ComponentVersion(tag).IsTestBuild);
         return tag is null ? null : await releases.GetByTagAsync(Repository, tag, cancellationToken);
     }
 
@@ -178,10 +171,10 @@ public sealed record FeederRelease(string Tag, GitHubAsset? Package, IReadOnlyLi
     public static Verification VerificationOf(GitHubAsset asset)
     {
         ArgumentNullException.ThrowIfNull(asset);
-        return asset.Digest ?? (Verification)new NoVerification("the release data gave no digest, and the feeder publishes no sums");
+        return ComponentCatalog.Of(ComponentIds.Feeder).DigestOr(asset);
     }
 
-    /// <exception cref="FeederException">The release carries no feeder files.</exception>
+    /// <exception cref="ComponentException">The release carries no feeder files.</exception>
     internal static FeederRelease Of(GitHubRelease release, ReleaseSource source, string? notice)
     {
         GitHubAsset? package = release.Assets.FirstOrDefault(asset =>
@@ -191,25 +184,6 @@ public sealed record FeederRelease(string Tag, GitHubAsset? Package, IReadOnlyLi
             : [];
         return package is not null || loose.Length > 0
             ? new(release.Tag, package, loose, source, notice)
-            : throw new FeederException(FeederFailure.NoFiles, Texts.Format("FeederNoFiles", release.Tag));
+            : throw new ComponentException(ComponentFailure.NoFiles, Texts.Format("FeederNoFiles", release.Tag));
     }
-}
-
-/// <summary>Why a feeder build could not be resolved.</summary>
-public enum FeederFailure
-{
-    /// <summary>The exact tag is not among the 15 newest releases.</summary>
-    TagNotListed,
-
-    /// <summary>The repository lists no release.</summary>
-    NoRelease,
-
-    /// <summary>The release carries neither the feeder's zip nor its loose files.</summary>
-    NoFiles,
-}
-
-/// <summary>A feeder build that could not be resolved, with the words the install shows.</summary>
-public sealed class FeederException(FeederFailure reason, string message) : Exception(message)
-{
-    public FeederFailure Reason { get; } = reason;
 }

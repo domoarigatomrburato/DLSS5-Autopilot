@@ -43,9 +43,7 @@ internal static class ComponentLayout
 
         return missing.Count == 0
             ? found
-            : throw new ComponentException(
-                ComponentFailure.LayoutChanged,
-                Texts.Format("ComponentLayoutChanged", ComponentCatalog.Of(release.Id).Source, release.Version.Label, string.Join(", ", missing)));
+            : throw ReleaseAssets.LayoutChanged(release.Id, release.Version.Label, string.Join(", ", missing));
     }
 
     /// <summary>Every <c>.addon64</c> must be a 64-bit Windows binary and every <c>.addon32</c> a 32-bit one.</summary>

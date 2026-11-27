@@ -69,6 +69,19 @@ public sealed class MirrorCatalogTests(TestContext testContext)
     }
 
     [TestMethod]
+    [DataRow(BuildFamily.Dlss, "dlss-310.9.16")]
+    [DataRow(BuildFamily.Dlssg, "dlssg-310.9.16")]
+    public async Task Nvidias_runtimes_on_the_mirror_must_carry_nvidias_signature_too(BuildFamily family, string tag)
+    {
+        BuildCatalog catalog = await MirrorBed.Captured(testContext);
+
+        BuildEntry entry = catalog.Entries(family).Single(entry => entry.Tag == tag);
+
+        Assert.AreEqual(BuildPublisher.Mirror, entry.Publisher);
+        Assert.AreEqual(new SignerVerification("NVIDIA Corporation"), entry.Contents);
+    }
+
+    [TestMethod]
     public async Task Nvidias_runtimes_come_first_read_from_its_sdk_tree_and_signed()
     {
         BuildCatalog catalog = await MirrorBed.Captured(testContext);
@@ -94,7 +107,7 @@ public sealed class MirrorCatalogTests(TestContext testContext)
         using MirrorBed bed = new(testContext);
         _ = await bed.ApiAnswers().NvidiaRedirects().Get();
 
-        CollectionAssert.AreEqual(new[] { HttpMethod.Head }, bed.MethodsTo(MirrorBed.NvidiaLatest));
+        CollectionAssert.AreEqual(new[] { HttpMethod.Head }, bed.Server.MethodsTo(MirrorBed.NvidiaLatest));
         Assert.IsFalse(bed.Server.Requests.Any(request => request.Url.AbsolutePath.StartsWith("/repos/NVIDIA", StringComparison.Ordinal)));
     }
 

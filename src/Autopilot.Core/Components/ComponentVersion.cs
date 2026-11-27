@@ -28,8 +28,8 @@ public sealed partial class ComponentVersion
 {
     private const int ComparedNumbers = 4;
 
-    // A git commit, the version of a component taken from a branch.
-    private const int CommitLength = 40;
+    /// <summary>A git commit's length in hex digits: the version of a component taken from a branch.</summary>
+    internal const int CommitLength = 40;
 
     // The words a publisher marks a test build with in its tag (sources.py:253).
     private static readonly string[] _testWords = ["beta", "alpha", "-rc", "preview", "-pre"];

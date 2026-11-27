@@ -75,7 +75,7 @@ public sealed class FeederTests(TestContext testContext)
     [TestMethod]
     public void A_file_without_a_digest_is_checked_by_its_magic_bytes_only() =>
         Assert.AreEqual(
-            new NoVerification("the release data gave no digest, and the feeder publishes no sums"),
+            new NoVerification("jlrouzies-fr/DLSS5-Feeder: the release data gave no digest"),
             FeederRelease.VerificationOf(new("DLSS5_Feed.fx", new(ComponentsBed.Download(FeederFixtures.Repo, "v0.9.2", "DLSS5_Feed.fx")), null)));
 
     [TestMethod]
@@ -84,9 +84,9 @@ public sealed class FeederTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         bed.Json(_list, FeederFixtures.BetasOverStable());
 
-        FeederException failure = await Assert.ThrowsAsync<FeederException>(() => bed.Feeder.ResolveAsync(FeederChoice.Exact("v0.7.0"), bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.Feeder.ResolveAsync(FeederChoice.Exact("v0.7.0"), bed.Cancellation));
 
-        Assert.AreEqual(FeederFailure.TagNotListed, failure.Reason);
+        Assert.AreEqual(ComponentFailure.TagNotListed, failure.Reason);
         Assert.AreEqual("DLSS5-Feeder release v0.7.0 is not on GitHub's release list (the newest 15 are checked).", failure.Message);
     }
 
@@ -119,14 +119,14 @@ public sealed class FeederTests(TestContext testContext)
 
         Assert.AreEqual("v1.16.0-beta.6", release.Tag);
         Assert.AreEqual(EveryTestNotice, release.Notice);
-        Assert.AreEqual(1, bed.Server.RequestsTo("https://github.com/jlrouzies-fr/DLSS5-Feeder/releases?page=2"));
+        Assert.AreEqual(1, bed.Server.RequestsTo(ComponentsBed.ListPage(FeederFixtures.Repo, 2)));
     }
 
     [TestMethod]
     public async Task With_no_latest_release_and_the_pages_out_of_reach_the_newest_test_build_is_installed_and_said()
     {
         using ComponentsBed bed = new(testContext);
-        bed.Json(_list, FeederFixtures.OnlyBetas()).Unreachable(FeederFixtures.PageUrl(1));
+        bed.Json(_list, FeederFixtures.OnlyBetas()).Unreachable(ComponentsBed.ListPage(FeederFixtures.Repo, 1));
         bed.Server.Answer(Latest, HttpStatusCode.NotFound, "{}");
 
         FeederRelease release = await bed.Feeder.ResolveAsync(FeederChoice.NewestRelease, bed.Cancellation);
@@ -141,9 +141,9 @@ public sealed class FeederTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         bed.Json(_list, FeederFixtures.WithoutFiles());
 
-        FeederException failure = await Assert.ThrowsAsync<FeederException>(() => bed.Feeder.ResolveAsync(FeederChoice.NewestRelease, bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.Feeder.ResolveAsync(FeederChoice.NewestRelease, bed.Cancellation));
 
-        Assert.AreEqual(FeederFailure.NoFiles, failure.Reason);
+        Assert.AreEqual(ComponentFailure.NoFiles, failure.Reason);
         Assert.AreEqual("DLSS5-Feeder release v2.1.0 carries neither the feeder's zip nor its files. Pick another version under 'feeder build'.", failure.Message);
     }
 
@@ -153,9 +153,9 @@ public sealed class FeederTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         bed.Json(_list, ReleaseJsonText.List());
 
-        FeederException failure = await Assert.ThrowsAsync<FeederException>(() => bed.Feeder.ResolveAsync(FeederChoice.NewestPrerelease, bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.Feeder.ResolveAsync(FeederChoice.NewestPrerelease, bed.Cancellation));
 
-        Assert.AreEqual(FeederFailure.NoRelease, failure.Reason);
+        Assert.AreEqual(ComponentFailure.NoRelease, failure.Reason);
     }
 
     [TestMethod]
@@ -194,8 +194,6 @@ internal static class FeederFixtures
 {
     public const string Repo = FeederSource.Repository;
 
-    public static string PageUrl(int page) => $"https://github.com/{Repo}/releases?page={page}";
-
     public static JsonObject Release(string tag, int age, params string[] assets) => ReleaseJsonText.Release(Repo, tag, age, assets);
 
     // #325 and #348: six betas published with the flag off above the release line, a release flagged
@@ -233,7 +231,7 @@ internal static class FeederFixtures
     public static ComponentsBed Page(this ComponentsBed bed, int page, params string[] tags)
     {
         bed.Server.Answer(
-            PageUrl(page),
+            ComponentsBed.ListPage(Repo, page),
             HttpStatusCode.OK,
             ReleaseFixtures.ListPageWith(tags).Replace("doitsujin/dxvk", FeederSource.Repository, StringComparison.Ordinal));
         return bed;

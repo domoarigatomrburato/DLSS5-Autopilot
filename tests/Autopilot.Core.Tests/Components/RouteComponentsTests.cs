@@ -121,6 +121,16 @@ public sealed class RouteComponentsTests
     }
 
     [TestMethod]
+    public void A_game_known_to_need_dxvk_keeps_it_whatever_api_is_set_by_hand()
+    {
+        AssertIds(
+            RouteComponents.For(RouteId.Native, Game(GraphicsApi.Vulkan, ownDlss: true, executable: "mgsvtpp.exe")),
+            "reshade", "renodx", "dlssnr", "dlss", "dxvk");
+        Assert.DoesNotContain("dxvk", RouteComponents.For(RouteId.Native, Game(GraphicsApi.Vulkan, executable: "mgsvtpp.exe"), dxvk: false));
+        Assert.DoesNotContain("dxvk", RouteComponents.For(RouteId.OptiScaler, Game(GraphicsApi.DX11, ownDlss: true, executable: "mgsvtpp.exe")));
+    }
+
+    [TestMethod]
     public void The_executables_known_to_need_dxvk_are_named_by_file_name_in_any_case()
     {
         Assert.IsTrue(RouteComponents.NeedsDxvk("MGSGZS.EXE"));

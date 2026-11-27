@@ -34,7 +34,7 @@ public sealed class DlssnrBuildTests(TestContext testContext)
     {
         DlssnrCandidates candidates = DlssnrBuilds.Candidates(await MirrorBed.Captured(testContext), sm, chosenLabel: null);
 
-        Assert.AreEqual(string.Join(", ", order), Labels(candidates.Entries));
+        Assert.AreEqual(string.Join(", ", order), MirrorBed.Labels(candidates.Entries));
         Assert.IsFalse(candidates.Pinned);
     }
 
@@ -45,7 +45,7 @@ public sealed class DlssnrBuildTests(TestContext testContext)
     {
         DlssnrCandidates candidates = DlssnrBuilds.Candidates(await MirrorBed.Captured(testContext), sm, chosenLabel: null);
 
-        Assert.AreEqual(string.Join(", ", _mirrorOrder), Labels(candidates.Entries));
+        Assert.AreEqual(string.Join(", ", _mirrorOrder), MirrorBed.Labels(candidates.Entries));
     }
 
     [TestMethod]
@@ -53,7 +53,7 @@ public sealed class DlssnrBuildTests(TestContext testContext)
     {
         DlssnrCandidates candidates = DlssnrBuilds.Candidates(await MirrorBed.Captured(testContext), 89, "310.8.0");
 
-        Assert.AreEqual("310.8.0", Labels(candidates.Entries));
+        Assert.AreEqual("310.8.0", MirrorBed.Labels(candidates.Entries));
         Assert.IsTrue(candidates.Pinned);
         Assert.IsFalse(candidates.WantedMissing);
     }
@@ -63,7 +63,7 @@ public sealed class DlssnrBuildTests(TestContext testContext)
     {
         DlssnrCandidates candidates = DlssnrBuilds.Candidates(await MirrorBed.Captured(testContext), 89, "310.7.0");
 
-        Assert.AreEqual("310.9.16-nvidia", Labels(candidates.Entries));
+        Assert.AreEqual("310.9.16-nvidia", MirrorBed.Labels(candidates.Entries));
         Assert.IsTrue(candidates.WantedMissing);
     }
 
@@ -72,7 +72,9 @@ public sealed class DlssnrBuildTests(TestContext testContext)
     {
         BuildCatalog catalog = await MirrorBed.Captured(testContext, [.. _mirrorOrder.Select(label => "dlssnr-" + label)]);
 
-        _ = Assert.Throws<BuildListUnavailableException>(() => DlssnrBuilds.Candidates(catalog, 89, null));
+        ComponentException failure = Assert.Throws<ComponentException>(() => DlssnrBuilds.Candidates(catalog, 89, null));
+
+        Assert.AreEqual(ComponentFailure.BuildListUnavailable, failure.Reason);
     }
 
     [TestMethod]
@@ -178,8 +180,7 @@ public sealed class DlssnrBuildTests(TestContext testContext)
     [TestMethod]
     public void The_check_reads_the_file_not_the_label()
     {
-        string path = Path.Join(Path.GetTempPath(), "autopilot-dlssnr-" + Guid.NewGuid().ToString("N") + ".dll");
-        File.WriteAllBytes(path, FatbinTests.FatbinBytes(24, [75, 86]));
+        string path = FatbinTests.WriteDll(FatbinTests.FatbinBytes(24, [75, 86]));
         try
         {
             DlssnrCheck check = DlssnrBuilds.Check(Fatbin.Architectures(path), _rtx2070);
@@ -205,6 +206,4 @@ public sealed class DlssnrBuildTests(TestContext testContext)
             (entry, _) => Task.FromResult<IReadOnlySet<int>>(architectures(entry.Label).ToHashSet()),
             testContext.CancellationToken);
     }
-
-    private static string Labels(IEnumerable<BuildEntry> entries) => string.Join(", ", entries.Select(entry => entry.Label));
 }

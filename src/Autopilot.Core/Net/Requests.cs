@@ -29,13 +29,17 @@ public sealed record FileRequest
 }
 
 /// <summary>A text answer. A stale one came from the cache because the live request failed.</summary>
-public sealed record TextAnswer(HttpStatusCode StatusCode, string Body, DateTimeOffset FetchedAt, bool IsStale);
+public sealed record TextAnswer(HttpStatusCode StatusCode, string Body, DateTimeOffset FetchedAt, bool IsStale)
+{
+    /// <summary>Whether the status is a success (2xx).</summary>
+    public bool IsSuccess => (int)StatusCode is >= 200 and <= 299;
+}
 
 /// <summary>
 /// The answer to a <c>HEAD</c>, which is never followed: for a redirect, where it points, made
 /// absolute and checked as a hop would be; <see langword="null"/> otherwise.
 /// </summary>
-public sealed record HeadAnswer(HttpStatusCode StatusCode, Uri? Location, DateTimeOffset FetchedAt);
+public sealed record HeadAnswer(HttpStatusCode StatusCode, Uri? Location);
 
 /// <summary>Bytes received so far, and the total when the server said it.</summary>
 public readonly record struct DownloadProgress(long Done, long? Total);

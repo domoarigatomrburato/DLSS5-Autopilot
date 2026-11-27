@@ -45,9 +45,9 @@ public sealed class OptiScalerPackageTests(TestContext testContext)
             bed,
             OptiScalerFixtures.Zip("CHANGELOG.md", "LICENSE.md", "README.md", "USAGE.md", "display_filter.exe", "runtime/onnxruntime.dll", "docs/README.md", "shaders/filter.hlsl"));
 
-        OptiScalerException failure = await Assert.ThrowsAsync<OptiScalerException>(() => bed.OptiScaler.FetchAsync(release, null, bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.OptiScaler.FetchAsync(release, null, bed.Cancellation));
 
-        Assert.AreEqual(OptiScalerFailure.NotOptiScaler, failure.Reason);
+        Assert.AreEqual(ComponentFailure.NotOptiScaler, failure.Reason);
         Assert.AreEqual(
             "The release v0.10.0 carries no OptiScaler.dll - it holds display_filter.exe, onnxruntime.dll, CHANGELOG.md, filter.hlsl, LICENSE.md, README.md, so it is not an OptiScaler build. Pick another 'optiscaler build' under settings, or try again later.",
             failure.Message);
@@ -59,7 +59,7 @@ public sealed class OptiScalerPackageTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         OptiScalerRelease release = Serve(bed, OptiScalerFixtures.Zip("bin/OptiScaler.dll", "README.md"));
 
-        OptiScalerException failure = await Assert.ThrowsAsync<OptiScalerException>(() => bed.OptiScaler.FetchAsync(release, null, bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.OptiScaler.FetchAsync(release, null, bed.Cancellation));
 
         StringAssert.Contains(failure.Message, "it holds OptiScaler.dll, README.md", StringComparison.Ordinal);
     }
@@ -70,7 +70,7 @@ public sealed class OptiScalerPackageTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         OptiScalerRelease release = Serve(bed, OptiScalerFixtures.Zip("OptiScaler/"));
 
-        OptiScalerException failure = await Assert.ThrowsAsync<OptiScalerException>(() => bed.OptiScaler.FetchAsync(release, null, bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.OptiScaler.FetchAsync(release, null, bed.Cancellation));
 
         StringAssert.Contains(failure.Message, "it holds nothing", StringComparison.Ordinal);
     }

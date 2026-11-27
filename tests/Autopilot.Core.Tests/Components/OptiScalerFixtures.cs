@@ -1,7 +1,7 @@
-using System.IO.Compression;
 using System.Text.Json.Nodes;
 using Autopilot.Core.Components;
 using Autopilot.Core.Net;
+using Autopilot.Core.Tests.Archives;
 
 namespace Autopilot.Core.Tests.Components;
 
@@ -56,22 +56,6 @@ internal static class OptiScalerFixtures
             new(ReleaseOrigin.Api, TimeSpan.Zero));
 
     /// <summary>A zip of the named members; a name ending in '/' is a folder entry.</summary>
-    public static byte[] Zip(params string[] members)
-    {
-        using MemoryStream buffer = new();
-        using (ZipArchive archive = new(buffer, ZipArchiveMode.Create, leaveOpen: true))
-        {
-            foreach (string member in members)
-            {
-                ZipArchiveEntry entry = archive.CreateEntry(member);
-                if (!member.EndsWith('/', StringComparison.Ordinal))
-                {
-                    using StreamWriter content = new(entry.Open());
-                    content.Write(member);
-                }
-            }
-        }
-
-        return buffer.ToArray();
-    }
+    public static byte[] Zip(params string[] members) =>
+        FetchFixtures.Archive(ArchiveFormat.Zip, [.. members.Select(member => member.EndsWith('/', StringComparison.Ordinal) ? new TestMember(member) : TestMember.Text(member, member))]);
 }

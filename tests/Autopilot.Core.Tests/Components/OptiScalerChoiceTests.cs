@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Autopilot.Core.Components;
+using Autopilot.Core.Net;
 
 namespace Autopilot.Core.Tests.Components;
 
@@ -19,7 +20,10 @@ public sealed class OptiScalerChoiceTests(TestContext testContext)
 
         Assert.AreEqual("v0.10.0", release.Version.Label, "the tag is the version recorded");
         Assert.AreEqual("OptiScaler-NR-v0.10.0.zip", release.Archive.Name);
-        Assert.AreSame(release.Archive.Digest, release.Verification, "the API's digest is the check");
+        Assert.AreEqual(
+            new SumsFileVerification(new(ComponentsBed.Download(_wilsjo2.Repository, "v0.10.0", "OptiScaler-NR-v0.10.0-SHA256SUMS.txt")), "OptiScaler-NR-v0.10.0.zip"),
+            release.Verification,
+            "the release's sums file comes before the API's digest");
         Assert.AreEqual(
             "OptiScaler v0.10.0 carries display-filter-v0.9.0-preview.zip, OptiScaler-NR-v0.10.0-rtx40-mfg.zip, OptiScaler-NR-v0.10.0-SHA256SUMS.txt, OptiScaler-NR-v0.10.0.zip: installing OptiScaler-NR-v0.10.0.zip",
             Assert.ContainsSingle(bed.OptiScalerLines));
@@ -59,9 +63,9 @@ public sealed class OptiScalerChoiceTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         bed.Json(OptiScalerFixtures.List(_wilsjo2), ReleaseJsonText.List(OptiScalerFixtures.Release(_wilsjo2, "v0.8.2", 0, "OptiScaler-NR-v0.8.2.zip")));
 
-        OptiScalerException failure = await Assert.ThrowsAsync<OptiScalerException>(() => bed.OptiScaler.ResolveAsync(OptiScalerBuild.Wilsjo2Mfg, bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.OptiScaler.ResolveAsync(OptiScalerBuild.Wilsjo2Mfg, bed.Cancellation));
 
-        Assert.AreEqual(OptiScalerFailure.NoPackage, failure.Reason);
+        Assert.AreEqual(ComponentFailure.NoPackage, failure.Reason);
         Assert.AreEqual(
             "No recent release on wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass carries the rtx40-mfg package any more. Choose \"wilsjo2's fork\" in 'optiscaler build' for the standard one.",
             failure.Message);
@@ -136,7 +140,7 @@ public sealed class OptiScalerChoiceTests(TestContext testContext)
         OptiScalerBuild fork = OptiScalerBuild.Y4my4my4m;
         bed.Json(OptiScalerFixtures.List(fork), ReleaseJsonText.List(OptiScalerFixtures.Release(fork, "nightly", 0, "OptiScaler_v10.0.0-pre1_20261126.7z")));
 
-        OptiScalerException failure = await Assert.ThrowsAsync<OptiScalerException>(() => bed.OptiScaler.ResolveAsync(fork, bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.OptiScaler.ResolveAsync(fork, bed.Cancellation));
 
         Assert.AreEqual(
             "No recent release on y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG carries an OptiScaler package (.zip or .7z). Pick another 'optiscaler build' under settings, or try again later.",

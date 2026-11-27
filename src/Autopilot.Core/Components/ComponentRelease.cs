@@ -63,10 +63,44 @@ public enum ComponentFailure
 
     /// <summary>A branch could not be resolved to a commit: nothing is downloaded from a moving branch.</summary>
     BranchUnavailable,
+
+    /// <summary>No recent release on an OptiScaler build's page carries its package.</summary>
+    NoPackage,
+
+    /// <summary>An OptiScaler package holds no root-level <c>OptiScaler.dll</c>: it is some other program.</summary>
+    NotOptiScaler,
+
+    /// <summary>The feeder's exact tag is not among its 15 newest releases.</summary>
+    TagNotListed,
+
+    /// <summary>A feeder release carries neither the feeder's zip nor its loose files.</summary>
+    NoFiles,
+
+    /// <summary>No source named a ReShade installer: reshade.me, GitHub's tags and the download cache all failed.</summary>
+    InstallerNotFound,
+
+    /// <summary>A pinned <c>renodx-dlss5</c> build is not on the build list: the newest is the kind of build the pin exists to avoid.</summary>
+    PinMissing,
+
+    /// <summary>A family's build list came back empty: GitHub could not be reached and nothing was kept.</summary>
+    BuildListUnavailable,
 }
 
 /// <summary>A component refused before anything was written to a game, with the words the install shows.</summary>
 public sealed class ComponentException(ComponentFailure reason, string message, Exception? innerException = null) : Exception(message, innerException)
 {
     public ComponentFailure Reason { get; } = reason;
+
+    /// <summary>For <see cref="ComponentFailure.InstallerNotFound"/>: why each source failed, in the order they were asked; empty otherwise.</summary>
+    public IReadOnlyList<string> Reasons { get; init; } = [];
+
+    /// <summary>For <see cref="ComponentFailure.PinMissing"/>: the pinned label that is missing.</summary>
+    public string? Label { get; init; }
+
+    /// <summary>For <see cref="ComponentFailure.BuildListUnavailable"/>: the family that has no builds.</summary>
+    public BuildFamily? Family { get; init; }
+
+    /// <summary>The family's build list could not be read.</summary>
+    internal static ComponentException BuildListUnavailable(BuildFamily family) =>
+        new(ComponentFailure.BuildListUnavailable, Texts.Format("BuildListEmpty", MirrorFamilies.NameOf(family))) { Family = family };
 }

@@ -122,10 +122,17 @@ public sealed class FatbinTests
     // The architectures found, in order.
     private static string Architectures(string path) => string.Join(", ", Fatbin.Architectures(path).Order());
 
-    private string Write(byte[] content)
+    /// <summary>A DLL of <paramref name="content"/> in the temp folder, which the caller deletes.</summary>
+    internal static string WriteDll(byte[] content)
     {
         string path = Path.Join(Path.GetTempPath(), "autopilot-fatbin-" + Guid.NewGuid().ToString("N") + ".dll");
         File.WriteAllBytes(path, content);
+        return path;
+    }
+
+    private string Write(byte[] content)
+    {
+        string path = WriteDll(content);
         _files.Add(path);
         return path;
     }

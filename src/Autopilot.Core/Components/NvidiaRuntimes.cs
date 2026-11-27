@@ -8,7 +8,7 @@ namespace Autopilot.Core.Components;
 /// tree of the <c>NVIDIA/DLSS</c> SDK's newest tag. The tag comes from the <c>releases/latest</c>
 /// redirect (one HEAD, no API allowance), so the list is there when the API is rate limited.
 /// </summary>
-public sealed partial class NvidiaRuntimes(NetClient client, ILogger<NvidiaRuntimes> logger)
+public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<NvidiaRuntimes> logger)
 {
     /// <summary>NVIDIA's SDK repository.</summary>
     public const string Repository = "NVIDIA/DLSS";
@@ -17,14 +17,11 @@ public sealed partial class NvidiaRuntimes(NetClient client, ILogger<NvidiaRunti
 
     private static readonly GitHubRepository _repository = GitHubRepository.Parse(Repository);
 
-    private static readonly (BuildFamily Family, string Name)[] _files =
-    [
-        (BuildFamily.Dlss, "nvngx_dlss.dll"),
-        (BuildFamily.Dlssd, "nvngx_dlssd.dll"),
-        (BuildFamily.Dlssg, "nvngx_dlssg.dll"),
-    ];
+    // The families the SDK ships a runtime of; each family's file name and catalog row come from its table.
+    private static readonly BuildFamily[] _families = [BuildFamily.Dlss, BuildFamily.Dlssd, BuildFamily.Dlssg];
 
-    private IReadOnlyList<BuildEntry>? _remembered;
+    // An empty list is the redirect naming no release: not kept, like a failure.
+    private readonly ResolutionMemory<bool, IReadOnlyList<BuildEntry>> _memory = new(entries => entries.Count > 0);
 
     /// <summary>
     /// One entry per runtime, labelled <c>&lt;sdk tag&gt; (NVIDIA SDK)</c>, remembered for the process;
@@ -32,39 +29,9 @@ public sealed partial class NvidiaRuntimes(NetClient client, ILogger<NvidiaRunti
     /// </summary>
     public async Task<IReadOnlyList<BuildEntry>> GetAsync(CancellationToken cancellationToken)
     {
-        if (_remembered is { } remembered)
-        {
-            return remembered;
-        }
-
-        if (await TagAsync(cancellationToken) is not { } tag)
-        {
-            return [];
-        }
-
-        // One SDK ships all three and NVIDIA numbers each runtime on its own, so the label names the SDK.
-        string label = tag.TrimStart('v', 'V') + " (NVIDIA SDK)";
-        IReadOnlyList<BuildEntry> entries =
-        [
-            .. _files.Select(file => new BuildEntry(
-                file.Family,
-                BuildPublisher.Nvidia,
-                tag,
-                label,
-                new Uri($"https://raw.githubusercontent.com/{_repository.Owner}/{_repository.Name}/{Uri.EscapeDataString(tag)}/{Folder}/{file.Name}"),
-                file.Name,
-                NvidiaFiles.Signer)),
-        ];
-        _remembered = entries;
-        return entries;
-    }
-
-    private async Task<string?> TagAsync(CancellationToken cancellationToken)
-    {
-        HeadAnswer head;
         try
         {
-            head = await client.HeadAsync(_repository.Latest, ComponentHosts.Allowlist, cancellationToken);
+            return await _memory.GetAsync(true, ResolveAsync, cancellationToken);
         }
         catch (NetException failure)
         {
@@ -73,21 +40,41 @@ public sealed partial class NvidiaRuntimes(NetClient client, ILogger<NvidiaRunti
                 LogFailed(logger, failure.Host, failure.Kind);
             }
 
-            return null;
+            return [];
         }
+    }
 
-        string? tag = head.Location is { } location ? _repository.TagIn(location) : null;
-        if (tag is null && logger.IsEnabled(LogLevel.Warning))
+    /// <exception cref="NetException">The redirect could not be asked.</exception>
+    private async Task<IReadOnlyList<BuildEntry>> ResolveAsync(CancellationToken cancellationToken)
+    {
+        if (await releases.GetLatestTagAsync(Repository, cancellationToken) is not { } tag)
         {
-            LogNoTag(logger, (int)head.StatusCode, head.Location?.AbsoluteUri);
+            if (logger.IsEnabled(LogLevel.Warning))
+            {
+                LogNoTag(logger);
+            }
+
+            return [];
         }
 
-        return tag;
+        // One SDK ships all three and NVIDIA numbers each runtime on its own, so the label names the SDK.
+        string label = tag.TrimStart('v', 'V') + " (NVIDIA SDK)";
+        return
+        [
+            .. _families.Select(family => new BuildEntry(
+                family,
+                BuildPublisher.Nvidia,
+                tag,
+                label,
+                _repository.RawFile(Uri.EscapeDataString(tag), $"{Folder}/{MirrorFamilies.NameOf(family)}"),
+                MirrorFamilies.NameOf(family),
+                ComponentCatalog.Signer(MirrorFamilies.EntryOf(family).Id))),
+        ];
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "NVIDIA's latest-release redirect failed at {Host} ({Kind}); the mirror alone serves the DLSS runtimes this time")]
     private static partial void LogFailed(ILogger logger, string host, NetErrorKind kind);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "NVIDIA's latest-release redirect answered HTTP {Status} pointing at {Location}, which names no release; the mirror alone serves the DLSS runtimes this time")]
-    private static partial void LogNoTag(ILogger logger, int status, string? location);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "NVIDIA's latest-release redirect names no release; the mirror alone serves the DLSS runtimes this time")]
+    private static partial void LogNoTag(ILogger logger);
 }

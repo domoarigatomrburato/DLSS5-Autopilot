@@ -36,7 +36,7 @@ public sealed class ReleasePageTests(TestContext testContext)
         Assert.AreEqual(new ReleaseSource(ReleaseOrigin.Pages, TimeSpan.Zero), answer?.Source);
         Assert.AreEqual(apiRequests, bed.RequestsToApi, "the API is held back until its reset, so it is not asked");
         Assert.AreEqual(0, bed.RequestsTo(ReleasesBed.ApiLatest));
-        CollectionAssert.AreEqual(new[] { HttpMethod.Head }, bed.MethodsTo(ReleasesBed.LatestPage));
+        CollectionAssert.AreEqual(new[] { HttpMethod.Head }, bed.Server.MethodsTo(ReleasesBed.LatestPage));
         Assert.AreEqual(2, bed.RequestsTo(ReleasesBed.Expanded("v3.2")), "once for the list, once for latest");
     }
 
@@ -104,5 +104,5 @@ public sealed class ReleasePageTests(TestContext testContext)
 
     // The 302 captured from github.com/doitsujin/dxvk/releases/latest.
     private static string LatestLocation() =>
-        ReleaseFixtures.Fixture("dxvk-latest-redirect.txt").Split('\n').Single(line => line.StartsWith("location: ", StringComparison.Ordinal))["location: ".Length..];
+        ReleaseFixtures.LocationIn("dxvk-latest-redirect.txt");
 }

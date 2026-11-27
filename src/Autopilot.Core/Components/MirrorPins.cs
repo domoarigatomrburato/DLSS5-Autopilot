@@ -14,29 +14,23 @@ internal sealed partial class MirrorPins(GitHubReleases releases, ILogger logger
     /// could not be asked (the network failed), so the list is not remembered and the next install asks again;
     /// a tag the API does not know stays missing, and a pick that needs it refuses.
     /// </summary>
-    public async Task<(IReadOnlyList<GitHubRelease> Releases, bool Complete)> AddMissingAsync(
-        string repository,
-        IReadOnlyList<GitHubRelease> list,
-        CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<GitHubRelease> Releases, bool Complete)> AddMissingAsync(IReadOnlyList<GitHubRelease> list, CancellationToken cancellationToken)
     {
         List<GitHubRelease> all = [.. list];
         bool complete = true;
         foreach (string tag in RenodxPins.Tags.Where(tag => !list.Any(release => release.Tag == tag)))
         {
-            try
-            {
-                if (await releases.GetByTagAsync(repository, tag, cancellationToken) is { } answer)
-                {
-                    all.Add(answer.Release);
-                }
-            }
-            catch (NetException failure) when (!failure.IsRefusal)
+            ReleaseAnswer? answer = await NetFallback.OrNullAsync(releases.GetByTagAsync(MirrorCatalog.Repository, tag, cancellationToken), failure =>
             {
                 complete = false;
                 if (logger.IsEnabled(LogLevel.Warning))
                 {
                     LogPinFailed(logger, tag, failure.Host, failure.Kind);
                 }
+            });
+            if (answer is not null)
+            {
+                all.Add(answer.Release);
             }
         }
 

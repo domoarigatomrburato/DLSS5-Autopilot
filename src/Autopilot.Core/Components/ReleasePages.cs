@@ -16,18 +16,26 @@ internal sealed partial class ReleasePages(NetClient client, ILogger logger)
     // Each release costs a page of its own, so the list stops here.
     public const int MaxReleases = 12;
 
-    /// <summary>The release the <c>latest</c> redirect points at: one HEAD, never followed.</summary>
-    public async Task<GitHubRelease?> LatestAsync(GitHubRepository repo, CancellationToken cancellationToken)
-    {
-        HeadAnswer head = await client.HeadAsync(repo.Latest, ComponentHosts.Allowlist, cancellationToken);
-        return head.Location is { } location && repo.TagIn(location) is { } tag ? await ReleaseAsync(repo, tag, cancellationToken) : null;
-    }
+    // One redirect per repository for the run, shared by every caller; an answer naming no release is asked again.
+    private readonly ResolutionMemory<GitHubRepository, string?> _latestTags = new(tag => tag is not null);
+
+    /// <summary>The release the <c>latest</c> redirect points at.</summary>
+    public async Task<GitHubRelease?> LatestAsync(GitHubRepository repo, CancellationToken cancellationToken) =>
+        await LatestTagAsync(repo, cancellationToken) is { } tag ? await ReleaseAsync(repo, tag, cancellationToken) : null;
+
+    /// <summary>
+    /// The tag the <c>releases/latest</c> redirect points at: one HEAD, never followed, no API
+    /// allowance spent, and the same tag for the rest of the run once found; <see langword="null"/>
+    /// when the answer names no release.
+    /// </summary>
+    public Task<string?> LatestTagAsync(GitHubRepository repo, CancellationToken cancellationToken) =>
+        _latestTags.GetAsync(repo, token => ReadLatestTagAsync(repo, token), cancellationToken);
 
     public async Task<GitHubRelease?> ReleaseAsync(GitHubRepository repo, string tag, CancellationToken cancellationToken)
     {
         Uri fragment = repo.ExpandedAssets(tag);
         TextAnswer answer = await client.GetTextAsync(fragment, ComponentHosts.Allowlist, null, cancellationToken);
-        return IsSuccess(answer)
+        return answer.IsSuccess
             ? new(tag, Prerelease: null, Draft: null, PublishedAt: null, ReleaseHtml.Assets(answer.Body, fragment, repo))
             : null;
     }
@@ -85,7 +93,7 @@ internal sealed partial class ReleasePages(NetClient client, ILogger logger)
         try
         {
             TextAnswer answer = await client.GetTextAsync(url, ComponentHosts.Allowlist, null, cancellationToken);
-            return IsSuccess(answer) ? ReleaseHtml.Tags(answer.Body, url, repo) : [];
+            return answer.IsSuccess ? ReleaseHtml.Tags(answer.Body, url, repo) : [];
         }
         catch (NetException failure) when (page > 1 && !failure.IsRefusal)
         {
@@ -98,7 +106,11 @@ internal sealed partial class ReleasePages(NetClient client, ILogger logger)
         }
     }
 
-    private static bool IsSuccess(TextAnswer answer) => (int)answer.StatusCode is >= 200 and <= 299;
+    private async Task<string?> ReadLatestTagAsync(GitHubRepository repo, CancellationToken cancellationToken)
+    {
+        HeadAnswer head = await client.HeadAsync(repo.Latest, ComponentHosts.Allowlist, cancellationToken);
+        return head.Location is { } location ? repo.TagIn(location) : null;
+    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Release list page {Page} of {Path} failed ({Kind}); the list ends before it")]
     private static partial void LogPageFailed(ILogger logger, string path, int page, NetErrorKind kind);

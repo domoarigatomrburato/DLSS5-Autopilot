@@ -54,10 +54,13 @@ internal sealed record RenodxPin(string Label, RenodxReason AppliesWhen, string?
 /// </summary>
 public static class RenodxPins
 {
+    /// <summary>The label pinned on drivers from <see cref="NvidiaDriver.FirstWithRenodxFault"/> on, which the route's driver warning names.</summary>
+    internal const string DriverFaultLabel = "4.55";
+
     /// <summary>The pins, in precedence order. The 4.55 label satisfies all three.</summary>
     internal static IReadOnlyList<RenodxPin> Table { get; } =
     [
-        new("4.55", RenodxReason.DriverFault, NvidiaDriver.FirstWithRenodxFault,
+        new(DriverFaultLabel, RenodxReason.DriverFault, NvidiaDriver.FirstWithRenodxFault,
             "4.6/4.7 fault inside D3D12Core.dll on every evaluate on driver 616.64 and newer (DLSS5-Feeder #54: 4.55 passes 300/300, 4.7 passes 0/300)"),
         new("4.60", RenodxReason.OpenGl, null,
             "4.70's workset pool never recycles under OpenGL (\"NR workset pool exhausted\" after four frames), verified on six OpenGL games"),
@@ -65,11 +68,9 @@ public static class RenodxPins
             "newer builds overlap feeder releases below v0.8.0-beta.3 and CreateFeature dies with 0xC0000005"),
     ];
 
-    /// <summary>Every label a pin names, each once.</summary>
-    internal static IEnumerable<string> Labels => Table.Select(pin => pin.Label).Distinct(StringComparer.Ordinal);
-
     /// <summary>The mirror's tag of every pinned build, each once (<c>renodx-dlss5-4.55</c>).</summary>
-    internal static IReadOnlyList<string> Tags { get; } = [.. Labels.Select(label => MirrorFamilies.TagOf(BuildFamily.Renodx, label))];
+    internal static IReadOnlyList<string> Tags { get; } =
+        [.. Table.Select(pin => pin.Label).Distinct(StringComparer.Ordinal).Select(label => MirrorFamilies.TagOf(BuildFamily.Renodx, label))];
 
     /// <summary>The build to take for these inputs, by the precedence above.</summary>
     public static RenodxDecision Decide(RenodxInputs inputs)
@@ -93,8 +94,10 @@ public static class RenodxPins
     /// <see cref="PickedBuild.WantedMissing"/> for the caller to say; a pin that is not on the list is a refusal.
     /// </summary>
     /// <exception cref="ArgumentException">The decision is <see cref="RenodxReason.OwnFile"/>: nothing is taken from the list.</exception>
-    /// <exception cref="BuildListUnavailableException">The list has no <c>renodx-dlss5</c> builds.</exception>
-    /// <exception cref="RenodxPinMissingException">A pin's build is not on the list.</exception>
+    /// <exception cref="ComponentException">
+    /// The list has no <c>renodx-dlss5</c> builds (<see cref="ComponentFailure.BuildListUnavailable"/>), or a pin's
+    /// build is not on it (<see cref="ComponentFailure.PinMissing"/>): the newest build is the kind of build the pin exists to avoid.
+    /// </exception>
     public static PickedBuild Pick(BuildCatalog catalog, RenodxDecision decision)
     {
         if (decision.Reason == RenodxReason.OwnFile)
@@ -103,8 +106,11 @@ public static class RenodxPins
         }
 
         PickedBuild picked = catalog.Pick(BuildFamily.Renodx, decision.Label);
-        return decision.IsPin && picked.WantedMissing ? throw new RenodxPinMissingException(decision.Label!) : picked;
+        return decision.IsPin && picked.WantedMissing ? throw PinMissing(decision.Label!) : picked;
     }
+
+    private static ComponentException PinMissing(string label) =>
+        new(ComponentFailure.PinMissing, Texts.Format("RenodxPinMissing", label)) { Label = label };
 
     private static bool Applies(RenodxPin pin, RenodxInputs inputs) => pin.AppliesWhen switch
     {
@@ -114,14 +120,4 @@ public static class RenodxPins
             && new ComponentVersion(feeder).CompareTo(new ComponentVersion(pin.Threshold!)) == VersionOrder.Older,
         _ => false,
     };
-}
-
-/// <summary>
-/// A pinned <c>renodx-dlss5</c> build is not on the build list. The install stops before anything is
-/// written: the newest build is the kind of build the pin exists to avoid.
-/// </summary>
-public sealed class RenodxPinMissingException(string label) : Exception(Texts.Format("RenodxPinMissing", label))
-{
-    /// <summary>The pinned label that is missing.</summary>
-    public string Label { get; } = label;
 }

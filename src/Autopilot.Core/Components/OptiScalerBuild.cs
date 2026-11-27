@@ -1,4 +1,5 @@
 using Autopilot.Core.Gpu;
+using Autopilot.Core.Net;
 using Autopilot.Core.Resources;
 
 namespace Autopilot.Core.Components;
@@ -47,4 +48,21 @@ public sealed record OptiScalerBuild(string Key, string Repository, IReadOnlyLis
     /// </summary>
     public string? CardRefusal(GpuCard? card) =>
         OnlyCardSm is { } only && card?.Sm is { } sm && sm != only ? Texts.Text("OptiScalerMfgCard") : null;
+
+    /// <summary>
+    /// How <paramref name="archive"/> of <paramref name="release"/> proves itself: the catalog's OptiScaler
+    /// check for this build's own repository, which is the release's <c>SHA256SUMS</c> file, else the
+    /// API's digest, else only the magic bytes. A build that publishes sums in every release always
+    /// uses them, and without them nothing is installed unchecked.
+    /// </summary>
+    /// <exception cref="ComponentException">The build publishes sums and this release carries none.</exception>
+    internal Verification VerificationOf(GitHubRelease release, GitHubAsset archive)
+    {
+        CatalogEntry entry = ComponentCatalog.Of(ComponentIds.OptiScaler) with
+        {
+            Source = Repository,
+            Check = PublishesSums ? ComponentCheck.SumsRequired : ComponentCheck.SumsWhenPublished,
+        };
+        return entry.VerificationOf(release, archive, Texts.Format("OptiScalerSumsMissing", release.Tag, Repository));
+    }
 }

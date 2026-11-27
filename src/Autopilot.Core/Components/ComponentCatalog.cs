@@ -1,3 +1,4 @@
+using System.IO.Enumeration;
 using Autopilot.Core.Net;
 using Autopilot.Core.Resources;
 
@@ -60,8 +61,49 @@ public enum ComponentCheck
 /// Why a file goes in with only its magic bytes checked: always for <see cref="ComponentCheck.None"/>,
 /// and for a release that gives no digest otherwise.
 /// </param>
-/// <param name="SumsName">The sums file's asset name, for the sums checks.</param>
-public sealed record CatalogEntry(string Id, string Publisher, string Source, ComponentCheck Check, string UncheckedReason, string? SumsName = null);
+/// <param name="SumsPattern">
+/// The sums file's asset name for the sums checks, case ignored: a name, or a pattern where <c>*</c>
+/// stands for any run of characters.
+/// </param>
+public sealed record CatalogEntry(string Id, string Publisher, string Source, ComponentCheck Check, string UncheckedReason, string? SumsPattern = null)
+{
+    /// <summary>The source as a GitHub repository.</summary>
+    /// <exception cref="ArgumentException">The source is not a GitHub repository (a web site).</exception>
+    internal GitHubRepository Repository => GitHubRepository.Parse(Source);
+
+    /// <summary>
+    /// The check for <paramref name="asset"/> of <paramref name="release"/>, as this entry says: the sums
+    /// file the release carries, the release data's digest, or only the magic bytes.
+    /// </summary>
+    /// <param name="release">The release the asset is taken from.</param>
+    /// <param name="asset">The asset to check.</param>
+    /// <param name="sumsMissing">The words shown when sums are required and missing; unset, the catalog's own.</param>
+    /// <exception cref="ComponentException">The publisher puts sums in every release and this one carries none.</exception>
+    /// <exception cref="ArgumentException">This component is not checked by its release data.</exception>
+    internal Verification VerificationOf(GitHubRelease release, GitHubAsset asset, string? sumsMissing = null)
+    {
+        SumsFileVerification? sums = SumsPattern is { } pattern
+            && release.Assets.FirstOrDefault(candidate => FileSystemName.MatchesSimpleExpression(pattern, candidate.Name, ignoreCase: true)) is { } listed
+            ? new(listed.Url, asset.Name)
+            : null;
+        return Check switch
+        {
+            ComponentCheck.SumsRequired => sums
+                ?? throw new ComponentException(
+                    ComponentFailure.SumsMissing,
+                    sumsMissing ?? Texts.Format("ComponentSumsMissing", Source, release.Tag, SumsPattern)),
+            ComponentCheck.SumsWhenPublished => sums ?? DigestOr(asset),
+            ComponentCheck.ReleaseDigest => DigestOr(asset),
+            _ => throw new ArgumentException($"'{Id}' is not checked by its release data"),
+        };
+    }
+
+    /// <summary>The SHA-256 GitHub's release data gives for <paramref name="asset"/>; only the magic bytes, and this entry's reason, when it gives none.</summary>
+    internal Verification DigestOr(GitHubAsset asset) => asset.Digest ?? (Verification)Unchecked();
+
+    /// <summary>Only the magic bytes, and why: this entry's own reason, or <paramref name="why"/> (a file taken with no release data).</summary>
+    internal NoVerification Unchecked(string? why = null) => new($"{Source}: {why ?? UncheckedReason}");
+}
 
 /// <summary>
 /// Every component the routes install, as data: its publisher, its source, how it is verified, and
@@ -92,7 +134,9 @@ public static class ComponentCatalog
         new(ComponentIds.Upstream, "matiasLombo", ComponentRepositories.Upstream, ComponentCheck.ReleaseDigest, NoDigest),
         new(ComponentIds.Standalone, "kibblerz", ComponentRepositories.Standalone, ComponentCheck.ReleaseDigest, NoDigest),
         new(ComponentIds.Uplift, "ghostinthecamera", ComponentRepositories.Uplift, ComponentCheck.SumsRequired, NoDigest, Sums),
-        new(ComponentIds.OptiScaler, "the build's publisher", OptiScalerBuild.Default.Repository, ComponentCheck.ReleaseDigest, NoDigest),
+        // A build that publishes sums in every release requires them (OptiScalerBuild.PublishesSums);
+        // the sums file's name varies by build.
+        new(ComponentIds.OptiScaler, "the build's publisher", OptiScalerBuild.Default.Repository, ComponentCheck.SumsWhenPublished, NoDigest, "*SHA256SUMS*"),
         new(ComponentIds.Dxvk, "doitsujin", ComponentRepositories.Dxvk, ComponentCheck.ReleaseDigest, NoDigest),
         new(ComponentIds.Reframework, "praydog", ComponentRepositories.Reframework, ComponentCheck.ReleaseDigest, NoDigest),
         new(ComponentIds.Mfg, "dashdogy", ComponentRepositories.Mfg, ComponentCheck.ReleaseDigest, NoDigest),
@@ -108,32 +152,10 @@ public static class ComponentCatalog
     public static CatalogEntry Of(string id) =>
         All.FirstOrDefault(entry => entry.Id == id) ?? throw new ArgumentException($"'{id}' is not a component", nameof(id));
 
-    /// <summary>The check for <paramref name="asset"/> of <paramref name="release"/>, as the component's entry says.</summary>
-    /// <exception cref="ComponentException">The publisher puts sums in every release and this one carries none.</exception>
-    internal static Verification VerificationOf(string id, GitHubRelease release, GitHubAsset asset)
-    {
-        CatalogEntry entry = Of(id);
-        SumsFileVerification? sums = entry.SumsName is { } name
-            && release.Assets.FirstOrDefault(candidate => string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase)) is { } listed
-            ? new(listed.Url, asset.Name)
-            : null;
-        return entry.Check switch
-        {
-            ComponentCheck.SumsRequired => sums ?? throw new ComponentException(ComponentFailure.SumsMissing, Texts.Format("ComponentSumsMissing", entry.Source, release.Tag, entry.SumsName)),
-            ComponentCheck.SumsWhenPublished => sums ?? Unchecked(entry, asset),
-            ComponentCheck.ReleaseDigest => Unchecked(entry, asset),
-            _ => throw new ArgumentException($"'{id}' is not checked by its release data", nameof(id)),
-        };
-    }
-
-    /// <summary>Only the magic bytes, and why: the entry's own reason, or <paramref name="why"/> (a file taken with no release data).</summary>
-    internal static NoVerification Unchecked(string id, string? why = null)
-    {
-        CatalogEntry entry = Of(id);
-        return new($"{entry.Source}: {why ?? entry.UncheckedReason}");
-    }
-
-    private static Verification Unchecked(CatalogEntry entry, GitHubAsset asset) => asset.Digest ?? (Verification)Unchecked(entry.Id);
+    /// <summary>The signer a component's files must carry.</summary>
+    /// <exception cref="ArgumentException">The component is not checked by its signer.</exception>
+    internal static SignerVerification Signer(string id) =>
+        Of(id).Check == ComponentCheck.NvidiaSigner ? NvidiaFiles.Signer : throw new ArgumentException($"'{id}' is not checked by its signer", nameof(id));
 }
 
 /// <summary>The GitHub repositories of the components this area resolves.</summary>

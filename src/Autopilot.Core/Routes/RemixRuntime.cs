@@ -12,29 +12,26 @@ internal static class RemixRuntime
 {
     private const string Folder = ".trex";
 
-    private const string RuntimeDll = "d3d9.dll";
+    private const string RuntimeDll = KnownFiles.D3d9;
 
     // Folders searched for a .trex: the start folder and two levels below it, so a .trex lies at most
     // three levels deep. Bounded to 2000 folders listed besides, as a library scan runs this per game.
     private const int Levels = 3;
     private const int MaxFolders = 2000;
 
-    // Never entered, compared ignoring case, and neither is any other folder starting with '.'.
-    private static readonly FrozenSet<string> _skipped = new[]
-    {
-        "content", "paks", "saved", "logs", "movies", "sounds", "music", "videos", "localization", "shadercache",
-        "derivedcache", "cache", "textures", "maps", "levels", "audio", "data", "assets", "mods", "screenshots",
-        "steamapps", "redist", "_commonredist", "rtx-remix", "rtx_comp", "common", "update", "pc",
-    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+    // Never entered, compared ignoring case, and neither is any other folder starting with '.':
+    // the asset folders and this search's own.
+    private static readonly FrozenSet<string> _skipped =
+        RuntimeWalk.AssetFolders.Concat(["rtx-remix", "rtx_comp", "common", "update", "pc"]).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The first <c>.trex</c> found under the folders, tried in order, or null.</summary>
-    public static string? Find(IEnumerable<string> folders, CancellationToken cancellationToken) =>
+    public static string? Find(IEnumerable<string> folders, SharedListings listings, CancellationToken cancellationToken) =>
         folders.DistinctBy(RuntimeWalk.Normal, StringComparer.OrdinalIgnoreCase)
-            .Select(folder => Find(folder, cancellationToken))
+            .Select(folder => Find(folder, listings, cancellationToken))
             .FirstOrDefault(found => found is not null);
 
     /// <summary>The <c>.trex</c> folder under <paramref name="folder"/>, breadth first, links not followed; or null.</summary>
-    public static string? Find(string folder, CancellationToken cancellationToken)
+    private static string? Find(string folder, SharedListings listings, CancellationToken cancellationToken)
     {
         List<string> level = [folder];
         int listed = 0;
@@ -44,13 +41,14 @@ internal static class RemixRuntime
             foreach (string current in level.TakeWhile(_ => listed++ < MaxFolders))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                // Asked by path, not from the listing: a .trex that is itself a link still counts.
                 string runtime = Path.Join(current, Folder);
                 if (DrivePaths.IsFile(Path.Join(runtime, RuntimeDll)))
                 {
                     return runtime;
                 }
 
-                below.AddRange(FolderListing.RealFolders(current, cancellationToken).Where(Enters));
+                below.AddRange(listings.RealFolders(current, cancellationToken).Where(Enters));
             }
 
             level = below;

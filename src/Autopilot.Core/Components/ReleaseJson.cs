@@ -32,6 +32,26 @@ internal static class ReleaseJson
             : throw Malformed(url, "the answer is not a list");
     }
 
+    /// <summary>The commit a <c>/commits/&lt;branch&gt;</c> answer names: its <c>sha</c>, 40 lowercase hex digits.</summary>
+    /// <exception cref="ReleaseDataException">The answer is not JSON, or names no commit.</exception>
+    public static string Commit(Uri api, string body)
+    {
+        string? commit;
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            commit = UntrustedJson.Text(document.RootElement, "sha");
+        }
+        catch (JsonException failure)
+        {
+            throw new ReleaseDataException(api, $"{api.AbsolutePath}: the answer is not JSON", failure);
+        }
+
+        return commit is { Length: ComponentVersion.CommitLength } && commit.All(char.IsAsciiHexDigitLower)
+            ? commit
+            : throw new ReleaseDataException(api, $"{api.AbsolutePath}: the answer names no commit");
+    }
+
     private static JsonDocument Parse(Uri url, string body)
     {
         try

@@ -36,8 +36,11 @@ internal sealed class StandaloneComponent(GitHubReleases releases, NetClient cli
             return ReleaseAssets.Of(ComponentIds.Standalone, latest, [.. loose, .. assets.Where(asset => ReleaseAssets.Is(asset, StandaloneBoundary))], _standaloneLayout);
         }
 
-        GitHubAsset archive = assets.FirstOrDefault(asset => asset.Name.EndsWith("-64-bit.zip", StringComparison.OrdinalIgnoreCase))
-            ?? throw ReleaseAssets.LayoutChanged(ComponentIds.Standalone, latest.Release.Tag, string.Join(", ", StandaloneFiles) + " or a -64-bit.zip");
+        GitHubAsset archive = ReleaseAssets.First(
+            ComponentIds.Standalone,
+            latest.Release,
+            asset => asset.Name.EndsWith("-64-bit.zip", StringComparison.OrdinalIgnoreCase),
+            string.Join(", ", StandaloneFiles) + " or a -64-bit.zip");
         return ReleaseAssets.Of(ComponentIds.Standalone, latest, [archive], _standaloneLayout);
     }
 
@@ -45,33 +48,28 @@ internal sealed class StandaloneComponent(GitHubReleases releases, NetClient cli
     // asked with a HEAD before the install is committed to it.
     private async Task<ComponentRelease?> ArchiveByNameAsync(CancellationToken cancellationToken)
     {
-        var repo = GitHubRepository.Parse(ComponentRepositories.Standalone);
-        if (await HeadAsync(repo.Latest, cancellationToken) is not { Location: { } location } || repo.TagIn(location) is not { } tag)
+        CatalogEntry entry = ComponentCatalog.Of(ComponentIds.Standalone);
+        if (await NetFallback.OrNullAsync(releases.GetLatestTagAsync(entry.Source, cancellationToken)) is not { } tag)
         {
             return null;
         }
 
         string name = $"DLSS5-ReShade-AIO-{tag}-64-bit.zip";
-        Uri url = repo.ReleaseDownload(tag, name);
-        return await HeadAsync(url, cancellationToken) is { StatusCode: >= System.Net.HttpStatusCode.OK and < System.Net.HttpStatusCode.BadRequest }
-            ? new(
-                ComponentIds.Standalone,
-                new(tag),
-                [new(name, url, ComponentCatalog.Unchecked(ComponentIds.Standalone, ReleaseAssets.NoReleaseData))],
-                _standaloneLayout,
-                new(ReleaseOrigin.Pages, TimeSpan.Zero))
-            : null;
+        Uri url = entry.Repository.ReleaseDownload(tag, name);
+        return await ExistsAsync(url, cancellationToken) ? Guessed(entry, tag, name, url) : null;
     }
 
-    private async Task<HeadAnswer?> HeadAsync(Uri url, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await client.HeadAsync(url, ComponentHosts.Allowlist, cancellationToken);
-        }
-        catch (NetException failure) when (!failure.IsRefusal)
-        {
-            return null;
-        }
-    }
+    private static ComponentRelease Guessed(CatalogEntry entry, string tag, string name, Uri url) =>
+        new(
+            ComponentIds.Standalone,
+            new(tag),
+            [new(name, url, entry.Unchecked(ReleaseAssets.NoReleaseData))],
+            _standaloneLayout,
+            new(ReleaseOrigin.Pages, TimeSpan.Zero));
+
+    // A HEAD is never followed: GitHub answers an asset's address with a redirect to its storage, so
+    // a 3xx says the asset exists as much as a 2xx does. A network failure says it does not.
+    private async Task<bool> ExistsAsync(Uri url, CancellationToken cancellationToken) =>
+        await NetFallback.OrNullAsync(client.HeadAsync(url, ComponentHosts.Allowlist, cancellationToken))
+            is { StatusCode: >= System.Net.HttpStatusCode.OK and < System.Net.HttpStatusCode.BadRequest };
 }

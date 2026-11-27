@@ -115,6 +115,7 @@ public sealed class AddonReleaseTests(TestContext testContext)
 
         Assert.AreSame(ComponentVersion.Latest, release.Version);
         Assert.IsFalse(release.Version.IsComparable);
+        Assert.AreEqual(VersionOrder.NotComparable, release.Version.CompareTo(new ComponentVersion("1.0.0")));
         ComponentDownload addon = release.Downloads.Single();
         Assert.AreEqual(new Uri("https://github.com/matiasLombo/neural-upstream/releases/latest/download/nvngx.dll.addon64"), addon.Url);
         Assert.AreEqual(new NoVerification("matiasLombo/neural-upstream: taken with no release data, so no digest is known"), addon.Verification);
@@ -180,6 +181,7 @@ public sealed class AddonReleaseTests(TestContext testContext)
         Assert.AreEqual("v2.2.4", release.Version.Label);
         Assert.AreEqual(new Uri(archive), release.Downloads.Single().Url);
         Assert.AreSequenceEqual([HttpMethod.Head], [.. bed.Server.Requests.Where(request => request.Url == new Uri(archive)).Select(request => request.Method)]);
+        Assert.AreEqual(1, bed.Server.RequestsTo(ComponentsBed.LatestPage(Standalone)), "the pages' fallback and the guessed name share one redirect");
         Assert.AreEqual("GitHub's API could not be reached; this release was read from github.com's release pages instead.", release.Notice);
     }
 
@@ -263,8 +265,8 @@ public sealed class AddonReleaseTests(TestContext testContext)
     {
         ComponentsBed bed = new ComponentsBed(testContext)
             .Unreachable(ComponentsBed.Api(Standalone, "/latest"))
-            .Unreachable($"https://github.com/{Standalone}/releases/expanded_assets/v2.2.4");
-        _ = bed.Server.Redirect($"https://github.com/{Standalone}/releases/latest", $"https://github.com/{Standalone}/releases/tag/v2.2.4");
+            .Unreachable(ComponentsBed.Expanded(Standalone, "v2.2.4"));
+        _ = bed.Server.Redirect(ComponentsBed.LatestPage(Standalone), $"https://github.com/{Standalone}/releases/tag/v2.2.4");
         _ = archiveStatus == HttpStatusCode.Found
             ? bed.Server.Redirect(archive, "https://release-assets.githubusercontent.com/github-production-release-asset/1/2")
             : bed.Server.Answer(archive, archiveStatus);

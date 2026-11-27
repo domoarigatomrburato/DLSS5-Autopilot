@@ -44,7 +44,7 @@ public sealed class MirrorPinTests(TestContext testContext)
         BuildCatalog catalog = await bed.Get();
 
         StringAssert.Contains(MirrorBed.Labels(catalog, BuildFamily.Renodx), "4.70, 4.60, 4.5,", StringComparison.Ordinal);
-        Assert.AreEqual("4.55", Assert.Throws<RenodxPinMissingException>(() => RenodxPins.Pick(catalog, _driverFault)).Label);
+        Assert.AreEqual("4.55", Assert.Throws<ComponentException>(() => RenodxPins.Pick(catalog, _driverFault)).Label);
     }
 
     [TestMethod]

@@ -21,7 +21,6 @@ public sealed class HeadTests(TestContext testContext)
 
         Assert.AreEqual(HttpStatusCode.Found, answer.StatusCode);
         Assert.AreEqual(new Uri(Tag), answer.Location);
-        Assert.AreEqual(bed.Start, answer.FetchedAt);
         Assert.HasCount(1, bed.Server.Requests);
         Assert.AreEqual(HttpMethod.Head, bed.Server.Requests[0].Method);
         Assert.AreEqual(0, bed.Server.RequestsTo(Tag));

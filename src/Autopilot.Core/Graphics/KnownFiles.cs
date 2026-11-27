@@ -22,6 +22,12 @@ internal static class KnownFiles
 
     public const string RayReconstruction = "nvngx_dlssd.dll";
 
+    /// <summary>NVIDIA's neural-rendering runtime.</summary>
+    public const string NeuralRendering = "nvngx_dlssnr.dll";
+
+    /// <summary>The Remix runtime's own NGX runtime, beside its <c>d3d9.dll</c>.</summary>
+    public const string RemixNgx = "remix_nvngx.dll";
+
     public const string UnityPlayer = "UnityPlayer.dll";
 
     public const string D3d12 = "d3d12.dll";
@@ -39,6 +45,12 @@ internal static class KnownFiles
     public const string D3d9 = "d3d9.dll";
 
     public const string D3d8 = "d3d8.dll";
+
+    /// <summary>The loader name ASI loaders and REFramework take.</summary>
+    public const string Dinput8 = "dinput8.dll";
+
+    /// <summary>The proxy DLLs DXVK ships per architecture folder.</summary>
+    public static readonly IReadOnlyList<string> DxvkProxies = [Dxgi, D3d11, D3d9, D3d8];
 
     /// <summary>Direct3D 10's DLLs, any of which a Direct3D 10 game may load.</summary>
     public static readonly IReadOnlyList<string> D3d10Family = [D3d10, "d3d10_1.dll", "d3d10core.dll"];
@@ -132,13 +144,13 @@ internal static class KnownFiles
     public static readonly FrozenSet<string> NotTheGame = Set(
     [
         .. Renderers.Select(renderer => renderer.Name),
-        "reshade32.dll", "reshade64.dll", "reshade.dll", "ddraw.dll", "dinput8.dll", "winmm.dll",
+        .. Streamline,
+        .. XessRuntimes,
+        "reshade32.dll", "reshade64.dll", "reshade.dll", "ddraw.dll", Dinput8, "winmm.dll",
         "version.dll", "dbghelp.dll", "winhttp.dll", "wininet.dll", "d3dcompiler_47.dll",
-        "nvngx_dlssnr.dll", Dlss, RayReconstruction, FrameGeneration, "_nvngx.dll", "nvngx-wrapper.dll",
-        "remix_nvngx.dll", "optiscaler.dll", "dlss5-bridge.dll", "dlss-enabler.dll",
-        "dlss-enabler-headless.dll", "rtx40mfgcore.dll", "sl.interposer.dll", "sl.common.dll",
-        "sl.reflex.dll", "sl.dlss.dll", "sl.dlss_g.dll", "sl.dlss_d.dll", "sl.pcl.dll", "libxess.dll",
-        "libxess_dx11.dll", "libxess_fg.dll", "libxell.dll", "amd_fidelityfx_dx12.dll",
+        NeuralRendering, Dlss, RayReconstruction, FrameGeneration, "_nvngx.dll", "nvngx-wrapper.dll",
+        RemixNgx, "optiscaler.dll", "dlss5-bridge.dll", "dlss-enabler.dll",
+        "dlss-enabler-headless.dll", "rtx40mfgcore.dll", "sl.dlss_d.dll", "sl.pcl.dll", "libxell.dll", "amd_fidelityfx_dx12.dll",
         "amd_fidelityfx_vk.dll", "amd_fidelityfx_upscaler_dx12.dll",
         "amd_fidelityfx_framegeneration_dx12.dll", "amd_fidelityfx_loader_dx12.dll",
         "ffx_fsr2_api_x64.dll", "ffx_fsr2_api_dx12_x64.dll", "ffx_fsr2_api_vk_x64.dll",
@@ -161,5 +173,6 @@ internal static class KnownFiles
             && !OurAddons.Contains(name)
             && NgxAddonWords.Any(word => name.Contains(word, StringComparison.OrdinalIgnoreCase)));
 
-    private static FrozenSet<string> Set(params IEnumerable<string> names) => names.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+    /// <summary>A set of file names, case ignored.</summary>
+    public static FrozenSet<string> Set(params IEnumerable<string> names) => names.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 }

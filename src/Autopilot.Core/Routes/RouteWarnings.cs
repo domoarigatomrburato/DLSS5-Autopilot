@@ -1,3 +1,4 @@
+using Autopilot.Core.Components;
 using Autopilot.Core.Gpu;
 
 namespace Autopilot.Core.Routes;
@@ -8,9 +9,6 @@ namespace Autopilot.Core.Routes;
 /// </summary>
 internal static class RouteWarnings
 {
-    // The renodx-dlss5 build the tool pins on drivers from 616.64 on (components' "renodx pins").
-    private const string RenodxPin = "4.55";
-
     /// <summary>The warnings shown with <paramref name="route"/> for this card and driver.</summary>
     public static RouteMessage[] For(RouteId route, GpuFacts? gpu, bool standaloneOffered)
     {
@@ -44,8 +42,8 @@ internal static class RouteWarnings
     private static RouteMessage Fault(RouteId route, string driver) => route switch
     {
         RouteId.Native or RouteId.Bridge or RouteId.Feeder =>
-            new RouteMessage("RouteDriverRenodxFault", driver, NvidiaDriver.FirstWithRenodxFault, RenodxPin, NvidiaDriver.FirstWithNeuralRuntime),
-        RouteId.Renodx => new RouteMessage("RouteDriverShortFuse", driver, NvidiaDriver.FirstWithRenodxFault, RenodxPin, NvidiaDriver.FirstWithNeuralRuntime),
+            new RouteMessage("RouteDriverRenodxFault", driver, NvidiaDriver.FirstWithRenodxFault, RenodxPins.DriverFaultLabel, NvidiaDriver.FirstWithNeuralRuntime),
+        RouteId.Renodx => new RouteMessage("RouteDriverShortFuse", driver, NvidiaDriver.FirstWithRenodxFault, RenodxPins.DriverFaultLabel, NvidiaDriver.FirstWithNeuralRuntime),
         RouteId.Standalone => new RouteMessage("RouteDriverStandalone", driver, NvidiaDriver.FirstWithRenodxFault, NvidiaDriver.FirstWithNeuralRuntime),
         _ => new RouteMessage("RouteDriverGeneric", driver, NvidiaDriver.FirstWithRenodxFault, NvidiaDriver.FirstWithNeuralRuntime),
     };

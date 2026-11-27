@@ -10,12 +10,6 @@ namespace Autopilot.Core.Components;
 /// </summary>
 public sealed partial class ComponentSources
 {
-    /// <summary>The RTX40MFG-Unlock release asked for by its tag first: the one this route was last run against.</summary>
-    public const string MfgPin = "v1.2.1";
-
-    /// <summary>The Ultimate ASI Loader release used; v10 exists and nobody has run it with this route yet.</summary>
-    public const string AsiLoaderPin = "v9.7.4";
-
     private readonly ResolutionMemory<string, ComponentRelease> _memory = new();
     private readonly Dictionary<string, Func<CancellationToken, Task<ComponentRelease>>> _resolvers;
     private readonly BranchSnapshots _branches;
@@ -26,7 +20,7 @@ public sealed partial class ComponentSources
         ReleaseComponents fromReleases = new(releases);
         ListedComponents listed = new(releases);
         StandaloneComponent standalone = new(releases, client);
-        _branches = new(client, time);
+        _branches = new(client, time, logger);
         _logger = logger;
         _resolvers = new(StringComparer.Ordinal)
         {

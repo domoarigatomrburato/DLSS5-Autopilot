@@ -59,7 +59,7 @@ public sealed class NetClient : IDisposable
             return new(HttpStatusCode.OK, kept.Body, kept.FetchedAt, IsStale: true);
         }
 
-        if ((int)answer.StatusCode is >= 200 and <= 299)
+        if (answer.IsSuccess)
         {
             await _cache.KeepAsync(url, new(url.AbsoluteUri, answer.FetchedAt, answer.Body), cancellationToken);
         }

@@ -16,13 +16,13 @@ internal static class OptiScalerFolder
     /// The folder of <paramref name="unpacked"/> that holds the package: itself, or the one folder
     /// it is wrapped in, so <c>OptiScaler.dll</c> is found where the proxy rename looks.
     /// </summary>
-    /// <exception cref="OptiScalerException">No <c>OptiScaler.dll</c> at that root (a copy in a subfolder is not the one renamed to the proxy).</exception>
+    /// <exception cref="ComponentException">No <c>OptiScaler.dll</c> at that root (a copy in a subfolder is not the one renamed to the proxy).</exception>
     public static string PackageRoot(string unpacked, string tag)
     {
         string root = Directory.GetFileSystemEntries(unpacked) is [var only] && Directory.Exists(only) ? only : unpacked;
         return Directory.EnumerateFiles(root).Any(path => string.Equals(Path.GetFileName(path), MainDll, StringComparison.OrdinalIgnoreCase))
             ? root
-            : throw new OptiScalerException(OptiScalerFailure.NotOptiScaler, Texts.Format("OptiScalerNotAPackage", tag, Held(root)));
+            : throw new ComponentException(ComponentFailure.NotOptiScaler, Texts.Format("OptiScalerNotAPackage", tag, Held(root)));
     }
 
     // A sample of what the package holds, programs first: four markdown files must not bury the one name that explains it.

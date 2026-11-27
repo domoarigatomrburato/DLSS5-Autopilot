@@ -18,6 +18,9 @@ public sealed class GitHubReleases(NetClient client, TimeProvider time, ILogger<
     private readonly ReleasePages _pages = new(client, logger);
     private readonly ReleaseResolver _resolver = new(client, time, logger);
 
+    // Several components pick from the same list (the feeder's choices, wilsjo2's two builds): it is read once per run.
+    private readonly ResolutionMemory<(string Repository, int Count), ReleaseListAnswer> _lists = new();
+
     /// <summary>The newest release that is neither a draft nor a pre-release, as GitHub names it; <see langword="null"/> when the repository has none.</summary>
     /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
     /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer.</exception>
@@ -47,16 +50,40 @@ public sealed class GitHubReleases(NetClient client, TimeProvider time, ILogger<
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="count"/> is not 1 to <see cref="MaxListCount"/>.</exception>
     /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer, or the API does not know the repository.</exception>
     /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
-    public async Task<ReleaseListAnswer> GetListAsync(string repository, int count, CancellationToken cancellationToken)
+    public Task<ReleaseListAnswer> GetListAsync(string repository, int count, CancellationToken cancellationToken) =>
+        GetListAsync(repository, count, (pages, repo, token) => pages.ListAsync(repo, count, token), cancellationToken);
+
+    /// <summary>
+    /// <see cref="GetListAsync(string, int, CancellationToken)"/>, read once per run: the same answer
+    /// for the rest of the run once read, for the callers that pick from one list several times.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="count"/> is not 1 to <see cref="MaxListCount"/>.</exception>
+    /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer, or the API does not know the repository.</exception>
+    /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
+    internal Task<ReleaseListAnswer> GetListOnceAsync(string repository, int count, CancellationToken cancellationToken) =>
+        _lists.GetAsync((repository, count), token => GetListAsync(repository, count, token), cancellationToken);
+
+    /// <summary>
+    /// Up to <paramref name="count"/> releases, newest first, with the caller's own reading of
+    /// github.com's pages when the API fails and nothing was kept.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="count"/> is not 1 to <see cref="MaxListCount"/>.</exception>
+    /// <exception cref="NetException">Neither the API, nor a kept answer, nor the pages could answer, or the API does not know the repository.</exception>
+    /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>
+    internal async Task<ReleaseListAnswer> GetListAsync(
+        string repository,
+        int count,
+        Func<ReleasePages, GitHubRepository, CancellationToken, Task<IReadOnlyList<GitHubRelease>?>> pagesFallback,
+        CancellationToken cancellationToken)
     {
         var repo = GitHubRepository.Parse(repository);
-        ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, MaxListCount);
-        Uri api = repo.Api("?per_page=" + count.ToString(CultureInfo.InvariantCulture));
+        Uri api = ListApi(repo, count);
         (IReadOnlyList<GitHubRelease>? releases, ReleaseSource source) = await _resolver.ResolveAsync(
             api,
             ReleaseJson.List,
-            token => _pages.ListAsync(repo, count, token),
+            token => pagesFallback(_pages, repo, token),
             cancellationToken);
         return releases is not null ? new(releases, source) : throw ReleaseResolver.StatusFailure(api, HttpStatusCode.NotFound);
     }
@@ -70,13 +97,17 @@ public sealed class GitHubReleases(NetClient client, TimeProvider time, ILogger<
     internal Task<IReadOnlyList<string>> GetPageTagsAsync(string repository, int pages, CancellationToken cancellationToken) =>
         _pages.TagsOnPagesAsync(GitHubRepository.Parse(repository), pages, cancellationToken);
 
-    /// <summary>The address of an asset of the newest release by GitHub's own redirect, for when no release data can be read.</summary>
-    /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>, or the asset name is empty.</exception>
-    public static LatestDownload LatestDownloadOf(string repository, string assetName)
+    /// <summary>The tag GitHub's <c>releases/latest</c> redirect points at; <see langword="null"/> when it names no release.</summary>
+    /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
+    /// <exception cref="NetException">The redirect could not be asked.</exception>
+    internal Task<string?> GetLatestTagAsync(string repository, CancellationToken cancellationToken) =>
+        _pages.LatestTagAsync(GitHubRepository.Parse(repository), cancellationToken);
+
+    private static Uri ListApi(GitHubRepository repo, int count)
     {
-        var repo = GitHubRepository.Parse(repository);
-        ArgumentException.ThrowIfNullOrWhiteSpace(assetName);
-        return new(repo.LatestDownload(assetName), ComponentVersion.Latest);
+        ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, MaxListCount);
+        return repo.Api("?per_page=" + count.ToString(CultureInfo.InvariantCulture));
     }
 
     private async Task<ReleaseAnswer?> GetOneAsync(Uri api, Func<CancellationToken, Task<GitHubRelease?>> fromPages, CancellationToken cancellationToken)

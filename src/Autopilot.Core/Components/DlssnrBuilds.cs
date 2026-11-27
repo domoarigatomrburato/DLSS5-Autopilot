@@ -85,7 +85,7 @@ public static class DlssnrBuilds
     /// <param name="catalog">The build lists.</param>
     /// <param name="sm">The card's architecture; null when the card is not known.</param>
     /// <param name="chosenLabel">The label the person chose; null on Auto.</param>
-    /// <exception cref="BuildListUnavailableException">The list has no <c>nvngx_dlssnr.dll</c> builds.</exception>
+    /// <exception cref="ComponentException">The list has no <c>nvngx_dlssnr.dll</c> builds.</exception>
     public static DlssnrCandidates Candidates(BuildCatalog catalog, int? sm, string? chosenLabel)
     {
         if (!string.IsNullOrWhiteSpace(chosenLabel))
@@ -97,7 +97,7 @@ public static class DlssnrBuilds
         IReadOnlyList<BuildEntry> entries = catalog.Entries(BuildFamily.Dlssnr);
         if (entries.Count == 0)
         {
-            throw new BuildListUnavailableException(BuildFamily.Dlssnr);
+            throw ComponentException.BuildListUnavailable(BuildFamily.Dlssnr);
         }
 
         BuildEntry[] first = [.. PreferredLabels(sm).SelectMany(label => entries.Where(entry => entry.Label == label))];

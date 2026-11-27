@@ -11,9 +11,9 @@ namespace Autopilot.Core.Tests.Components;
 internal sealed class ReleasesBed : IDisposable
 {
     public const string Repo = "doitsujin/dxvk";
-    public const string ApiLatest = "https://api.github.com/repos/doitsujin/dxvk/releases/latest";
-    public const string ApiTag = "https://api.github.com/repos/doitsujin/dxvk/releases/tags/v3.2";
-    public const string LatestPage = "https://github.com/doitsujin/dxvk/releases/latest";
+    public static readonly string ApiLatest = ComponentsBed.Api(Repo, "/latest");
+    public static readonly string ApiTag = ComponentsBed.Api(Repo, "/tags/v3.2");
+    public static readonly string LatestPage = ComponentsBed.LatestPage(Repo);
 
     private readonly CancellationToken _cancellation;
 
@@ -32,11 +32,11 @@ internal sealed class ReleasesBed : IDisposable
 
     public GitHubReleases Releases { get; }
 
-    public static string ApiList(int count) => $"https://api.github.com/repos/doitsujin/dxvk/releases?per_page={count}";
+    public static string ApiList(int count) => ComponentsBed.ApiList(Repo, count);
 
-    public static string ListPage(int page) => $"https://github.com/doitsujin/dxvk/releases?page={page}";
+    public static string ListPage(int page) => ComponentsBed.ListPage(Repo, page);
 
-    public static string Expanded(string tag) => "https://github.com/doitsujin/dxvk/releases/expanded_assets/" + tag;
+    public static string Expanded(string tag) => ComponentsBed.Expanded(Repo, tag);
 
     /// <summary>The API answers a primary rate limit: 403 with no requests left until an hour from now.</summary>
     public ReleasesBed RateLimited(string url)
@@ -63,7 +63,7 @@ internal sealed class ReleasesBed : IDisposable
 
     public ReleasesBed Unreachable(string url)
     {
-        Server.Throw(url, new HttpRequestException(HttpRequestError.ConnectionError, "No route to host"));
+        _ = Server.Unreachable(url);
         return this;
     }
 
@@ -91,12 +91,6 @@ internal sealed class ReleasesBed : IDisposable
     public Task<ReleaseAnswer?> ByTag(string tag) => Releases.GetByTagAsync(Repo, tag, _cancellation);
 
     public int RequestsTo(string url) => Server.RequestsTo(url);
-
-    /// <summary>The methods of the requests to <paramref name="url"/>, in order.</summary>
-    public HttpMethod[] MethodsTo(string url) => [.. Server.Requests.Where(request => request.Url == new Uri(url)).Select(request => request.Method)];
-
-    /// <summary>How many asset pages were asked for.</summary>
-    public int AssetPageRequests => Server.Requests.Count(request => request.Url.AbsolutePath.Contains("/expanded_assets/", StringComparison.Ordinal));
 
     public int RequestsToApi => Server.Requests.Count(request => request.Url.Host == "api.github.com");
 

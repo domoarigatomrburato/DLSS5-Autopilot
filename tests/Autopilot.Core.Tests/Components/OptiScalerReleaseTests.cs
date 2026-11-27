@@ -60,9 +60,9 @@ public sealed class OptiScalerReleaseTests(TestContext testContext)
         OptiScalerBuild jlrouzies = OptiScalerBuild.Jlrouzies;
         bed.Json(OptiScalerFixtures.List(jlrouzies), ReleaseJsonText.List(OptiScalerFixtures.Release(jlrouzies, "v0.8.94", 0, "OptiScaler-NR-v0.8.94.zip")));
 
-        OptiScalerException failure = await Assert.ThrowsAsync<OptiScalerException>(() => bed.OptiScaler.ResolveAsync(jlrouzies, bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.OptiScaler.ResolveAsync(jlrouzies, bed.Cancellation));
 
-        Assert.AreEqual(OptiScalerFailure.SumsMissing, failure.Reason);
+        Assert.AreEqual(ComponentFailure.SumsMissing, failure.Reason);
         Assert.AreEqual(
             "The release v0.8.94 of jlrouzies-fr/OptiScaler-DLSSNR-PreSR-Multipass carries no SHA256SUMS file, which this build publishes with every release, so its package cannot be checked and is not installed. Try again later, or pick another 'optiscaler build' under settings.",
             failure.Message);
@@ -87,7 +87,7 @@ public sealed class OptiScalerReleaseTests(TestContext testContext)
 
         OptiScalerRelease release = await bed.OptiScaler.ResolveAsync(_default, bed.Cancellation);
 
-        Assert.AreEqual(new NoVerification("the release gives no digest and no sums file"), release.Verification);
+        Assert.AreEqual(new NoVerification("Dagherbou/OptiScaler_DLSSNR: the release data gave no digest"), release.Verification);
     }
 
     [TestMethod]

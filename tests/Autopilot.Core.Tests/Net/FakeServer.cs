@@ -22,6 +22,9 @@ internal sealed class FakeServer(TimeProvider time) : HttpMessageHandler
 
     public int RequestsTo(string url) => Requests.Count(request => request.Url == new Uri(url));
 
+    /// <summary>The methods of the requests to <paramref name="url"/>, in order.</summary>
+    public HttpMethod[] MethodsTo(string url) => [.. Requests.Where(request => request.Url == new Uri(url)).Select(request => request.Method)];
+
     public FakeServer On(string url, Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> answer)
     {
         if (!_routes.TryGetValue(url, out Queue<Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>>? queue))
@@ -146,3 +149,11 @@ internal sealed class FakeServer(TimeProvider time) : HttpMessageHandler
 }
 
 internal sealed record ReceivedRequest(HttpMethod Method, Uri Url, string UserAgent, RangeHeaderValue? Range, DateTimeOffset At);
+
+/// <summary>Scripted failures of the fake server, kept beside <see cref="FakeServer.Throw"/>.</summary>
+internal static class FakeServerFailures
+{
+    /// <summary>The host cannot be reached: the connection fails before any answer.</summary>
+    public static FakeServer Unreachable(this FakeServer server, string url) =>
+        server.Throw(url, new HttpRequestException(HttpRequestError.ConnectionError, "No route to host"));
+}

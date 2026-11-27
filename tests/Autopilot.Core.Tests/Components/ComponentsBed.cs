@@ -55,6 +55,15 @@ internal sealed class ComponentsBed : IDisposable
 
     public static string ApiList(string repository, int count) => Api(repository, $"?per_page={count}");
 
+    /// <summary>github.com's release list page <paramref name="page"/> of <paramref name="repository"/>.</summary>
+    public static string ListPage(string repository, int page) => $"https://github.com/{repository}/releases?page={page}";
+
+    /// <summary>github.com's asset fragment of the release tagged <paramref name="tag"/>.</summary>
+    public static string Expanded(string repository, string tag) => $"https://github.com/{repository}/releases/expanded_assets/{tag}";
+
+    /// <summary>github.com's <c>releases/latest</c> redirect of <paramref name="repository"/>.</summary>
+    public static string LatestPage(string repository) => $"https://github.com/{repository}/releases/latest";
+
     public static string Download(string repository, string tag, string name) => $"https://github.com/{repository}/releases/download/{tag}/{name}";
 
     /// <summary>Answers <paramref name="url"/> with a fixture file.</summary>
@@ -83,12 +92,12 @@ internal sealed class ComponentsBed : IDisposable
     public ComponentsBed NoReleaseData(string repository)
     {
         _ = Unreachable(Api(repository, "/latest"));
-        return Unreachable($"https://github.com/{repository}/releases/latest");
+        return Unreachable(LatestPage(repository));
     }
 
     public ComponentsBed Unreachable(string url)
     {
-        Server.Throw(url, new HttpRequestException(HttpRequestError.ConnectionError, "No route to host"));
+        _ = Server.Unreachable(url);
         return this;
     }
 

@@ -8,15 +8,16 @@ namespace Autopilot.Core.Tests.Components;
 /// <summary><see cref="MirrorCatalog"/> and <see cref="NvidiaRuntimes"/> on the network test bed, one attempt per request, answering from <see cref="MirrorFixtures"/>.</summary>
 internal sealed class MirrorBed : IDisposable
 {
-    public const string Api = "https://api.github.com/repos/RankFTW/rhi-repo/releases?per_page=100";
-    public const string NvidiaLatest = "https://github.com/NVIDIA/DLSS/releases/latest";
+    public static readonly string Api = ComponentsBed.ApiList(MirrorCatalog.Repository, GitHubReleases.MaxListCount);
+    public static readonly string NvidiaLatest = ComponentsBed.LatestPage(NvidiaRuntimes.Repository);
 
     public MirrorBed(TestContext context)
     {
         Cancellation = context.CancellationToken;
         Net = new(context, TestBed.SingleAttempt);
-        Nvidia = new(Net.Client, NvidiaLog);
-        Catalog = new(Net.Client, Net.Time, new GitHubReleases(Net.Client, Net.Time, ReleasesLog), Nvidia, Log);
+        GitHubReleases releases = new(Net.Client, Net.Time, ReleasesLog);
+        Nvidia = new(releases, NvidiaLog);
+        Catalog = new(releases, Nvidia, Log);
     }
 
     public TestBed Net { get; }
@@ -35,11 +36,11 @@ internal sealed class MirrorBed : IDisposable
 
     public CancellationToken Cancellation { get; }
 
-    public static string ListPage(int page) => $"https://github.com/RankFTW/rhi-repo/releases?page={page}";
+    public static string ListPage(int page) => ComponentsBed.ListPage(MirrorCatalog.Repository, page);
 
-    public static string ApiTag(string tag) => "https://api.github.com/repos/RankFTW/rhi-repo/releases/tags/" + tag;
+    public static string ApiTag(string tag) => ComponentsBed.Api(MirrorCatalog.Repository, "/tags/" + tag);
 
-    public static string Expanded(string tag) => "https://github.com/RankFTW/rhi-repo/releases/expanded_assets/" + tag;
+    public static string Expanded(string tag) => ComponentsBed.Expanded(MirrorCatalog.Repository, tag);
 
     /// <summary>The API answers the captured list, without the releases tagged <paramref name="leftOut"/>.</summary>
     public MirrorBed ApiAnswers(params string[] leftOut)
@@ -64,7 +65,7 @@ internal sealed class MirrorBed : IDisposable
 
     public MirrorBed Unreachable(string url)
     {
-        Server.Throw(url, new HttpRequestException(HttpRequestError.ConnectionError, "No route to host"));
+        _ = Server.Unreachable(url);
         return this;
     }
 
@@ -103,9 +104,6 @@ internal sealed class MirrorBed : IDisposable
 
     public int RequestsTo(string url) => Server.RequestsTo(url);
 
-    /// <summary>The methods of the requests to <paramref name="url"/>, in order.</summary>
-    public HttpMethod[] MethodsTo(string url) => [.. Server.Requests.Where(request => request.Url == new Uri(url)).Select(request => request.Method)];
-
     public void Dispose() => Net.Dispose();
 
     /// <summary>
@@ -124,5 +122,8 @@ internal sealed class MirrorBed : IDisposable
     }
 
     /// <summary>The labels of a family, in order.</summary>
-    public static string Labels(BuildCatalog catalog, BuildFamily family) => string.Join(", ", catalog.Entries(family).Select(entry => entry.Label));
+    public static string Labels(BuildCatalog catalog, BuildFamily family) => Labels(catalog.Entries(family));
+
+    /// <summary>The entries' labels, in order, joined by commas.</summary>
+    public static string Labels(IEnumerable<BuildEntry> entries) => string.Join(", ", entries.Select(entry => entry.Label));
 }

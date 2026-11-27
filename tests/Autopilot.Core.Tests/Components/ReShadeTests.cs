@@ -24,7 +24,7 @@ public sealed class ReShadeTests(TestContext testContext)
         Assert.AreEqual(new Uri("https://reshade.me/downloads/ReShade_Setup_6.8.0_Addon.exe"), installer.Url);
         Assert.AreEqual("ReShade_Setup_6.8.0_Addon.exe", installer.FileName);
         Assert.AreEqual(ReShadeOrigin.HomePage, installer.Origin);
-        Assert.AreEqual(new NoVerification("no publisher sums or signature verified"), installer.Verification);
+        Assert.AreEqual(new NoVerification("reshade.me: no publisher sums or signature verified"), installer.Verification);
         Assert.AreEqual(0, bed.Server.RequestsTo(Tags));
     }
 
@@ -101,7 +101,7 @@ public sealed class ReShadeTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         bed.Server.Answer(Home, HttpStatusCode.OK, "<html><body>Maintenance</body></html>").Answer(Tags, HttpStatusCode.NotFound, "{}");
 
-        ReShadeNotFoundException failure = await Assert.ThrowsAsync<ReShadeNotFoundException>(() => bed.ReShade.ResolveAsync(bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.ReShade.ResolveAsync(bed.Cancellation));
 
         string[] reasons =
         [
@@ -109,6 +109,7 @@ public sealed class ReShadeTests(TestContext testContext)
             "GitHub: no version tag on crosire/reshade (HTTP 404)",
             "the download cache: no ReShade add-on installer kept",
         ];
+        Assert.AreEqual(ComponentFailure.InstallerNotFound, failure.Reason);
         CollectionAssert.AreEqual(reasons, failure.Reasons.ToArray());
         Assert.AreEqual("Could not find the ReShade add-on installer: " + string.Join("; ", reasons), failure.Message);
     }
@@ -122,7 +123,7 @@ public sealed class ReShadeTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         bed.Unreachable(Home).Server.Answer(Tags, HttpStatusCode.OK, body);
 
-        ReShadeNotFoundException failure = await Assert.ThrowsAsync<ReShadeNotFoundException>(() => bed.ReShade.ResolveAsync(bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.ReShade.ResolveAsync(bed.Cancellation));
 
         Assert.HasCount(3, failure.Reasons);
         StringAssert.Contains(failure.Reasons[0], "reshade.me", StringComparison.Ordinal);
@@ -135,7 +136,7 @@ public sealed class ReShadeTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         bed.Unreachable(Home).Unreachable(Tags);
 
-        ReShadeNotFoundException failure = await Assert.ThrowsAsync<ReShadeNotFoundException>(() => bed.ReShade.ResolveAsync(bed.Cancellation));
+        ComponentException failure = await Assert.ThrowsAsync<ComponentException>(() => bed.ReShade.ResolveAsync(bed.Cancellation));
 
         StringAssert.StartsWith(failure.Reasons[0], "reshade.me", StringComparison.Ordinal);
         StringAssert.StartsWith(failure.Reasons[1], "api.github.com", StringComparison.Ordinal);
@@ -172,10 +173,24 @@ public sealed class ReShadeTests(TestContext testContext)
         using ComponentsBed bed = new(testContext);
         bed.Unreachable(Home).Unreachable(Tags).Fixture(Home, "reshade-home.html");
 
-        _ = await Assert.ThrowsAsync<ReShadeNotFoundException>(() => bed.ReShade.ResolveAsync(bed.Cancellation));
+        _ = await Assert.ThrowsAsync<ComponentException>(() => bed.ReShade.ResolveAsync(bed.Cancellation));
         ReShadeInstaller installer = await bed.ReShade.ResolveAsync(bed.Cancellation);
 
         Assert.AreEqual(ReShadeOrigin.HomePage, installer.Origin);
+    }
+
+    [TestMethod]
+    public async Task An_installer_found_only_in_the_cache_is_not_remembered()
+    {
+        using ComponentsBed bed = new(testContext);
+        bed.Unreachable(Home).Unreachable(Tags).Fixture(Home, "reshade-home.html");
+        Keep(bed, Key + "-ReShade_Setup_6.7.1_Addon.exe");
+
+        ReShadeInstaller offline = await bed.ReShade.ResolveAsync(bed.Cancellation);
+        ReShadeInstaller online = await bed.ReShade.ResolveAsync(bed.Cancellation);
+
+        Assert.AreEqual(ReShadeOrigin.Cache, offline.Origin);
+        Assert.AreEqual(ReShadeOrigin.HomePage, online.Origin);
     }
 
     private static void Keep(ComponentsBed bed, string entryName)

@@ -10,7 +10,8 @@ namespace Autopilot.Core.Components;
 /// </summary>
 internal sealed partial class ReleaseResolver(NetClient client, TimeProvider time, ILogger logger)
 {
-    private static readonly TextRequest _apiRequest = new() { Cached = true };
+    /// <summary>An API request: kept in the cache, reused while fresh, used at any age when the live request fails.</summary>
+    internal static readonly TextRequest ApiRequest = new() { Cached = true };
 
     /// <summary>
     /// The API's answer, fresh or kept; the pages when the API failed with nothing kept. A value of
@@ -26,7 +27,7 @@ internal sealed partial class ReleaseResolver(NetClient client, TimeProvider tim
         TextAnswer answer;
         try
         {
-            answer = await client.GetTextAsync(api, ComponentHosts.Allowlist, _apiRequest, cancellationToken);
+            answer = await client.GetTextAsync(api, ComponentHosts.Allowlist, ApiRequest, cancellationToken);
         }
         catch (NetException failure) when (!failure.IsRefusal)
         {
@@ -39,22 +40,20 @@ internal sealed partial class ReleaseResolver(NetClient client, TimeProvider tim
             return (value, new(ReleaseOrigin.Pages, TimeSpan.Zero));
         }
 
-        return (Read(api, answer, read), Source(api, answer));
+        return (Read(api, answer, read), SourceOf(api, answer, time.GetUtcNow(), logger));
     }
 
     /// <summary>The API's value; <see langword="null"/> for its "not found".</summary>
     private static T? Read<T>(Uri api, TextAnswer answer, Func<Uri, string, T> read)
         where T : class =>
-        answer.StatusCode switch
-        {
-            HttpStatusCode.NotFound => null,
-            >= HttpStatusCode.OK and <= (HttpStatusCode)299 => read(api, answer.Body),
-            _ => throw StatusFailure(api, answer.StatusCode),
-        };
+        answer.IsSuccess ? read(api, answer.Body)
+        : answer.StatusCode == HttpStatusCode.NotFound ? null
+        : throw StatusFailure(api, answer.StatusCode);
 
-    private ReleaseSource Source(Uri api, TextAnswer answer)
+    /// <summary>Where an API answer came from and how old it is at <paramref name="now"/>; a stale one is said in the log.</summary>
+    public static ReleaseSource SourceOf(Uri api, TextAnswer answer, DateTimeOffset now, ILogger logger)
     {
-        TimeSpan age = time.GetUtcNow() - answer.FetchedAt;
+        TimeSpan age = now - answer.FetchedAt;
         if (age < TimeSpan.Zero)
         {
             age = TimeSpan.Zero;
@@ -77,19 +76,13 @@ internal sealed partial class ReleaseResolver(NetClient client, TimeProvider tim
             LogToPages(logger, api.AbsolutePath, apiFailure.Kind);
         }
 
-        try
-        {
-            return await fromPages(cancellationToken);
-        }
-        catch (NetException failure) when (!failure.IsRefusal)
+        return await NetFallback.OrNullAsync(fromPages(cancellationToken), failure =>
         {
             if (logger.IsEnabled(LogLevel.Warning))
             {
                 LogPagesFailed(logger, api.AbsolutePath, failure.Host, failure.Kind);
             }
-
-            return null;
-        }
+        });
     }
 
     public static NetException StatusFailure(Uri api, HttpStatusCode status) =>

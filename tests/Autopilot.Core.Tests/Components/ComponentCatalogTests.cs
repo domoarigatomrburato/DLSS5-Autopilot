@@ -27,7 +27,7 @@ public sealed class ComponentCatalogTests(TestContext testContext)
         foreach (CatalogEntry entry in ComponentCatalog.All)
         {
             Assert.IsFalse(string.IsNullOrWhiteSpace(entry.UncheckedReason), entry.Id);
-            Assert.AreEqual(entry.Check is ComponentCheck.SumsRequired or ComponentCheck.SumsWhenPublished, entry.SumsName is not null, entry.Id);
+            Assert.AreEqual(entry.Check is ComponentCheck.SumsRequired or ComponentCheck.SumsWhenPublished, entry.SumsPattern is not null, entry.Id);
         }
 
         Assert.AreEqual(ComponentCheck.SumsRequired, ComponentCatalog.Of("uplift").Check);
@@ -54,7 +54,7 @@ public sealed class ComponentCatalogTests(TestContext testContext)
         GitHubRelease release = new("v1", false, false, null, []);
         GitHubAsset asset = new("ReShade_Setup_6.7.3_Addon.exe", new("https://reshade.me/downloads/ReShade_Setup_6.7.3_Addon.exe"), null);
 
-        _ = Assert.ThrowsExactly<ArgumentException>(() => ComponentCatalog.VerificationOf("reshade", release, asset));
+        _ = Assert.ThrowsExactly<ArgumentException>(() => ComponentCatalog.Of("reshade").VerificationOf(release, asset));
     }
 
     [TestMethod]

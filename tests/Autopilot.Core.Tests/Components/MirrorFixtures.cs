@@ -53,19 +53,10 @@ internal static class MirrorFixtures
         JsonNode.Parse(ReleaseFixtures.Fixture("rhi-repo-releases.json"))!.AsArray().Single(release => (string?)release!["tag_name"] == tag)!.ToJsonString();
 
     /// <summary>The captured list page, or its markup around other tags.</summary>
-    public static string ListPage(params string[] tags)
-    {
-        string page = ReleaseFixtures.Fixture("rhi-repo-releases-page.html");
-        if (tags.Length == 0)
-        {
-            return page;
-        }
-
-        int first = page.IndexOf("  <section", StringComparison.Ordinal);
-        int end = page.LastIndexOf("</section>", StringComparison.Ordinal) + "</section>".Length;
-        string section = page[first..(page.IndexOf("</section>", first, StringComparison.Ordinal) + "</section>".Length)];
-        return page[..first] + string.Concat(tags.Select(tag => section.Replace(PageTags[0], tag, StringComparison.Ordinal) + "\n")) + page[end..];
-    }
+    public static string ListPage(params string[] tags) =>
+        tags.Length == 0
+            ? ReleaseFixtures.Fixture("rhi-repo-releases-page.html")
+            : ReleaseFixtures.ListPageWith("rhi-repo-releases-page.html", PageTags[0], tags);
 
     /// <summary>
     /// An asset fragment: the captured one for <c>renodx-dlss5-4.55</c>, the same markup under another
@@ -78,5 +69,5 @@ internal static class MirrorFixtures
 
     /// <summary>The <c>location</c> of the captured <c>NVIDIA/DLSS</c> latest-release redirect.</summary>
     public static string NvidiaLatestLocation() =>
-        ReleaseFixtures.Fixture("nvidia-dlss-latest-redirect.txt").Split('\n').Single(line => line.StartsWith("location: ", StringComparison.Ordinal))["location: ".Length..];
+        ReleaseFixtures.LocationIn("nvidia-dlss-latest-redirect.txt");
 }

@@ -74,7 +74,7 @@ internal sealed class Exchanges(HttpClient http, NetOptions options, TimeProvide
         using Exchange exchange = new(await AskAsync(url, HttpMethod.Head, 0, attempt), url);
         ThrowIfRetryableStatus(exchange);
         Uri? location = RedirectTarget(exchange.Response, url) is { } target ? CheckHop(target, hosts, hop: 1) : null;
-        return new(exchange.Response.StatusCode, location, time.GetUtcNow());
+        return new(exchange.Response.StatusCode, location);
     }
 
     /// <summary>One attempt at a download, resuming from what earlier attempts wrote when the server allows.</summary>
