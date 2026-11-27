@@ -8,13 +8,11 @@ namespace Autopilot.Core.Library.Stores;
 /// </summary>
 public sealed class SteamSource(IRegistry registry, HostFolders folders) : IGameSource
 {
-    private const string SteamKey = @"Software\Valve\Steam";
-
     public GameSource Source => GameSource.Steam;
 
     public async Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
     {
-        string? root = SteamRoot();
+        string? root = SteamLibraries.Root(registry, folders);
         if (root is null)
         {
             return [];
@@ -28,20 +26,6 @@ public sealed class SteamSource(IRegistry registry, HostFolders folders) : IGame
         }
 
         return found.Games;
-    }
-
-    // Steam's own value first, then the installer's, then the default folders.
-    private string? SteamRoot()
-    {
-        string?[] candidates =
-        [
-            registry.ReadString(RegistryRoot.CurrentUser, RegistryView.Registry64, SteamKey, "SteamPath"),
-            registry.ReadString(RegistryRoot.CurrentUser, RegistryView.Registry64, SteamKey, "InstallPath"),
-            registry.ReadString(RegistryRoot.LocalMachine, RegistryView.Registry32, SteamKey, "InstallPath"),
-            folders.ProgramFilesX86 is { } x86 ? Path.Join(x86, "Steam") : null,
-            folders.ProgramFiles is { } programs ? Path.Join(programs, "Steam") : null,
-        ];
-        return candidates.FirstOrDefault(DrivePaths.IsDirectory);
     }
 
     private static async Task AddLibraryAsync(string library, FoundGames found, CancellationToken cancellationToken)

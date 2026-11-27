@@ -16,7 +16,8 @@ internal sealed class StoreBed : IDisposable
     public FakeRegistry Registry { get; } = new();
 
     /// <summary>Every well-known folder set, under the temp root.</summary>
-    public HostFolders Folders => new(PathOf("ProgramData"), PathOf("LocalAppData"), PathOf("AppData"), PathOf("Program Files"), PathOf("Program Files (x86)"));
+    public HostFolders Folders =>
+        new(PathOf("ProgramData"), PathOf("LocalAppData"), PathOf("AppData"), PathOf("Program Files"), PathOf("Program Files (x86)"), PathOf("Desktop"), PathOf("Downloads"), PathOf("Documents"));
 
     public string PathOf(string relative) => Path.Join(Root, relative);
 

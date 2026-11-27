@@ -507,6 +507,14 @@ opengl32.dll and is the least reliable."
 - The wrong thing to port: `Play.exe`, `Dolphin.exe`, `xenia.exe` and similar
   are generic names, and any program with that file name in a game folder is
   given a profile and renamed (see the bugs).
+  - Settled (M2h): a profile's executable name gives the profile from any
+    source, except the generic names `Play.exe`, `Dolphin.exe`, `Cemu.exe`
+    and `xenia.exe`, which give it only to an entry found by the emulator
+    search or added by hand. The registry roots match an uninstall
+    `DisplayName` against each profile's executable stems and names as
+    whole words. "The drive root except `C:`" is every drive root except
+    the one holding Program Files; no root is searched when that is
+    unknown. At most 2000 folders are listed per root.
 
 **Render backend of an emulator.** Every hint above tells the person to open
 a settings dialog and pick Direct3D. Library owns detection: the profile, and

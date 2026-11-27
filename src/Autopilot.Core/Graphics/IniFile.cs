@@ -56,14 +56,8 @@ internal static class IniFile
         }
     }
 
-    private static string Value(string raw)
-    {
-        int comment = raw.IndexOf(';', StringComparison.Ordinal);
-        return (comment < 0 ? raw : raw[..comment]).Trim().Trim('"').Trim();
-    }
-
-    // UTF-16 with or without a BOM (a NUL early on gives it away), UTF-8 with a BOM, else Latin-1.
-    private static string Decode(byte[] bytes)
+    /// <summary>A text file's bytes as text: UTF-16 with or without a BOM (a NUL early on gives it away), UTF-8 with a BOM, else Latin-1.</summary>
+    public static string Decode(byte[] bytes)
     {
         if (bytes is [0xFE, 0xFF, ..])
         {
@@ -77,5 +71,11 @@ internal static class IniFile
         }
 
         return bytes is [0xEF, 0xBB, 0xBF, ..] ? Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3) : Encoding.Latin1.GetString(bytes);
+    }
+
+    private static string Value(string raw)
+    {
+        int comment = raw.IndexOf(';', StringComparison.Ordinal);
+        return (comment < 0 ? raw : raw[..comment]).Trim().Trim('"').Trim();
     }
 }

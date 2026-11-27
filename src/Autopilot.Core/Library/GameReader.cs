@@ -1,3 +1,4 @@
+using Autopilot.Core.Library.Emulators;
 using Autopilot.Core.Library.Stores;
 using Autopilot.Core.Platform;
 using Autopilot.Core.Resources;
@@ -10,9 +11,10 @@ public static class GameReader
     /// <summary>
     /// Reads the game a source found, in library.md's order: the executable and its candidates, the
     /// ranking over a store's stub and an earlier install's folder (unless the person picked the
-    /// executable), the executable's tables, the graphics API, and the API the person chose. A
-    /// folder with no executable, or one that cannot be read, gives an entry with the reason. The
-    /// folders are listed on the calling thread, so call it from a background thread.
+    /// executable), the executable's tables, the graphics API, the API the person chose, and the
+    /// emulator the executable is (a game added by hand is then named after it). A folder with no
+    /// executable, or one that cannot be read, gives an entry with the reason. The folders are listed
+    /// on the calling thread, so call it from a background thread.
     /// </summary>
     /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
     public static async Task<GameRead> ReadAsync(StoreGame found, GameReading context, CancellationToken cancellationToken)
@@ -51,6 +53,13 @@ public static class GameReader
             return entry with { Error = new GameReadError(GameReadFailure.NoExecutable, Texts.Text("GameNoExecutable")) };
         }
 
-        return await ExecutableFacts.ReadAsync(entry, executable, choices, context.ApiSearch, cancellationToken);
+        return await ExecutableFacts.ReadAsync(WithEmulator(entry, executable), executable, choices, context.ApiSearch, cancellationToken);
     }
+
+    // Attached before the executable is read, so the API the emulator really draws with is decided in
+    // one go; a game added by hand that is an emulator is named after it.
+    private static GameEntry WithEmulator(GameEntry entry, string executable) =>
+        EmulatorProfiles.For(executable, entry.Source) is { } emulator
+            ? entry with { Emulator = emulator, Name = entry.Source == GameSource.Manual ? emulator.Title : entry.Name }
+            : entry;
 }

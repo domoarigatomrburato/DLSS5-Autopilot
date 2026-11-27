@@ -6,6 +6,22 @@ namespace Autopilot.Core.Library.Stores;
 /// <summary>Steam's library folders: its own folder plus every one <c>libraryfolders.vdf</c> lists.</summary>
 internal static class SteamLibraries
 {
+    private const string SteamKey = @"Software\Valve\Steam";
+
+    /// <summary>Steam's own folder: Steam's own value first, then the installer's, then the default folders; null when none is a directory.</summary>
+    public static string? Root(IRegistry registry, HostFolders folders)
+    {
+        string?[] candidates =
+        [
+            registry.ReadString(RegistryRoot.CurrentUser, RegistryView.Registry64, SteamKey, "SteamPath"),
+            registry.ReadString(RegistryRoot.CurrentUser, RegistryView.Registry64, SteamKey, "InstallPath"),
+            registry.ReadString(RegistryRoot.LocalMachine, RegistryView.Registry32, SteamKey, "InstallPath"),
+            folders.ProgramFilesX86 is { } x86 ? Path.Join(x86, "Steam") : null,
+            folders.ProgramFiles is { } programs ? Path.Join(programs, "Steam") : null,
+        ];
+        return candidates.FirstOrDefault(DrivePaths.IsDirectory);
+    }
+
     /// <summary>
     /// The libraries that are directories holding <c>steamapps\common</c>, each resolved folder once.
     /// Both shapes of the file are read: numbered keys holding the path, or numbered objects with a

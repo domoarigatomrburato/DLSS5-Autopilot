@@ -1,6 +1,7 @@
 using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
 using Autopilot.Core.Install;
+using Autopilot.Core.Library.Emulators;
 using Autopilot.Core.Library.Stores;
 using Autopilot.Core.Resources;
 
@@ -49,6 +50,9 @@ public sealed record GameEntry
 
     /// <summary>What install's record says, or null when there is none.</summary>
     public InstallState? Install { get; init; }
+
+    /// <summary>The emulator the executable is, or null when it is none.</summary>
+    public EmulatorProfile? Emulator { get; init; }
 
     /// <summary>Why the game cannot be set up automatically, or null when it can.</summary>
     public string? Unsupported => Executable is null ? Texts.Text("GameUnsupportedNoExecutable") : Error?.Explanation ?? UnsupportedReading();

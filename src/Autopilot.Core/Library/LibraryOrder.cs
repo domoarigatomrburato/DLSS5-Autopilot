@@ -9,7 +9,8 @@ internal static class LibraryOrder
     /// Two entries with the same executable are listed once: Steam gives the library folder and the
     /// Rockstar launcher the <c>GTAIV</c> folder inside it. The first source wins, unless the other
     /// carries an install or a choice made by hand (both are kept by its folder and would be lost).
-    /// Emulator games share an emulator's executable and are never merged. Sorted by name ignoring
+    /// Emulator games (an emulator profile, or found by the emulator search) share an emulator's
+    /// executable and are never merged. Sorted by name ignoring
     /// case, then by folder.
     /// </summary>
     public static List<GameEntry> Arrange(IEnumerable<GameEntry> games, IGameChoices choices)
@@ -18,7 +19,7 @@ internal static class LibraryOrder
         List<GameEntry> once = [];
         foreach (GameEntry game in games.OrderBy(game => game.Source))
         {
-            if (game.Executable is null || game.Source == GameSource.Emulator)
+            if (game.Executable is null || game.Emulator is not null || game.Source == GameSource.Emulator)
             {
                 once.Add(game);
             }

@@ -374,4 +374,81 @@
   <data name="AddPathNotFound" xml:space="preserve">
     <value>{0} not found.</value>
   </data>
+  <!-- Emulators: {0} is the emulator's name, {1} its system or the API its imports read as. -->
+  <data name="EmulatorTitle" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="EmulatorApiFallback" xml:space="preserve">
+    <value>{0} draws with Vulkan or OpenGL only (its imports read as {1})</value>
+  </data>
+  <data name="EmulatorBackendUnknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <!-- Emulators: which renderer to pick in the emulator, and what else helps. -->
+  <data name="EmulatorHintDuckStation" xml:space="preserve">
+    <value>Settings &gt; Graphics &gt; Renderer = Direct3D 11 (or 12)</value>
+  </data>
+  <data name="EmulatorHintPcsx2" xml:space="preserve">
+    <value>Settings &gt; Graphics &gt; Renderer = Direct3D 11 (or 12)</value>
+  </data>
+  <data name="EmulatorHintDolphin" xml:space="preserve">
+    <value>Graphics &gt; Backend = Direct3D 11 (or 12)</value>
+  </data>
+  <data name="EmulatorHintPpsspp" xml:space="preserve">
+    <value>Settings &gt; Graphics &gt; Backend = Direct3D 11</value>
+  </data>
+  <data name="EmulatorHintXenia" xml:space="preserve">
+    <value>D3D12 is the default backend</value>
+  </data>
+  <data name="EmulatorHintCemu" xml:space="preserve">
+    <value>Cemu offers Vulkan or OpenGL - set Vulkan (beta path)</value>
+  </data>
+  <data name="EmulatorHintRpcs3" xml:space="preserve">
+    <value>RPCS3 offers Vulkan or OpenGL - set Vulkan (beta path)</value>
+  </data>
+  <data name="EmulatorHintRyujinx" xml:space="preserve">
+    <value>Vulkan or OpenGL only - set Vulkan (beta path)</value>
+  </data>
+  <data name="EmulatorHintYuzu" xml:space="preserve">
+    <value>Vulkan or OpenGL only - set Vulkan (beta path)</value>
+  </data>
+  <data name="EmulatorHintShadPs4" xml:space="preserve">
+    <value>Vulkan only (beta path)</value>
+  </data>
+  <data name="EmulatorHintAzahar" xml:space="preserve">
+    <value>Vulkan or OpenGL - set Vulkan (beta path)</value>
+  </data>
+  <data name="EmulatorHintMelonDs" xml:space="preserve">
+    <value>OpenGL only - the least reliable path</value>
+  </data>
+  <data name="EmulatorHintFlycast" xml:space="preserve">
+    <value>Set the renderer to DirectX 11</value>
+  </data>
+  <data name="EmulatorHintXemu" xml:space="preserve">
+    <value>Vulkan or OpenGL - set Vulkan (beta path)</value>
+  </data>
+  <data name="EmulatorHintVita3K" xml:space="preserve">
+    <value>Vulkan or OpenGL - set Vulkan (beta path)</value>
+  </data>
+  <data name="EmulatorHintRetroArch" xml:space="preserve">
+    <value>Set the video driver to d3d11 or d3d12</value>
+  </data>
+  <data name="EmulatorHintMgba" xml:space="preserve">
+    <value>OpenGL only - the least reliable path</value>
+  </data>
+  <data name="EmulatorHintSnes9x" xml:space="preserve">
+    <value>Set the output method to Direct3D</value>
+  </data>
+  <data name="EmulatorHintPlay" xml:space="preserve">
+    <value>Vulkan or OpenGL - set Vulkan (beta path)</value>
+  </data>
+  <data name="EmulatorNoteDuckStation" xml:space="preserve">
+    <value>Raise the internal resolution scale to 2x-4x so DLAA has detail to work with.</value>
+  </data>
+  <data name="EmulatorNotePcsx2" xml:space="preserve">
+    <value>An upscale multiplier of 2x or more is recommended.</value>
+  </data>
+  <data name="EmulatorNoteCemu" xml:space="preserve">
+    <value>Vulkan goes through ReShade's layer registration; OpenGL installs as opengl32.dll and is the least reliable.</value>
+  </data>
 </root>

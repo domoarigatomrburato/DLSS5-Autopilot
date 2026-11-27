@@ -40,6 +40,9 @@ internal sealed class ScanBed : IDisposable
         return path;
     }
 
+    /// <summary>Writes a text file, creating its folders, and returns its full path.</summary>
+    public string Write(string relative, string text) => _bed.WriteFile(relative, text);
+
     /// <summary>A file that is not an executable at all, named like one.</summary>
     public string NotAnExe(string relative) => _bed.WriteFile(relative, "not an executable");
 

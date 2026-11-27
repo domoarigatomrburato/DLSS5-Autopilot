@@ -51,9 +51,10 @@ public static class ManualGames
         return Named(read) is { } entry ? read with { Entry = entry } : null;
     }
 
-    // Named after the nearest folder above the executable that says something about the game.
+    // Named after the nearest folder above the executable that says something about the game; an
+    // emulator is already named after itself by the reading.
     private static GameEntry? Named(GameRead read) =>
-        read.Entry.Executable is { } executable ? read.Entry with { Name = GameNames.DisplayNameFor(executable) } : null;
+        read.Entry.Executable is { } executable ? read.Entry with { Name = read.Entry.Emulator is null ? GameNames.DisplayNameFor(executable) : read.Entry.Name } : null;
 
     private static StoreGame Found(string folder, string name) => new(name, folder, GameSource.Manual, null);
 
