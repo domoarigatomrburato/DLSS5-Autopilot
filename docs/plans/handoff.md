@@ -1,7 +1,8 @@
 # Handoff: Invidia Claritatis during M4
 
 Written 2026-11-27 at the end of the session that planned M4 and did its
-sub-task a. Start the next session from this file.
+sub-task a, updated after sub-tasks b1 and b2. Start the next session from
+this file.
 
 ## State
 
@@ -12,8 +13,8 @@ sub-task a. Start the next session from this file.
 - The Python reference is tag `python-reference`, checked out read-only beside
   the repository as `invidia-claritatis-reference`.
 - M0–M3 ticked in `docs/plans/rewrite.md`; M4 planned there as sub-tasks
-  a–j, with **a done** (69bc2b9). Gate green: 2046 tests, 98.76% line
-  coverage, floor 98 in `coverage-floor.txt`.
+  a–j, with **a, b1 and b2 done** (b2: 046295c). Gate green: 2224 tests,
+  98.57% line coverage, floor 98 in `coverage-floor.txt`.
 - **The tool is now Invidia Claritatis** (Decisions in `rewrite.md`); every
   name the tool gives is `invidia-claritatis`, in the specs and in the code.
 - **Greenfield, never published:** nothing reads the reference's records,
@@ -22,13 +23,29 @@ sub-task a. Start the next session from this file.
 - The `nvngx_dlssnr.dll` digests behind `DlssnrPins` were measured in
   `~/coding/claude-lab/dlssnr-digests/results.md`.
 
-## Next: M4 sub-tasks b1 and b2, in parallel
+## Next: M4 sub-task c, the install record
 
 Plan and order in `rewrite.md` (a → b1∥b2 → c → d → e∥f∥i → g → h → j).
-b1 (storage and archives) and b2 (platform seams, per-game state store, the
-run, test beds) touch separate files: run them in hand-made worktrees, one
-Opus implementer each, then review each diff on its own. The open questions
-of `install.md` are settled (its "Open questions" section).
+c runs alone (d builds on it): one Opus implementer, in the main checkout or
+one worktree. The open questions of `install.md` are settled (its "Open
+questions" section).
+
+What b1 and b2 left for the next sub-tasks:
+
+- **c:** read the record with `Storage/VersionedJson` (version key
+  `"version"`), as the per-game store reads its files; compare paths with
+  `Platform/PathParts` and fold `Routes/OwnedFiles`' own normalisation into
+  it; write through `AtomicFile`.
+- **d:** call `Storage/IWriteSteps.Before` before every change on disk; the
+  test beds' `CrashPoints` and `DiskFullPoints` drive it. Leftover temp
+  files of a crashed run are matched by `AtomicFile.IsTemporary`.
+- **Test beds** in `tests/Autopilot.Core.Tests/TestBeds/`: `GameTree` and the
+  install.md game folders (`GameFolders`, ReShade and OptiScaler contents are
+  marker constants to replace), `TreeSnapshot`, `WritePoints`,
+  `PlatformFakes`, `Runs` (a `ComponentRun` per job).
+- **Open, ask Ale before g:** whether to download one real
+  `ReShade_Setup_*_Addon.exe` (about 3 MB) to confirm the appended-zip shape
+  the extractor now opens; the tests use a built fake.
 
 Carry into later sub-tasks:
 

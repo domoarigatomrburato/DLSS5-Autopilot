@@ -139,11 +139,11 @@ specified.
         table, motion provider 4 out, the Remix runtime pinned to
         `dlssnr-v1`, one catalog row per source, a strict mirror order,
         NVIDIA's redirect failure noted;
-  - [ ] b1. storage and archives: the atomic-write helper, the free-space
+  - [x] b1. storage and archives: the atomic-write helper, the free-space
         seam, drive data on `DiskFullException`, ReShade's appended zip, a
         member listing that writes nothing, cache-only reads and deletes
         under the lock, archive texts from resources;
-  - [ ] b2. platform seams for install (processes, access and lock checks),
+  - [x] b2. platform seams for install (processes, access and lock checks),
         the per-game state store, the run, the test beds (game folders from
         a description, tree snapshots, crash points);
   - [ ] c. the install record: contract, reader (states, `Unreadable`),
@@ -178,6 +178,10 @@ specified.
       Windows' write-through flag (`MOVEFILE_WRITE_THROUGH`). The job queue
       and the cross-process job lock ([platform](../spec/platform.md),
       "Jobs") come with the app; M4's run owns only the component memories.
+      Checked on Windows: `FileLocks`' write open reports a DLL another
+      process has loaded; the per-game store's named mutex, created by the
+      elevated CLI, still opens from the unelevated app (and the reverse);
+      `GameIdentity` expands 8.3 path parts.
 - [ ] **M8. Beyond the core.** "Aim for" and compare; RTX Remix; VR; the
       tray; the shared compatibility results (the Cloudflare Worker);
       emulator config edits; itch; verdicts outside the report corpus, as
