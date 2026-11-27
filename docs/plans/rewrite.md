@@ -151,7 +151,7 @@ specified.
         a description, tree snapshots, crash points);
   - [x] c. the install record: contract, reader (states, `Unreadable`),
         writer, `IInstallRecords`; the one home of which files are ours;
-  - [ ] d. the transaction: journal before every write, one backup
+  - [x] d. the transaction: journal before every write, one backup
         mechanism, rollback, hold until commit, verify, recovery,
         cancellation;
   - [ ] e. uninstall from the record and without one; "verify";

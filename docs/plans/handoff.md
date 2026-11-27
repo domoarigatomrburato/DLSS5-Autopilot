@@ -1,7 +1,7 @@
 # Handoff: Invidia Claritatis during M4
 
 Written 2026-11-27 at the end of the session that planned M4 and did its
-sub-task a, updated after sub-task c. Start the next session from
+sub-task a, updated after sub-task d. Start the next session from
 this file.
 
 ## State
@@ -13,8 +13,8 @@ this file.
 - The Python reference is tag `python-reference`, checked out read-only beside
   the repository as `invidia-claritatis-reference`.
 - M0–M3 ticked in `docs/plans/rewrite.md`; M4 planned there as sub-tasks
-  a–j, with **a, b1, b2 and c done** (c: 5d03ef9). Gate green: 2335 Core
-  tests, 98.61% line coverage, floor 98 in `coverage-floor.txt`.
+  a–j, with **a, b1, b2, c and d done**. Gate green: 2394 tests, 98.15%
+  line coverage, floor 98 in `coverage-floor.txt`.
 - **The tool is now Invidia Claritatis** (Decisions in `rewrite.md`); every
   name the tool gives is `invidia-claritatis`, in the specs and in the code.
 - **Greenfield, never published:** nothing reads the reference's records,
@@ -23,36 +23,59 @@ this file.
 - The `nvngx_dlssnr.dll` digests behind `DlssnrPins` were measured in
   `~/coding/claude-lab/dlssnr-digests/results.md`.
 
-## Next: M4 sub-task d, the transaction
+## Next: M4 sub-tasks e, f and i, in parallel
 
 Plan and order in `rewrite.md` (a → b1∥b2 → c → d → e∥f∥i → g → h → j).
-d runs alone (e, f and i build on it): one Opus implementer. The open
-questions of `install.md` are settled (its "Open questions" section).
+e, f and i build on d and are independent of each other: one implementer
+each, in hand-made worktrees, reviewed and merged one at a time.
 
-What b1, b2 and c left for the next sub-tasks:
+What b1–d left for the next sub-tasks:
 
 - **The record** is `Install/InstallRecord`, read and written by
-  `Install/InstallRecords` (`SaveAsync`, `DeleteAsync`); which files are
-  ours is `Install/OwnedFiles` (`IsOursAsync` by hash, `IsBackupValidAsync`);
-  the failure note is `Install/FailureNotes` in the per-game state store.
-- **d/e must check** that the record's derived game folder
-  (`RecordedInstall.GameFolder`) is at or below the library's game folder
-  before following any entry: the reader only refuses a root.
-- **d:** capture an original's attributes through `OriginalFile` (it keeps
-  only ReadOnly, Hidden, System, Archive).
-- **d:** call `Storage/IWriteSteps.Before` before every change on disk; the
-  test beds' `CrashPoints` and `DiskFullPoints` drive it. Leftover temp
-  files of a crashed run are matched by `AtomicFile.IsTemporary`.
-- **Test beds** in `tests/Autopilot.Core.Tests/TestBeds/`: `GameTree` and the
-  install.md game folders (`GameFolders`, ReShade and OptiScaler contents are
-  marker constants to replace), `TreeSnapshot`, `WritePoints`,
-  `PlatformFakes`, `Runs` (a `ComponentRun` per job).
+  `Install/InstallRecords`; which files are ours is `Install/OwnedFiles`;
+  the failure note is `Install/FailureNotes`. Entry states now include
+  `Held` (our file beside its path as `<name>.invidia-claritatis-held`
+  until commit) and `Restored` (an original put back during the install,
+  `Superseded` numbering its superseded name); an open record carries the
+  install it replaces as `Previous`.
+- **The transaction** is `Install/InstallTransaction` (`RunAsync`,
+  `RecoverAsync` for the folders the tool knows at start). A plan
+  (`InstallPlan`: groups of `PlaceFile`, `MoveAside`, `CreateFolder`,
+  `KeepEntry`) is resolved by `InstallResolver` into `ResolvedInstall`
+  (actions with their journal entries and `DiskChange`s), which the
+  transaction executes exactly. A previous entry the plan neither places,
+  moves aside nor keeps is held and goes at commit.
+- **e:** uninstall reuses `EntryUndo` (one path's entries undone, by hash)
+  and `InstallRollback`'s shape; a record left `Removing` may still carry
+  `Previous` (a rollback that stopped) or `Stuck`/`RestoreFailed` placed
+  entries and un-undone `Held`/`Restored` ones. The `.invidia-claritatis-superseded`
+  report line of uninstall's table is not produced yet (`UndoResult.Superseded`).
+- **f:** the preview calls `InstallResolver.ResolveAsync` and shows the
+  `ResolvedInstall`; refusals run before `InstallTransaction.RunAsync`
+  (which itself only refuses unreadable records, records outside the game
+  folder, paths outside it and plan conflicts). An unwritable folder is
+  today reported as `Locked` (access denied counts as held, since Windows
+  reports a delete of a loaded DLL that way): f's access refusal must catch
+  it first.
+- **i:** registry and config steps are new `PlanStep`/`InstallAction` kinds;
+  `PriorInstall.Opening` carries the previous install's registrations,
+  graphics preferences and config edits over unchanged today.
+- **d/e check** the record's derived game folder against the plan's
+  (`InstallChecks.RecordRefusal`); e must do the same.
+- **Test beds** in `tests/Autopilot.Core.Tests/TestBeds/` (`GameTree`,
+  `GameFolders`, `TreeSnapshot`, `CrashPoints`, `DiskFullPoints`,
+  `PlatformFakes` with `FakeFreeSpace`) and
+  `tests/Autopilot.Core.Tests/Install/` (`TransactionBed` with `Clone`,
+  `HeldPaths`, `BothSteps`; `Switches` with `AssertBackToX`/`AssertY`).
 - **ReShade's setup:** the real 6.8.0 addon setup opens with the extractor
   (relative offsets, the signature after the zip, six members including
   `ReShade32_XR.json` and `ReShade64_XR.json`); notes in
   `~/coding/claude-lab/reshade-setup-shape/results.md`.
 
 Carry into later sub-tasks:
+
+- **g/h:** a plan names every previous entry it keeps with `KeepEntry`;
+  anything it forgets is removed at commit.
 
 - **g/h:** a `ComponentRelease` for an id with several catalog rows (`dlss`,
   `dlssd`, `dlssg`, `optiscaler`) must carry its row: `ComponentLayout` and
