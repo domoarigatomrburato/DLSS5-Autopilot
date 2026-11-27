@@ -46,6 +46,31 @@ internal static class KnownFiles
     /// <summary>The game's own NGX runtimes, in the order they are named as evidence.</summary>
     public static readonly IReadOnlyList<string> NgxRuntimes = [Dlss, FrameGeneration, RayReconstruction];
 
+    /// <summary>Streamline's frame-generation plugin.</summary>
+    public const string StreamlineFrameGeneration = "sl.dlss_g.dll";
+
+    /// <summary>Streamline, NVIDIA's plugin layer: a game that ships any of these ships DLSS.</summary>
+    public static readonly IReadOnlyList<string> Streamline = ["sl.interposer.dll", "sl.dlss.dll", "sl.common.dll", StreamlineFrameGeneration, "sl.reflex.dll"];
+
+    /// <summary>A game's own DLSS runtime, renamed by a person to switch it off.</summary>
+    public static readonly IReadOnlyList<string> RenamedDlss = ["nvngx_dlss.dlsss", "nvngx_dlss.dll.bak", "_nvngx.dll"];
+
+    /// <summary>The runtime DLLs the AMD FSR 2/3 SDKs ship under, one per line: the secret scan reads two "..._api_..." names on a line as a key and its value.</summary>
+    public static readonly IReadOnlyList<string> FsrRuntimes =
+    [
+        "ffx_fsr2_api_x64.dll",
+        "ffx_fsr2_api_dx12_x64.dll",
+        "ffx_fsr2_api_vk_x64.dll",
+        "ffx_fsr3upscaler_x64.dll",
+        "ffx_fsr3_x64.dll",
+        "amd_fidelityfx_dx12.dll",
+        "amd_fidelityfx_vk.dll",
+        "ffx_backend_dx12_x64.dll",
+    ];
+
+    /// <summary>The runtime DLLs the Intel XeSS SDK ships under.</summary>
+    public static readonly IReadOnlyList<string> XessRuntimes = ["libxess.dll", "libxess_dx11.dll", "libxess_fg.dll"];
+
     /// <summary>The NGX runtimes that run on Direct3D 12 only.</summary>
     public static readonly IReadOnlyList<string> D3d12OnlyRuntimes = [FrameGeneration, RayReconstruction];
 
