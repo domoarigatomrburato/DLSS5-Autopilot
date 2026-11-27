@@ -10,6 +10,18 @@ specified.
 
 ## Decisions
 
+- **Name: Invidia Claritatis**, Latin for "the envy of clarity" (NVIDIA's
+  own name comes from *invidia*), with "for NVIDIA RTX" as its subtitle; the
+  full name always, since "Invidia" alone sits too close to the mark. Every
+  name the tool gives a file, folder or request uses `invidia-claritatis`
+  (the install record, the backup suffix, the data folder, the user agent,
+  the executable); the `dlss5-` names of the DLSS 5 feature's own files stay.
+  The Python release's `dlss5-autopilot` names are read, so its installs
+  keep working ([install](../spec/install.md)); M7 moves its settings and
+  library on first start and settles how the Python release's self-update
+  reaches the new one. The code's names move in one small commit before
+  M4's record (sub-task c); the projects, namespaces and repository are
+  renamed later, in one mechanical commit.
 - **Stack.** C# on .NET 11 and Avalonia for the UI, with MVVM through
   CommunityToolkit.Mvvm. .NET 11 is supported until November 2028, as long
   as .NET 10. Every component stays on its current release: SDK, packages
@@ -162,7 +174,7 @@ specified.
       session, "try another route", and autopilot
       ([watch](../spec/watch.md)); the Windows implementations; the first
       release built in CI. Sums files match a member by its base name
-      (`dist/dlss5-autopilot.exe`). One cache-root object feeds both
+      (`dist/invidia-claritatis.exe`). One cache-root object feeds both
       `NetClient` and `DownloadCache`.
 - [ ] **M8. Beyond the core.** "Aim for" and compare; RTX Remix; VR; the
       tray; the shared compatibility results (the Cloudflare Worker);
@@ -194,7 +206,6 @@ it.
   that shows what is active and switches each feature on or off.
 - Every feature that injects into a game refuses games with anti-cheat, as
   DLSS 5 does.
-- **A new name** for the tool.
 
 ## Dropped
 

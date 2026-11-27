@@ -131,7 +131,7 @@ pages that do not fit go behind a "more" item (`shell.py:442-462`).
    ([install](install.md), "Shared registrations"), which says in the status
    line and log what it did (`app.py:56-75, 107-114`).
 2. **Setting "read the library when the tool opens"** (games > view, default
-   on). On: the saved library (`%LOCALAPPDATA%\dlss5-autopilot\library.json`) is
+   on). On: the saved library (`%LOCALAPPDATA%\invidia-claritatis\library.json`) is
    shown at once; a game whose folder changed on disk since is re-read on a
    worker, its card says "reading..." meanwhile; installed games' "update (n)"
    is worked out on a worker. If there is no usable saved library but a library
@@ -580,7 +580,7 @@ URL is opened with as much of it as fits. A banner then says in one line what
 actually happened (in the browser with everything / with its start and the whole
 report on the clipboard / no browser, clipboard / neither - use the zip) with
 **copy report** and **save zip** (the report with the logs it read, in
-`...\dlss5-autopilot\reports\report-<game>-<time>.zip`; when saved, **show it**
+`...\invidia-claritatis\reports\report-<game>-<time>.zip`; when saved, **show it**
 selects it in Explorer). Works with no game open. Nothing is sent
 (`app.py:261-390`, `reportui.py`, `reportout.py`).
 
@@ -757,7 +757,7 @@ then the rest, by name), then kept while jobs run so rows do not jump; new rows 
 last (`ctl_dlss.py:128-151`).
 
 **The reads and their staleness.** The page opens on the last read (kept in
-`%LOCALAPPDATA%\dlss5-autopilot\dlss-scan.json`) at once and is usable while a
+`%LOCALAPPDATA%\invidia-claritatis\dlss-scan.json`) at once and is usable while a
 new read runs.
 
 - Opening the page, or the background read 5 s after start, reads **again** when
@@ -963,7 +963,7 @@ head (the section titles `=== ... ===`), ok, warn, err; findings are prefixed
 is its own: 32 % of the window clamped to 160-320 px by default, dragged by its
 top edge between 90 px and 80 % of the window, double click on the edge resets;
 the share (10-90 %) is stored as `log_share`. The log in the drawer is for this
-session; the file `%LOCALAPPDATA%\dlss5-autopilot\autopilot.log` is the record.
+session; the file `%LOCALAPPDATA%\invidia-claritatis\autopilot.log` is the record.
 Closing the drawer: its close link, Esc, a click on empty page.
 
 The log itself (file, rotation, levels and sections as data) is
@@ -972,7 +972,7 @@ level and section (`shell.py:776-782, 881-891`). The pop-out is deferred to M8. 
 actions above, never on its own for a result that already has a block on the
 page.
 
-**Stored UI settings** (`%LOCALAPPDATA%\dlss5-autopilot\settings.json`; every
+**Stored UI settings** (`%LOCALAPPDATA%\invidia-claritatis\settings.json`; every
 value is validated on read, since it is a file people edit, and a bad value falls
 back to its default and never stops the window opening):
 
@@ -1120,7 +1120,7 @@ For view-model and headless UI tests; no window needed for the first four.
   RE Engine copies; updated with backup gone; install swap; missing; kept;
   anti-cheat; running; offline; a game that sorts first then stays.
 - **Restore and refusals**: temp game folders with `nvngx_dlss.dll`, its
-  `.dlss5-dlss-original`, `.dlss5-autopilot-backup` and `dlss5-dlss-update.json` in
+  `.dlss5-dlss-original`, `.invidia-claritatis-backup` and `dlss5-dlss-update.json` in
   each state of 11 (`core/dlssupdate.py:1-60` documents the stacking); built with
   the reference's PE fixture builder `tests/fake_pe.py` (at the tag
   `python-reference~1`).

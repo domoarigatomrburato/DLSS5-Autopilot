@@ -319,7 +319,7 @@ The cache's layout, keys and locking are [net](net.md)'s. This area caches:
 | unpacked OptiScaler archives | with the archive |
 | GitHub API answers | fresh 6 h; used at any age when the live call fails |
 | the mirror catalog, the NVIDIA runtime list, each component's latest | memory, for the run (one job) |
-| the person's own frame generation files, in `%LOCALAPPDATA%\dlss5-autopilot\own-fg\<recipe>` (not the cache: the person's files) | until "forget" |
+| the person's own frame generation files, in `%LOCALAPPDATA%\invidia-claritatis\own-fg\<recipe>` (not the cache: the person's files) | until "forget" |
 
 The readable part of each cached file's name is the asset's own name
 (`ReShade_Setup_<v>_Addon.exe`, `dxvk-<v>.tar.gz`, the mirror's zip); the

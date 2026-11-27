@@ -18,11 +18,11 @@ specs), and this spec fixes only the shape.
 ### The grammar
 
 ```
-dlss5-autopilot.exe                                 the usage text, exit 2
-dlss5-autopilot.exe "D:\Games\Game"                 install
-dlss5-autopilot.exe "D:\Games\Game" --check         read and report, write nothing
-dlss5-autopilot.exe "D:\Games\Game" --remove        uninstall
-dlss5-autopilot.exe --help | -h | --version
+invidia-claritatis.exe                                 the usage text, exit 2
+invidia-claritatis.exe "D:\Games\Game"                 install
+invidia-claritatis.exe "D:\Games\Game" --check         read and report, write nothing
+invidia-claritatis.exe "D:\Games\Game" --remove        uninstall
+invidia-claritatis.exe --help | -h | --version
 ```
 
 | Option | Applies to | Meaning |

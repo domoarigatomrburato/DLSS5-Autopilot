@@ -33,7 +33,7 @@ SteamVR, nothing here applies.
 
 1. Downloads ReShade (already needed by the route) and **extracts**
    `ReShade64.dll` and `ReShade64_XR.json` from the ReShade setup into the
-   layer folder `%LOCALAPPDATA%\dlss5-autopilot\reshade-vulkan\`, the folder
+   layer folder `%LOCALAPPDATA%\invidia-claritatis\reshade-vulkan\`, the folder
    that also keeps the Vulkan layer's files (`openxr.py:35-38`, `vulkan.py:61-64`).
 2. Rewrites the manifest's `api_layer.library_path` to `.\ReShade64.dll`, so the
    manifest finds the DLL beside it.

@@ -201,7 +201,7 @@ the Remix console; its author reports it running in Portal with RTX on an RTX
   `remix_nvngx.dll` must keep exactly that name: the snippet checks that the
   calling module's path contains `nvngx.dll` and fails with 0xbad00002
   otherwise. The mod's originals are backed up beside as
-  `<name>.dlss5-autopilot-backup`; uninstall puts them back.
+  `<name>.invidia-claritatis-backup`; uninstall puts them back.
 - When the API is out of reach, GitHub's `releases/latest/download/<name>`
   redirect resolves each asset by name; the recorded version is then the word
   `latest`. A release missing either asset: "The dxvk-remix-plus-dlssnr release
@@ -218,8 +218,8 @@ the Remix console; its author reports it running in Portal with RTX on an RTX
   | swap on, runtime has the pass, and its hash equals the one we swapped in | renew it ("update all") |
   | swap on, runtime has the pass and is not ours | the mod's own runtime is never replaced |
   | swap off, record says we swapped, and the hash still matches | still ours: the record keeps saying so |
-  | swap off, record says we swapped, and the hash differs | the mod has updated its own runtime since: it is the mod's again, so `d3d9.dll` and `remix_nvngx.dll` leave our ownership, and the old backup is moved to `.dlss5-autopilot-superseded` (not restored on uninstall, it would put the older runtime back), with a note to delete it |
-  | swap on, mod updated since our swap | the old backup is moved to `.dlss5-autopilot-superseded`, and the *current* runtime becomes the new backup, by [install](install.md)'s backup rule; a backup is never overwritten. A backup that cannot be made: "Could not back up the mod's own runtime before replacing it (...). Nothing was replaced." |
+  | swap off, record says we swapped, and the hash differs | the mod has updated its own runtime since: it is the mod's again, so `d3d9.dll` and `remix_nvngx.dll` leave our ownership, and the old backup is moved to `.invidia-claritatis-superseded` (not restored on uninstall, it would put the older runtime back), with a note to delete it |
+  | swap on, mod updated since our swap | the old backup is moved to `.invidia-claritatis-superseded`, and the *current* runtime becomes the new backup, by [install](install.md)'s backup rule; a backup is never overwritten. A backup that cannot be made: "Could not back up the mod's own runtime before replacing it (...). Nothing was replaced." |
 
   Changed from the reference: judged by **SHA-256**, not by size alone
   (`installer.py:1767-1784`). Two builds of a runtime can share a size, and a
@@ -281,7 +281,7 @@ and copies it into the game folder. Every other project stays a link.
 - **Copy and record.** For each member under the root: the destination is
   checked to stay inside the game folder ("The archive tries to write outside
   the game folder (<name>) - refused."); a file that already exists is first
-  backed up as `<name>.dlss5-autopilot-backup`; then written in 1 MiB chunks.
+  backed up as `<name>.invidia-claritatis-backup`; then written in 1 MiB chunks.
   A backup is never overwritten: when one is already there (left by a
   half-removed earlier mod), the fetch refuses before anything is written,
   naming the file: "An older backup of <name> is still here; remove the

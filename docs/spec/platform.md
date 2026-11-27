@@ -11,7 +11,7 @@ app specs, where these rules were first written.
 
 ### Settings and the per-game state store
 
-Two stores, both under `%LOCALAPPDATA%\dlss5-autopilot\`:
+Two stores, both under `%LOCALAPPDATA%\invidia-claritatis\`:
 
 | Store | File | Holds |
 | --- | --- | --- |
@@ -87,7 +87,7 @@ install record moves with it, its learned state does not.
 - `Microsoft.Extensions.Logging`, with Serilog's file sink
   (`Serilog.Sinks.File` through `Serilog.Extensions.Logging`) in shared mode,
   so the app and the CLI can write one log at once.
-- The file is `%LOCALAPPDATA%\dlss5-autopilot\autopilot.log`. It rolls at
+- The file is `%LOCALAPPDATA%\invidia-claritatis\autopilot.log`. It rolls at
   1 MiB and the newest 3 files are kept.
   - Changed from the reference: it trimmed the one file in place to its
     newest half (`log.py:63-70`), unsafe with two copies of the tool

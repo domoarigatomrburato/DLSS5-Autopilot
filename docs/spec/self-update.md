@@ -132,11 +132,11 @@ here; [app](app.md) points to the same contract.
   entry by name suffix (`_expected_hash`, `:221-227`).
   - The sums file's lines are `sha256sum` style: hash, whitespace, optional
     `*`, a path. The release workflow writes the executable as
-    `dist/dlss5-autopilot.exe` and the archive as
-    `DLSS5-Autopilot-v<version>-win64.zip` (`release.yml`, step "Hashes").
+    `dist/invidia-claritatis.exe` and the archive as
+    `Invidia-Claritatis-v<version>-win64.zip` (`release.yml`, step "Hashes").
   - The entry is matched on the file name only, case-sensitively and
-    exactly: `evil-dlss5-autopilot.exe` must not match
-    `dlss5-autopilot.exe`. Duplicate entries for one name that disagree
+    exactly: `evil-invidia-claritatis.exe` must not match
+    `invidia-claritatis.exe`. Duplicate entries for one name that disagree
     refuse the release. A hash that is not 64 hex digits refuses it.
   - When the executable is also listed, the extracted executable's hash must
     match its entry too.
@@ -181,7 +181,7 @@ does let it be renamed (to verify, below). The reference hands the swap to a
 batch file because a running process cannot replace itself, then exits at
 once without cleanup (`selfupdate.py:238-311`, `:379-405`):
 
-1. write `dlss5-autopilot-update.bat` into the temp folder (a fixed name);
+1. write `invidia-claritatis-update.bat` into the temp folder (a fixed name);
 2. start it with `cmd /c`, detached, no window, with a clean environment;
 3. exit the process immediately (`os._exit`), skipping every handler.
 
@@ -264,7 +264,7 @@ visibly. Decide only if verification says so.
   - From source, nothing is removed and nothing is recorded.
   - A copy started from the `.old.exe` itself never removes itself.
 - **Staging folders.** Folders of ours in the temp folder named
-  `dlss5-autopilot-update-*` older than 24 hours are removed before each
+  `invidia-claritatis-update-*` older than 24 hours are removed before each
   fetch (a finished or failed update leaves one) (`selfupdate.py:94-105`).
   Changed from the reference: they are also removed at start-up with the
   previous build, since a user who never updates again would otherwise keep
@@ -350,17 +350,17 @@ confirmation text says. Nothing automatic goes back (open question 3).
   no sums asset, with no assets, a pre-release tag, a draft, a lower tag, an
   equal tag, `2.1` against `2.1.0`, and the answer of a rate-limited API.
 - **`SHA256SUMS.txt`** as the release workflow writes it: two lines,
-  `<64 hex>  dist/dlss5-autopilot.exe` and
-  `<64 hex>  DLSS5-Autopilot-v<version>-win64.zip`. Variants: `*` binary
+  `<64 hex>  dist/invidia-claritatis.exe` and
+  `<64 hex>  Invidia-Claritatis-v<version>-win64.zip`. Variants: `*` binary
   marker, a missing archive line, a hash of the wrong length, a name that
-  ends the same (`evil-dlss5-autopilot.exe`), duplicate disagreeing lines.
+  ends the same (`evil-invidia-claritatis.exe`), duplicate disagreeing lines.
 - **Archives built in the test:** a one-file release (the executable and a
   README); a member named `../x.exe`; an absolute member; a drive-letter
   member; a zip with no executable; an executable that is not a 64-bit PE; a
   tiny one.
 - **A fake PE builder** (as in [dlss-updates](dlss-updates.md)): a 64-bit and a
   32-bit executable.
-- **Cleanup:** a temp folder with `dlss5-autopilot-update-*` folders of
+- **Cleanup:** a temp folder with `invidia-claritatis-update-*` folders of
   different ages and other folders; an executable folder with `.old.exe`;
   a settings file with and without the settled version, and an `.old.exe` that cannot be removed (a directory of that
   name stands in for a running file, as the old test does, section for #450).

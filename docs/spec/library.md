@@ -555,7 +555,7 @@ compatibility pass walks the game folder again looking for DLSS runtimes. On
 a large library across drives that is minutes, and it happened on every launch
 even when nothing had changed (#8, #18, #32, #67).
 
-- **File**: `%LOCALAPPDATA%\dlss5-autopilot\library.json`, beside the
+- **File**: `%LOCALAPPDATA%\invidia-claritatis\library.json`, beside the
   settings, not beside the executable (the executable is run from Downloads,
   a USB stick, a folder Defender has an interest in).
 - **Contents**: schema number (3: the reference wrote another shape as 2 at
@@ -719,7 +719,7 @@ hero belongs to Steam's hero only, not to one chosen by hand.
     "offline"; any other status is "not there". A body counts as a picture
     only if its first bytes say JPEG, PNG or BMP: a captive portal's HTML page
     answered with 200 must never be kept as a cover.
-  - **Stored** under `%LOCALAPPDATA%\dlss5-autopilot\art\<key>\`, `key` the
+  - **Stored** under `%LOCALAPPDATA%\invidia-claritatis\art\<key>\`, `key` the
     first 20 hex digits of the SHA-1 of the folder path (lower case,
     backslashes, trailing slash removed), so two games never share an image;
     files `got-<kind>.<jpg|png|bmp>` and `user-<kind>.<ext>`, a temporary

@@ -289,7 +289,7 @@ removed when it has no entries.
 
 | Field | Meaning |
 | --- | --- |
-| `tool`, `kind`, `version` | `dlss5-autopilot`, `dlss-update`, `1` |
+| `tool`, `kind`, `version` | `invidia-claritatis`, `dlss-update`, `1` |
 | `files[].path` | the file's path relative to the game folder, `/` separators, one entry per file |
 | `files[].family` | `dlss`, `dlssg` or `dlssd` |
 | `files[].original` | the game's own version |
@@ -301,6 +301,9 @@ removed when it has no entries.
 
 The game's own file is kept beside the runtime as
 `<name>.dlss5-dlss-original`.
+
+A record whose `tool` is `dlss5-autopilot` was written by the Python
+release and is read the same; the next write gives it this tool's name.
 
 Everything read from the record is untrusted (it sits in a folder other
 tools write into): an entry is used only when its path resolves inside the
@@ -319,14 +322,14 @@ not in the user's data folder.
 ### Why two suffixes
 
 `.dlss5-dlss-original` is deliberately not the DLSS 5 install's
-`.dlss5-autopilot-backup`. The install's uninstall restores every backup of
+`.invidia-claritatis-backup`. The install's uninstall restores every backup of
 its suffix, and reads one beside a runtime as "this install swapped it".
 With separate suffixes the two writers stack and each takes back only its
 own layer:
 
 ```
 the game's own  ->  DLSS update  ->  DLSS 5 install swap
-                    (.dlss5-dlss-original)  (.dlss5-autopilot-backup)
+                    (.dlss5-dlss-original)  (.invidia-claritatis-backup)
 ```
 
 Kept from the reference, with its reasoning (`dlssupdate.py:16-26`). The
@@ -686,7 +689,7 @@ API fallbacks. No game name or path is sent anywhere.
   (310.9.1), Charlie Online (EasyAntiCheat folder, a read-only file), Delta
   Running (a running process), Echo 32-bit, Foxtrot no DLSS, Golf Storage
   (two copies of one build), Hotel Installed (a DLSS 5 manifest plus
-  `nvngx_dlss.dll.dlss5-autopilot-backup`), Lima Partial (second runtime
+  `nvngx_dlss.dll.invidia-claritatis-backup`), Lima Partial (second runtime
   refused).
 - **The old suite's dlss-update section** (`test_all.py` lines 12958-13383
   at `17d8a94~1`): about 45 checks, one per row of the stacking and

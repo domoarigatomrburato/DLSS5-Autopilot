@@ -67,7 +67,7 @@ itself, and the archive extraction behind it. Read from the reference's
 - The client takes its `HttpMessageHandler` from the caller. Production
   passes the `SocketsHttpHandler`; tests pass an in-memory handler.
 - Every response, failed ones included, is disposed.
-- The user agent is `dlss5-autopilot/<the running version>`.
+- The user agent is `invidia-claritatis/<the running version>`.
 
 ### Hosts
 
@@ -138,9 +138,9 @@ value is injectable, so tests do not wait.
 
 | What | Where |
 | --- | --- |
-| downloaded files | `%LOCALAPPDATA%\dlss5-autopilot\cache\files\<key>-<name>` |
-| API answers, pages, the feed | `%LOCALAPPDATA%\dlss5-autopilot\cache\api\<key>.json` |
-| unpacked archives | `%LOCALAPPDATA%\dlss5-autopilot\cache\unpacked\<key>\` |
+| downloaded files | `%LOCALAPPDATA%\invidia-claritatis\cache\files\<key>-<name>` |
+| API answers, pages, the feed | `%LOCALAPPDATA%\invidia-claritatis\cache\api\<key>.json` |
+| unpacked archives | `%LOCALAPPDATA%\invidia-claritatis\cache\unpacked\<key>\` |
 | lock files | beside each entry, `<entry>.lock` |
 
 - **Identity.** `<key>` is the first 32 hex digits of the SHA-256 of the URL

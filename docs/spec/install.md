@@ -36,7 +36,8 @@ Anything uncertain is under "Open questions", not stated as a decision.
 - Outside the game folder the tool touches only what this spec lists:
   the tool's own data folder, the shared layer registrations, the Windows
   graphics preference, and an emulator's own config file.
-- The tool's data folder is `%LOCALAPPDATA%\dlss5-autopilot`
+- The tool's data folder is `%LOCALAPPDATA%\invidia-claritatis` (the
+  Python release's was `%LOCALAPPDATA%\dlss5-autopilot`)
   (`prefs.py:22-26`, `log.py:26`, `vulkan.py:61-64`): `settings.json`,
   `autopilot.log`, the download cache (net spec), the per-user layer copy in
   `reshade-vulkan\`, and the per-game state store, which holds the failure
@@ -44,7 +45,7 @@ Anything uncertain is under "Open questions", not stated as a decision.
 
 ### The install record
 
-A JSON file named `dlss5-autopilot.json` in the install folder
+A JSON file named `invidia-claritatis.json` in the install folder
 (`installer.py:90`). It is the only thing uninstall trusts about what was
 done. It is written before the first change, kept current through the
 install, and deleted when the last thing it names is gone.
@@ -148,10 +149,14 @@ installs over a half-finished transaction.
 - Entries naming a path that resolves outside the game folder are ignored
   with a line in the log, never followed (`installer.py:5530-5567`, SECURITY.md
   first bullet).
-- **Records from the Python release** (`"version": 1`, flat `files` list,
-  backups told by suffix) are read by install alone and converted once: the
-  reader gives the new contract in memory, and the first install or
-  uninstall on that folder writes the converted record. The converted
+- **Records from the Python release** (named `dlss5-autopilot.json`,
+  `"version": 1`, flat `files` list, backups told by the
+  `.dlss5-autopilot-backup` suffix) are read by install alone and converted
+  once: the reader gives the new contract in memory, and the first install or
+  uninstall on that folder writes the converted record as
+  `invidia-claritatis.json` and removes the old file in the same atomic step.
+  A converted entry keeps the backup name the Python release gave it, which
+  the entry records; new backups take this tool's suffix. The converted
   entries carry no hashes, so for them the hash rules below fall back to
   "ours by name", exactly as the reference decided. Nobody else reads
   version 1 names.
@@ -295,7 +300,7 @@ network request.
   (`installer.py:2976`, `:3740`). A game update that replaced our
   `dxgi.dll` with its own was then overwritten without a backup on the next
   install and deleted by the next uninstall.
-- **Where.** Beside the file, original name plus `.dlss5-autopilot-backup`
+- **Where.** Beside the file, original name plus `.invidia-claritatis-backup`
   (`installer.py:307`). The backup is made before the first change to the
   file and is never overwritten by a later install.
 - **Exactly the bytes.** A backup is the original's bytes, attributes
@@ -313,7 +318,7 @@ network request.
   `installer.py:860-866`).
 - **Backup exists, file is ours:** keep the backup, write over our file.
   **Backup exists, file is not ours** (the game updated it since): the old
-  backup is moved to `.dlss5-autopilot-superseded`, a name no restore ever
+  backup is moved to `.invidia-claritatis-superseded`, a name no restore ever
   touches, and the current file becomes the new original with a new backup.
   The report says so. (The reference had this case only for the Remix runtime,
   `installer.py:3984-4020`.)
@@ -347,12 +352,12 @@ Suffixes, all in the game's own folder, and what each means:
 
 | Suffix | Meaning | Restored by uninstall? |
 | --- | --- | --- |
-| `.dlss5-autopilot-backup` | the game's own file the tool replaced or removed | yes |
+| `.invidia-claritatis-backup` | the game's own file the tool replaced or removed | yes |
 | `.dlss5-off` | the game's `d3dcompiler_47.dll`, renamed so Windows' newer one loads (the neural pass compiles for `cs_5_1`; route spec) (`installer.py:318-319`) | yes, as a backup (same rules) |
-| `.dlss5-autopilot-superseded` | an old original replaced by a newer one the game shipped | never; left for the person, named in the report |
+| `.invidia-claritatis-superseded` | an old original replaced by a newer one the game shipped | never; left for the person, named in the report |
 | `.dlss5-dlss-original` | the DLSS page's own backup of a runtime it updated ([dlss-updates](dlss-updates.md)) | never touched by this spec |
 
-**Changed from the reference:** the `.dlss5-autopilot-orphan` suffix
+**Changed from the reference:** the `.invidia-claritatis-orphan` suffix
 (`installer.py:323`, `:3036-3041`, `:3081-3086`) is dropped. It held our own
 add-ons from another route "moved aside" only to be deleted by uninstall, and
 its entry was recorded by file name alone (`rep.written.append(aside.name)`),
@@ -577,7 +582,7 @@ content check, so a game update was reverted or deleted,
 | written, no original | missing | clear the entry |
 | written, with original | hash equals recorded | replace with the backup (atomic), then delete the backup |
 | written, with original | hash equals the original (the store verified files and put it back) | delete the now-redundant backup; the file stays |
-| written, with original | hash differs from both (the game shipped a newer file) | leave the file; move the backup to `.dlss5-autopilot-superseded`; report |
+| written, with original | hash differs from both (the game shipped a newer file) | leave the file; move the backup to `.invidia-claritatis-superseded`; report |
 | written, with original | missing | restore the backup |
 | backup | its hash differs from the recorded original, or it is missing | do not restore a damaged file; keep the backup; state `restore-failed`; leave our file in place; report. A missing backup with our file present: delete ours, report that the game's original is gone and its store can repair it |
 | `config` class | any content | delete when no original; restore the backup when there is one, regardless of hash (the components rewrite these while running) |
@@ -649,7 +654,8 @@ Rules of the fallback, stricter than the reference:
   when a marker the install writes proves them ours (route specs define the
   markers); otherwise they are listed as "not removed: could not tell it from
   yours".
-- Backups with the tool's suffix found in the install folder (and, for a
+- Backups with the tool's suffix (or the Python release's
+  `.dlss5-autopilot-backup`) found in the install folder (and, for a
   swapped runtime, in the game folder) are restored; with no record there is
   no hash to compare, so a restore may revert a game update, and the log
   says "restored from a backup with no record; if the game updated since,
@@ -671,7 +677,7 @@ the last install that needs them.
 
 | Layer | Registry key (value name is the full path of the manifest, data DWORD `0` = enabled) | Layer name | Files |
 | --- | --- | --- | --- |
-| Vulkan, 64-bit | `HKCU\Software\Khronos\Vulkan\ImplicitLayers` (`vulkan.py:32`) | `VK_LAYER_reshade` | `%LOCALAPPDATA%\dlss5-autopilot\reshade-vulkan\ReShade64.dll` and `ReShade64.json` |
+| Vulkan, 64-bit | `HKCU\Software\Khronos\Vulkan\ImplicitLayers` (`vulkan.py:32`) | `VK_LAYER_reshade` | `%LOCALAPPDATA%\invidia-claritatis\reshade-vulkan\ReShade64.dll` and `ReShade64.json` |
 | Vulkan, 32-bit game | same key | **`VK_LAYER_reshade32`** (different on purpose: the loader de-duplicates by name and would drop the 32-bit one; `vulkan.py:36-58`) | `ReShade32.dll`, `ReShade32.json` |
 | OpenXR (VR, 64-bit games only) | `HKCU\Software\Khronos\OpenXR\1\ApiLayers\Implicit` (`openxr.py:28`) | `XR_APILAYER_reshade` | same folder, `ReShade64_XR.json` beside the shared `ReShade64.dll` |
 
@@ -843,7 +849,7 @@ comments.
   if the key is absent, add it under its section header; if the section is
   absent, append the section. Quote the value where the format quotes.
 - **Record only the keys changed** (**Changed from the reference:** it copied
-  the whole file to `<config>.dlss5-autopilot-backup` and, at uninstall, copied
+  the whole file to `<config>.invidia-claritatis-backup` and, at uninstall, copied
   that whole file back over the config, erasing every setting the person or
   the emulator changed since, `emulators.py:808-811`, `:831-833`;
   DuckStation and RetroArch rewrite their config at exit): the record holds
