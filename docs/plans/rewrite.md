@@ -19,8 +19,9 @@ specified.
   The project is greenfield and never published: nothing reads the
   reference's records, folders or settings. The user agent, the cache
   folder and the window title already carry the name; the record's and
-  backups' names move with M4's record (sub-task c); the projects,
-  namespaces and repository are renamed later, in one mechanical commit.
+  backups' names move with M4's record (sub-task c). The repository is
+  `domoarigatomrburato/invidia-claritatis`; the projects and namespaces
+  are renamed later, in one mechanical commit.
 - **Stack.** C# on .NET 11 and Avalonia for the UI, with MVVM through
   CommunityToolkit.Mvvm. .NET 11 is supported until November 2028, as long
   as .NET 10. Every component stays on its current release: SDK, packages

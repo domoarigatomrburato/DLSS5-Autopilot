@@ -5,11 +5,12 @@ sub-task a. Start the next session from this file.
 
 ## State
 
-- Repository `domoarigatomrburato/DLSS5-Autopilot`, branch `main`, in sync
-  with origin. The rewrite is `main`; the Python app's last commit is the
+- Repository `domoarigatomrburato/invidia-claritatis` (renamed from
+  `DLSS5-Autopilot`), checked out as `invidia-claritatis`, branch `main`, in
+  sync with origin. The rewrite is `main`; the Python app's last commit is the
   tag `python-reference` (b84e39c).
 - The Python reference is tag `python-reference`, checked out read-only beside
-  the repository as `DLSS5-Autopilot-reference`.
+  the repository as `invidia-claritatis-reference`.
 - M0–M3 ticked in `docs/plans/rewrite.md`; M4 planned there as sub-tasks
   a–j, with **a done** (69bc2b9). Gate green: 2046 tests, 98.76% line
   coverage, floor 98 in `coverage-floor.txt`.
@@ -73,7 +74,7 @@ Carry into later sub-tasks:
   once at the end), report with the tree fingerprint. Review each diff,
   recompute the fingerprint, commit per sub-task.
 - Independent sub-tasks may run in parallel in hand-made worktrees
-  (`git worktree add -b <branch> ../DLSS5-Autopilot-<x> <commit>`); LSP does
+  (`git worktree add -b <branch> ../invidia-claritatis-<x> <commit>`); LSP does
   not answer there, use grep and ast-grep.
 - Internals are tested through `InternalsVisibleTo`; nothing becomes public
   for tests.
