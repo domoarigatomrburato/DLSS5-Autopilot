@@ -5,9 +5,9 @@ sub-task a. Start the next session from this file.
 
 ## State
 
-- Repository `domoarigatomrburato/DLSS5-Autopilot`, branch
-  `rewrite/scaffold`, in sync with origin. `main` is the Python app
-  (b84e39c).
+- Repository `domoarigatomrburato/DLSS5-Autopilot`, branch `main`, in sync
+  with origin. The rewrite is `main`; the Python app's last commit is the
+  tag `python-reference` (b84e39c).
 - The Python reference is tag `python-reference`, checked out read-only beside
   the repository as `DLSS5-Autopilot-reference`.
 - M0–M3 ticked in `docs/plans/rewrite.md`; M4 planned there as sub-tasks
