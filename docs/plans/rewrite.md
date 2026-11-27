@@ -154,10 +154,10 @@ specified.
   - [x] d. the transaction: journal before every write, one backup
         mechanism, rollback, hold until commit, verify, recovery,
         cancellation;
-  - [ ] e. uninstall from the record and without one; "verify";
-  - [ ] f. refusals and the preview as a reader of the same plan; each
+  - [x] e. uninstall from the record and without one; "verify";
+  - [x] f. refusals and the preview as a reader of the same plan; each
         route's settings and option types;
-  - [ ] i. shared registrations (Vulkan, OpenXR) and the Windows graphics
+  - [x] i. shared registrations (Vulkan, OpenXR) and the Windows graphics
         preference;
   - [ ] g. route plans: the ReShade base, native, upstream, bridge, renodx;
   - [ ] h. route plans: feeder, standalone, uplift, optiscaler, remix, MFG;

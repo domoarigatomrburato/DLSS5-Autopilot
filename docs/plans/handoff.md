@@ -1,8 +1,8 @@
 # Handoff: Invidia Claritatis during M4
 
 Written 2026-11-27 at the end of the session that planned M4 and did its
-sub-task a, updated after sub-task d. Start the next session from
-this file.
+sub-task a, updated after sub-tasks e, f and i. Start the next session
+from this file.
 
 ## State
 
@@ -13,8 +13,8 @@ this file.
 - The Python reference is tag `python-reference`, checked out read-only beside
   the repository as `invidia-claritatis-reference`.
 - M0–M3 ticked in `docs/plans/rewrite.md`; M4 planned there as sub-tasks
-  a–j, with **a, b1, b2, c and d done**. Gate green: 2394 tests, 98.15%
-  line coverage, floor 98 in `coverage-floor.txt`.
+  a–j, with **a, b1, b2, c, d, e, f and i done**. Gate green: 2681 tests,
+  98.14% line coverage, floor 98 in `coverage-floor.txt`.
 - **The tool is now Invidia Claritatis** (Decisions in `rewrite.md`); every
   name the tool gives is `invidia-claritatis`, in the specs and in the code.
 - **Greenfield, never published:** nothing reads the reference's records,
@@ -23,60 +23,64 @@ this file.
 - The `nvngx_dlssnr.dll` digests behind `DlssnrPins` were measured in
   `~/coding/claude-lab/dlssnr-digests/results.md`.
 
-## Next: M4 sub-tasks e, f and i, in parallel
+## Next: M4 sub-task g, then h
 
 Plan and order in `rewrite.md` (a → b1∥b2 → c → d → e∥f∥i → g → h → j).
-e, f and i build on d and are independent of each other: one implementer
-each, in hand-made worktrees, reviewed and merged one at a time.
+**Ask Ale first** the open question at the end of this section
+(Authenticode).
 
-What b1–d left for the next sub-tasks:
+Where things are:
 
 - **The record** is `Install/InstallRecord`, read and written by
-  `Install/InstallRecords`; which files are ours is `Install/OwnedFiles`;
-  the failure note is `Install/FailureNotes`. Entry states now include
-  `Held` (our file beside its path as `<name>.invidia-claritatis-held`
-  until commit) and `Restored` (an original put back during the install,
-  `Superseded` numbering its superseded name); an open record carries the
-  install it replaces as `Previous`.
+  `Install/InstallRecords`; which files are ours is `Install/OwnedFiles`.
+  Entry states include `Held` and `Restored`; an open record carries the
+  install it replaces as `Previous`; a committed one may carry `Releasing`
+  (registrations and graphics preferences of the replaced install not yet
+  released, retried by the next transaction without counting as a recovery).
 - **The transaction** is `Install/InstallTransaction` (`RunAsync`,
-  `RecoverAsync` for the folders the tool knows at start). A plan
-  (`InstallPlan`: groups of `PlaceFile`, `MoveAside`, `CreateFolder`,
-  `KeepEntry`) is resolved by `InstallResolver` into `ResolvedInstall`
-  (actions with their journal entries and `DiskChange`s), which the
-  transaction executes exactly. A previous entry the plan neither places,
-  moves aside nor keeps is held and goes at commit.
-- **e:** uninstall reuses `EntryUndo` (one path's entries undone, by hash)
-  and `InstallRollback`'s shape; a record left `Removing` may still carry
-  `Previous` (a rollback that stopped) or `Stuck`/`RestoreFailed` placed
-  entries and un-undone `Held`/`Restored` ones. The `.invidia-claritatis-superseded`
-  report line of uninstall's table is not produced yet (`UndoResult.Superseded`).
-- **f:** the preview calls `InstallResolver.ResolveAsync` and shows the
-  `ResolvedInstall`; refusals run before `InstallTransaction.RunAsync`
-  (which itself only refuses unreadable records, records outside the game
-  folder, paths outside it and plan conflicts). An unwritable folder is
-  today reported as `Locked` (access denied counts as held, since Windows
-  reports a delete of a loaded DLL that way): f's access refusal must catch
-  it first.
-- **i:** registry and config steps are new `PlanStep`/`InstallAction` kinds;
-  `PriorInstall.Opening` carries the previous install's registrations,
-  graphics preferences and config edits over unchanged today.
-- **d/e check** the record's derived game folder against the plan's
-  (`InstallChecks.RecordRefusal`); e must do the same.
-- **Test beds** in `tests/Autopilot.Core.Tests/TestBeds/` (`GameTree`,
-  `GameFolders`, `TreeSnapshot`, `CrashPoints`, `DiskFullPoints`,
-  `PlatformFakes` with `FakeFreeSpace`) and
-  `tests/Autopilot.Core.Tests/Install/` (`TransactionBed` with `Clone`,
-  `HeldPaths`, `BothSteps`; `Switches` with `AssertBackToX`/`AssertY`).
-- **ReShade's setup:** the real 6.8.0 addon setup opens with the extractor
-  (relative offsets, the signature after the zip, six members including
-  `ReShade32_XR.json` and `ReShade64_XR.json`); notes in
-  `~/coding/claude-lab/reshade-setup-shape/results.md`.
+  `RecoverAsync`, `CleanUpLayerFilesAsync`). A plan (`InstallPlan`: groups
+  of `PlaceFile`, `MoveAside`, `CreateFolder`, `KeepEntry`, `PlacePattern`,
+  `RegisterLayer`, `SetGraphicsPreference`) is resolved by `InstallResolver`
+  into `ResolvedInstall`, which the transaction executes exactly. A previous
+  entry the plan neither places, moves aside nor keeps is held and goes at
+  commit.
+- **Refusals and the preview** (f): `InstallRefusals.CheckAsync` gives an
+  `InstallCheck` (blockers, warnings, the resolved plan);
+  `InstallPreview.Of(check).Lines()` reads it. Each `InstallAction` states its
+  preview lists and its `outside:` line. Route settings are typed
+  (`Routes/RouteSettings`, one rule table in `ShownSettings`); route facts
+  come from `RouteFacts.Of`.
+- **Uninstall** (e) is `Install/Uninstaller`; with no usable record,
+  `KnownNamesCleanup` (a damaged record kept as `.corrupt`). "Verify" is
+  `InstallVerification.VerifyAsync`.
+- **Outside the game folder** (i): `SharedPlaces` (HKCU registry, the
+  machine's for reading, the layer folder) is null everywhere until M7 wires
+  it in `CompositionRoot`, so a plan with layer or preference steps is
+  refused today, by the preview and the transaction alike. Undo goes through
+  `IOutsideWork.For(disk, installFolder)`; dependents come from the records
+  the per-game state store names. M7 also calls `CleanUpLayerFilesAsync` at
+  start, and must give `InstallRefusals.Shared` the same places as the
+  transaction.
 
-Carry into later sub-tasks:
+For g and h:
 
+- **Patterns:** wire `GatheredRefusals` and expand `PlacePattern` steps into
+  real files after the gather; the free-space check runs again then.
+- **Refusals still to write:** a proxy name already taken (e's
+  `ContentMarks` recognises ReShade, DXVK and REFramework by content); a
+  route not offered for the game; the feeder's HDR minimum.
+- **OptiScaler:** its first free proxy name must avoid the game's own
+  frame-generation names.
+- **Settings:** the bridge's ofa settings; `OverlayKey` is per game in the
+  code, global in app.md: settle one.
+- **h** owns the config-edit step (`rtx.conf` and the like): its undo slot is
+  `IOutsideChanges.UndoConfigEditsAsync`, a no-op today.
+- **j:** `ResolvedInstall.Steps()` does not predict the release steps at
+  commit; the crash-point replay must account for them.
+- The preview's held-layer-file refusal reuses `RefusalLocked`, whose
+  "often the game's launcher" hint is off for a layer DLL.
 - **g/h:** a plan names every previous entry it keeps with `KeepEntry`;
   anything it forgets is removed at commit.
-
 - **g/h:** a `ComponentRelease` for an id with several catalog rows (`dlss`,
   `dlssd`, `dlssg`, `optiscaler`) must carry its row: `ComponentLayout` and
   `ReleaseAssets` look rows up by id, and `ComponentCatalog.Of(id)` refuses

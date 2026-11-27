@@ -94,7 +94,9 @@ value is deleted ("removed: our ReShade OpenXR layer registration (no VR games
 left)"); if others remain: "kept the OpenXR layer: N other VR install(s) still
 use it"; if a record could not be read, the registration is kept and the log
 says why. A registration that is not ours is never touched. The layer
-files stay in the layer folder (the Vulkan layer may share the DLL).
+files go only when neither the Vulkan nor the OpenXR registration remains,
+since they share the DLL ([install](install.md), "Uninstall of the last
+dependent").
 
 ### The vr page
 
