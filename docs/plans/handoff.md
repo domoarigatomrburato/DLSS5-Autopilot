@@ -80,6 +80,13 @@ PocketMV and the feeder does not bind it yet (jlrouzies-fr/DLSS5-Feeder#164).
 setting naming 4 stops before writing with the spec's message. When the
 feeder ships PocketMV, 4 returns with that release as its minimum.
 
+**Also decided by Ale:** the Remix runtime is pinned to tag `dlssnr-v1`
+(`components.md`, catalog and pins) instead of `/latest`;
+`ReleaseComponents.RemixRuntimeAsync` asks it by tag like the MFG pins. Our
+own fork of the runtime (one additive commit of about 2,500 lines on Remix
+Plus) is reconsidered in M8, when the Remix route is built, if `dlssnr-v1`
+proves too old for the mods in use.
+
 ## How we work (binding, besides AGENTS.md and the plan's Decisions)
 
 - Replies to Ale in Italian, short; code, docs, commits in English.
@@ -121,5 +128,4 @@ feeder ships PocketMV, 4 returns with that release as its minimum.
 
 ## Questions for Ale from M3
 
-- The Remix runtime's `/latest` is `dlssnr-v1`.
 - An oversized 5xx body that the caller accepts fails as `TooLarge` (M3a).

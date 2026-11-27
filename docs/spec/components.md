@@ -42,7 +42,7 @@ those come from.
 | REFramework | `praydog/REFramework-nightly`, newest release | `REFramework.zip` -> `dinput8.dll` | any ReShade route or optiscaler on a Capcom RE Engine game |
 | RTX40MFG-Unlock | `dashdogy/MFG-Unlocker`, tag `v1.2.1` | `Universal-RTX-40-MFG-Unlock-*.zip`: `RTX40MFGCore.dll`, `RTX40MFG.asi`, `RTX40MFG-UI.addon64` | RTX 40 multi-frame generation |
 | Ultimate ASI Loader | `ThirteenAG/Ultimate-ASI-Loader`, tag `v9.7.4` | `Ultimate-ASI-Loader_x64.zip` -> `dinput8.dll` | RTX 40 multi-frame generation |
-| Remix runtime | `lunks/dxvk-remix-plus-dlssnr`, newest release | `d3d9.dll`, `remix_nvngx.dll` | remix, only with "swap the Remix runtime" |
+| Remix runtime | `lunks/dxvk-remix-plus-dlssnr`, tag `dlssnr-v1` | `d3d9.dll`, `remix_nvngx.dll` | remix, only with "swap the Remix runtime" |
 | Frame generation files you downloaded | the person (see [routes](routes.md)) | files they pick | optiscaler |
 
 Nothing else is fetched for the routes. Remix mod downloads and the
@@ -106,7 +106,7 @@ Which rule applies to which component:
 | REFramework | `/latest` of the nightly repository; the asset `REFramework.zip` |
 | RTX40MFG-Unlock | the pinned tag `v1.2.1` asked by tag first (the list shows only 12 on the pages fallback and the 15th entry today); then the newest non-draft non-pre-release whose asset starts `universal-rtx-40-mfg-unlock` and ends `.zip`; a release of another shape is skipped and "a newer layout is not taken on trust" |
 | Ultimate ASI Loader | the pinned tag `v9.7.4`, asset `Ultimate-ASI-Loader_x64.zip`. v10.0.0 (2026-10-21) exists and nobody has run it with this route: the pin moves when someone has |
-| Remix runtime | `/latest`; assets `d3d9.dll` and `remix_nvngx.dll` both required; with the API unreachable the `latest/download` redirect |
+| Remix runtime | the pinned tag `dlssnr-v1` asked by tag; assets `d3d9.dll` and `remix_nvngx.dll` both required; with the API unreachable the tag's `releases/download/dlssnr-v1/<asset>` URLs. Changed from the reference, which took `/latest`: the repository's other releases (`capifix…` pre-releases, another project's 300 MB zips) would become `/latest` if one were published as a release |
 | LumeniteFX, VORT | codeload branch zips (`refs/heads/mainline`, `refs/heads/main`); no API; no version |
 | Shader headers | raw files from the `slim` branch, each install |
 
@@ -151,6 +151,7 @@ break. Pins are data.
 | feeder `v0.15.1` or newer | HDR displays | older builds blow out HDR highlights: warn | the feeder's 0.15.1 notes |
 | GITC-Uplift ReShade 6.8.0 or newer | Vulkan and OpenGL games | refuse when the ReShade the PC can get is older | GITC-Uplift README |
 | RTX40MFG-Unlock `v1.2.1`, ASI Loader `v9.7.4` | the multi-frame-generation option | exact tags | see the catalog |
+| Remix runtime `dlssnr-v1` | "swap the Remix runtime" | exact tag; it moves with a release when the fork publishes a newer neural-rendering build | the fork's only neural-rendering release (2026-08-29); its other releases are another project's |
 
 The precedence among `renodx-dlss5` pins: the person's explicit choice (a
 label or a file of their own) first; then 616.64+ -> 4.55; then OpenGL ->
