@@ -86,8 +86,10 @@ proves too old for the mods in use.
   Commits as ale.burato@icloud.com, trailer
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - Maximum autonomy; no polling; minor calls decided and reported.
-- **Implementers on Opus, never Sonnet:** medium for moderate, well-specified
-  sub-tasks, high for complex ones. Sonnet's output ends up rewritten.
+- **Implementers by complexity, never below Sonnet high:** Sonnet high for
+  small mechanical changes, Opus medium for moderate, well-specified
+  sub-tasks, Opus high for complex ones. No blanket Sonnet default to save
+  quota: on real logic its output ends up rewritten.
 - **Shared infrastructure first.** Plan the milestone so the pieces every
   sub-task needs (memories, helpers, exception kinds, test beds) land in a
   first, sequential sub-task. Parallel sub-tasks then reuse them; in M3,
