@@ -174,7 +174,10 @@ specified.
       ([watch](../spec/watch.md)); the Windows implementations; the first
       release built in CI. Sums files match a member by its base name
       (`dist/invidia-claritatis.exe`). One cache-root object feeds both
-      `NetClient` and `DownloadCache`.
+      `NetClient` and `DownloadCache`. The atomic write's rename gains
+      Windows' write-through flag (`MOVEFILE_WRITE_THROUGH`). The job queue
+      and the cross-process job lock ([platform](../spec/platform.md),
+      "Jobs") come with the app; M4's run owns only the component memories.
 - [ ] **M8. Beyond the core.** "Aim for" and compare; RTX Remix; VR; the
       tray; the shared compatibility results (the Cloudflare Worker);
       emulator config edits; itch; verdicts outside the report corpus, as
