@@ -457,4 +457,29 @@
   <data name="EmulatorNoteCemu" xml:space="preserve">
     <value>Vulkan goes through ReShade's layer registration; OpenGL installs as opengl32.dll and is the least reliable.</value>
   </data>
+  <!-- Graphics card refusals: {0} is the card's name. GpuNeedsRtx is the one sentence for the "RTX 20 or newer" rule and follows both card refusals. -->
+  <data name="GpuNoTensorCores" xml:space="preserve">
+    <value>{0} has no tensor cores - NVIDIA's driver does not offer DLSS on it, so DLSS 5 cannot run on it with any route.</value>
+  </data>
+  <data name="GpuOlderThanRtx20" xml:space="preserve">
+    <value>{0} is older than RTX 20 and has no tensor cores - DLSS 5 cannot run on it with any route.</value>
+  </data>
+  <data name="GpuNeedsRtx" xml:space="preserve">
+    <value>It needs an NVIDIA RTX card, RTX 20 or newer.</value>
+  </data>
+  <!-- No NVIDIA adapter: the headline, then the answer for the vendor found. -->
+  <data name="GpuNoNvidiaCard" xml:space="preserve">
+    <value>No NVIDIA graphics card found - DLSS 5 runs only on an NVIDIA RTX card.</value>
+  </data>
+  <!-- Checked 2026-09-09: the open project (zmodelerlover/dlss5-neural-amd) keeps its runtime DLL and weights in a Discord channel, the other (danielblnc's) is closed source. Recheck both release pages and update this text and date in a release; if either publishes the whole thing in a release under a licence that allows fetching, it becomes a route. -->
+  <data name="GpuAmdAnswer" xml:space="preserve">
+    <value>This is an AMD card, and DLSS 5 neural rendering runs inside NVIDIA's own nvngx_dlssnr.dll - there is no NVIDIA runtime here for it to use.
+Two people have made the network itself run on Radeon through HIP, and their users report it working: RDNA 3 / RDNA 4 with HIP 7, Direct3D 12. The cost is heavy - one reported RX 9070 XT run dropped from about 80 fps to about 12. Neither can be installed from here, and the reason is not caution:
+  - the open one (zmodelerlover/dlss5-neural-amd) publishes the add-on, but the runtime DLL and the weights it refuses to start without are only in a Discord channel - this tool downloads from release pages and bundles nothing;
+  - the other one is closed source and its own users have asked for the source after Windows Defender flagged it.
+So: the route is real, the pieces are not fetchable yet. When either project ships the whole thing in a release, it becomes a route here.</value>
+  </data>
+  <data name="GpuIntelAnswer" xml:space="preserve">
+    <value>This is an Intel graphics adapter: no NVIDIA card detected - DLSS 5 will not run.</value>
+  </data>
 </root>
