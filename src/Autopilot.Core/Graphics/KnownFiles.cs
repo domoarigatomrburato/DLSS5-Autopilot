@@ -8,9 +8,9 @@ namespace Autopilot.Core.Graphics;
 /// </summary>
 internal static class KnownFiles
 {
-    public const string InstallRecord = "dlss5-autopilot.json";
+    public const string InstallRecord = "invidia-claritatis.json";
 
-    public const string BackupSuffix = ".dlss5-autopilot-backup";
+    public const string BackupSuffix = ".invidia-claritatis-backup";
 
     public const string AgilityFolder = "D3D12";
 

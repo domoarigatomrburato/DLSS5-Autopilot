@@ -40,7 +40,7 @@ public abstract class GraphicsTestBase(TestContext testContext) : ExecutableTest
 
     /// <summary>This tool's install record beside the executable, listing these files as written.</summary>
     protected static void Record(string exe, params string[] files) =>
-        Junk(exe, "dlss5-autopilot.json", JsonSerializer.Serialize(new { files }));
+        Junk(exe, "invidia-claritatis.json", JsonSerializer.Serialize(new { files }));
 
     protected static void Folder(params string[] parts) => Directory.CreateDirectory(Path.Join(parts));
 

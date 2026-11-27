@@ -80,7 +80,7 @@ public sealed class SteamSourceTests(TestContext testContext) : IDisposable
     public async Task A_folder_holding_our_install_record_is_kept_even_when_the_game_is_gone()
     {
         string folder = InstalledSteam().Common("Removed Game");
-        _ = _bed.WriteFile(Path.Join(Path.GetRelativePath(_bed.Root, folder), "dlss5-autopilot.json"), "{}");
+        _ = _bed.WriteFile(Path.Join(Path.GetRelativePath(_bed.Root, folder), "invidia-claritatis.json"), "{}");
 
         Assert.AreEqual(folder, (await FindAsync()).Single().Folder);
     }

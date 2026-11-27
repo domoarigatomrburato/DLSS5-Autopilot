@@ -68,7 +68,7 @@ public sealed class GameRuntimesTests(TestContext testContext) : ExecutableTestB
     public async Task A_swapped_nvngx_dlss_with_the_games_backup_beside_it_is_own_dlss()
     {
         Ship("nvngx_dlss.dll");
-        Ship("nvngx_dlss.dll.dlss5-autopilot-backup");
+        Ship("nvngx_dlss.dll.invidia-claritatis-backup");
 
         GameRuntimes runtimes = await ReadAsync(Recording("nvngx_dlss.dll"));
 

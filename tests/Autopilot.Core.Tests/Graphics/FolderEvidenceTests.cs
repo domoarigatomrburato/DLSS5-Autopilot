@@ -55,7 +55,7 @@ public sealed class FolderEvidenceTests(TestContext testContext) : GraphicsTestB
     {
         string exe = Game(imports: "d3d11.dll");
         Dll(exe, "nvngx_dlssg.dll");
-        Dll(exe, "nvngx_dlssg.dll.dlss5-autopilot-backup");
+        Dll(exe, "nvngx_dlssg.dll.invidia-claritatis-backup");
         Record(exe, "sub\\NVNGX_DLSSG.dll");
 
         Is(await DecideAsync(exe), GraphicsApi.DX12, ApiReason.AgilitySdk);
@@ -69,7 +69,7 @@ public sealed class FolderEvidenceTests(TestContext testContext) : GraphicsTestB
     {
         string exe = Game(imports: "d3d11.dll");
         Dll(exe, "nvngx_dlssg.dll");
-        Junk(exe, "dlss5-autopilot.json", record);
+        Junk(exe, "invidia-claritatis.json", record);
 
         Is(await DecideAsync(exe), GraphicsApi.DX12, ApiReason.AgilitySdk);
     }
@@ -79,7 +79,7 @@ public sealed class FolderEvidenceTests(TestContext testContext) : GraphicsTestB
     {
         string exe = Game(imports: "d3d11.dll");
         Dll(exe, "nvngx_dlssg.dll");
-        Junk(exe, "dlss5-autopilot.json", /*lang=json,strict*/ "{\"files\": [\"nvngx_dlssg.dll\"]}" + new string(' ', 1024 * 1024));
+        Junk(exe, "invidia-claritatis.json", /*lang=json,strict*/ "{\"files\": [\"nvngx_dlssg.dll\"]}" + new string(' ', 1024 * 1024));
 
         Is(await DecideAsync(exe), GraphicsApi.DX12, ApiReason.AgilitySdk);
     }

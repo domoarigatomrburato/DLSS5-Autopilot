@@ -4,7 +4,10 @@ using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Graphics;
 
-/// <summary>The file names this tool's install record in a game's folder says it wrote, read as untrusted JSON.</summary>
+/// <summary>
+/// The file names this tool's install record in a game's folder says it wrote, read as untrusted JSON:
+/// a stand-in until M4's install record and its reader replace it.
+/// </summary>
 internal static class InstallRecord
 {
     /// <summary>A record larger than this is not one of ours.</summary>
