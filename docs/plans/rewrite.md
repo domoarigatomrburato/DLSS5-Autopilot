@@ -19,7 +19,8 @@ specified.
   The Python release's `dlss5-autopilot` names are read, so its installs
   keep working ([install](../spec/install.md)); M7 moves its settings and
   library on first start and settles how the Python release's self-update
-  reaches the new one. The code's names move in one small commit before
+  reaches the new one. The user agent, the cache folder and the window
+  title already carry the name; the record's and backups' names move with
   M4's record (sub-task c); the projects, namespaces and repository are
   renamed later, in one mechanical commit.
 - **Stack.** C# on .NET 11 and Avalonia for the UI, with MVVM through
@@ -134,7 +135,7 @@ specified.
       component memories, which the M3 code kept for the process
       ([components](../spec/components.md), "A run"). Sub-tasks, each
       reviewed on its own diff:
-  - [ ] a. decided changes: the mirror's `dlssd` family, the `dlssnr`
+  - [x] a. decided changes: the mirror's `dlssd` family, the `dlssnr`
         trust rule (NVIDIA's signer or a pinned digest) and its label
         table, motion provider 4 out, the Remix runtime pinned to
         `dlssnr-v1`, one catalog row per source, a strict mirror order,
