@@ -36,8 +36,7 @@ Anything uncertain is under "Open questions", not stated as a decision.
 - Outside the game folder the tool touches only what this spec lists:
   the tool's own data folder, the shared layer registrations, the Windows
   graphics preference, and an emulator's own config file.
-- The tool's data folder is `%LOCALAPPDATA%\invidia-claritatis` (the
-  Python release's was `%LOCALAPPDATA%\dlss5-autopilot`)
+- The tool's data folder is `%LOCALAPPDATA%\invidia-claritatis`
   (`prefs.py:22-26`, `log.py:26`, `vulkan.py:61-64`): `settings.json`,
   `autopilot.log`, the download cache (net spec), the per-user layer copy in
   `reshade-vulkan\`, and the per-game state store, which holds the failure
@@ -149,21 +148,6 @@ installs over a half-finished transaction.
 - Entries naming a path that resolves outside the game folder are ignored
   with a line in the log, never followed (`installer.py:5530-5567`, SECURITY.md
   first bullet).
-- **Records from the Python release** (named `dlss5-autopilot.json`,
-  `"version": 1`, flat `files` list, backups told by the
-  `.dlss5-autopilot-backup` suffix) are read by install alone and converted
-  once: the reader gives the new contract in memory, and the first install or
-  uninstall on that folder writes the converted record as
-  `invidia-claritatis.json` and removes the old file in the same atomic step.
-  A converted entry keeps the backup name the Python release gave it, which
-  the entry records; new backups take this tool's suffix. The converted
-  entries carry no hashes, so for them the hash rules below fall back to
-  "ours by name", exactly as the reference decided. Nobody else reads
-  version 1 names.
-- The older name sets (`dlss5kur-kurulum.json`, `dlss5-installer.json`,
-  Turkish keys, the `.dlss5kur-yedek` and `.dlss5-installer-backup`
-  suffixes, `installer.py:346-350`) are not read: they come from releases
-  up to 1.2.
 - **Two executables in one folder** (a game and its expansion launcher)
   share one record. Installing for the second one is a reinstall of the same
   folder, and the record names both executables; the report says "uninstalling
@@ -357,7 +341,7 @@ Suffixes, all in the game's own folder, and what each means:
 | `.invidia-claritatis-superseded` | an old original replaced by a newer one the game shipped | never; left for the person, named in the report |
 | `.dlss5-dlss-original` | the DLSS page's own backup of a runtime it updated ([dlss-updates](dlss-updates.md)) | never touched by this spec |
 
-**Changed from the reference:** the `.invidia-claritatis-orphan` suffix
+**Changed from the reference:** the `.dlss5-autopilot-orphan` suffix
 (`installer.py:323`, `:3036-3041`, `:3081-3086`) is dropped. It held our own
 add-ons from another route "moved aside" only to be deleted by uninstall, and
 its entry was recorded by file name alone (`rep.written.append(aside.name)`),
@@ -654,8 +638,7 @@ Rules of the fallback, stricter than the reference:
   when a marker the install writes proves them ours (route specs define the
   markers); otherwise they are listed as "not removed: could not tell it from
   yours".
-- Backups with the tool's suffix (or the Python release's
-  `.dlss5-autopilot-backup`) found in the install folder (and, for a
+- Backups with the tool's suffix found in the install folder (and, for a
   swapped runtime, in the game folder) are restored; with no record there is
   no hash to compare, so a restore may revert a game update, and the log
   says "restored from a backup with no record; if the game updated since,
@@ -706,28 +689,11 @@ order, so it cannot promise what the install skips, `vulkan.py:378-403`):
 | an active (value `0`) ReShade layer that this game's architecture can load is registered by something else (ReShade's own installer) | reuse it, write nothing, record "reused" and its path |
 | it is a layer for the other architecture | not usable: register ours |
 | a registration exists but its value is not `0` | it is disabled and not reused |
-| our own 32-bit manifest still carries the 64-bit layer's name (an older release's) | rewrite it |
 | always | per-user registration only; the preview and the report say programs started as administrator will not get it (the loader skips HKCU under a high-integrity token) |
 
 The machine's 32-bit view is deliberately not consulted when looking for a
 layer to reuse: a foreign 32-bit ReShade there calls itself
 `VK_LAYER_reshade` and would clash with ours (`vulkan.py:78-91`).
-
-**Start-up cleanup of the old all-users layer.** Releases before the
-rewrite could leave our layer on the machine's list. Install owns one
-cleanup step, which the app calls at start and the CLI calls on every run:
-
-- It looks for values under the machine's `ImplicitLayers` (both registry
-  views) whose manifest path is our Program Files layer folder (the path
-  from the registry's `ProgramFilesDir`, never the environment variable,
-  `vulkan.py:248-267`), and nothing else.
-- Elevated, it deletes those values and then the folder, and says so in the
-  status line and the log: "removed our ReShade Vulkan layer from the
-  all-users list". No dependents are counted, because v1 never relies on it.
-- Not elevated, it says once: "an older version left ReShade's Vulkan layer
-  registered for all users. It loads into every Vulkan program on this PC;
-  start this tool once as administrator to take it off".
-- A failure is logged and never stops the start.
 
 **Bookkeeping: who depends on a layer.**
 
@@ -1118,8 +1084,8 @@ started `tasklist` (`installer.py:3438`), `cmd /c <bat>` (`selfupdate.py:399`),
 29. **A failed settings write is silent** (`prefs.py:104-105`).
 30. **The all-users cleanup at start** was gated on one user's list
     (`vulkan.py:539-559`), and the CLI ran it before validating its
-    arguments, inside `except: pass`. The v1 cleanup removes only our own
-    values, reports failures, and is called by the app and the CLI alike.
+    arguments, inside `except: pass`. Not ported: the tool never registers
+    an all-users layer, so there is nothing to clean up at start.
 
 ## To verify against primary sources
 
@@ -1157,9 +1123,6 @@ started `tasklist` (`installer.py:3438`), `cmd /c <bat>` (`selfupdate.py:399`),
   current Windows 11.
 - **Elevation.** `IsUserAnAdmin` versus `TokenElevation` on a UAC-off
   machine, which the reference relies on (`wincrash.py:338-345`).
-- **The old all-users layer.** The `ProgramFilesDir` registry value and
-  the folder the Python releases used, so the start-up cleanup finds exactly
-  their values (`vulkan.py:248-267`).
 - **Process image paths.** That a non-elevated process cannot always read an
   elevated process' image path, and what the fallback is.
 - **Antivirus behaviour.** The README's statement of Defender heuristics
@@ -1212,14 +1175,11 @@ interfaces"); the reference had the registry one already (`gpupref.py:73-90`).
   routes spec lists (a ReShade setup exe with the appended zip, the DLSS-NR
   zip, a feeder zip, an OptiScaler zip, DXVK, VORT, LumeniteFX), and the SHA
   they publish.
-- **Install records**: one per route in the reference's version 1 shape
-  (written by running the reference against fixture folders; the shape is
-  `installer.py:3164-3213`), including a record with locked leftovers (`files`
-  holding only the stuck names, `complete: false`, the "uninstall left N locked
-  file(s)" note, `:5869-5874`), a record holding only the "rolled back" note
-  (`net.py:54`), a legacy record with the Turkish keys, a truncated JSON, a
-  record with a `../` entry, an absolute entry inside the game folder, and
-  one outside it; and new-format records for each state in the lifecycle.
+- **Install records**: one for each state in the lifecycle, one per route,
+  a record with locked leftovers (entries `stuck`, the "uninstall left N
+  locked file(s)" note), a record holding only the "rolled back" note, a
+  truncated JSON, a newer format version, a record with a `../` entry, an
+  absolute entry inside the game folder, and one outside it.
 - **Registry**: an in-memory registry with ReShade's own Vulkan registration
   (64-bit, enabled; 32-bit; disabled), ours, a foreign machine layer, and
   `ProgramFilesDir`; the same for OpenXR; `UserGpuPreferences` values with

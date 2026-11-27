@@ -16,13 +16,11 @@ specified.
   name the tool gives a file, folder or request uses `invidia-claritatis`
   (the install record, the backup suffix, the data folder, the user agent,
   the executable); the `dlss5-` names of the DLSS 5 feature's own files stay.
-  The Python release's `dlss5-autopilot` names are read, so its installs
-  keep working ([install](../spec/install.md)); M7 moves its settings and
-  library on first start and settles how the Python release's self-update
-  reaches the new one. The user agent, the cache folder and the window
-  title already carry the name; the record's and backups' names move with
-  M4's record (sub-task c); the projects, namespaces and repository are
-  renamed later, in one mechanical commit.
+  The project is greenfield and never published: nothing reads the
+  reference's records, folders or settings. The user agent, the cache
+  folder and the window title already carry the name; the record's and
+  backups' names move with M4's record (sub-task c); the projects,
+  namespaces and repository are renamed later, in one mechanical commit.
 - **Stack.** C# on .NET 11 and Avalonia for the UI, with MVVM through
   CommunityToolkit.Mvvm. .NET 11 is supported until November 2028, as long
   as .NET 10. Every component stays on its current release: SDK, packages
@@ -147,17 +145,16 @@ specified.
   - [ ] b2. platform seams for install (processes, access and lock checks),
         the per-game state store, the run, the test beds (game folders from
         a description, tree snapshots, crash points);
-  - [ ] c. the install record: contract, reader (states, `Unreadable`, the
-        Python release's records), writer, `IInstallRecords`; the one home
-        of which files are ours;
+  - [ ] c. the install record: contract, reader (states, `Unreadable`),
+        writer, `IInstallRecords`; the one home of which files are ours;
   - [ ] d. the transaction: journal before every write, one backup
         mechanism, rollback, hold until commit, verify, recovery,
         cancellation;
   - [ ] e. uninstall from the record and without one; "verify";
   - [ ] f. refusals and the preview as a reader of the same plan; each
         route's settings and option types;
-  - [ ] i. shared registrations (Vulkan, OpenXR, the old all-users
-        cleanup) and the Windows graphics preference;
+  - [ ] i. shared registrations (Vulkan, OpenXR) and the Windows graphics
+        preference;
   - [ ] g. route plans: the ReShade base, native, upstream, bridge, renodx;
   - [ ] h. route plans: feeder, standalone, uplift, optiscaler, remix, MFG;
   - [ ] j. the staleness check, the end-to-end tests (preview equals

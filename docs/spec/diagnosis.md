@@ -82,8 +82,7 @@ programs in other code pages.
 #### What the diagnosis reads from the install record
 
 The diagnosis consumes [install](install.md)'s typed contract, never the
-record's file or field names, and never a legacy record name (install
-converts version 1 records itself):
+record's file or field names:
 
 - the reader's answer: no record, `Installing`, `Installed`, `Removing`, or
   `Unreadable` with its reason;

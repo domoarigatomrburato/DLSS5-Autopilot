@@ -940,8 +940,7 @@ normally as `dxgi.dll`).
   different lists for one machine.
 - `core/games.py:25-31`, `:61`: marker file names of two older generations of
   the tool, one of them Turkish (`dlss5kur-kurulum.json`, `dosyalar`), and
-  `dlss5-installer.json`. Not read: install reads version 1 records only, and
-  nobody else reads record names.
+  `dlss5-installer.json`. Not read: nobody but install reads record names.
 - `core/games.py:495`: `import sys as _sys` and `del _sys`; `core/games.py:34`
   a global cache of rolled-back records; dead scaffolding.
 - `core/games.py:358-392`: Epic manifests of DLC and add-ons that share the

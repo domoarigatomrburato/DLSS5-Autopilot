@@ -13,12 +13,11 @@ sub-task a. Start the next session from this file.
 - M0–M3 ticked in `docs/plans/rewrite.md`; M4 planned there as sub-tasks
   a–j, with **a done** (69bc2b9). Gate green: 2046 tests, 98.76% line
   coverage, floor 98 in `coverage-floor.txt`.
-- **The tool is now Invidia Claritatis** (Decisions in `rewrite.md`); the
-  specs use `invidia-claritatis` for every name the tool gives, and read the
-  Python release's `dlss5-autopilot` names. The user agent, cache folder and
-  window title are renamed in code (35e4ce9); `KnownFiles.InstallRecord` and
-  `BackupSuffix` still hold the Python names, read by the M2 folder evidence,
-  and move with sub-task c.
+- **The tool is now Invidia Claritatis** (Decisions in `rewrite.md`); every
+  name the tool gives is `invidia-claritatis`, in the specs and in the code.
+- **Greenfield, never published:** nothing reads the reference's records,
+  folders or settings, and no start-up cleanup of an old all-users layer
+  exists. The specs dropped every compatibility rule of that kind.
 - The `nvngx_dlssnr.dll` digests behind `DlssnrPins` were measured in
   `~/coding/claude-lab/dlssnr-digests/results.md`.
 
@@ -32,11 +31,9 @@ of `install.md` are settled (its "Open questions" section).
 
 Carry into later sub-tasks:
 
-- **c:** the record's and backups' names become `invidia-claritatis.json`
-  and `.invidia-claritatis-backup`; the reader converts the Python release's
-  `dlss5-autopilot.json` and keeps the backup names it recorded
-  (`install.md`, "Records from the Python release"); `pe.md`'s folder
-  evidence reads both through the reader.
+- **c:** the install record replaces `Graphics/InstallRecord`, a stand-in
+  that reads a `files` list from `invidia-claritatis.json`; `pe.md`'s folder
+  evidence and `OwnedFiles` read the record through its reader.
 - **g/h:** a `ComponentRelease` for an id with several catalog rows (`dlss`,
   `dlssd`, `dlssg`, `optiscaler`) must carry its row: `ComponentLayout` and
   `ReleaseAssets` look rows up by id, and `ComponentCatalog.Of(id)` refuses

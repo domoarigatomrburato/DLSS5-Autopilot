@@ -52,7 +52,7 @@ This spec takes them as inputs:
   runtime renamed to switch it off (`nvngx_dlss.dlsss`, `nvngx_dlss.dll.bak`,
   `_nvngx.dll`), or an `nvngx_dlss.dll` that is **not** this tool's. A swapped
   file counts as the game's own while its backup `nvngx_dlss.dll.invidia-claritatis-backup`
-  (or the Python release's `nvngx_dlss.dll.dlss5-autopilot-backup`) sits beside it (`dlss.py:764`). Looked for beside the executable and the
+  sits beside it (`dlss.py:764`). Looked for beside the executable and the
   install folder, then in a bounded walk of the game folder that skips the
   asset-only folders. An `nvngx_dlssg.dll` or `nvngx_dlssd.dll` is evidence of
   its own but does not by itself mean the game has super-resolution DLSS.

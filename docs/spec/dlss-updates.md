@@ -302,9 +302,6 @@ removed when it has no entries.
 The game's own file is kept beside the runtime as
 `<name>.dlss5-dlss-original`.
 
-A record whose `tool` is `dlss5-autopilot` was written by the Python
-release and is read the same; the next write gives it this tool's name.
-
 Everything read from the record is untrusted (it sits in a folder other
 tools write into): an entry is used only when its path resolves inside the
 game folder (an absolute path is accepted only inside the game's install
@@ -336,8 +333,7 @@ Kept from the reference, with its reasoning (`dlssupdate.py:16-26`). The
 install area must therefore never treat `.dlss5-dlss-original`,
 `.dlss5-dlss-displaced-*` or `dlss5-dlss-update.json` as its own
 (`installer.py:307`). This area reads the DLSS 5 install only through
-[install](install.md)'s contract, and never reads legacy record names or
-suffixes.
+[install](install.md)'s contract, never by its file names or suffixes.
 
 ### The states of a file
 

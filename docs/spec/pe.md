@@ -294,12 +294,10 @@ unless stated, and all of them are limited by bitness.
   log says D3D11). Every ReShade route also places `nvngx_dlss.dll` beside a
   64-bit game. So:
   - names listed in the install record in that folder, read through
-    install's reader (which also reads the Python release's
-    `dlss5-autopilot.json`), compared by file name, slashes of either kind,
-    are ours;
+    install's reader, compared by file name, slashes of either kind, are
+    ours;
   - except a file whose original was backed up beside it
-    (`<name>.invidia-claritatis-backup`, or the Python release's
-    `<name>.dlss5-autopilot-backup`): the game shipped that one, and "does
+    (`<name>.invidia-claritatis-backup`): the game shipped that one, and "does
     the game ship DLSS" is about the game, not the file now on disk;
   - the record is read as untrusted JSON; a bad one means "nothing is ours".
 - **Another DLSS tool in the folder** brings NGX files of its own. A

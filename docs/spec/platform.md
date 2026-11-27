@@ -124,8 +124,7 @@ install record moves with it, its learned state does not.
   - it never starts a game ([watch](watch.md)): a game started from an
     elevated process is elevated and reads no per-user layer;
   - it never registers anything for all users.
-- The one elevated action is the start-up cleanup of the old all-users
-  Vulkan layer ([install](install.md)).
+- Nothing the tool does needs elevation.
 
 ### Time
 

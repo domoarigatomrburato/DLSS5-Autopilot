@@ -94,12 +94,6 @@ the in-game advice by route:
 `--remove` runs the same uninstall as the window and prints each action
 (`removed: ...`, `restored: ...`).
 
-Every run, after its arguments are validated, calls install's start-up
-cleanup of the old all-users Vulkan layer ([install](install.md), "Shared
-registrations") and prints what it says. Run as administrator, it removes the
-layer (`removed: our ReShade Vulkan layer from the all-users list`); otherwise
-it prints how to.
-
 **No prompts.** The command line never asks a question; everything that
 needs an answer is a flag (`--remix-swap`, `--vr`, `--route`), so a script
 never hangs on input.

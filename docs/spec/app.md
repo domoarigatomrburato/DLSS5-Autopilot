@@ -126,10 +126,7 @@ pages that do not fit go behind a "more" item (`shell.py:442-462`).
 
 ### 3. Start-up and first run
 
-1. The window opens on **games**. Before anything is drawn, a worker calls
-   install's start-up cleanup of the old all-users Vulkan layer
-   ([install](install.md), "Shared registrations"), which says in the status
-   line and log what it did (`app.py:56-75, 107-114`).
+1. The window opens on **games**.
 2. **Setting "read the library when the tool opens"** (games > view, default
    on). On: the saved library (`%LOCALAPPDATA%\invidia-claritatis\library.json`) is
    shown at once; a game whose folder changed on disk since is re-read on a
@@ -378,7 +375,7 @@ when the executable is protected and its architecture must be chosen (section 7)
 | --- | --- | --- | --- |
 | installed | `installed` (`installed - not recorded` when the record could not be saved; `- N warnings` in amber when warnings) | the install's warnings (first 4, "N more in details"), then "in the game": the first 3 numbered steps for that route (`all steps and warnings` / `fewer` toggles the rest and the warnings) | details |
 | failed | `it stopped` | the whole refusal or the last error line, wrapped (a refusal names what to pick instead in its last words) | report a bug, details |
-| removed | `uninstalled - the game's own files are back` (amber with a warning when ReShade's all-users Vulkan layer is still registered: "start this tool once as administrator to remove it") | | details |
+| removed | `uninstalled - the game's own files are back` | | details |
 | diagnosis, working | the verdict (green) | the cost line when measured: `1.8 ms of model a frame . 75% work area` (optiscaler) or `61 fps . 100% work area . 4,200 frames` (feeder; the work area only when the add-on's own config confirmed it) | share the result, set the work area to N% (only when a tune was suggested), details |
 | diagnosis, failed | the verdict (red); findings: up to 3 of the bad/warning ones with a cross or warn glyph | the reason why another route is offered | **try <route>** (primary; only when installed, no job running, and a next route is kept with the answer), share the result, set the work area to N%, report a bug, details |
 | diagnosis, unsure | the verdict (amber: "the logs cannot tell", not a failure) | as failed | as failed |
@@ -518,8 +515,7 @@ in time - press autopilot on its page to try <route>" (`ctl_watch.py:460-512`).
 files are restored." **uninstall** (danger) / **keep**. Also from the library's
 right-click menu for installed games. On completion: "uninstalled (N items)", the
 page forgets the last session, the verdict and the kept autopilot plan are
-deleted, and a leftover all-users Vulkan layer is said on the page and, when
-another page is open, in the status line (`ctl_game.py:1802-1905`).
+deleted (`ctl_game.py:1802-1905`).
 
 **play**: starts the game from the tool (the engine's launcher), starts watching
 it, and says `started <exe>` (status and log) or why it could not ("it did not
