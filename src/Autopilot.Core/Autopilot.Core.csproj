@@ -12,4 +12,9 @@
     <PackageReference Include="ValveKeyValue" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The library cache's full-drive test fills the drive through an internal overload. -->
+    <InternalsVisibleTo Include="Autopilot.Core.Tests" />
+  </ItemGroup>
+
 </Project>

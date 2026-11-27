@@ -34,6 +34,9 @@ public static class GameReader
         return new GameRead(await DescribeAsync(found, pick, context.Choices.ForFolder(found.Folder), context, notes, cancellationToken), notes);
     }
 
+    /// <summary>The game as its source listed it, rebuilt from its entry, so it can be read again as a scan reads it.</summary>
+    internal static StoreGame Listing(GameEntry entry) => new(entry.Name, entry.Folder, entry.Source, entry.StoreExecutable);
+
     private static async Task<GameEntry> DescribeAsync(
         StoreGame found, PickedExecutable pick, GameChoices? choices, GameReading context, List<LibraryNote> notes, CancellationToken cancellationToken)
     {
@@ -43,6 +46,7 @@ public static class GameReader
             Folder = found.Folder,
             Source = found.Source,
             Executable = pick.Executable,
+            StoreExecutable = found.StoreExecutable,
             Candidates = pick.Candidates,
             InstallFolder = pick.InstallFolder,
             Install = pick.Install,

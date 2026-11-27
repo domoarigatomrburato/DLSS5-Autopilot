@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Autopilot.Core.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace Autopilot.Core.Net;
@@ -50,29 +51,8 @@ internal sealed partial class ApiCache(string cacheRoot, ILogger logger)
         }
     }
 
-    /// <summary>Writes to a temporary file in the same folder, flushes it to disk, then moves it into place.</summary>
-    private async Task WriteAsync(Uri url, CachedText entry, CancellationToken cancellationToken)
-    {
-        _ = Directory.CreateDirectory(_folder);
-        string temporary = Path.Combine(_folder, Path.GetRandomFileName() + ".tmp");
-        try
-        {
-            await using (FileStream file = new(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
-            {
-                await JsonSerializer.SerializeAsync(file, entry, _json, cancellationToken);
-                await file.FlushAsync(cancellationToken);
-                // There is no asynchronous fsync, so this blocks; it runs once per answer.
-                RandomAccess.FlushToDisk(file.SafeFileHandle);
-            }
-
-            File.Move(temporary, PathFor(url), overwrite: true);
-        }
-        catch
-        {
-            File.Delete(temporary);
-            throw;
-        }
-    }
+    private async Task WriteAsync(Uri url, CachedText entry, CancellationToken cancellationToken) =>
+        await AtomicFile.WriteAsync(PathFor(url), async (file, token) => await JsonSerializer.SerializeAsync(file, entry, _json, token), cancellationToken);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The answer from {Host} for {Path} could not be kept in the cache ({Reason})")]
     private static partial void LogNotKept(ILogger logger, string host, string path, string reason);

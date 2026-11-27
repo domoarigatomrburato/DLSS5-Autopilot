@@ -27,11 +27,29 @@ internal static class ExecutableFacts
         }
 
         ApiDecision detected = await GraphicsApiDecision.DecideAsync(executable, reading, search, cancellationToken);
-        return WithApi(entry, detected, choices?.ChosenApi) with
+        GameEntry read = entry with
         {
+            Detected = detected,
             Protected = reading is ProtectedExecutable,
-            Bitness = reading is ReadableExecutable readable ? readable.Bitness : choices?.Bitness,
+            Bitness = reading is ReadableExecutable readable ? readable.Bitness : null,
         };
+        return WithChoices(read, choices);
+    }
+
+    /// <summary>
+    /// Applies the person's choices to an entry whose executable was read: the chosen API, else the
+    /// automatic one by the entry's emulator; and for a protected executable, the chosen
+    /// architecture. An entry whose executable was not read is returned as it is.
+    /// </summary>
+    public static GameEntry WithChoices(GameEntry entry, GameChoices? choices)
+    {
+        if (entry.Detected is not { } detected)
+        {
+            return entry;
+        }
+
+        GameEntry chosen = WithApi(entry, detected, choices?.ChosenApi);
+        return chosen.Protected ? chosen with { Bitness = choices?.Bitness } : chosen;
     }
 
     /// <summary>An API as the person reads it in a reason.</summary>
@@ -51,6 +69,6 @@ internal static class ExecutableFacts
         }
 
         (GraphicsApi automatic, string explanation) = EmulatorApi.Automatic(detected, entry.Emulator);
-        return entry with { Api = automatic, ApiExplanation = explanation, Detected = detected };
+        return entry with { Api = automatic, ApiExplanation = explanation, Detected = detected, ApiSetByHand = false };
     }
 }

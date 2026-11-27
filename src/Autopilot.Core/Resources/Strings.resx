@@ -374,6 +374,12 @@
   <data name="AddPathNotFound" xml:space="preserve">
     <value>{0} not found.</value>
   </data>
+  <data name="LibraryCacheDriveFull" xml:space="preserve">
+    <value>the library cache was not saved: the drive is full</value>
+  </data>
+  <data name="LibraryCacheNotSaved" xml:space="preserve">
+    <value>the library cache was not saved: {0}</value>
+  </data>
   <!-- Emulators: {0} is the emulator's name, {1} its system or the API its imports read as. -->
   <data name="EmulatorTitle" xml:space="preserve">
     <value>{0} ({1})</value>

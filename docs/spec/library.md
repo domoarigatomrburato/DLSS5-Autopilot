@@ -553,7 +553,8 @@ even when nothing had changed (#8, #18, #32, #67).
 - **File**: `%LOCALAPPDATA%\dlss5-autopilot\library.json`, beside the
   settings, not beside the executable (the executable is run from Downloads,
   a USB stick, a folder Defender has an interest in).
-- **Contents**: schema number (2), the tool's version, the GPU's compute
+- **Contents**: schema number (3: the reference wrote another shape as 2 at
+  the same path), the tool's version, the GPU's compute
   capability (`sm`), each game's fields (above, without the emulator profile
   and the candidates' content is only paths), a **stamp** per game, and the
   compatibility rows (DLSS and route outlook per game, keyed by folder and

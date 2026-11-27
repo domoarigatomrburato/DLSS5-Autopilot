@@ -5,7 +5,8 @@ namespace Autopilot.Core.Library;
 /// <summary>Builds the library: every source asked, each new game read, one entry per game.</summary>
 public static class Scanner
 {
-    private static readonly TimeSpan _slow = TimeSpan.FromSeconds(1);
+    /// <summary>A game whose reading takes this long or longer gets a <see cref="SlowRead"/> note.</summary>
+    internal static readonly TimeSpan SlowReading = TimeSpan.FromSeconds(1);
 
     /// <summary>
     /// A full scan when <see cref="ScanRequest.Known"/> is null: every source, every game read, then
@@ -59,7 +60,7 @@ public static class Scanner
             if (result is not null)
             {
                 notes.AddRange(result.Notes);
-                if (took >= _slow)
+                if (took >= SlowReading)
                 {
                     notes.Add(new SlowRead(result.Entry.Name, took));
                 }

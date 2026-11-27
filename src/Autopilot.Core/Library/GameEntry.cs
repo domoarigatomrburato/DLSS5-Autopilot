@@ -21,6 +21,9 @@ public sealed record GameEntry
     /// <summary>The executable the tool installs beside, or null when the folder holds none.</summary>
     public string? Executable { get; init; }
 
+    /// <summary>The executable the store itself launches, as the source listed it; null when it named none.</summary>
+    public string? StoreExecutable { get; init; }
+
     /// <summary>Every executable found, best first, as full paths.</summary>
     public IReadOnlyList<string> Candidates { get; init; } = [];
 
