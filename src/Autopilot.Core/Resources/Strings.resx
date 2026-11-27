@@ -482,4 +482,154 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <data name="GpuIntelAnswer" xml:space="preserve">
     <value>This is an Intel graphics adapter: no NVIDIA card detected - DLSS 5 will not run.</value>
   </data>
+  <!-- Route decision: why a route is recommended, or why none is (rules 1 to 10, then the steps after them). -->
+  <data name="RouteChooseArchitecture" xml:space="preserve">
+    <value>The game's architecture (32-bit or 64-bit) could not be read. Choose it in the game's settings: until then no route is offered, because the install cannot go ahead without it.</value>
+  </data>
+  <data name="RouteDx8On64" xml:space="preserve">
+    <value>DirectX 8 on a 64-bit executable is not a combination any route can serve. Check the graphics API and the architecture in the game's settings.</value>
+  </data>
+  <data name="RouteDx10" xml:space="preserve">
+    <value>Direct3D 10: the feeder reaches it from build 0.13.1 on, relaying the frame through a private D3D11 device inside the game. Older feeder builds refuse D3D10, so the install checks the build it picks.</value>
+  </data>
+  <data name="Route32Bit" xml:space="preserve">
+    <value>32-bit game: most DLSS 5 add-ons are 64-bit only and a 32-bit process cannot load them, so the feeder runs the network in its 64-bit helper process.</value>
+  </data>
+  <data name="RouteDx9On64" xml:space="preserve">
+    <value>64-bit DirectX 9: the renodx-dlss add-on hooks it directly (D3D9Ex, the presentation backbuffer). There are no motion vectors on this path, so expect a softer result.</value>
+  </data>
+  <data name="RouteVulkanOwnDlss" xml:space="preserve">
+    <value>Vulkan game with its own DLSS: the bridge mirrors its DLSS contract onto a private D3D12 session, so the game's quality mode still applies. The feeder is the fallback: always DLAA, with shader motion vectors.</value>
+  </data>
+  <data name="RouteVulkan" xml:space="preserve">
+    <value>Vulkan without DLSS: the feeder builds a DLAA contract through its own Vulkan interop. The bridge can instead build one from the driver's optical flow: fewer parts, less proven.</value>
+  </data>
+  <data name="RouteOpenGl" xml:space="preserve">
+    <value>OpenGL is reachable only through the feeder, which shares a D3D12 device's textures into OpenGL. The game must render on the NVIDIA card.</value>
+  </data>
+  <data name="RouteDx11OwnDlss" xml:space="preserve">
+    <value>This game has its own DLSS but renders with D3D11, which the DLSS 5 add-on cannot hook directly. The bridge reproduces the DLSS contract on a private D3D12 session, and the game's own quality mode still applies.</value>
+  </data>
+  <data name="RouteDx12OwnDlss" xml:space="preserve">
+    <value>This game ships its own DLSS and renders with D3D12, so the DLSS 5 add-on hooks it directly: no synthetic contract, and the in-game DLSS quality setting still applies.</value>
+  </data>
+  <data name="RouteAskApi" xml:space="preserve">
+    <value>It is not settled whether this game draws with Direct3D 11 or Direct3D 12, and the routes differ between the two. Choose the graphics API in the game's settings; the routes listed work with either.</value>
+  </data>
+  <!-- {0} is "FSR 2/3" or "XeSS"; {1} lists up to three of the files found. -->
+  <data name="RouteUpscaler" xml:space="preserve">
+    <value>No DLSS in this game, but it ships {0} ({1}). The feeder builds a DLAA contract from ReShade's depth and shader motion vectors: the most proven way. OptiScaler can instead take the game's {0} calls as its input and run DLSS in their place, then neural rendering: real upscaling, works in many games, not all.</value>
+  </data>
+  <data name="RouteNoDlss" xml:space="preserve">
+    <value>No DLSS in this game. The feeder builds a DLAA contract from ReShade's depth and shader motion vectors: the most proven way. The bridge can instead build one from the driver's optical flow; standalone-dlssnr brings its own feed and presents through a window of its own.</value>
+  </data>
+  <!-- {0} is the RTX Remix runtime folder found. -->
+  <data name="RouteRemix" xml:space="preserve">
+    <value>This game has an RTX Remix mod (found {0}). DLSS 5 runs inside the Remix runtime, after DLSS: no ReShade, no add-on.</value>
+  </data>
+  <data name="RouteOptiScalerRtx50" xml:space="preserve">
+    <value>The model-resolution dial: at 75% OptiScaler costs about half of full size, and the frame itself stays full detail. The native route is the simpler, more proven alternative.</value>
+  </data>
+  <!-- {0} is "FSR 2/3" or "XeSS". -->
+  <data name="RouteOptiScalerUpscalerRtx50" xml:space="preserve">
+    <value>This game has no DLSS but ships {0}. OptiScaler takes those calls as its input once {0} is switched on in the game's own settings, runs DLSS in their place and then neural rendering, with the model-resolution dial. It works in many games, not all: the feeder is the proven fallback.</value>
+  </data>
+  <!-- Shared results that moved the recommendation: {0} the route picked, {1} of {2} its results, {3} the route the tool would have picked; then the list's source and date. In the class text {4} of {5} are the results of route {3}. -->
+  <data name="RouteSharedGame" xml:space="preserve">
+    <value>Shared results for this game: the {0} route worked in {1} of {2}. Without them the tool would pick {3}; it stays in the list. (Shared list: {4}, {5}.)</value>
+  </data>
+  <data name="RouteSharedClass" xml:space="preserve">
+    <value>Shared results for games like this one: the {0} route worked in {1} of {2}, the {3} route in {4} of {5}. Without them the tool would pick {3}; it stays in the list. (Shared list: {6}, {7}.)</value>
+  </data>
+  <!-- Notes after the reason. -->
+  <data name="RouteNoteDxvkDx9" xml:space="preserve">
+    <value>DirectX 9 is translated to Vulkan by DXVK first.</value>
+  </data>
+  <data name="RouteNoteDxvkDx8" xml:space="preserve">
+    <value>DirectX 8 is translated to Vulkan by DXVK first (its d3d8.dll on its d3d9.dll).</value>
+  </data>
+  <data name="RouteNoteRemixOthersRefused" xml:space="preserve">
+    <value>The other routes are listed for completeness only: they install a ReShade proxy, which crashes a Remix game before it draws a frame, so installing any of them is refused.</value>
+  </data>
+  <!-- The note the route dropdown shows beside each route ("fit"). {0} in RouteFitOptiScalerUpscalerOn is "FSR" or "XeSS". -->
+  <data name="RouteFitOptiScaler" xml:space="preserve">
+    <value>model resolution dial: the fps lever</value>
+  </data>
+  <data name="RouteFitOptiScalerNeedsUpscaler" xml:space="preserve">
+    <value>the game must already use DLSS, FSR 2/3 or XeSS</value>
+  </data>
+  <data name="RouteFitOptiScalerUpscalerOn" xml:space="preserve">
+    <value>the game's {0} calls are redirected into DLSS, so {0} has to be on in the game's own settings; without such a setting there is nothing to hook, and the feeder is the route to use</value>
+  </data>
+  <data name="RouteFitOptiScalerDx11" xml:space="preserve">
+    <value>on D3D11 the upscaler becomes FSR on D3D12</value>
+  </data>
+  <data name="RouteFitOptiScalerVulkan" xml:space="preserve">
+    <value>on Vulkan the model has had nothing to attach to in the reports received; set the game to DirectX 12 if it offers the choice, or use the feeder</value>
+  </data>
+  <data name="RouteFitOptiScalerRtx50Only" xml:space="preserve">
+    <value>author tested RTX 50 only</value>
+  </data>
+  <data name="RouteFitRemix" xml:space="preserve">
+    <value>runs inside the Remix runtime, after DLSS - no ReShade, no add-on</value>
+  </data>
+  <data name="RouteFitNative" xml:space="preserve">
+    <value>most proven for D3D12 games with DLSS</value>
+  </data>
+  <data name="RouteFitUpstream" xml:space="preserve">
+    <value>runs the network before the game's DLSS, at render resolution; tested on two games</value>
+  </data>
+  <data name="RouteFitUpstreamNeedsDlss" xml:space="preserve">
+    <value>the game must already use DLSS</value>
+  </data>
+  <data name="RouteFitStandalone" xml:space="preserve">
+    <value>own feed: DLAA at native resolution, DLSS SR below it, frame generation; experimental</value>
+  </data>
+  <data name="RouteFitUplift" xml:space="preserve">
+    <value>one add-on, every API, 32- and 64-bit; switched on in its own tab</value>
+  </data>
+  <data name="RouteFitRenodx" xml:space="preserve">
+    <value>unproven - reported not working in many games</value>
+  </data>
+  <data name="RouteFitBridge" xml:space="preserve">
+    <value>mirrors the game's DLSS onto D3D12</value>
+  </data>
+  <data name="RouteFitBridgeTested" xml:space="preserve">
+    <value>mirrors the game's DLSS onto D3D12; every release tested on D3D11 and Vulkan</value>
+  </data>
+  <data name="RouteFitFeeder" xml:space="preserve">
+    <value>always DLAA, shader motion vectors</value>
+  </data>
+  <data name="RouteFitFeederOwnDlss" xml:space="preserve">
+    <value>always DLAA, shader motion vectors; ignores the game's DLSS</value>
+  </data>
+  <!-- Driver warnings per route: {0} is the driver installed; then the thresholds and the pinned build as each text names them. -->
+  <data name="RouteDriverTooOld" xml:space="preserve">
+    <value>Driver {0} is older than DLSS 5 itself: the neural-rendering runtime first appears in {1}. The install will finish and the model will not run. Update the driver before trying anything else here.</value>
+  </data>
+  <data name="RouteDriverRenodxFault" xml:space="preserve">
+    <value>Driver {0}: the renodx-dlss5 builds 4.6 and 4.7 fault inside the driver's NGX runtime on {1} and newer, on every evaluate. The tool pins {2} here instead, which is a way round and not a fix: some games fault on {2} too. The evidence is a handful of reports. If the game crashes the moment neural rendering comes on, roll the driver back to {3}.</value>
+  </data>
+  <data name="RouteDriverShortFuse" xml:space="preserve">
+    <value>Driver {0}: this route loads ShortFuse's own add-on rather than renodx-dlss5, so the {2} pin that works around the {1}+ fault elsewhere does not apply, and nothing is known about this add-on on these drivers. If the game crashes the moment neural rendering comes on, roll the driver back to {3}.</value>
+  </data>
+  <data name="RouteDriverStandalone" xml:space="preserve">
+    <value>Driver {0}: the fault known on {1} and newer is reached through the renodx-dlss5 add-on, which this route does not load, so it is the route to try when native, bridge or feeder faults. It still runs NVIDIA's runtime: if the game crashes the moment neural rendering comes on, roll the driver back to {2}.</value>
+  </data>
+  <data name="RouteDriverGeneric" xml:space="preserve">
+    <value>Driver {0}: {1} and newer fault inside the driver's own NGX runtime in a good number of games, and the pin that works around it on other routes does not apply to this one. If the game crashes the moment neural rendering comes on, roll the driver back to {2}.</value>
+  </data>
+  <data name="RouteDriverTryStandalone" xml:space="preserve">
+    <value>The standalone route does not load renodx-dlss5 at all and is worth trying before rolling the driver back.</value>
+  </data>
+  <!-- OptiScaler's card-and-driver note. In RouteOptiScalerDriver {0} is the driver needed and {1} the driver installed. -->
+  <data name="RouteOptiScalerCardUnknown" xml:space="preserve">
+    <value>The OptiScaler author states an RTX 50 series card is required. Your card could not be detected.</value>
+  </data>
+  <data name="RouteOptiScalerOlderCard" xml:space="preserve">
+    <value>The OptiScaler author tested RTX 50 only. This tool installs the community build compiled for your card; if the overlay says the model refused, the native route is one click away.</value>
+  </data>
+  <data name="RouteOptiScalerDriver" xml:space="preserve">
+    <value>OptiScaler's neural rendering needs NVIDIA driver {0} or newer; you have {1}.</value>
+  </data>
 </root>

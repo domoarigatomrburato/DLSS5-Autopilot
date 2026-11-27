@@ -9,6 +9,9 @@ internal static partial class CardNames
     /// <summary>The first architecture with tensor cores in consumer cards: RTX 20.</summary>
     public const int Turing = 75;
 
+    /// <summary>RTX 50 (Blackwell): the cards OptiScaler's author tested, and the only ones the routes steer to it.</summary>
+    public const int Rtx50 = 120;
+
     // Every architecture the fatbin table names; 80, 87, 90, 100 and 121 are data-centre parts no card name reaches.
     private static readonly Dictionary<int, string> _families = new()
     {
