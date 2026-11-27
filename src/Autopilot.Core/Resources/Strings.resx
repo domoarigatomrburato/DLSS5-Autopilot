@@ -267,4 +267,111 @@
   <data name="ReEngineWarning" xml:space="preserve">
     <value>This looks like a Capcom RE Engine game ({0} is in the folder) - the engine behind the Resident Evil 2/3/4 remakes, RE7, RE8 (Village) and Requiem.&#10;&#10;ReShade's add-on support, which every route here needs, is documented to crash several RE Engine titles the moment it loads - Resident Evil Requiem worst of all, since it also carries Denuvo. This is the engine's own tamper protection, not a mistake in the setup.&#10;&#10;This install puts REFramework in first: a separate, actively maintained mod that loads before the game's own checks and patches around them, after which ReShade survives. It is what players report using on Requiem itself. Not guaranteed on every title or every game update - REFramework's own build has to catch up first.</value>
   </data>
+  <!-- Sources, as the scan names them. -->
+  <data name="SourceSteam" xml:space="preserve">
+    <value>Steam</value>
+  </data>
+  <data name="SourceEpic" xml:space="preserve">
+    <value>Epic</value>
+  </data>
+  <data name="SourceGog" xml:space="preserve">
+    <value>GOG</value>
+  </data>
+  <data name="SourceEa" xml:space="preserve">
+    <value>EA</value>
+  </data>
+  <data name="SourceUbisoft" xml:space="preserve">
+    <value>Ubisoft</value>
+  </data>
+  <data name="SourceBattleNet" xml:space="preserve">
+    <value>Battle.net</value>
+  </data>
+  <data name="SourceRockstar" xml:space="preserve">
+    <value>Rockstar</value>
+  </data>
+  <data name="SourceAmazon" xml:space="preserve">
+    <value>Amazon</value>
+  </data>
+  <data name="SourceHeroic" xml:space="preserve">
+    <value>Heroic</value>
+  </data>
+  <data name="SourceXbox" xml:space="preserve">
+    <value>Xbox</value>
+  </data>
+  <data name="SourceFolder" xml:space="preserve">
+    <value>Folders</value>
+  </data>
+  <data name="SourceEmulator" xml:space="preserve">
+    <value>Emulators</value>
+  </data>
+  <data name="SourceManual" xml:space="preserve">
+    <value>Added by hand</value>
+  </data>
+  <!-- Scan progress: {0} is a source; for a game, {0} of {1} is being read and {2} is its name. -->
+  <data name="ScanSource" xml:space="preserve">
+    <value>Scanning {0}...</value>
+  </data>
+  <data name="ScanReadingGame" xml:space="preserve">
+    <value>Inspecting games... {0}/{1}: {2}</value>
+  </data>
+  <data name="ScanOneWithoutExecutable" xml:space="preserve">
+    <value>1 folder had no executable</value>
+  </data>
+  <data name="ScanManyWithoutExecutable" xml:space="preserve">
+    <value>{0} folders had no executable</value>
+  </data>
+  <!-- Library notes for the log: {0} is a source, a folder or a game's name as each note says. -->
+  <data name="NoteSourceFailed" xml:space="preserve">
+    <value>{0} could not be read: {1}</value>
+  </data>
+  <data name="NoteNoExecutable" xml:space="preserve">
+    <value>no executable under {0} - {1} cannot be set up</value>
+  </data>
+  <data name="NoteSearchStoppedEarly" xml:space="preserve">
+    <value>stopped looking for executables under {0} after {1} folders - too big to search</value>
+  </data>
+  <data name="NoteSlowRead" xml:space="preserve">
+    <value>inspected {0} in {1:0.0}s</value>
+  </data>
+  <data name="NoteStorePickReplaced" xml:space="preserve">
+    <value>{0}: the store names {1} but the game runs from {2} - using that</value>
+  </data>
+  <data name="NoteInstallRecordedElsewhere" xml:space="preserve">
+    <value>{0}: an earlier install is recorded in {1}, not next to {2}</value>
+  </data>
+  <!-- A game entry: why it cannot be read or set up; {0} is the API the executable said. -->
+  <data name="GameNoExecutable" xml:space="preserve">
+    <value>no executable found</value>
+  </data>
+  <data name="GameApiSetByHand" xml:space="preserve">
+    <value>set by hand (detected {0})</value>
+  </data>
+  <data name="GameApiUnknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <data name="GameApiDxgi" xml:space="preserve">
+    <value>DX11 or DX12</value>
+  </data>
+  <data name="GameUnsupportedNoExecutable" xml:space="preserve">
+    <value>No game executable found.</value>
+  </data>
+  <data name="GameUnsupportedProtected" xml:space="preserve">
+    <value>Choose this game's 'architecture' and 'graphics api' in the game's settings - Windows protects its executable, so they cannot be read from it.</value>
+  </data>
+  <data name="GameUnsupportedNoBitness" xml:space="preserve">
+    <value>Could not read the architecture.</value>
+  </data>
+  <data name="GameUnsupportedDx8On64" xml:space="preserve">
+    <value>DirectX 8 is 32-bit only, and this executable is 64-bit - set 'graphics api' to the one it really draws with in the game's settings.</value>
+  </data>
+  <!-- Adding a game by hand: {0} is the game's name, the folder, or the path given. -->
+  <data name="AddAlreadyListed" xml:space="preserve">
+    <value>{0} is already in the list</value>
+  </data>
+  <data name="AddNoExecutable" xml:space="preserve">
+    <value>No executable was found in: {0}</value>
+  </data>
+  <data name="AddPathNotFound" xml:space="preserve">
+    <value>{0} not found.</value>
+  </data>
 </root>

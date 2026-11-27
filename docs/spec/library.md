@@ -190,7 +190,9 @@ dropped (`core/games.py:1152-1170`).
   carries something wins over one that does not: an install recorded against
   it, or a graphics API or architecture set by hand (both are keyed by that
   entry's folder and would be lost). Games with an emulator profile (several
-  games of one system share an emulator's executable) are never merged.
+  games of one system share an emulator's executable) are never merged. An
+  install outweighs a choice; ties go to the first source, in the scan's
+  order, so a folder added by hand loses to a store.
 - **The result is sorted by name**, ignoring case.
 - **A game with no executable** is not hidden silently: the scan note says "N
   folders had no executable" and the log names which ("no executable under
@@ -373,7 +375,9 @@ folder, and every candidate's folder, in that order. The first that holds one
 becomes the install folder, and the executable the record names (when that
 file is still there) becomes the executable, so the architecture and API shown
 describe what was actually patched; failing that, a candidate in that folder.
-The log says when the record is not beside the executable.
+The log says when the record is not beside the executable. A name the
+record gives is a file name: one holding `/`, `\` or `:`, or `.`/`..`, is
+not followed.
 
 **A single executable or a folder as the target.** A path to an `.exe` is the
 executable and its only candidate; a folder runs the ranking and the best is
