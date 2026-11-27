@@ -54,7 +54,7 @@ public sealed class NetClient : IDisposable
         {
             answer = await FetchTextAsync(url, hosts, timeout, maxBytes, options.AcceptServerError, cancellationToken);
         }
-        catch (NetException failure) when (kept is not null && IsNetworkFailure(failure))
+        catch (NetException failure) when (kept is not null && !failure.IsRefusal)
         {
             return new(HttpStatusCode.OK, kept.Body, kept.FetchedAt, IsStale: true);
         }
@@ -107,10 +107,6 @@ public sealed class NetClient : IDisposable
     }
 
     public void Dispose() => _http.Dispose();
-
-    // A refusal of what was asked for is not something an old answer can stand in for.
-    private static bool IsNetworkFailure(NetException failure) =>
-        failure.Kind is not (NetErrorKind.RedirectRefused or NetErrorKind.HostNotAllowed or NetErrorKind.SchemeRefused or NetErrorKind.TooLarge);
 
     private bool IsFresh(CachedText kept)
     {

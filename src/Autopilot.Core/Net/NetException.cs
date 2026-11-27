@@ -14,6 +14,13 @@ public sealed class NetException(NetErrorKind kind, string host, string message,
     /// <summary>What the failure knows beyond its kind, when it knows more.</summary>
     public NetFailureDetail? Detail { get; init; }
 
+    /// <summary>
+    /// A refusal of what was asked for (a host off the list, a downgrade, an answer past its limit)
+    /// rather than a network failure: no old answer or other source may stand in for it.
+    /// </summary>
+    internal bool IsRefusal =>
+        Kind is NetErrorKind.RedirectRefused or NetErrorKind.HostNotAllowed or NetErrorKind.SchemeRefused or NetErrorKind.TooLarge;
+
     /// <summary>A dropped connection or a server hiccup: another attempt may succeed.</summary>
     internal bool IsRetryable { get; init; }
 

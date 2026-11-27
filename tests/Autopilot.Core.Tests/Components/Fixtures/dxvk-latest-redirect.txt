@@ -1,0 +1,2 @@
+HTTP/2 302
+location: https://github.com/doitsujin/dxvk/releases/tag/v3.2

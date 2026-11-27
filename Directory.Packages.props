@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageVersion Include="AngleSharp" Version="1.11.0" />
     <PackageVersion Include="Avalonia" Version="12.2.0" />
     <PackageVersion Include="Avalonia.Desktop" Version="12.2.0" />
     <PackageVersion Include="Avalonia.Headless" Version="12.2.0" />

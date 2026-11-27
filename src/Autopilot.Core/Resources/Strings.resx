@@ -632,4 +632,14 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <data name="RouteOptiScalerDriver" xml:space="preserve">
     <value>OptiScaler's neural rendering needs NVIDIA driver {0} or newer; you have {1}.</value>
   </data>
+  <!-- GitHub release data read from somewhere other than the live API: {0} is the cached answer's age in whole hours. -->
+  <data name="ReleasesFromStaleCache" xml:space="preserve">
+    <value>GitHub could not be reached (rate limit or no connection); using the version list cached {0}h ago.</value>
+  </data>
+  <data name="ReleasesFromPages" xml:space="preserve">
+    <value>GitHub's API could not be reached; this release was read from github.com's release pages instead.</value>
+  </data>
+  <data name="ReleasesFromLatestRedirect" xml:space="preserve">
+    <value>GitHub's API could not be reached; this component came from its project's 'latest release' redirect, so the exact version is whatever that redirect points at, and it may be a test build.</value>
+  </data>
 </root>

@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AngleSharp" />
     <PackageReference Include="BouncyCastle.Cryptography" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="SharpCompress" />

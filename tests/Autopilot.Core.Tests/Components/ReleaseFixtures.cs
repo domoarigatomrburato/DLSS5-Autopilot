@@ -1,0 +1,33 @@
+using Autopilot.Core.Components;
+
+namespace Autopilot.Core.Tests.Components;
+
+/// <summary>
+/// Answers captured from GitHub for <c>doitsujin/dxvk</c> on 2026-11-27 (release notes trimmed from
+/// the JSON, the list page trimmed to its releases), one <c>NIGos/dlss5-bridge</c> list with
+/// pre-releases, and GitHub's rate-limit answers, written by hand.
+/// </summary>
+internal static class ReleaseFixtures
+{
+    /// <summary>The ten tags on the captured list page, newest first.</summary>
+    public static readonly string[] PageTags = ["v3.2", "v3.1.1", "v3.1", "v3.0.2", "v3.0.1", "v3.0", "v2.7.1", "v2.7", "v2.6.2", "v2.6.1"];
+
+    public static string Fixture(string name) => File.ReadAllText(Path.Join(AppContext.BaseDirectory, "Components", "Fixtures", name));
+
+    /// <summary>A list page with the captured page's markup around other tags.</summary>
+    public static string ListPageWith(params string[] tags)
+    {
+        string page = Fixture("dxvk-releases-page.html");
+        int first = page.IndexOf("  <section", StringComparison.Ordinal);
+        int end = page.LastIndexOf("</section>", StringComparison.Ordinal) + "</section>".Length;
+        string section = page[first..(page.IndexOf("</section>", first, StringComparison.Ordinal) + "</section>".Length)];
+        return page[..first] + string.Concat(tags.Select(tag => section.Replace("v3.2", tag, StringComparison.Ordinal) + "\n")) + page[end..];
+    }
+
+    /// <summary>An asset fragment: the captured one for v3.2, the same markup under another tag otherwise.</summary>
+    public static string ExpandedFor(string tag) => Fixture("dxvk-expanded-assets-v3.2.html").Replace("v3.2", tag, StringComparison.Ordinal);
+
+    public static string[] Tags(IEnumerable<GitHubRelease> releases) => [.. releases.Select(release => release.Tag)];
+
+    public static string[] AssetNames(GitHubRelease release) => [.. release.Assets.Select(asset => asset.Name)];
+}

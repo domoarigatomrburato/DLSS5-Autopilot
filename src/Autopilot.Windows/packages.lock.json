@@ -54,11 +54,18 @@
       "autopilot.core": {
         "type": "Project",
         "dependencies": {
+          "AngleSharp": "[1.11.0, )",
           "BouncyCastle.Cryptography": "[2.7.0, )",
           "Microsoft.Data.Sqlite": "[11.0.0, )",
           "SharpCompress": "[0.50.12, )",
           "ValveKeyValue": "[0.80.0.542, )"
         }
+      },
+      "AngleSharp": {
+        "type": "CentralTransitive",
+        "requested": "[1.11.0, )",
+        "resolved": "1.11.0",
+        "contentHash": "1wEWfvt74q9RNAgWYLC9lfS1rT/CNfFw2rvjLJTaZEKRJ3qf35iTbwjH15VTQDwv48CjekHQIcVbxuD/GSiWcQ=="
       },
       "BouncyCastle.Cryptography": {
         "type": "CentralTransitive",
