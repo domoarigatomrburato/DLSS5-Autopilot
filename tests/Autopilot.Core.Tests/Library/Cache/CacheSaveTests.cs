@@ -22,7 +22,7 @@ public sealed class CacheSaveTests(TestContext testContext) : IDisposable
         _ = await _bed.SaveAsync(Ct, arena);
         string before = await File.ReadAllTextAsync(_bed.CachePath, Ct);
 
-        CacheSaveResult result = await LibraryCache.SaveAsync(_bed.CachePath, CacheBed.Key, [arena, arena with { Name = "Again" }], file => new FillingStream(file), Ct);
+        CacheSaveResult result = await _bed.SaveThroughAsync(file => new FillingStream(file), Ct, arena, arena with { Name = "Again" });
 
         Assert.IsFalse(result.Saved);
         Assert.IsTrue(result.DriveFull);
@@ -37,7 +37,7 @@ public sealed class CacheSaveTests(TestContext testContext) : IDisposable
         _ = _bed.Game("Arena");
         string blocked = _bed.Games.Write("Blocked", "a file where the cache's folder goes");
 
-        CacheSaveResult result = await LibraryCache.SaveAsync(Path.Join(blocked, "library.json"), CacheBed.Key, [await _bed.ReadAsync("Arena", Ct)], Ct);
+        CacheSaveResult result = await LibraryCache.SaveAsync(Path.Join(blocked, "library.json"), CacheBed.Key, [await _bed.ReadAsync("Arena", Ct)], _bed.Games.Clock, Ct);
 
         Assert.IsFalse(result.Saved);
         Assert.IsFalse(result.DriveFull);
@@ -75,7 +75,7 @@ public sealed class CacheSaveTests(TestContext testContext) : IDisposable
         using CancellationTokenSource cancelled = new();
         await cancelled.CancelAsync();
 
-        _ = await Assert.ThrowsAsync<OperationCanceledException>(() => LibraryCache.SaveAsync(_bed.CachePath, CacheBed.Key, [arena], cancelled.Token));
+        _ = await Assert.ThrowsAsync<OperationCanceledException>(() => LibraryCache.SaveAsync(_bed.CachePath, CacheBed.Key, [arena], _bed.Games.Clock, cancelled.Token));
     }
 
     /// <summary>Passes the first half of the first write to the file, then finds the drive full.</summary>

@@ -29,7 +29,7 @@ internal static class SevenZipSource
             }
         }
 
-        catalog.CheckRatio(catalog.DeclaredTotal, await archive.TotalSizeAsync(), "the archive");
+        catalog.CheckRatio(catalog.DeclaredTotal, await archive.TotalSizeAsync(), member: null);
         if (plan.Count > 0)
         {
             await WritePlannedAsync(archive, plan, copy, ct);

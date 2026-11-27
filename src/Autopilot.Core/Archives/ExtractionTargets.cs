@@ -10,6 +10,16 @@ internal interface IExtractionTarget
     void Finish();
 }
 
+/// <summary>Places nothing: a listing reads the headers and writes no member.</summary>
+internal sealed class ListingTarget : IExtractionTarget
+{
+    public string? Place(string memberPath) => null;
+
+    public void Finish()
+    {
+    }
+}
+
 /// <summary>The one file member whose path ends with the given parts, ignoring case.</summary>
 internal sealed class MemberTarget(string archivePath, string ending, string partFile) : IExtractionTarget
 {
@@ -34,6 +44,7 @@ internal sealed class MemberTarget(string archivePath, string ending, string par
             throw ArchiveException.For(
                 ArchiveFailure.AmbiguousMember,
                 archivePath,
+                memberPath,
                 $"more than one member ends with '{ending}', the second is '{memberPath}'");
         }
 
@@ -45,7 +56,7 @@ internal sealed class MemberTarget(string archivePath, string ending, string par
     {
         if (!_found)
         {
-            throw ArchiveException.For(ArchiveFailure.MemberNotFound, archivePath, $"holds no member ending with '{ending}'");
+            throw ArchiveException.For(ArchiveFailure.MemberNotFound, archivePath, ending, $"holds no member ending with '{ending}'");
         }
     }
 }
@@ -72,13 +83,13 @@ internal sealed class TreeTarget(string archivePath, string destination, string 
         string relative = string.Join('/', parts);
         if (!_placed.Add(relative))
         {
-            throw ArchiveException.For(ArchiveFailure.DuplicateName, archivePath, $"two members land on '{relative}'");
+            throw ArchiveException.For(ArchiveFailure.DuplicateName, archivePath, relative, $"two members land on '{relative}'");
         }
 
         // Stripping and the source folder can bring a file and a folder together.
         if (!_shape.AddFile(relative))
         {
-            throw ArchiveException.For(ArchiveFailure.DuplicateName, archivePath, $"a file and a folder meet at '{relative}'");
+            throw ArchiveException.For(ArchiveFailure.DuplicateName, archivePath, relative, $"a file and a folder meet at '{relative}'");
         }
 
         _written.Add(SafePath.Join(destination, relative));

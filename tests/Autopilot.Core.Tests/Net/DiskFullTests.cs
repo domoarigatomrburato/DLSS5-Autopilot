@@ -57,7 +57,7 @@ public sealed class DiskFullTests(TestContext testContext)
         using CacheBed bed = new CacheBed(testContext).Serve(CacheFixtures.Zip);
         DiskFullException refused = await bed.DownloadFillsTheDrive(new FullDrive(new IOException("full", WindowsDiskFull)));
 
-        string explanation = refused.Explain(gameFolder: Path.GetTempPath());
+        string explanation = refused.Explain(gameFolder: Path.GetTempPath(), new DriveFreeSpace());
 
         StringAssert.StartsWith(explanation, "Out of disk space on ", StringComparison.Ordinal);
         StringAssert.Contains(explanation, "beside the game and in the tool's download cache (", StringComparison.Ordinal);
@@ -69,7 +69,7 @@ public sealed class DiskFullTests(TestContext testContext)
     {
         string folder = Path.GetTempPath();
 
-        string explanation = new DiskFullException(folder, folder, new IOException("full")).Explain(folder);
+        string explanation = new DiskFullException(folder, folder, new IOException("full")).Explain(folder, new DriveFreeSpace());
 
         Assert.AreEqual(2, explanation.Split(" free)").Length - 1, "the full drive, then one entry for the game and the cache together");
         StringAssert.Contains(explanation, "The install needs room beside the game and in the tool's download cache (", StringComparison.Ordinal);
@@ -80,7 +80,7 @@ public sealed class DiskFullTests(TestContext testContext)
     {
         string folder = Path.GetTempPath();
 
-        string explanation = new DiskFullException(folder, folder, new IOException("full")).Explain(gameFolder: null);
+        string explanation = new DiskFullException(folder, folder, new IOException("full")).Explain(gameFolder: null, new DriveFreeSpace());
 
         Assert.DoesNotContain("beside the game", explanation);
         StringAssert.Contains(explanation, "in the tool's download cache (", StringComparison.Ordinal);
@@ -92,7 +92,7 @@ public sealed class DiskFullTests(TestContext testContext)
     {
         string folder = Path.GetTempPath();
 
-        string explanation = new DiskFullException(folder, cacheFolder: null, new IOException("full")).Explain(gameFolder: null);
+        string explanation = new DiskFullException(folder, cacheFolder: null, new IOException("full")).Explain(gameFolder: null, new DriveFreeSpace());
 
         StringAssert.StartsWith(explanation, "Out of disk space on ", StringComparison.Ordinal);
         Assert.DoesNotContain("download cache", explanation, "no cache folder is guessed");

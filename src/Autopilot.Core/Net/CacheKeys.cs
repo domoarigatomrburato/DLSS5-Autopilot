@@ -15,16 +15,16 @@ internal static class CacheKeys
     private static readonly SearchValues<char> _lowerHex = SearchValues.Create("0123456789abcdef");
 
     // What a download's entry is while it is written, and its lock: neither is a kept download.
-    private static readonly string[] _notKept = [PartDownload.PartOf(""), ".lock"];
+    private static readonly string[] _notKept = [PartDownload.PartOf(""), CacheLock.PathFor("")];
 
     /// <summary>A download's entry: <c>&lt;root&gt;/files/&lt;key&gt;-&lt;name&gt;</c>, keyed by the URL and the expected digest.</summary>
     public static string FileEntry(string cacheRoot, Uri url, string fileName, Verification expected) =>
-        Path.Combine(cacheRoot, "files", Of(url.AbsoluteUri + "\n" + (expected is Sha256Verification sha256 ? sha256.Digest : "")) + "-" + fileName);
+        Path.Combine(FilesFolder(cacheRoot), Of(url.AbsoluteUri + "\n" + (expected is Sha256Verification sha256 ? sha256.Digest : "")) + "-" + fileName);
 
     /// <summary>The readable names of the kept downloads under <paramref name="cacheRoot"/> matching <paramref name="searchPattern"/>, ignoring case.</summary>
     public static IReadOnlyList<string> KeptNames(string cacheRoot, string searchPattern)
     {
-        string folder = Path.Combine(cacheRoot, "files");
+        string folder = FilesFolder(cacheRoot);
         return Directory.Exists(folder)
             ? [.. Directory.EnumerateFiles(folder)
                 .Select(path => ReadableName(Path.GetFileName(path)))
@@ -32,6 +32,18 @@ internal static class CacheKeys
                 .Where(name => FileSystemName.MatchesSimpleExpression(searchPattern, name, ignoreCase: true))
                 .Order(StringComparer.Ordinal)]
             : [];
+    }
+
+    /// <summary>
+    /// Whether <paramref name="fullPath"/>, an absolute path, is a download's entry directly in
+    /// <paramref name="cacheRoot"/>'s files folder: not a lock, a <c>.part</c> or anything elsewhere.
+    /// </summary>
+    public static bool IsFileEntry(string cacheRoot, string fullPath)
+    {
+        string folder = Path.GetFullPath(FilesFolder(cacheRoot));
+        StringComparison comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        return string.Equals(Path.GetDirectoryName(fullPath), Path.TrimEndingDirectorySeparator(folder), comparison)
+            && ReadableName(Path.GetFileName(fullPath)) is not null;
     }
 
     // The name a download's entry carries after its key; null for anything else in the folder: a
@@ -43,6 +55,9 @@ internal static class CacheKeys
         && !Array.Exists(_notKept, suffix => entryName.EndsWith(suffix, StringComparison.Ordinal))
             ? entryName[(KeyLength + 1)..]
             : null;
+
+    // Where the downloads are kept.
+    private static string FilesFolder(string cacheRoot) => Path.Combine(cacheRoot, "files");
 
     /// <summary>An API answer: its URL.</summary>
     public static string Api(Uri url) => Of(url.AbsoluteUri);

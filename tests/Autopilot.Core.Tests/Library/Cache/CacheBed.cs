@@ -45,7 +45,11 @@ internal sealed class CacheBed : IDisposable
     }
 
     public async Task<CacheSaveResult> SaveAsync(CancellationToken cancellationToken, params GameEntry[] games) =>
-        await LibraryCache.SaveAsync(CachePath, Key, games, cancellationToken);
+        await LibraryCache.SaveAsync(CachePath, Key, games, Games.Clock, cancellationToken);
+
+    /// <summary>Saves through <paramref name="through"/>, which wraps the temporary file's stream.</summary>
+    public async Task<CacheSaveResult> SaveThroughAsync(Func<Stream, Stream> through, CancellationToken cancellationToken, params GameEntry[] games) =>
+        await LibraryCache.SaveAsync(CachePath, Key, games, through, Games.Clock, cancellationToken);
 
     public async Task<CachedLibrary?> LoadAsync(CancellationToken cancellationToken, CacheKey? key = null) =>
         await LibraryCache.LoadAsync(CachePath, key ?? Key, Games.Reading, Games.Clock, cancellationToken);

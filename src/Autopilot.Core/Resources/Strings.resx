@@ -798,4 +798,50 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <data name="ComponentBranchUnavailable" xml:space="preserve">
     <value>The newest commit of {0} (branch {1}) could not be read: {2}. Nothing was kept from an earlier run, and a moving branch is never installed without knowing its commit. Try again later.</value>
   </data>
+  <!-- Archives: {0} is the archive's file name, {1} the member at fault. -->
+  <data name="ArchiveNotAnArchive" xml:space="preserve">
+    <value>{0} is not an archive the tool can open, so nothing was unpacked. The download may have been replaced on the way: try again, and report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveCorrupt" xml:space="preserve">
+    <value>{0} is damaged or cut short, so nothing was unpacked. Try again, and report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveUnsafeName" xml:space="preserve">
+    <value>{0} holds a file named '{1}', which would land outside its folder or is not a valid Windows name, so nothing was unpacked. Report it, since the publisher's archive should not hold such a name.</value>
+  </data>
+  <data name="ArchiveDuplicateName" xml:space="preserve">
+    <value>{0} holds '{1}' more than once, ignoring case, or as both a file and a folder, so nothing was unpacked. Report it, since Windows cannot hold both.</value>
+  </data>
+  <data name="ArchiveLink" xml:space="preserve">
+    <value>{0} holds '{1}' as a link to another file, which the tool never unpacks, so nothing was unpacked. Report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveUnsupportedEntry" xml:space="preserve">
+    <value>{0} holds '{1}', which is neither a file nor a folder, so nothing was unpacked. Report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveTooManyEntries" xml:space="preserve">
+    <value>{0} holds more files than the tool unpacks from one archive, so nothing was unpacked. Report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveTooLarge" xml:space="preserve">
+    <value>{0} unpacks to more than the tool allows, so nothing was unpacked. Report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveTooLargeMember" xml:space="preserve">
+    <value>{0} holds '{1}', which unpacks to more than its header says or the tool allows, so nothing was unpacked. Try again, and report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveRatioExceeded" xml:space="preserve">
+    <value>{0} unpacks to far more than its own size, as no ordinary download does, so nothing was unpacked. Report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveRatioExceededMember" xml:space="preserve">
+    <value>{0} holds '{1}', which unpacks to far more than its packed size, as no ordinary file does, so nothing was unpacked. Report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveMemberNotFound" xml:space="preserve">
+    <value>{0} holds no file ending with '{1}', so nothing was unpacked. The publisher may have changed the package: report it.</value>
+  </data>
+  <data name="ArchiveAmbiguousMember" xml:space="preserve">
+    <value>{0} holds more than one file that could be the one needed, the second being '{1}', so nothing was unpacked. The publisher may have changed the package: report it.</value>
+  </data>
+  <data name="ArchiveDestinationExists" xml:space="preserve">
+    <value>{0} was not unpacked because its destination already exists. Try again, and report it if it keeps happening.</value>
+  </data>
+  <data name="ArchiveNotListable" xml:space="preserve">
+    <value>{0} is a 7z archive, whose files cannot be listed without unpacking it.</value>
+  </data>
 </root>

@@ -14,6 +14,9 @@ internal static class CacheLock
         : OperatingSystem.IsLinux() || OperatingSystem.IsAndroid() ? 11
         : 35;
 
+    /// <summary>The lock of a cache entry or unpacked folder: <c>&lt;entry&gt;.lock</c>.</summary>
+    public static string PathFor(string entry) => entry + ".lock";
+
     /// <summary>Waits, cancellably and without other limit, until no one else holds the lock, then holds it.</summary>
     public static async Task<FileStream> AcquireAsync(string lockPath, TimeProvider time, CancellationToken cancellationToken)
     {

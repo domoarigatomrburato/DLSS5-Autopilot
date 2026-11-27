@@ -38,4 +38,7 @@ public enum ArchiveFailure
 
     /// <summary>The destination already exists.</summary>
     DestinationExists,
+
+    /// <summary>The archive's members cannot be listed without unpacking it: a 7z.</summary>
+    NotListable,
 }

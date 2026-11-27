@@ -59,8 +59,8 @@ internal sealed record CacheFile(int Schema, string ToolVersion, int? GpuSm, IRe
     /// <summary>Writes the file atomically, through <paramref name="through"/>, which wraps the temporary file's stream.</summary>
     /// <exception cref="IOException">The write or the move failed.</exception>
     /// <exception cref="UnauthorizedAccessException">The folder or the file cannot be written.</exception>
-    public Task WriteAsync(string path, Func<Stream, Stream> through, CancellationToken cancellationToken) =>
-        AtomicFile.WriteAsync(path, (file, token) => JsonSerializer.SerializeAsync(through(file), this, _json, token), cancellationToken);
+    public Task WriteAsync(string path, Func<Stream, Stream> through, TimeProvider clock, CancellationToken cancellationToken) =>
+        AtomicFile.WriteAsync(path, (file, token) => JsonSerializer.SerializeAsync(through(file), this, _json, token), check: null, clock, cancellationToken);
 }
 
 /// <summary>One game as saved: its entry without the emulator profile, which is found again from the executable, and its stamp.</summary>

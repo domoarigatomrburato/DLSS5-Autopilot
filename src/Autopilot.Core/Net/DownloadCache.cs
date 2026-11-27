@@ -44,11 +44,54 @@ public sealed class DownloadCache
         SafePath.ValidateFileName(fileName);
         Verification expected = await _verifier.ResolveAsync(hosts, fileName, verification, cancellationToken);
         string entry = CacheKeys.FileEntry(_cacheRoot, url, fileName, expected);
-        await using FileStream held = await CacheLock.AcquireAsync(entry + ".lock", _time, cancellationToken);
+        await using FileStream held = await CacheLock.AcquireAsync(CacheLock.PathFor(entry), _time, cancellationToken);
         return await ReuseAsync(entry, fileName, expected, progress, cancellationToken)
             ?? await SayingDiskFullAsync(
             PartDownload.PartOf(entry),
             () => _parts.FetchAsync(new(url, hosts, fileName, entry, expected), options, progress, cancellationToken));
+    }
+
+    /// <summary>
+    /// The finished entry <see cref="DownloadAsync"/> would return, found without any request: a
+    /// sums file is resolved only from an answer the cache already keeps. Null when there is none,
+    /// or when it no longer checks out; such an entry is left in place, since nothing is written
+    /// here. No lock is taken: a finished entry is never rewritten in place.
+    /// </summary>
+    /// <exception cref="UnsafePathException"><paramref name="fileName"/> is not a safe file name.</exception>
+    /// <exception cref="NetException">The sums file's URL is not https or not on <paramref name="hosts"/>.</exception>
+    public async Task<CachedFile?> FindAsync(Uri url, HostAllowlist hosts, string fileName, Verification verification, CancellationToken cancellationToken)
+    {
+        SafePath.ValidateFileName(fileName);
+        if (await _verifier.ResolveKeptAsync(hosts, fileName, verification, cancellationToken) is not { } expected)
+        {
+            return null;
+        }
+        try
+        {
+            return await UsableAsync(CacheKeys.FileEntry(_cacheRoot, url, fileName, expected), fileName, expected, cancellationToken);
+        }
+        catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
+        {
+            // Unlocked: another process deleted the entry between the test and the read.
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Deletes a finished download under its entry's lock, waiting for another process that holds
+    /// it: the download was thrown away. An entry already gone is not an error.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="file"/> is not one of this cache's downloads.</exception>
+    public async Task DeleteAsync(CachedFile file, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        string entry = Path.GetFullPath(file.Path);
+        if (!CacheKeys.IsFileEntry(_cacheRoot, entry))
+        {
+            throw new ArgumentException($"{file.Path} is not a download in the cache at {_cacheRoot}", nameof(file));
+        }
+        await using FileStream held = await CacheLock.AcquireAsync(CacheLock.PathFor(entry), _time, cancellationToken);
+        File.Delete(entry);
     }
 
     /// <summary>
@@ -60,7 +103,7 @@ public sealed class DownloadCache
     public async Task<string> UnpackAsync(CachedFile file, TreeOptions? options, ArchiveLimits? limits, CancellationToken cancellationToken)
     {
         string folder = Path.Combine(_cacheRoot, "unpacked", CacheKeys.Unpacked(file.Path, options, limits));
-        await using FileStream held = await CacheLock.AcquireAsync(folder + ".lock", _time, cancellationToken);
+        await using FileStream held = await CacheLock.AcquireAsync(CacheLock.PathFor(folder), _time, cancellationToken);
         if (!Directory.Exists(folder))
         {
             _ = await SayingDiskFullAsync(
@@ -81,19 +124,23 @@ public sealed class DownloadCache
     // A finished entry that still checks out; a bad one is deleted.
     private async Task<CachedFile?> ReuseAsync(string entry, string fileName, Verification expected, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
     {
-        if (!File.Exists(entry))
+        if (await UsableAsync(entry, fileName, expected, cancellationToken) is not { } usable)
         {
+            if (File.Exists(entry))
+            {
+                File.Delete(entry);
+            }
             return null;
         }
-        if (!await _verifier.IsUsableAsync(entry, fileName, expected, cancellationToken))
-        {
-            File.Delete(entry);
-            return null;
-        }
-        long size = new FileInfo(entry).Length;
-        progress?.Report(new(size, size));
-        return new(entry, size, expected);
+        progress?.Report(new(usable.Size, usable.Size));
+        return usable;
     }
+
+    // A finished entry that exists and still checks out; null otherwise, with nothing changed.
+    private async Task<CachedFile?> UsableAsync(string entry, string fileName, Verification expected, CancellationToken cancellationToken) =>
+        File.Exists(entry) && await _verifier.IsUsableAsync(entry, fileName, expected, cancellationToken)
+            ? new(entry, new FileInfo(entry).Length, expected)
+            : null;
 
     // Writing into the cache: a full drive removes the .part file or folder and is said as such.
     private async Task<T> SayingDiskFullAsync<T>(string part, Func<Task<T>> write)

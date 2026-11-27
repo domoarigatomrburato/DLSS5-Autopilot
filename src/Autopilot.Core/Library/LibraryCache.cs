@@ -13,22 +13,24 @@ public static class LibraryCache
 
     /// <summary>
     /// Saves <paramref name="games"/> with a stamp of each one's files, atomically. An I/O or access
-    /// failure is the result, never an exception, and leaves no temporary file behind.
+    /// failure is the result, never an exception, and leaves no temporary file behind. A file another
+    /// program holds for a moment is waited for on <paramref name="clock"/>.
     /// </summary>
     /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
-    public static Task<CacheSaveResult> SaveAsync(string path, CacheKey key, IReadOnlyList<GameEntry> games, CancellationToken cancellationToken) =>
-        SaveAsync(path, key, games, static file => file, cancellationToken);
+    public static Task<CacheSaveResult> SaveAsync(string path, CacheKey key, IReadOnlyList<GameEntry> games, TimeProvider clock, CancellationToken cancellationToken) =>
+        SaveAsync(path, key, games, static file => file, clock, cancellationToken);
 
     /// <summary>Saves through <paramref name="through"/>, which wraps the temporary file's stream: the seam a test fills the drive with.</summary>
     internal static async Task<CacheSaveResult> SaveAsync(
-        string path, CacheKey key, IReadOnlyList<GameEntry> games, Func<Stream, Stream> through, CancellationToken cancellationToken)
+        string path, CacheKey key, IReadOnlyList<GameEntry> games, Func<Stream, Stream> through, TimeProvider clock, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(games);
+        ArgumentNullException.ThrowIfNull(clock);
         CacheFile content = new(Schema, key.ToolVersion, key.GpuSm, [.. games.Select(CachedEntry.Of)]);
         try
         {
-            await content.WriteAsync(path, through, cancellationToken);
+            await content.WriteAsync(path, through, clock, cancellationToken);
             return new CacheSaveResult(null);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

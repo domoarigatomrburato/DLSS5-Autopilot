@@ -27,7 +27,7 @@ internal static class TarGzSource
             }
 
             string? path = Admit(archivePath, catalog, entry);
-            catalog.CheckRatio(catalog.DeclaredTotal, compressed, "the archive");
+            catalog.CheckRatio(catalog.DeclaredTotal, compressed, member: null);
             if (entry.EntryType is not TarEntryType.Directory && path is not null && target.Place(path) is { } destination)
             {
                 await copy.WriteAsync(entry.DataStream ?? Stream.Null, destination, entry.Length, path, ct);
@@ -41,7 +41,7 @@ internal static class TarGzSource
         TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile =>
             catalog.Admit(entry.Name, isDirectory: false, entry.Length),
         TarEntryType.SymbolicLink or TarEntryType.HardLink =>
-            throw ArchiveException.For(ArchiveFailure.Link, archivePath, $"member '{entry.Name}' is a link to '{entry.LinkName}'"),
-        _ => throw ArchiveException.For(ArchiveFailure.UnsupportedEntry, archivePath, $"member '{entry.Name}' is a {entry.EntryType} entry"),
+            throw ArchiveException.For(ArchiveFailure.Link, archivePath, entry.Name, $"member '{entry.Name}' is a link to '{entry.LinkName}'"),
+        _ => throw ArchiveException.For(ArchiveFailure.UnsupportedEntry, archivePath, entry.Name, $"member '{entry.Name}' is a {entry.EntryType} entry"),
     };
 }

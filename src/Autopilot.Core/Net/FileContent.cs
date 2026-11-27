@@ -15,8 +15,6 @@ internal static class FileContent
 {
     private const int ShownBytes = 16;
 
-    private static readonly byte[] _mz = "MZ"u8.ToArray();
-
     private static readonly FrozenDictionary<string, ArchiveFormat> _archives = new Dictionary<string, ArchiveFormat>
     {
         [".zip"] = ArchiveFormat.Zip,
@@ -43,7 +41,7 @@ internal static class FileContent
         ReadOnlySpan<byte> start = head.AsSpan(0, read);
         if (!isArchive)
         {
-            return start.StartsWith(_mz);
+            return ArchiveSignature.IsProgram(start);
         }
         return ArchiveSignature.Of(start) == format
             && (format != ArchiveFormat.Zip || await ZipOpensAsync(file, cancellationToken));

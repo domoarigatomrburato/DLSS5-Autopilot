@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace Autopilot.Core.Net;
 
 /// <summary>API answers kept under <c>&lt;cache&gt;/api/&lt;key&gt;.json</c>, written atomically.</summary>
-internal sealed partial class ApiCache(string cacheRoot, ILogger logger)
+internal sealed partial class ApiCache(string cacheRoot, TimeProvider time, ILogger logger)
 {
     private static readonly JsonSerializerOptions _json = new()
     {
@@ -39,7 +39,7 @@ internal sealed partial class ApiCache(string cacheRoot, ILogger logger)
     {
         try
         {
-            await AtomicFile.WriteAsync(PathFor(url), (file, token) => JsonSerializer.SerializeAsync(file, entry, _json, token), cancellationToken);
+            await AtomicFile.WriteAsync(PathFor(url), (file, token) => JsonSerializer.SerializeAsync(file, entry, _json, token), check: null, time, cancellationToken);
         }
         catch (Exception failure) when (failure is IOException or UnauthorizedAccessException)
         {

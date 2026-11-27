@@ -23,7 +23,7 @@ public sealed class NetClient : IDisposable
         _http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
         _options = options;
         _time = time;
-        _cache = new(cacheRoot, logger);
+        _cache = new(cacheRoot, time, logger);
         _exchanges = new(_http, options, time);
         _retrier = new(options, time, logger);
     }
@@ -65,6 +65,16 @@ public sealed class NetClient : IDisposable
         }
 
         return answer;
+    }
+
+    /// <summary>
+    /// The body of the answer a cached request kept for <paramref name="url"/>, at any age, without
+    /// any request; null when none is kept. The URL is checked as a request's would be.
+    /// </summary>
+    internal async Task<string?> KeptTextAsync(Uri url, HostAllowlist hosts, CancellationToken cancellationToken)
+    {
+        RequestChecks.Check(url, hosts);
+        return (await _cache.ReadAsync(url, cancellationToken))?.Body;
     }
 
     /// <summary>

@@ -36,6 +36,21 @@ internal sealed partial class Verifier(NetClient client, ISignatureVerifier sign
     }
 
     /// <summary>
+    /// The verification to look an entry up by, without any request: a sums file becomes the SHA-256
+    /// it lists only from an answer already kept, at any age. Null when that answer is not kept or
+    /// does not list the name exactly once.
+    /// </summary>
+    public async Task<Verification?> ResolveKeptAsync(HostAllowlist hosts, string fileName, Verification verification, CancellationToken cancellationToken)
+    {
+        if (verification is not SumsFileVerification sums)
+        {
+            return verification;
+        }
+        string? body = await client.KeptTextAsync(sums.Url, hosts, cancellationToken);
+        return body is null ? null : SumsList.DigestFor(body, sums.ListedName ?? fileName);
+    }
+
+    /// <summary>
     /// Whether a finished entry may be used: its digest is part of its key, so only the magic bytes
     /// and a signer are checked again.
     /// </summary>
