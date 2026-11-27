@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using Autopilot.Core.Components;
-using Autopilot.Core.Components.GitHub;
+using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Components.Sources;
 using Autopilot.Core.Net;
 
@@ -10,13 +10,14 @@ namespace Autopilot.Core.Tests.Components.Sources;
 [TestClass]
 public sealed class FeederTests(TestContext testContext)
 {
-    private const string Latest = "https://api.github.com/repos/jlrouzies-fr/DLSS5-Feeder/releases/latest";
     private const string EveryTestNotice =
         "Every recent DLSS5-Feeder release is a test build; v1.16.0-beta.6 was installed. Pick an exact version under 'feeder build' to change that.";
 
     private static readonly string[] _looseFiles = ["dlss5-feed.addon64", "dlss5-feed-host64.exe", "DLSS5_Feed.fx"];
 
-    private static readonly string _list = ComponentsBed.ApiList(FeederSource.Repository, 15);
+    private static readonly string _latest = ComponentsBed.Api(ComponentRepositories.Feeder, "/latest");
+
+    private static readonly string _list = ComponentsBed.ApiList(ComponentRepositories.Feeder, 15);
 
     [TestMethod]
     public async Task The_newest_release_is_taken_with_its_zip_and_the_digest_github_gives()
@@ -46,7 +47,7 @@ public sealed class FeederTests(TestContext testContext)
         FeederRelease release = await bed.Feeder.ResolveAsync(FeederChoice.NewestRelease, bed.Cancellation);
 
         Assert.AreEqual("v0.15.1", release.Tag, "six betas with the flag off, and a release flagged pre-release, sit above it");
-        Assert.AreEqual(0, bed.Server.RequestsTo(Latest), "GitHub's own latest would answer the beta");
+        Assert.AreEqual(0, bed.Server.RequestsTo(_latest), "GitHub's own latest would answer the beta");
     }
 
     [TestMethod]
@@ -115,7 +116,7 @@ public sealed class FeederTests(TestContext testContext)
         bed.Json(_list, FeederFixtures.OnlyBetas())
             .Page(1, "v1.16.0-beta.6", "v1.16.0-beta.5")
             .Page(2, "v1.16.0-beta.4")
-            .Json(Latest, FeederFixtures.Release("v1.16.0-beta.6", 0, "DLSS5-Feeder-1.16.0-beta.6.zip"));
+            .Json(_latest, FeederFixtures.Release("v1.16.0-beta.6", 0, "DLSS5-Feeder-1.16.0-beta.6.zip"));
 
         FeederRelease release = await bed.Feeder.ResolveAsync(FeederChoice.NewestRelease, bed.Cancellation);
 
@@ -129,7 +130,7 @@ public sealed class FeederTests(TestContext testContext)
     {
         using ComponentsBed bed = new(testContext);
         bed.Json(_list, FeederFixtures.OnlyBetas()).Unreachable(ComponentsBed.ListPage(FeederFixtures.Repo, 1));
-        bed.Server.Answer(Latest, HttpStatusCode.NotFound, "{}");
+        bed.Server.Answer(_latest, HttpStatusCode.NotFound, "{}");
 
         FeederRelease release = await bed.Feeder.ResolveAsync(FeederChoice.NewestRelease, bed.Cancellation);
 
@@ -194,7 +195,7 @@ public sealed class FeederTests(TestContext testContext)
 /// <summary>Feeder release lists written for the cases #325 and #348 describe, and its github.com list pages.</summary>
 internal static class FeederFixtures
 {
-    public const string Repo = FeederSource.Repository;
+    public const string Repo = ComponentRepositories.Feeder;
 
     public static JsonObject Release(string tag, int age, params string[] assets) => ReleaseJsonText.Release(Repo, tag, age, assets);
 
@@ -235,7 +236,7 @@ internal static class FeederFixtures
         bed.Server.Answer(
             ComponentsBed.ListPage(Repo, page),
             HttpStatusCode.OK,
-            ReleaseFixtures.ListPageWith(tags).Replace("doitsujin/dxvk", FeederSource.Repository, StringComparison.Ordinal));
+            ReleaseFixtures.ListPageWith(tags).Replace("doitsujin/dxvk", ComponentRepositories.Feeder, StringComparison.Ordinal));
         return bed;
     }
 }

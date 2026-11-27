@@ -31,9 +31,8 @@ internal sealed partial class Verifier(NetClient client, ISignatureVerifier sign
         {
             throw Refused(host, fileName, VerificationProblem.SumsUnavailable, $"the sums file answered HTTP {(int)answer.StatusCode}");
         }
-        string digest = SumsList.DigestFor(answer.Body, sums.ListedName ?? fileName)
+        return SumsList.DigestFor(answer.Body, sums.ListedName ?? fileName)
             ?? throw Refused(host, fileName, VerificationProblem.NotInSums, "the sums file does not list the name exactly once");
-        return new Sha256Verification(digest);
     }
 
     /// <summary>

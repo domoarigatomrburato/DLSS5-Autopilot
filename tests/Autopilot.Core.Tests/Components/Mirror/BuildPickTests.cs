@@ -49,7 +49,6 @@ public sealed class BuildPickTests(TestContext testContext)
         ComponentException failure = Assert.Throws<ComponentException>(() => catalog.Pick(BuildFamily.Dlssd, null));
 
         Assert.AreEqual(ComponentFailure.BuildListUnavailable, failure.Reason);
-        Assert.AreEqual(BuildFamily.Dlssd, failure.Family);
         Assert.AreEqual(
             "The nvngx_dlssd.dll build list could not be read: GitHub could not be reached and nothing is cached yet. Try again in a few minutes.",
             failure.Message);

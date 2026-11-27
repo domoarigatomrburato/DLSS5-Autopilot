@@ -14,9 +14,6 @@ namespace Autopilot.Core.Components.Sources;
 /// </summary>
 public sealed partial class OptiScalerSource(GitHubReleases releases, DownloadCache cache, ILogger<OptiScalerSource> logger)
 {
-    /// <summary>The newest releases a page is searched in for a package.</summary>
-    public const int ListedReleases = 10;
-
     private readonly ResolutionMemory<string, OptiScalerRelease> _memory = new();
     private readonly OptiScalerReleases _releases = new(releases, logger);
 

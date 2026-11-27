@@ -19,7 +19,7 @@ namespace Autopilot.Core.Components.Sources;
 public sealed record OptiScalerBuild(string Key, string Repository, IReadOnlyList<string> SkipWords, string? VariantWord, bool PublishesSums, int? OnlyCardSm = null)
 {
     /// <summary>Dagherbou's DLSS-NR build: <c>/latest</c>, then the release list.</summary>
-    public static OptiScalerBuild Default { get; } = new("", "Dagherbou/OptiScaler_DLSSNR", [], null, PublishesSums: false);
+    public static OptiScalerBuild Default { get; } = new("", ComponentRepositories.OptiScaler, [], null, PublishesSums: false);
 
     /// <summary>y4my4my4m's development builds in <c>.7z</c>; the <c>with_dlss</c> archives are passed over.</summary>
     public static OptiScalerBuild Y4my4my4m { get; } = new("y4my4my4m", "y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG", ["with_dlss"], null, PublishesSums: false);

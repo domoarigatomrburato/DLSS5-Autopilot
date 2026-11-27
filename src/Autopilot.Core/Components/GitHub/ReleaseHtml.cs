@@ -11,8 +11,6 @@ namespace Autopilot.Core.Components.GitHub;
 /// </summary>
 internal static class ReleaseHtml
 {
-    private const string DigestPrefix = "sha256:";
-
     /// <summary>The release tags a <c>/releases?page=n</c> page lists, in its order, each once.</summary>
     public static IReadOnlyList<string> Tags(string html, Uri page, GitHubRepository repository) =>
         [.. Links(html, page).Select(link => repository.TagIn(link.Url)).OfType<string>().Distinct(StringComparer.Ordinal)];
@@ -34,7 +32,7 @@ internal static class ReleaseHtml
             ? ReleaseJson.Digest(row.QuerySelectorAll("*")
                 .Where(element => element.ChildElementCount == 0)
                 .Select(element => element.TextContent.Trim())
-                .FirstOrDefault(text => text.StartsWith(DigestPrefix, StringComparison.OrdinalIgnoreCase)))
+                .FirstOrDefault(text => text.StartsWith(ReleaseJson.DigestPrefix, StringComparison.OrdinalIgnoreCase)))
             : null;
 
     // Every anchor outside release notes, made absolute against the page it is on.

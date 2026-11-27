@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Globalization;
 using System.Text.Json;
 using Autopilot.Core.Net;
@@ -12,9 +11,8 @@ namespace Autopilot.Core.Components.GitHub;
 /// </summary>
 internal static class ReleaseJson
 {
-    private const string DigestPrefix = "sha256:";
-
-    private static readonly SearchValues<char> _hexDigits = SearchValues.Create("0123456789abcdefABCDEF");
+    /// <summary>What an asset's digest starts with, as the API and github.com's asset pages show it.</summary>
+    internal const string DigestPrefix = "sha256:";
 
     /// <exception cref="ReleaseDataException">The answer is not one release.</exception>
     public static GitHubRelease One(Uri url, string body)
@@ -94,11 +92,8 @@ internal static class ReleaseJson
     /// tool can run, so anything else is no digest.
     /// </summary>
     public static Sha256Verification? Digest(string? digest) =>
-        digest is not null
-        && digest.StartsWith(DigestPrefix, StringComparison.OrdinalIgnoreCase)
-        && digest.Length == DigestPrefix.Length + 64
-        && !digest.AsSpan(DigestPrefix.Length).ContainsAnyExcept(_hexDigits)
-            ? new(digest[DigestPrefix.Length..])
+        digest is not null && digest.StartsWith(DigestPrefix, StringComparison.OrdinalIgnoreCase)
+            ? Sha256Verification.TryCreate(digest[DigestPrefix.Length..])
             : null;
 
     private static ReleaseDataException Malformed(Uri url, string reason, Exception? inner = null) =>

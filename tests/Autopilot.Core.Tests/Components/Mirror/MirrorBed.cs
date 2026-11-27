@@ -1,4 +1,5 @@
 using System.Net;
+using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Components.Mirror;
 using Autopilot.Core.Tests.Net;
@@ -9,8 +10,8 @@ namespace Autopilot.Core.Tests.Components.Mirror;
 /// <summary><see cref="MirrorCatalog"/> and <see cref="NvidiaRuntimes"/> on the network test bed, one attempt per request, answering from <see cref="MirrorFixtures"/>.</summary>
 internal sealed class MirrorBed : IDisposable
 {
-    public static readonly string Api = ComponentsBed.ApiList(MirrorCatalog.Repository, GitHubReleases.MaxListCount);
-    public static readonly string NvidiaLatest = ComponentsBed.LatestPage(NvidiaRuntimes.Repository);
+    public static readonly string Api = ComponentsBed.ApiList(ComponentRepositories.Mirror, GitHubReleases.MaxListCount);
+    public static readonly string NvidiaLatest = ComponentsBed.LatestPage(ComponentRepositories.Nvidia);
 
     public MirrorBed(TestContext context)
     {
@@ -37,11 +38,11 @@ internal sealed class MirrorBed : IDisposable
 
     public CancellationToken Cancellation { get; }
 
-    public static string ListPage(int page) => ComponentsBed.ListPage(MirrorCatalog.Repository, page);
+    public static string ListPage(int page) => ComponentsBed.ListPage(ComponentRepositories.Mirror, page);
 
-    public static string ApiTag(string tag) => ComponentsBed.Api(MirrorCatalog.Repository, "/tags/" + tag);
+    public static string ApiTag(string tag) => ComponentsBed.Api(ComponentRepositories.Mirror, "/tags/" + tag);
 
-    public static string Expanded(string tag) => ComponentsBed.Expanded(MirrorCatalog.Repository, tag);
+    public static string Expanded(string tag) => ComponentsBed.Expanded(ComponentRepositories.Mirror, tag);
 
     /// <summary>The API answers the captured list, without the releases tagged <paramref name="leftOut"/>.</summary>
     public MirrorBed ApiAnswers(params string[] leftOut)

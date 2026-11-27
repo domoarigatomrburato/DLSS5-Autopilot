@@ -1,16 +1,16 @@
 using System.Text.Json.Nodes;
-using Autopilot.Core.Components.GitHub;
+using Autopilot.Core.Components;
 using Autopilot.Core.Components.Sources;
 using Autopilot.Core.Net;
 using Autopilot.Core.Tests.Archives;
-using Autopilot.Core.Tests.Components.Catalog;
+using Autopilot.Core.Tests.Components.Fetch;
 
 namespace Autopilot.Core.Tests.Components.Sources;
 
 /// <summary>OptiScaler release answers and package archives for the tests.</summary>
 internal static class OptiScalerFixtures
 {
-    public static string List(OptiScalerBuild build) => ComponentsBed.ApiList(build.Repository, OptiScalerSource.ListedReleases);
+    public static string List(OptiScalerBuild build) => ComponentsBed.ApiList(build.Repository, OptiScalerReleases.ListedReleases);
 
     public static string Latest(OptiScalerBuild build) => ComponentsBed.Api(build.Repository, "/latest");
 

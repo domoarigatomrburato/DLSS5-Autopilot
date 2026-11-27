@@ -1,3 +1,4 @@
+using Autopilot.Core.Components;
 using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Net;
@@ -39,7 +40,7 @@ public sealed class ComponentCatalogTests(TestContext testContext)
     [TestMethod]
     public void The_area_has_one_host_list()
     {
-        HostAllowlist hosts = ComponentCatalog.Hosts;
+        HostAllowlist hosts = ComponentHosts.Allowlist;
 
         Assert.IsTrue(hosts.Allows("codeload.github.com"));
         Assert.IsTrue(hosts.Allows("raw.githubusercontent.com"));

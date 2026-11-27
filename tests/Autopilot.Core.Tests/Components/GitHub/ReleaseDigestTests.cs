@@ -1,4 +1,5 @@
 using System.Net;
+using Autopilot.Core.Components;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Net;
 
@@ -101,7 +102,7 @@ public sealed class ReleaseDigestTests(TestContext testContext)
 
     private Task<ReleaseListAnswer> BridgeList(ReleasesBed bed)
     {
-        bed.Server.Answer("https://api.github.com/repos/NIGos/dlss5-bridge/releases?per_page=2", HttpStatusCode.OK, ReleaseFixtures.Fixture("dlss5-bridge-releases.json"));
+        bed.Server.Answer(ComponentsBed.ApiList("NIGos/dlss5-bridge", 2), HttpStatusCode.OK, ReleaseFixtures.Fixture("dlss5-bridge-releases.json"));
         return bed.Releases.GetListAsync("NIGos/dlss5-bridge", 2, testContext.CancellationToken);
     }
 

@@ -1,8 +1,8 @@
-using Autopilot.Core.Components.Sources;
+using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Executables;
 using Autopilot.Core.Resources;
 
-namespace Autopilot.Core.Components.Catalog;
+namespace Autopilot.Core.Components.Fetch;
 
 /// <summary>A file a component's downloads hold: its path inside them, with <c>/</c> between folders, and its full path in the cache.</summary>
 internal sealed record HeldFile(string Relative, string Full);
@@ -44,7 +44,7 @@ internal static class ComponentLayout
 
         return missing.Count == 0
             ? found
-            : throw ReleaseAssets.LayoutChanged(release.Id, release.Version.Label, string.Join(", ", missing));
+            : throw ComponentCatalog.Of(release.Id).LayoutChanged(release.Version.Label, string.Join(", ", missing));
     }
 
     /// <summary>Every <c>.addon64</c> must be a 64-bit Windows binary and every <c>.addon32</c> a 32-bit one.</summary>

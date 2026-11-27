@@ -65,9 +65,6 @@ internal static class MirrorFamilies
     /// <summary>The family's own catalog row.</summary>
     public static CatalogEntry EntryOf(BuildFamily family) => ComponentCatalog.Of(Row(family).Id);
 
-    /// <summary>The family's own catalog row when the mirror publishes it; <see langword="null"/> for NVIDIA's runtimes.</summary>
-    public static CatalogEntry? MirrorEntryOf(BuildFamily family) => EntryOf(family) is { Source: MirrorCatalog.Repository } entry ? entry : null;
-
     /// <summary>The family of the first prefix the tag starts with, and its label: the tag minus the prefix and a leading <c>-</c>.</summary>
     public static (BuildFamily Family, string Label)? Classify(string tag)
     {

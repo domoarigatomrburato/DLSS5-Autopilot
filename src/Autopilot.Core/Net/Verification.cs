@@ -13,8 +13,14 @@ public sealed record Sha256Verification(string Digest) : Verification
 {
     public string Digest { get; } = Normalize(Digest);
 
+    /// <summary>The check for <paramref name="digest"/>; <see langword="null"/> when it is not 64 hex digits.</summary>
+    internal static Sha256Verification? TryCreate(string? digest) => IsDigest(digest) ? new(digest) : null;
+
+    private static bool IsDigest([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? digest) =>
+        digest is { Length: 64 } && digest.All(char.IsAsciiHexDigit);
+
     private static string Normalize(string digest) =>
-        digest.Length == 64 && digest.All(char.IsAsciiHexDigit)
+        IsDigest(digest)
             ? Convert.ToHexStringLower(Convert.FromHexString(digest))
             : throw new ArgumentException($"'{digest}' is not 64 hex digits", nameof(digest));
 }

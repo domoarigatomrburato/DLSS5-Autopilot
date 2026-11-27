@@ -41,10 +41,10 @@ public sealed partial class ComponentSources
     }
 
     /// <summary>The ids <see cref="ResolveAsync"/> takes; LumeniteFX has its own method, since its files depend on the provider.</summary>
-    public IReadOnlyCollection<string> Ids => _resolvers.Keys;
+    internal IReadOnlyCollection<string> Ids => _resolvers.Keys;
 
     /// <summary>The component <paramref name="id"/>, resolved by its rule; the same answer for the rest of the run once found.</summary>
-    /// <exception cref="ArgumentException"><paramref name="id"/> is not one of <see cref="Ids"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="id"/> is not a component this method resolves (LumeniteFX has its own).</exception>
     /// <exception cref="ComponentException">No release carries the component, its layout changed, its sums are missing, or its branch could not be resolved.</exception>
     /// <exception cref="NetException">Neither GitHub's API, nor a kept answer, nor the pages could answer, and the component has no last resort.</exception>
     /// <exception cref="ReleaseDataException">The API's answer is not release data.</exception>

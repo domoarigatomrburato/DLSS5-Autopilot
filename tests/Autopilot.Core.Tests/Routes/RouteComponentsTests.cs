@@ -2,7 +2,7 @@ using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Graphics;
 using Autopilot.Core.Routes;
 
-namespace Autopilot.Core.Tests.Components.Catalog;
+namespace Autopilot.Core.Tests.Routes;
 
 /// <summary>Which components each route installs, per routes.md's "What each route installs" and "Translation layers".</summary>
 [TestClass]

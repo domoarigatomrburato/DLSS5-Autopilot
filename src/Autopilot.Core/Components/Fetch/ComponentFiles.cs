@@ -1,6 +1,6 @@
 using Autopilot.Core.Net;
 
-namespace Autopilot.Core.Components.Catalog;
+namespace Autopilot.Core.Components.Fetch;
 
 /// <summary>
 /// Fetches a resolved component into the download cache and checks it before anything is placed:

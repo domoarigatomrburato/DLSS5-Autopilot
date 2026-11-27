@@ -19,6 +19,10 @@ internal sealed partial class ReleasePages(NetClient client, ILogger logger)
     // One redirect per repository for the run, shared by every caller; an answer naming no release is asked again.
     private readonly ResolutionMemory<GitHubRepository, string?> _latestTags = new(tag => tag is not null);
 
+    // One assets page per release for the run: the default OptiScaler build reads its latest tag's, then the list's.
+    // A page listing no assets is asked again: its release may still be uploading them.
+    private readonly ResolutionMemory<(GitHubRepository Repo, string Tag), GitHubRelease?> _releases = new(release => release is { Assets.Count: > 0 });
+
     /// <summary>The release the <c>latest</c> redirect points at.</summary>
     public async Task<GitHubRelease?> LatestAsync(GitHubRepository repo, CancellationToken cancellationToken) =>
         await LatestTagAsync(repo, cancellationToken) is { } tag ? await ReleaseAsync(repo, tag, cancellationToken) : null;
@@ -31,7 +35,14 @@ internal sealed partial class ReleasePages(NetClient client, ILogger logger)
     public Task<string?> LatestTagAsync(GitHubRepository repo, CancellationToken cancellationToken) =>
         _latestTags.GetAsync(repo, token => ReadLatestTagAsync(repo, token), cancellationToken);
 
-    public async Task<GitHubRelease?> ReleaseAsync(GitHubRepository repo, string tag, CancellationToken cancellationToken)
+    /// <summary>
+    /// The release tagged <paramref name="tag"/>, with the assets its <c>expanded_assets</c> page lists, the
+    /// same for the rest of the run once read with assets; <see langword="null"/> when the page does not answer. A page that does not answer or lists no assets is asked again.
+    /// </summary>
+    public Task<GitHubRelease?> ReleaseAsync(GitHubRepository repo, string tag, CancellationToken cancellationToken) =>
+        _releases.GetAsync((repo, tag), token => ReadReleaseAsync(repo, tag, token), cancellationToken);
+
+    private async Task<GitHubRelease?> ReadReleaseAsync(GitHubRepository repo, string tag, CancellationToken cancellationToken)
     {
         Uri fragment = repo.ExpandedAssets(tag);
         TextAnswer answer = await client.GetTextAsync(fragment, ComponentHosts.Allowlist, null, cancellationToken);

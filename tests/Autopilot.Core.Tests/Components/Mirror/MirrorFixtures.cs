@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Autopilot.Core.Components.Catalog;
 
 namespace Autopilot.Core.Tests.Components.Mirror;
 
@@ -42,7 +43,7 @@ internal static class MirrorFixtures
         JsonArray releases = JsonNode.Parse(ApiList("renodx-dlss5-4.55", "renodx-dlss5-4.60"))!.AsArray();
         foreach (string tag in new[] { "streamline-2.15.0.0", "streamline-2.15.1.0" })
         {
-            releases.Insert(0, JsonNode.Parse($$"""{"tag_name":"{{tag}}","assets":[{"name":"{{tag}}.zip","browser_download_url":"https://github.com/RankFTW/rhi-repo/releases/download/{{tag}}/{{tag}}.zip"}]}"""));
+            releases.Insert(0, ReleaseJsonText.Release(ComponentRepositories.Mirror, tag, 0, tag + ".zip"));
         }
 
         return releases.ToJsonString();

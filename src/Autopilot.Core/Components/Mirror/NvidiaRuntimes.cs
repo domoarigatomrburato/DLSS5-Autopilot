@@ -12,12 +12,9 @@ namespace Autopilot.Core.Components.Mirror;
 /// </summary>
 public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<NvidiaRuntimes> logger)
 {
-    /// <summary>NVIDIA's SDK repository.</summary>
-    public const string Repository = "NVIDIA/DLSS";
-
     private const string Folder = "lib/Windows_x86_64/rel";
 
-    private static readonly GitHubRepository _repository = GitHubRepository.Parse(Repository);
+    private static readonly GitHubRepository _repository = GitHubRepository.Parse(ComponentRepositories.Nvidia);
 
     // The families the SDK ships a runtime of; each family's file name and catalog row come from its table.
     private static readonly BuildFamily[] _families = [BuildFamily.Dlss, BuildFamily.Dlssd, BuildFamily.Dlssg];
@@ -49,7 +46,7 @@ public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<Nvid
     /// <exception cref="NetException">The redirect could not be asked.</exception>
     private async Task<IReadOnlyList<BuildEntry>> ResolveAsync(CancellationToken cancellationToken)
     {
-        if (await releases.GetLatestTagAsync(Repository, cancellationToken) is not { } tag)
+        if (await releases.GetLatestTagAsync(ComponentRepositories.Nvidia, cancellationToken) is not { } tag)
         {
             if (logger.IsEnabled(LogLevel.Warning))
             {
@@ -61,18 +58,19 @@ public sealed partial class NvidiaRuntimes(GitHubReleases releases, ILogger<Nvid
 
         // One SDK ships all three and NVIDIA numbers each runtime on its own, so the label names the SDK.
         string label = tag.TrimStart('v', 'V') + " (NVIDIA SDK)";
-        return
-        [
-            .. _families.Select(family => new BuildEntry(
-                family,
-                BuildPublisher.Nvidia,
-                tag,
-                label,
-                _repository.RawFile(Uri.EscapeDataString(tag), $"{Folder}/{MirrorFamilies.NameOf(family)}"),
-                MirrorFamilies.NameOf(family),
-                ComponentCatalog.Signer(MirrorFamilies.EntryOf(family).Id))),
-        ];
+        return [.. _families.Select(family => Runtime(family, tag, label))];
     }
+
+    // The family's DLL in the SDK's tree at the tag, checked by the signer of the family's catalog row.
+    private static BuildEntry Runtime(BuildFamily family, string tag, string label) =>
+        new(
+            family,
+            BuildPublisher.Nvidia,
+            tag,
+            label,
+            _repository.RawFile(Uri.EscapeDataString(tag), $"{Folder}/{MirrorFamilies.NameOf(family)}"),
+            MirrorFamilies.NameOf(family),
+            MirrorFamilies.EntryOf(family).Signer ?? throw new InvalidOperationException($"{family} is not checked by its signer"));
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "NVIDIA's latest-release redirect failed at {Host} ({Kind}); the mirror alone serves the DLSS runtimes this time")]
     private static partial void LogFailed(ILogger logger, string host, NetErrorKind kind);

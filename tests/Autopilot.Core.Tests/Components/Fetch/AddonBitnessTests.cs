@@ -2,7 +2,7 @@ using Autopilot.Core.Components;
 using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Tests.Archives;
 
-namespace Autopilot.Core.Tests.Components.Catalog;
+namespace Autopilot.Core.Tests.Components.Fetch;
 
 /// <summary>An <c>.addon64</c> must be a 64-bit Windows binary and an <c>.addon32</c> a 32-bit one before it is placed.</summary>
 [TestClass]

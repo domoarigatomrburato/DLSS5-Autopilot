@@ -46,13 +46,13 @@ internal static class ReleaseAssets
         string[] missing = [.. names.Where(name => !release.Assets.Any(asset => Is(asset, name)))];
         return missing.Length == 0
             ? [.. names.Select(name => release.Assets.First(asset => Is(asset, name)))]
-            : throw LayoutChanged(id, release.Tag, string.Join(", ", missing));
+            : throw ComponentCatalog.Of(id).LayoutChanged(release.Tag, string.Join(", ", missing));
     }
 
     /// <summary>The first asset of <paramref name="release"/> that <paramref name="predicate"/> accepts.</summary>
     /// <exception cref="ComponentException">None does: the release is of another shape (<paramref name="what"/> names what was looked for).</exception>
     public static GitHubAsset First(string id, GitHubRelease release, Func<GitHubAsset, bool> predicate, string what) =>
-        release.Assets.FirstOrDefault(predicate) ?? throw LayoutChanged(id, release.Tag, what);
+        release.Assets.FirstOrDefault(predicate) ?? throw ComponentCatalog.Of(id).LayoutChanged(release.Tag, what);
 
     public static bool Is(GitHubAsset asset, string name) => string.Equals(asset.Name, name, StringComparison.OrdinalIgnoreCase);
 
@@ -91,7 +91,7 @@ internal static class ReleaseAssets
         IReadOnlyList<ExpectedFile> files) =>
         FirstCarrying(Published(list.Releases), find) is var (release, found)
             ? Of(id, new(release, list.Source), [found], files)
-            : throw NoneCarries(id, asset, list.Releases);
+            : throw ComponentCatalog.Of(id).NoneCarries(asset, list.Releases.Count > 0 ? list.Releases[0].Tag : null);
 
     /// <summary>The first of <paramref name="releases"/> carrying an asset <paramref name="find"/> finds, and that asset; <see langword="null"/> when none does.</summary>
     public static (GitHubRelease Release, GitHubAsset Asset)? FirstCarrying(IEnumerable<GitHubRelease> releases, Func<GitHubRelease, GitHubAsset?> find)
@@ -119,10 +119,4 @@ internal static class ReleaseAssets
         return await releases.GetLatestAsync(repository, cancellationToken)
             ?? throw new ComponentException(ComponentFailure.NoRelease, Texts.Format("ComponentNoRelease", repository));
     }
-
-    public static ComponentException LayoutChanged(string id, string tag, string missing) =>
-        new(ComponentFailure.LayoutChanged, Texts.Format("ComponentLayoutChanged", ComponentCatalog.Of(id).Source, tag, missing));
-
-    private static ComponentException NoneCarries(string id, string asset, IReadOnlyList<GitHubRelease> list) =>
-        new(ComponentFailure.LayoutChanged, Texts.Format("ComponentNoneCarries", ComponentCatalog.Of(id).Source, asset, list.Count > 0 ? list[0].Tag : "none"));
 }

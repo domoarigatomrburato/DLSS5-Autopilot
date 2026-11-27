@@ -1,11 +1,12 @@
 using System.Net;
 using Autopilot.Core.Components;
 using Autopilot.Core.Components.Catalog;
+using Autopilot.Core.Components.Fetch;
 using Autopilot.Core.Net;
 using Autopilot.Core.Tests.Archives;
 using Autopilot.Core.Tests.Net;
 
-namespace Autopilot.Core.Tests.Components.Catalog;
+namespace Autopilot.Core.Tests.Components.Fetch;
 
 /// <summary>A resolved component fetched into the cache and refused before anything is placed when it is not what it should be.</summary>
 [TestClass]

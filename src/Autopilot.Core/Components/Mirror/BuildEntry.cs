@@ -1,4 +1,3 @@
-using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Net;
 
 namespace Autopilot.Core.Components.Mirror;
@@ -23,10 +22,7 @@ public sealed record BuildEntry(BuildFamily Family, BuildPublisher Publisher, st
     /// nothing beyond the download's own check applies (the RenoDX add-ons, and NVIDIA's own DLL,
     /// whose download is that check).
     /// </summary>
-    public Verification? Contents =>
-        Publisher == BuildPublisher.Mirror && MirrorFamilies.EntryOf(Family) is { Check: ComponentCheck.NvidiaSigner } entry
-            ? ComponentCatalog.Signer(entry.Id)
-            : null;
+    public Verification? Contents => Publisher == BuildPublisher.Mirror ? MirrorFamilies.EntryOf(Family).Signer : null;
 }
 
 /// <summary>The entry chosen from a family.</summary>

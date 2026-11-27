@@ -1,7 +1,7 @@
 using Autopilot.Core.Components;
 using Autopilot.Core.Components.Catalog;
-using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Net;
+using static Autopilot.Core.Tests.Components.ComponentsBed;
 
 namespace Autopilot.Core.Tests.Components.Sources;
 
@@ -9,11 +9,6 @@ namespace Autopilot.Core.Tests.Components.Sources;
 [TestClass]
 public sealed class BranchSnapshotTests(TestContext testContext)
 {
-    private const string Commit = "a6d42fc9851b55fcb134ab8bb1199122fafbda13";
-    private const string LumeniteHead = "https://api.github.com/repos/umar-afzaal/LumeniteFX/commits/mainline";
-    private const string VortHead = "https://api.github.com/repos/vortigern11/vort_Shaders/commits/main";
-    private const string HeadersHead = "https://api.github.com/repos/crosire/reshade-shaders/commits/slim";
-
     [TestMethod]
     public async Task Lumenite_is_the_branch_heads_commit_archive_with_the_providers_files()
     {

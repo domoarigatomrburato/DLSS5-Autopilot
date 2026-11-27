@@ -94,18 +94,13 @@ public static class DlssnrBuilds
             return new([picked.Entry], Pinned: true, picked.WantedMissing);
         }
 
-        IReadOnlyList<BuildEntry> entries = catalog.Entries(BuildFamily.Dlssnr);
-        if (entries.Count == 0)
-        {
-            throw ComponentException.BuildListUnavailable(BuildFamily.Dlssnr);
-        }
-
+        IReadOnlyList<BuildEntry> entries = catalog.Require(BuildFamily.Dlssnr);
         BuildEntry[] first = [.. PreferredLabels(sm).SelectMany(label => entries.Where(entry => entry.Label == label))];
         return new([.. first, .. entries.Except(first)], Pinned: false, WantedMissing: false);
     }
 
     /// <summary>The labels preferred for an architecture, in order; none for an unknown card or one below RTX 20.</summary>
-    internal static IReadOnlyList<string> PreferredLabels(int? sm) =>
+    private static string[] PreferredLabels(int? sm) =>
         sm is { } known ? _preferred.FirstOrDefault(row => known >= row.MinSm && known <= row.MaxSm).Labels ?? [] : [];
 
     /// <summary>A file's architectures against the card.</summary>

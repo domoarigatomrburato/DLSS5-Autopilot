@@ -52,6 +52,18 @@ public sealed partial class ComponentVersion
         _ordered = _numbers.Length > 0 && !IsCommit(label);
     }
 
+    /// <summary>
+    /// Older before newer, by <see cref="CompareTo"/>: versions that are the same, different or not
+    /// comparable tie, so a stable sort keeps their order.
+    /// </summary>
+    internal static IComparer<ComponentVersion> Order { get; } = Comparer<ComponentVersion>.Create(
+        (left, right) => left.CompareTo(right) switch
+        {
+            VersionOrder.Older => -1,
+            VersionOrder.Newer => 1,
+            _ => 0,
+        });
+
     /// <summary>The version recorded for a file taken from the <c>latest/download</c> redirect: whatever it pointed at.</summary>
     public static ComponentVersion Latest { get; } = new("latest");
 

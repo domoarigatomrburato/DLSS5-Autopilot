@@ -1,3 +1,4 @@
+using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Net;
 using Microsoft.Extensions.Logging;
@@ -14,9 +15,6 @@ namespace Autopilot.Core.Components.Mirror;
 /// </summary>
 public sealed class MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia, ILogger<MirrorCatalog> logger)
 {
-    /// <summary>The mirror's repository.</summary>
-    public const string Repository = "RankFTW/rhi-repo";
-
     private readonly MirrorPins _pins = new(releases, logger);
     private readonly ResolutionMemory<bool, MirrorList> _memory = new(list => list.Complete);
 
@@ -38,11 +36,7 @@ public sealed class MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia
 
     private async Task<MirrorList> ReadAsync(CancellationToken cancellationToken)
     {
-        ReleaseListAnswer list = await releases.GetListAsync(
-            Repository,
-            GitHubReleases.MaxListCount,
-            (pages, repo, token) => new MirrorPages(pages, repo).ReadAsync(token),
-            cancellationToken);
+        ReleaseListAnswer list = await ReadListAsync(cancellationToken);
         if (list.Source.Origin == ReleaseOrigin.Pages)
         {
             return new(MirrorReleases.Group(list.Releases), list.Source, Complete: false);
@@ -51,6 +45,14 @@ public sealed class MirrorCatalog(GitHubReleases releases, NvidiaRuntimes nvidia
         (IReadOnlyList<GitHubRelease> all, bool complete) = await _pins.AddMissingAsync(list.Releases, cancellationToken);
         return new(MirrorReleases.Group(all), list.Source, complete);
     }
+
+    // One page of 100 from the API, else the pages walked as far as needed.
+    private Task<ReleaseListAnswer> ReadListAsync(CancellationToken cancellationToken) =>
+        releases.GetListAsync(
+            ComponentRepositories.Mirror,
+            GitHubReleases.MaxListCount,
+            (pages, repo, token) => new MirrorPages(pages, repo).ReadAsync(token),
+            cancellationToken);
 
     // Complete: read from the API with every pin the network could be asked for, so kept for the run.
     private sealed record MirrorList(Dictionary<BuildFamily, IReadOnlyList<BuildEntry>> Families, ReleaseSource Source, bool Complete);

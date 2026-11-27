@@ -1,4 +1,5 @@
 using System.Net;
+using Autopilot.Core.Components;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Net;
 
@@ -23,6 +24,32 @@ public sealed class ReleasePageTests(TestContext testContext)
     }
 
     [TestMethod]
+    public async Task A_release_read_twice_in_a_run_reads_its_asset_page_once()
+    {
+        using ReleasesBed bed = new(testContext);
+        bed.SecondaryRateLimited(ReleasesBed.ApiTag).Fragments("v3.2");
+
+        ReleaseAnswer? first = await bed.ByTag("v3.2");
+        ReleaseAnswer? second = await bed.ByTag("v3.2");
+
+        Assert.AreEqual(first?.Release, second?.Release);
+        Assert.AreEqual(1, bed.RequestsTo(ReleasesBed.Expanded("v3.2")), "each component is resolved at most once per run");
+    }
+
+    [TestMethod]
+    public async Task A_release_page_listing_no_assets_is_read_again()
+    {
+        using ReleasesBed bed = new(testContext);
+        bed.SecondaryRateLimited(ReleasesBed.ApiTag);
+        bed.Server.Answer(ReleasesBed.Expanded("v3.2"), HttpStatusCode.OK, "<ul></ul>");
+
+        _ = await bed.ByTag("v3.2");
+        _ = await bed.ByTag("v3.2");
+
+        Assert.AreEqual(2, bed.RequestsTo(ReleasesBed.Expanded("v3.2")), "its release may still be uploading them");
+    }
+
+    [TestMethod]
     public async Task The_latest_release_is_found_by_one_head_with_no_api_request()
     {
         using ReleasesBed bed = new(testContext);
@@ -37,7 +64,7 @@ public sealed class ReleasePageTests(TestContext testContext)
         Assert.AreEqual(apiRequests, bed.RequestsToApi, "the API is held back until its reset, so it is not asked");
         Assert.AreEqual(0, bed.RequestsTo(ReleasesBed.ApiLatest));
         CollectionAssert.AreEqual(new[] { HttpMethod.Head }, bed.Server.MethodsTo(ReleasesBed.LatestPage));
-        Assert.AreEqual(2, bed.RequestsTo(ReleasesBed.Expanded("v3.2")), "once for the list, once for latest");
+        Assert.AreEqual(1, bed.RequestsTo(ReleasesBed.Expanded("v3.2")), "once for the run: the list's read serves latest");
     }
 
     [TestMethod]

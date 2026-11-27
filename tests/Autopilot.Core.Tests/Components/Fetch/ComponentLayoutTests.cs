@@ -1,9 +1,10 @@
 using System.Text;
 using Autopilot.Core.Components;
 using Autopilot.Core.Components.Catalog;
+using Autopilot.Core.Components.Fetch;
 using Autopilot.Core.Tests.Archives;
 
-namespace Autopilot.Core.Tests.Components.Catalog;
+namespace Autopilot.Core.Tests.Components.Fetch;
 
 /// <summary>Where a fetched component's files are found: by the end of their path, nearest the root, loose or in an archive.</summary>
 [TestClass]

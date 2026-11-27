@@ -7,6 +7,7 @@ namespace Autopilot.Core.Components.GitHub;
 internal sealed partial record GitHubRepository(string Owner, string Name)
 {
     private const string Site = "https://github.com/";
+    private const string ApiRoot = "https://api.github.com/repos/";
 
     /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
     public static GitHubRepository Parse(string repository)
@@ -18,7 +19,10 @@ internal sealed partial record GitHubRepository(string Owner, string Name)
     }
 
     /// <summary><c>api.github.com/repos/&lt;repo&gt;/releases</c> followed by <paramref name="rest"/>.</summary>
-    public Uri Api(string rest) => new($"https://api.github.com/repos/{Owner}/{Name}/releases{rest}");
+    public Uri Api(string rest) => ApiAt("releases" + rest);
+
+    /// <summary><c>api.github.com/repos/&lt;repo&gt;/tags</c>: one page of up to <paramref name="count"/> tags, in GitHub's order (by name).</summary>
+    public Uri Tags(int count) => ApiAt("tags?per_page=" + count.ToString(CultureInfo.InvariantCulture));
 
     public Uri ReleasesPage(int page) => Page("releases?page=" + page.ToString(CultureInfo.InvariantCulture));
 
@@ -33,7 +37,7 @@ internal sealed partial record GitHubRepository(string Owner, string Name)
         Page($"releases/download/{Uri.EscapeDataString(tag)}/{Uri.EscapeDataString(assetName)}");
 
     /// <summary><c>api.github.com/repos/&lt;repo&gt;/commits/&lt;branch&gt;</c>: the commit at the head of a branch.</summary>
-    public Uri BranchHead(string branch) => new($"https://api.github.com/repos/{Owner}/{Name}/commits/{Uri.EscapeDataString(branch)}");
+    public Uri BranchHead(string branch) => ApiAt("commits/" + Uri.EscapeDataString(branch));
 
     /// <summary>The whole repository at one commit, as a zip.</summary>
     public Uri CommitArchive(string commit) => new($"https://codeload.github.com/{Owner}/{Name}/zip/{commit}");
@@ -50,6 +54,8 @@ internal sealed partial record GitHubRepository(string Owner, string Name)
     public override string ToString() => $"{Owner}/{Name}";
 
     private Uri Page(string rest) => new($"{Site}{Owner}/{Name}/{rest}");
+
+    private Uri ApiAt(string rest) => new($"{ApiRoot}{Owner}/{Name}/{rest}");
 
     // github.com/<owner>/<name>/releases/<kind>/..., with every part present; owners and names ignore case on GitHub.
     private string[]? ReleasePath(Uri url, string kind, int parts)

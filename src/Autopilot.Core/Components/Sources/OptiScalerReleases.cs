@@ -10,6 +10,9 @@ namespace Autopilot.Core.Components.Sources;
 /// </summary>
 internal sealed class OptiScalerReleases(GitHubReleases releases, ILogger logger)
 {
+    /// <summary>The newest releases a page is searched in for a package.</summary>
+    internal const int ListedReleases = 10;
+
     /// <summary>The release carrying <paramref name="build"/>'s package, the package, and where the data came from; <see langword="null"/> when none does.</summary>
     public async Task<(GitHubRelease Release, GitHubAsset Archive, ReleaseSource Source)?> FirstWithPackageAsync(OptiScalerBuild build, CancellationToken cancellationToken)
     {
@@ -26,7 +29,7 @@ internal sealed class OptiScalerReleases(GitHubReleases releases, ILogger logger
             latestTag = latest.Release.Tag;
         }
 
-        ReleaseListAnswer list = await releases.GetListOnceAsync(build.Repository, OptiScalerSource.ListedReleases, cancellationToken);
+        ReleaseListAnswer list = await releases.GetListOnceAsync(build.Repository, ListedReleases, cancellationToken);
         return ReleaseAssets.FirstCarrying(Candidates(list.Releases).Where(release => release.Tag != latestTag), release => Package(release, build)) is var (found, archive)
             ? (found, archive, list.Source)
             : null;

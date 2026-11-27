@@ -1,3 +1,4 @@
+using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Net;
 using Microsoft.Extensions.Logging;
@@ -21,7 +22,7 @@ internal sealed partial class MirrorPins(GitHubReleases releases, ILogger logger
         bool complete = true;
         foreach (string tag in RenodxPins.Tags.Where(tag => !list.Any(release => release.Tag == tag)))
         {
-            ReleaseAnswer? answer = await NetFallback.OrNullAsync(releases.GetByTagAsync(MirrorCatalog.Repository, tag, cancellationToken), failure =>
+            ReleaseAnswer? answer = await NetFallback.OrNullAsync(releases.GetByTagAsync(ComponentRepositories.Mirror, tag, cancellationToken), failure =>
             {
                 complete = false;
                 if (logger.IsEnabled(LogLevel.Warning))

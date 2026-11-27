@@ -1,5 +1,4 @@
 using Autopilot.Core.Executables;
-using Autopilot.Core.Net;
 using Autopilot.Core.Resources;
 
 namespace Autopilot.Core.Components.Mirror;
@@ -21,20 +20,13 @@ internal enum RawDllProblem
 internal sealed record RawDllRejection(RawDllProblem Problem, string Message);
 
 /// <summary>
-/// What proves a file is NVIDIA's: the Authenticode signer every NVIDIA runtime carries (the mirror's
-/// <c>nvngx_dlssnr.dll</c> included, since the mirror republishes NVIDIA's file) and, for a DLL taken
-/// raw from NVIDIA's SDK tree, the PE checks of the integrity table.
+/// The PE checks of the integrity table for a DLL taken raw from NVIDIA's SDK tree. The signer every
+/// NVIDIA runtime carries is the catalog row's (<see cref="Catalog.CatalogEntry.Signer"/>).
 /// </summary>
 internal static class NvidiaFiles
 {
-    /// <summary>The signer NVIDIA's runtimes carry. The one place the name is written.</summary>
-    public const string Publisher = "NVIDIA Corporation";
-
     /// <summary>The smallest a real runtime is; anything smaller is a page or a stub.</summary>
     public const long MinRawSize = 200_000;
-
-    /// <summary>The signer check, as one of net's verification kinds.</summary>
-    public static SignerVerification Signer { get; } = new(Publisher);
 
     /// <summary>
     /// The raw-DLL checks: 200,000 bytes or more, <c>MZ</c>, a <c>PE\0\0</c> signature at the header's

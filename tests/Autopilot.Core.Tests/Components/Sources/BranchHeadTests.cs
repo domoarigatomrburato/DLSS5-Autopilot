@@ -2,6 +2,7 @@ using System.Net;
 using Autopilot.Core.Components;
 using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Components.GitHub;
+using static Autopilot.Core.Tests.Components.ComponentsBed;
 
 namespace Autopilot.Core.Tests.Components.Sources;
 
@@ -9,10 +10,6 @@ namespace Autopilot.Core.Tests.Components.Sources;
 [TestClass]
 public sealed class BranchHeadTests(TestContext testContext)
 {
-    private const string Commit = "a6d42fc9851b55fcb134ab8bb1199122fafbda13";
-    private const string LumeniteHead = "https://api.github.com/repos/umar-afzaal/LumeniteFX/commits/mainline";
-    private const string VortHead = "https://api.github.com/repos/vortigern11/vort_Shaders/commits/main";
-
     [TestMethod]
     public async Task With_the_api_unreachable_a_kept_answer_of_any_age_is_used_and_said()
     {

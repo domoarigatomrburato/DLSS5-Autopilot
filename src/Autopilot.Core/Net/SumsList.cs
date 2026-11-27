@@ -6,16 +6,16 @@ namespace Autopilot.Core.Net;
 /// </summary>
 internal static class SumsList
 {
-    /// <summary>The digest, as written, listed for exactly <paramref name="fileName"/>, or null when it is listed none or several times.</summary>
-    public static string? DigestFor(string body, string fileName)
+    /// <summary>The digest listed for exactly <paramref name="fileName"/>, or null when it is listed none or several times.</summary>
+    public static Sha256Verification? DigestFor(string body, string fileName)
     {
-        string[] digests =
+        Sha256Verification[] digests =
         [
             .. body.Split('\n')
                 .Select(line => line.TrimEnd('\r'))
                 .Where(line => line.Length > 65 && line[64] == ' ' && NameOf(line) == fileName)
-                .Select(line => line[..64])
-                .Where(digest => digest.All(char.IsAsciiHexDigit)),
+                .Select(line => Sha256Verification.TryCreate(line[..64]))
+                .OfType<Sha256Verification>(),
         ];
         return digests.Length == 1 ? digests[0] : null;
     }

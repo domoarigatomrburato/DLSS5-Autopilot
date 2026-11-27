@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json.Nodes;
 using Autopilot.Core.Components;
 using Autopilot.Core.Components.Catalog;
+using Autopilot.Core.Components.Fetch;
 using Autopilot.Core.Components.GitHub;
 using Autopilot.Core.Components.Sources;
 using Autopilot.Core.Net;
@@ -16,6 +17,15 @@ namespace Autopilot.Core.Tests.Components;
 /// </summary>
 internal sealed class ComponentsBed : IDisposable
 {
+    /// <summary>The commit <c>lumenite-mainline-head.json</c> names.</summary>
+    public const string Commit = "a6d42fc9851b55fcb134ab8bb1199122fafbda13";
+
+    public static readonly string LumeniteHead = BranchHead(ComponentRepositories.Lumenite, "mainline");
+
+    public static readonly string VortHead = BranchHead(ComponentRepositories.Vort, "main");
+
+    public static readonly string HeadersHead = BranchHead(ComponentRepositories.ShaderHeaders, "slim");
+
     public ComponentsBed(TestContext context, NetOptions? options = null)
     {
         Cancellation = context.CancellationToken;
@@ -57,6 +67,9 @@ internal sealed class ComponentsBed : IDisposable
     public static string Api(string repository, string rest) => $"https://api.github.com/repos/{repository}/releases{rest}";
 
     public static string ApiList(string repository, int count) => Api(repository, $"?per_page={count}");
+
+    /// <summary>The API's head commit of <paramref name="branch"/> of <paramref name="repository"/>.</summary>
+    public static string BranchHead(string repository, string branch) => $"https://api.github.com/repos/{repository}/commits/{branch}";
 
     /// <summary>github.com's release list page <paramref name="page"/> of <paramref name="repository"/>.</summary>
     public static string ListPage(string repository, int page) => $"https://github.com/{repository}/releases?page={page}";

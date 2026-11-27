@@ -1,4 +1,4 @@
-using Autopilot.Core.Components.GitHub;
+using Autopilot.Core.Resources;
 
 namespace Autopilot.Core.Components.Mirror;
 
@@ -29,12 +29,7 @@ public sealed class BuildCatalog
     /// <exception cref="ComponentException">The family has no builds (<see cref="ComponentFailure.BuildListUnavailable"/>).</exception>
     public PickedBuild Pick(BuildFamily family, string? wanted)
     {
-        IReadOnlyList<BuildEntry> entries = Entries(family);
-        if (entries.Count == 0)
-        {
-            throw ComponentException.BuildListUnavailable(family);
-        }
-
+        IReadOnlyList<BuildEntry> entries = Require(family);
         if (string.IsNullOrEmpty(wanted))
         {
             return new(entries[0], WantedMissing: false);
@@ -42,6 +37,16 @@ public sealed class BuildCatalog
 
         BuildEntry? match = entries.FirstOrDefault(entry => entry.Label == wanted || entry.Tag == wanted);
         return match is not null ? new(match, WantedMissing: false) : new(entries[0], WantedMissing: true);
+    }
+
+    /// <summary>The family's builds, newest first.</summary>
+    /// <exception cref="ComponentException">The family has no builds (<see cref="ComponentFailure.BuildListUnavailable"/>): its list could not be read.</exception>
+    internal IReadOnlyList<BuildEntry> Require(BuildFamily family)
+    {
+        IReadOnlyList<BuildEntry> entries = Entries(family);
+        return entries.Count > 0
+            ? entries
+            : throw new ComponentException(ComponentFailure.BuildListUnavailable, Texts.Format("BuildListEmpty", MirrorFamilies.NameOf(family)));
     }
 
     /// <summary>

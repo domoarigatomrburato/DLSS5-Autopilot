@@ -1,6 +1,3 @@
-using Autopilot.Core.Components.Catalog;
-using Autopilot.Core.Components.GitHub;
-using Autopilot.Core.Components.Mirror;
 using Autopilot.Core.Net;
 using Autopilot.Core.Resources;
 
@@ -10,7 +7,7 @@ namespace Autopilot.Core.Components;
 /// One component as resolved for an install: the version to record, what to download and how each
 /// download proves itself, and the files the downloads must hold before anything is placed.
 /// </summary>
-/// <param name="Id">The catalog id (<see cref="ComponentIds"/>).</param>
+/// <param name="Id">The catalog id (<see cref="Catalog.ComponentIds"/>).</param>
 /// <param name="Version">The tag or commit recorded; <see cref="ComponentVersion.Latest"/> when only GitHub's redirect knew it.</param>
 /// <param name="Downloads">What is fetched: loose files and archives.</param>
 /// <param name="Files">The files the downloads must hold, loose or inside an archive.</param>
@@ -99,11 +96,4 @@ public sealed class ComponentException(ComponentFailure reason, string message, 
 
     /// <summary>For <see cref="ComponentFailure.PinMissing"/>: the pinned label that is missing.</summary>
     public string? Label { get; init; }
-
-    /// <summary>For <see cref="ComponentFailure.BuildListUnavailable"/>: the family that has no builds.</summary>
-    public BuildFamily? Family { get; init; }
-
-    /// <summary>The family's build list could not be read.</summary>
-    internal static ComponentException BuildListUnavailable(BuildFamily family) =>
-        new(ComponentFailure.BuildListUnavailable, Texts.Format("BuildListEmpty", MirrorFamilies.NameOf(family))) { Family = family };
 }

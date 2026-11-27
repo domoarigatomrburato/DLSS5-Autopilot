@@ -19,7 +19,7 @@ public sealed partial class ReShadeSource(NetClient client, DownloadCache cache,
 
     // The GitHub API lists tags by name, not by version (v6.10.0 sorts after v6.9.0), so one full
     // page is read and the newest taken; the answer is kept for six hours like any API answer.
-    private static readonly Uri _tags = new("https://api.github.com/repos/crosire/reshade/tags?per_page=100");
+    private static readonly Uri _tags = GitHubRepository.Parse(ComponentRepositories.ReShade).Tags(100);
 
     // reshade.me answers 500 to about every other request on some days, with the whole page as the
     // body: a 5xx that still holds the link is the answer. A bare 5xx is retried by the network
@@ -119,14 +119,23 @@ public enum ReShadeOrigin
 /// <summary>The ReShade add-on installer of one version, and where it downloads from.</summary>
 public sealed record ReShadeInstaller(ComponentVersion Version, ReShadeOrigin Origin)
 {
+    /// <summary>What an installer's name starts with, before its version.</summary>
+    private const string NamePrefix = "ReShade_Setup_";
+
+    /// <summary>What an installer's name ends with, after its version.</summary>
+    private const string NameSuffix = "_Addon.exe";
+
     /// <summary>The cache names of installers, for the cache-only fallback.</summary>
-    internal const string CachedPattern = "ReShade_Setup_*_Addon.exe";
+    internal const string CachedPattern = NamePrefix + "*" + NameSuffix;
+
+    /// <summary>Where reshade.me serves its installers.</summary>
+    private const string Downloads = "https://reshade.me/downloads/";
 
     /// <summary>The installer's own name, which is also its readable name in the cache.</summary>
-    public string FileName => $"ReShade_Setup_{Version.Label}_Addon.exe";
+    public string FileName => NamePrefix + Version.Label + NameSuffix;
 
     /// <summary>reshade.me's address for this version; every source leads here.</summary>
-    public Uri Url => new("https://reshade.me/downloads/" + FileName);
+    public Uri Url => new(Downloads + FileName);
 
     /// <summary>
     /// Only the <c>MZ</c> check runs: reshade.me publishes no sums, and whether the installer is

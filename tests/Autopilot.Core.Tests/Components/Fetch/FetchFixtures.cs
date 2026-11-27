@@ -1,13 +1,12 @@
 using System.Text;
 using Autopilot.Core.Components;
-using Autopilot.Core.Components.Catalog;
-using Autopilot.Core.Components.GitHub;
+using Autopilot.Core.Components.Fetch;
 using Autopilot.Core.Net;
 using Autopilot.Core.Tests.Archives;
 using Autopilot.Core.Tests.Executables;
 using Autopilot.Core.Tests.Net;
 
-namespace Autopilot.Core.Tests.Components.Catalog;
+namespace Autopilot.Core.Tests.Components.Fetch;
 
 /// <summary>Resolved components served from the fake server, and the archives and add-ons they hold.</summary>
 internal static class FetchFixtures

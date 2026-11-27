@@ -36,7 +36,7 @@ internal static partial class ReShadeVersions
     private static ComponentVersion? Newest(IEnumerable<Match> matches) =>
         matches.Where(match => match.Success)
             .Select(match => new ComponentVersion(match.Groups["version"].Value))
-            .Aggregate((ComponentVersion?)null, (newest, version) => newest is null || version.CompareTo(newest) == VersionOrder.Newer ? version : newest);
+            .MaxBy(version => version, ComponentVersion.Order);
 
     [GeneratedRegex(@"/downloads/ReShade_Setup_(?<version>[0-9]+(?:\.[0-9]+)+)_Addon\.exe", RegexOptions.CultureInvariant)]
     private static partial Regex SetupLink();

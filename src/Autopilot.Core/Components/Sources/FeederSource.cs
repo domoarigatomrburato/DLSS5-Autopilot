@@ -13,16 +13,11 @@ namespace Autopilot.Core.Components.Sources;
 /// </summary>
 public sealed partial class FeederSource(GitHubReleases releases, ILogger<FeederSource> logger)
 {
-    /// <summary>The feeder's repository.</summary>
-    public const string Repository = "jlrouzies-fr/DLSS5-Feeder";
-
     /// <summary>How many of the newest releases are read, and the only ones an exact tag is looked for in.</summary>
     public const int ListedReleases = 15;
 
-    // github.com's list pages go back about twice as far as the API's 15.
-    private const int WalkedPages = 2;
-
     private readonly ResolutionMemory<FeederChoice, FeederRelease> _memory = new();
+    private readonly FeederPages _pages = new(releases, logger);
 
     /// <summary>The release <paramref name="choice"/> names; the same answer for the rest of the run once found.</summary>
     /// <exception cref="ComponentException">The tag is not among the 15 newest, there is no release, or the release carries no feeder files.</exception>
@@ -37,7 +32,7 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
     private async Task<FeederRelease> ResolveOnceAsync(FeederChoice choice, CancellationToken cancellationToken)
     {
         // Each choice picks from the same list: it is read once per run.
-        ReleaseListAnswer list = await releases.GetListOnceAsync(Repository, ListedReleases, cancellationToken);
+        ReleaseListAnswer list = await releases.GetListOnceAsync(ComponentRepositories.Feeder, ListedReleases, cancellationToken);
         GitHubRelease[] published = [.. list.Releases.Where(release => release.Draft != true)];
         (GitHubRelease release, ReleaseSource source, string? notice) = choice.Pick switch
         {
@@ -72,36 +67,20 @@ public sealed partial class FeederSource(GitHubReleases releases, ILogger<Feeder
         }
 
         // Only test builds among the 15: the pages go back further, by tag alone.
-        if (await WalkPagesAsync(cancellationToken) is { } walked)
+        if (await _pages.NewestReleaseAsync(cancellationToken) is { } walked)
         {
             return (walked.Release, walked.Source, null);
         }
 
         // Every source answered a test build: GitHub's own "latest", else the newest of the list,
         // installed and said so rather than nothing installed.
-        ReleaseAnswer? latest = await releases.GetLatestAsync(Repository, cancellationToken);
+        ReleaseAnswer? latest = await releases.GetLatestAsync(ComponentRepositories.Feeder, cancellationToken);
         (GitHubRelease release, ReleaseSource source) = latest is not null ? (latest.Release, latest.Source) : (Newest(published), listSource);
         return (release, source, IsTestBuild(release) ? Texts.Format("FeederEveryReleaseTest", release.Tag) : null);
     }
 
-    private async Task<ReleaseAnswer?> WalkPagesAsync(CancellationToken cancellationToken)
-    {
-        IReadOnlyList<string>? tags = await NetFallback.OrNullAsync(releases.GetPageTagsAsync(Repository, WalkedPages, cancellationToken), failure =>
-        {
-            if (logger.IsEnabled(LogLevel.Warning))
-            {
-                LogWalkFailed(logger, failure.Kind);
-            }
-        });
-        string? tag = tags?.FirstOrDefault(tag => !new ComponentVersion(tag).IsTestBuild);
-        return tag is null ? null : await releases.GetByTagAsync(Repository, tag, cancellationToken);
-    }
-
     [LoggerMessage(Level = LogLevel.Information, Message = "DLSS5-Feeder {Tag} ({Pick}): {Files}")]
     private static partial void LogResolved(ILogger logger, string tag, FeederPick pick, string files);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Only test builds among the newest DLSS5-Feeder releases, and github.com's release pages failed ({Kind})")]
-    private static partial void LogWalkFailed(ILogger logger, NetErrorKind kind);
 }
 
 /// <summary>Which feeder build the person picked under "feeder build".</summary>
