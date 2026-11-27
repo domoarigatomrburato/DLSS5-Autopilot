@@ -5,7 +5,10 @@ namespace Autopilot.Core.Tests.Components;
 /// <summary>
 /// Answers captured from GitHub for <c>doitsujin/dxvk</c> on 2026-11-27 (release notes trimmed from
 /// the JSON, the list page trimmed to its releases), one <c>NIGos/dlss5-bridge</c> list with
-/// pre-releases, and GitHub's rate-limit answers, written by hand.
+/// pre-releases, and GitHub's rate-limit answers, written by hand. Captured the same day for the
+/// feeder, ReShade and OptiScaler sources: reshade.me's home page (trimmed to its download block),
+/// <c>crosire/reshade</c>'s tags, the feeder's and the OptiScaler forks' release lists (trimmed to
+/// the fields read and four assets a release), and jlrouzies' sums file of v0.8.93.
 /// </summary>
 internal static class ReleaseFixtures
 {
@@ -29,5 +32,11 @@ internal static class ReleaseFixtures
 
     public static string[] Tags(IEnumerable<GitHubRelease> releases) => [.. releases.Select(release => release.Tag)];
 
-    public static string[] AssetNames(GitHubRelease release) => [.. release.Assets.Select(asset => asset.Name)];
+    public static string[] AssetNames(GitHubRelease release) => AssetNames(release.Assets);
+
+    public static string[] AssetNames(IEnumerable<GitHubAsset> assets) => [.. assets.Select(asset => asset.Name)];
+
+    /// <summary>How many github.com asset pages <paramref name="server"/> was asked for.</summary>
+    public static int AssetPageRequests(Net.FakeServer server) =>
+        server.Requests.Count(request => request.Url.AbsolutePath.Contains("/expanded_assets/", StringComparison.Ordinal));
 }

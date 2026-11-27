@@ -1,0 +1,80 @@
+[
+  {
+    "tag_name": "v0.2.0-dlssnr",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-03T19:49:55Z",
+    "assets": [
+      {
+        "name": "OptiScaler-DLSSNR-v0.2.0.zip",
+        "browser_download_url": "https://github.com/Dagherbou/OptiScaler_DLSSNR/releases/download/v0.2.0-dlssnr/OptiScaler-DLSSNR-v0.2.0.zip",
+        "digest": "sha256:8eece7a4d7de6de5917f0c99ac60540b2d77022e7699bba717b0a6d9e1829bce"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.2.0-patch1",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-09-04T16:16:10Z",
+    "assets": [
+      {
+        "name": "OptiScaler-DLSSNR-v0.2.0-onimusha-fix.zip",
+        "browser_download_url": "https://github.com/Dagherbou/OptiScaler_DLSSNR/releases/download/v0.2.0-patch1/OptiScaler-DLSSNR-v0.2.0-onimusha-fix.zip",
+        "digest": "sha256:5db547216fa8a7dbd8ab0a193da1e3bce0ea4bd71f91189afa4ed2ede8bb9561"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.1.2-dIssnr",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-02T11:12:19Z",
+    "assets": [
+      {
+        "name": "OptiScaler-DLSSNR-v0.1.2.zip",
+        "browser_download_url": "https://github.com/Dagherbou/OptiScaler_DLSSNR/releases/download/v0.1.2-dIssnr/OptiScaler-DLSSNR-v0.1.2.zip",
+        "digest": "sha256:4ecf3c3d4a1c23637144855fc327f4b33079370219188ca0e198c7cb6ed58f36"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.1.1.5-dlssnr",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-01T07:02:08Z",
+    "assets": [
+      {
+        "name": "OptiScaler-DLSSNR-v0.1.1.5-dlssnr.zip",
+        "browser_download_url": "https://github.com/Dagherbou/OptiScaler_DLSSNR/releases/download/v0.1.1.5-dlssnr/OptiScaler-DLSSNR-v0.1.1.5-dlssnr.zip",
+        "digest": "sha256:735b10b4077bc187ba4d07d607e864349aca386344c6126aba61ced746d27ece"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.1.1-dlssnr",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-01T02:25:14Z",
+    "assets": [
+      {
+        "name": "OptiScaler-DLSSNR-v0.1.1-dlssnr.zip",
+        "browser_download_url": "https://github.com/Dagherbou/OptiScaler_DLSSNR/releases/download/v0.1.1-dlssnr/OptiScaler-DLSSNR-v0.1.1-dlssnr.zip",
+        "digest": "sha256:4dbed94fa610f2c509f8b510a34f259a4b624749c76078a07413a410d53ec780"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.1.0-dlssnr",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-08-30T16:26:46Z",
+    "assets": [
+      {
+        "name": "OptiScaler-DLSSNR-v0.1.0-dlssnr.zip",
+        "browser_download_url": "https://github.com/Dagherbou/OptiScaler_DLSSNR/releases/download/v0.1.0-dlssnr/OptiScaler-DLSSNR-v0.1.0-dlssnr.zip",
+        "digest": "sha256:21e73d05abb64e90b336599a9e8c8b6c109b1de9f950b5a4e39e61b422fc5b24"
+      }
+    ]
+  }
+]

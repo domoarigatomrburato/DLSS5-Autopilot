@@ -35,7 +35,7 @@ internal sealed partial class ReleasePages(NetClient client, ILogger logger)
     /// <summary>Up to <paramref name="count"/> releases, at most <see cref="MaxReleases"/>, newest first, each with its assets.</summary>
     public async Task<IReadOnlyList<GitHubRelease>?> ListAsync(GitHubRepository repo, int count, CancellationToken cancellationToken)
     {
-        List<string> tags = await TagsAsync(repo, Math.Min(count, MaxReleases), cancellationToken);
+        List<string> tags = await TagsAsync(repo, Math.Min(count, MaxReleases), MaxPages, cancellationToken);
         List<GitHubRelease> releases = [];
         foreach (string tag in tags)
         {
@@ -50,11 +50,18 @@ internal sealed partial class ReleasePages(NetClient client, ILogger logger)
         return releases.Count > 0 ? releases : null;
     }
 
-    /// <summary>Tags from the list pages, until <paramref name="count"/> are found, a page adds none, or the pages run out.</summary>
-    private async Task<List<string>> TagsAsync(GitHubRepository repo, int count, CancellationToken cancellationToken)
+    /// <summary>
+    /// The tags on the first <paramref name="pages"/> list pages, newest first, with no asset page
+    /// asked: for a caller that decides by the tag's own name before it reads one release.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> TagsOnPagesAsync(GitHubRepository repo, int pages, CancellationToken cancellationToken) =>
+        await TagsAsync(repo, int.MaxValue, pages, cancellationToken);
+
+    /// <summary>Tags from the list pages, until <paramref name="count"/> are found, a page adds none, or <paramref name="pages"/> pages were read.</summary>
+    private async Task<List<string>> TagsAsync(GitHubRepository repo, int count, int pages, CancellationToken cancellationToken)
     {
         List<string> tags = [];
-        for (int page = 1; page <= MaxPages && tags.Count < count; page++)
+        for (int page = 1; page <= pages && tags.Count < count; page++)
         {
             IReadOnlyList<string> found = await TagsOnPageAsync(repo, page, cancellationToken);
             int before = tags.Count;

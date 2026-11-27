@@ -1,0 +1,13 @@
+{
+  "tag_name": "v0.2.0-dlssnr",
+  "draft": false,
+  "prerelease": false,
+  "published_at": "2026-09-03T19:49:55Z",
+  "assets": [
+    {
+      "name": "OptiScaler-DLSSNR-v0.2.0.zip",
+      "browser_download_url": "https://github.com/Dagherbou/OptiScaler_DLSSNR/releases/download/v0.2.0-dlssnr/OptiScaler-DLSSNR-v0.2.0.zip",
+      "digest": "sha256:8eece7a4d7de6de5917f0c99ac60540b2d77022e7699bba717b0a6d9e1829bce"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+[
+  {
+    "tag_name": "v10.0.0-dev-fork-y4my4my4m-v4",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-09-05T18:36:07Z",
+    "assets": [
+      {
+        "name": "OptiScaler_v10.0.0-dev-fork-y4my4my4m-v4_20260905.7z",
+        "browser_download_url": "https://github.com/y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG/releases/download/v10.0.0-dev-fork-y4my4my4m-v4/OptiScaler_v10.0.0-dev-fork-y4my4my4m-v4_20260905.7z",
+        "digest": "sha256:0bed87519412cda1f182cf303aff42c390b8ada1196ba2de158ba0c2a8b4e4b8"
+      },
+      {
+        "name": "OptiScaler_v10.0.0-dev-fork-y4my4my4m-v4_20260905_with_DLSS.7z",
+        "browser_download_url": "https://github.com/y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG/releases/download/v10.0.0-dev-fork-y4my4my4m-v4/OptiScaler_v10.0.0-dev-fork-y4my4my4m-v4_20260905_with_DLSS.7z",
+        "digest": "sha256:9d7824cc9cfb15265bc6438b4638aad74ff9cd6d1d3488ab73724affb386a8b0"
+      }
+    ]
+  },
+  {
+    "tag_name": "nightly",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-09-06T08:21:56Z",
+    "assets": [
+      {
+        "name": "OptiScaler_v10.0.0-pre1_20260906.7z",
+        "browser_download_url": "https://github.com/y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG/releases/download/nightly/OptiScaler_v10.0.0-pre1_20260906.7z",
+        "digest": "sha256:206c52cd59d6108f012968f00a492d049c78e77ad2e850eb7770ad8c29c444dd"
+      },
+      {
+        "name": "OptiScaler_v10.0.0-pre1_20260907.7z",
+        "browser_download_url": "https://github.com/y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG/releases/download/nightly/OptiScaler_v10.0.0-pre1_20260907.7z",
+        "digest": "sha256:1ae36b2230f6a1a61d6f2b0f5a70ae339fda3ed760956206bf6172a515a5f366"
+      },
+      {
+        "name": "OptiScaler_v10.0.0-pre1_20260908.7z",
+        "browser_download_url": "https://github.com/y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG/releases/download/nightly/OptiScaler_v10.0.0-pre1_20260908.7z",
+        "digest": "sha256:3b6b17a9b4f42792dca8fe442a51c8d180c750c5dd6dbb68db001fa1455028b0"
+      },
+      {
+        "name": "OptiScaler_v10.0.0-pre1_20260909.7z",
+        "browser_download_url": "https://github.com/y4my4my4m/OptiScaler_DLSSNR_Multipass_MFG/releases/download/nightly/OptiScaler_v10.0.0-pre1_20260909.7z",
+        "digest": "sha256:100aa048c883c8293c94c5ddf969403bfb939987a1d8f2ea3060eb068dbb8161"
+      }
+    ]
+  }
+]

@@ -1,0 +1,99 @@
+[
+  {
+    "tag_name": "v0.1.39",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-21T15:44:19Z",
+    "assets": [
+      {
+        "name": "Optional-Vendor-Neutral-DLSS5-Forwarder.zip",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.39/Optional-Vendor-Neutral-DLSS5-Forwarder.zip",
+        "digest": "sha256:8a41f620e0c3f56fb6b617bb824b2099c5f04608f801ba1b4a7ca5c1f2674e96"
+      },
+      {
+        "name": "OptiScaler-DLSSNR-Troubleshooting.md",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.39/OptiScaler-DLSSNR-Troubleshooting.md",
+        "digest": "sha256:e3db2f97788f14970f73d14b62fc222415ad13cabb11c3e15d2257a0ae7cae5e"
+      },
+      {
+        "name": "v0.1.39-Optiscaler-F5.zip",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.39/v0.1.39-Optiscaler-F5.zip",
+        "digest": "sha256:532ada6b80d1caaae222734e053f6fc992ead5bbcd01ecaac851f26e6fd66ecf"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.1.38",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-13T02:22:53Z",
+    "assets": [
+      {
+        "name": "Optional-Vendor-Neutral-DLSS5-Forwarder.zip",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.38/Optional-Vendor-Neutral-DLSS5-Forwarder.zip",
+        "digest": "sha256:8a41f620e0c3f56fb6b617bb824b2099c5f04608f801ba1b4a7ca5c1f2674e96"
+      },
+      {
+        "name": "OptiScaler-DLSSNR-Troubleshooting.md",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.38/OptiScaler-DLSSNR-Troubleshooting.md",
+        "digest": "sha256:e3db2f97788f14970f73d14b62fc222415ad13cabb11c3e15d2257a0ae7cae5e"
+      },
+      {
+        "name": "v0.1.38-Optiscaler-F5.zip",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.38/v0.1.38-Optiscaler-F5.zip",
+        "digest": "sha256:2ef54757f94f9a9ffc489cecb187341677e5da0e5079450c1de50eb402c6d991"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.1.37.2",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-07T03:08:16Z",
+    "assets": [
+      {
+        "name": "Optional-F5Low-Update-1.1.0.184.zip",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.37.2/Optional-F5Low-Update-1.1.0.184.zip",
+        "digest": "sha256:674453cb6af3f0d1db1ad8499ed23a4f577cea4cb2f64ae966550c9284871a7f"
+      },
+      {
+        "name": "Optional-Vendor-Neutral-DLSS5-Forwarder.zip",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.37.2/Optional-Vendor-Neutral-DLSS5-Forwarder.zip",
+        "digest": "sha256:8a41f620e0c3f56fb6b617bb824b2099c5f04608f801ba1b4a7ca5c1f2674e96"
+      },
+      {
+        "name": "OptiScaler-DLSSNR-Troubleshooting.md",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.37.2/OptiScaler-DLSSNR-Troubleshooting.md",
+        "digest": "sha256:422e90bf78ad1eef0e8a435f868311be59182e2851cf49cd9c3adbe7e7a3511c"
+      },
+      {
+        "name": "v0.1.37.2-Optiscaler-F5.zip",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.37.2/v0.1.37.2-Optiscaler-F5.zip",
+        "digest": "sha256:ca7cd4f4d0765bd72885c9f8f21ab4f2bed332c8f9aa158233bba8824f0b8980"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.1.37",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-06T12:57:38Z",
+    "assets": [
+      {
+        "name": "Optional-Vendor-Neutral-DLSS5-Forwarder.zip",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.37/Optional-Vendor-Neutral-DLSS5-Forwarder.zip",
+        "digest": "sha256:8a41f620e0c3f56fb6b617bb824b2099c5f04608f801ba1b4a7ca5c1f2674e96"
+      },
+      {
+        "name": "OptiScaler-DLSSNR-Troubleshooting.md",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.37/OptiScaler-DLSSNR-Troubleshooting.md",
+        "digest": "sha256:422e90bf78ad1eef0e8a435f868311be59182e2851cf49cd9c3adbe7e7a3511c"
+      },
+      {
+        "name": "v0.1.37-Optiscaler-F5.zip",
+        "browser_download_url": "https://github.com/janblade/OptiScaler-F5-DLSSNR-Multipass/releases/download/v0.1.37/v0.1.37-Optiscaler-F5.zip",
+        "digest": "sha256:dcda2b1a5c876c7778b472f73c3739c10acbc40b3de4b7c8ed4a903af7567684"
+      }
+    ]
+  }
+]

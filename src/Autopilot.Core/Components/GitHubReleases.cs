@@ -61,6 +61,15 @@ public sealed class GitHubReleases(NetClient client, TimeProvider time, ILogger<
         return releases is not null ? new(releases, source) : throw ReleaseResolver.StatusFailure(api, HttpStatusCode.NotFound);
     }
 
+    /// <summary>
+    /// The release tags on the first <paramref name="pages"/> of github.com's release list pages,
+    /// newest first: no API allowance spent, no asset page read, no flag known.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>.</exception>
+    /// <exception cref="NetException">The first page could not be read.</exception>
+    internal Task<IReadOnlyList<string>> GetPageTagsAsync(string repository, int pages, CancellationToken cancellationToken) =>
+        _pages.TagsOnPagesAsync(GitHubRepository.Parse(repository), pages, cancellationToken);
+
     /// <summary>The address of an asset of the newest release by GitHub's own redirect, for when no release data can be read.</summary>
     /// <exception cref="ArgumentException"><paramref name="repository"/> is not <c>owner/name</c>, or the asset name is empty.</exception>
     public static LatestDownload LatestDownloadOf(string repository, string assetName)

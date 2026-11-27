@@ -1,0 +1,237 @@
+[
+  {
+    "tag_name": "v0.10.0",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-26T08:31:50Z",
+    "assets": [
+      {
+        "name": "display-filter-v0.9.0-preview.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.10.0/display-filter-v0.9.0-preview.zip",
+        "digest": "sha256:90463b69f6a4fb0864bfcfff17eeb3c436b3f864fb84bf39277d885084cf3540"
+      },
+      {
+        "name": "OptiScaler-NR-v0.10.0-rtx40-mfg.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.10.0/OptiScaler-NR-v0.10.0-rtx40-mfg.zip",
+        "digest": "sha256:816a75e682438b9047c6baaad939a4b771122562140b908eb63e39b340b432f2"
+      },
+      {
+        "name": "OptiScaler-NR-v0.10.0-SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.10.0/OptiScaler-NR-v0.10.0-SHA256SUMS.txt",
+        "digest": "sha256:c4746f34ab6bbb86bcd64ce63d64157d0e74e513ba2f9a183a7cf856c471a752"
+      },
+      {
+        "name": "OptiScaler-NR-v0.10.0.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.10.0/OptiScaler-NR-v0.10.0.zip",
+        "digest": "sha256:e076a711d686b13a7d615f565f937d2d83a4ffd96690cb2c576548663212ad77"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.9.8",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-24T22:39:02Z",
+    "assets": [
+      {
+        "name": "display-filter-v0.8.0-preview.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.8/display-filter-v0.8.0-preview.zip",
+        "digest": "sha256:1600636dde4bc9882f681ea76a631504912dbf26b51093d3ff4ad7964db427ee"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.8-rtx40-mfg.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.8/OptiScaler-NR-v0.9.8-rtx40-mfg.zip",
+        "digest": "sha256:15311fd40d9096a0095b64cc23ad2f4b758154c24186df5e1fe51e308b024940"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.8-SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.8/OptiScaler-NR-v0.9.8-SHA256SUMS.txt",
+        "digest": "sha256:be07e36ad536f121bbe719d641048438389044ed5eae56fb10c13cb21ae91d1e"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.8.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.8/OptiScaler-NR-v0.9.8.zip",
+        "digest": "sha256:1c71a16db58f938e5635f26201eaf1ed263153fb08a76dbead6a9d959c14031f"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.9.6",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-22T22:24:20Z",
+    "assets": [
+      {
+        "name": "display-filter-v0.7.0-preview.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.6/display-filter-v0.7.0-preview.zip",
+        "digest": "sha256:16908954bd79638b9c48df799981488b174f1a33f8a26d70773d3ec4c8709fc6"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.6-rtx40-mfg.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.6/OptiScaler-NR-v0.9.6-rtx40-mfg.zip",
+        "digest": "sha256:d9b31be09417da46c1906c1661ffe2e61c42fd6868246b3b9ebfae2528a6b02d"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.6-SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.6/OptiScaler-NR-v0.9.6-SHA256SUMS.txt",
+        "digest": "sha256:d342b3dd8e17d93c4d7159ae8963c63da97930d8828bf2b9d23e5614a81ff90a"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.6.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.6/OptiScaler-NR-v0.9.6.zip",
+        "digest": "sha256:0c499efbf04dc60cdd5e185118711369173a4413435f9df4842f8a901f2615a5"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.9.5",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-20T11:43:35Z",
+    "assets": [
+      {
+        "name": "OptiScaler-NR-v0.9.5-rtx40-mfg.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.5/OptiScaler-NR-v0.9.5-rtx40-mfg.zip",
+        "digest": "sha256:b2b7e2c36b09a9cbcb93cd5bc19b5b71f21d5e73e0c4403e22619eb33b2018c4"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.5-SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.5/OptiScaler-NR-v0.9.5-SHA256SUMS.txt",
+        "digest": "sha256:7f1a85b152c44531c0a2b8d593e4776564e3192eaf3fdb7673e03706d164fff2"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.5.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.5/OptiScaler-NR-v0.9.5.zip",
+        "digest": "sha256:2f3a03b168eb9105cb2fd65f93e070f80b0db1cd0bab0f8841390be0ffa159e0"
+      }
+    ]
+  },
+  {
+    "tag_name": "display-filter-v0.6.0-preview",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-20T11:44:50Z",
+    "assets": [
+      {
+        "name": "display-filter-v0.6.0-preview.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/display-filter-v0.6.0-preview/display-filter-v0.6.0-preview.zip",
+        "digest": "sha256:83f8f3d2b4b5e74878aad812b155e633aa8be9c309097ec360095e747783ecf0"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/display-filter-v0.6.0-preview/SHA256SUMS.txt",
+        "digest": "sha256:13f30052d26cb0ab0bba70fef621cf9747297da3c0e178a13c526516ad7dcfec"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.9.1",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-17T22:24:55Z",
+    "assets": [
+      {
+        "name": "OptiScaler-NR-v0.9.1-rtx40-mfg.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.1/OptiScaler-NR-v0.9.1-rtx40-mfg.zip",
+        "digest": "sha256:52bc73a20fafe4e54db8a2d694d31f989836fdf172ac8b6e7759e1266417aa2f"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.1-SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.1/OptiScaler-NR-v0.9.1-SHA256SUMS.txt",
+        "digest": "sha256:e1a01450a0f8f5965630d90b8e0915fbbd855bfed941534ae04de8c782fb3833"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.1.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.1/OptiScaler-NR-v0.9.1.zip",
+        "digest": "sha256:6d48139c325abef6c335d1f4df0c97f6a240232e2f4bba5aad5fd71a0ee4733f"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.9.0",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-17T10:22:06Z",
+    "assets": [
+      {
+        "name": "OptiScaler-NR-v0.9.0-rtx40-mfg.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.0/OptiScaler-NR-v0.9.0-rtx40-mfg.zip",
+        "digest": "sha256:61cb8d5920ec92ae1e64b12e74ac8a6ed8a7a0ad92eae43052d6593f1569d8eb"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.0-SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.0/OptiScaler-NR-v0.9.0-SHA256SUMS.txt",
+        "digest": "sha256:b789f78d5b269cb1467884fc3ee70aed1ed3677cb3c8ec50f124d29e2c774b0e"
+      },
+      {
+        "name": "OptiScaler-NR-v0.9.0.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.9.0/OptiScaler-NR-v0.9.0.zip",
+        "digest": "sha256:0e95e7fcd278e1fd97460d3c1c12de6f2f85cb83cdf94d1dd4c6f8edde7cafa5"
+      }
+    ]
+  },
+  {
+    "tag_name": "display-filter-v0.5.0-preview",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-17T10:22:52Z",
+    "assets": [
+      {
+        "name": "display-filter-v0.5.0-preview.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/display-filter-v0.5.0-preview/display-filter-v0.5.0-preview.zip",
+        "digest": "sha256:e3271de6592f02abf07f9b5fdb7b6956b2887a63470e943db1dd1723b61f5bd3"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/display-filter-v0.5.0-preview/SHA256SUMS.txt",
+        "digest": "sha256:dcb4f8ada09f2b41a56c09bb3ecc3aea5d123e4777fc568e42e90ffab85fda43"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.8.10",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-10-26T12:34:08Z",
+    "assets": [
+      {
+        "name": "OptiScaler-NR-v0.8.10-rtx40-mfg.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.8.10/OptiScaler-NR-v0.8.10-rtx40-mfg.zip",
+        "digest": "sha256:ae9eadc8d629bc0b6f6b0213a730a6c81b724ef1883a5ae1c9fd8836f38df0d8"
+      },
+      {
+        "name": "OptiScaler-NR-v0.8.10-SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.8.10/OptiScaler-NR-v0.8.10-SHA256SUMS.txt",
+        "digest": "sha256:1d3d76c19db5da0fa828064d005dba1a77a52f82ad27b9b69d8f324386dc93ea"
+      },
+      {
+        "name": "OptiScaler-NR-v0.8.10.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.8.10/OptiScaler-NR-v0.8.10.zip",
+        "digest": "sha256:78a8e357b45e849205cb817f79fccc4ccc61dd3251c48e1a428e616159226fec"
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.8.91",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-09-23T03:36:52Z",
+    "assets": [
+      {
+        "name": "OptiScaler-NR-v0.8.91-rtx40-mfg.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.8.91/OptiScaler-NR-v0.8.91-rtx40-mfg.zip",
+        "digest": "sha256:93e6762ed3ab9f48a2f78b088346786383315a9916c32440f0fe6457422fad79"
+      },
+      {
+        "name": "OptiScaler-NR-v0.8.91-SHA256SUMS.txt",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.8.91/OptiScaler-NR-v0.8.91-SHA256SUMS.txt",
+        "digest": "sha256:e372ca846fa59b7733a2fcf10a96440dbc41f9af9fcc85893713d04a2b142a51"
+      },
+      {
+        "name": "OptiScaler-NR-v0.8.91.zip",
+        "browser_download_url": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass/releases/download/v0.8.91/OptiScaler-NR-v0.8.91.zip",
+        "digest": "sha256:19a2852bb3f88e09075e3ccc66e0318c52e83a5901d9020a10384ae49d59ff77"
+      }
+    ]
+  }
+]

@@ -70,6 +70,14 @@ public sealed class DownloadCache
         return folder;
     }
 
+    /// <summary>
+    /// The readable names (the asset's own name, without the key) of the downloads kept in the
+    /// cache that match <paramref name="searchPattern"/> (<c>*</c> and <c>?</c>, ignoring case), for
+    /// a resolver whose every source failed. Nothing is fetched or checked: a name says what was
+    /// kept, not that it still checks out.
+    /// </summary>
+    public IReadOnlyList<string> CachedNames(string searchPattern) => CacheKeys.KeptNames(_cacheRoot, searchPattern);
+
     // A finished entry that still checks out; a bad one is deleted.
     private async Task<CachedFile?> ReuseAsync(string entry, string fileName, Verification expected, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
     {

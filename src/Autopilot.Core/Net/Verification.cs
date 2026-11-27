@@ -26,7 +26,12 @@ public sealed record SignerVerification(string Publisher) : Verification;
 /// A <c>sha256sum</c> file, fetched from <paramref name="Url"/> with the file's own hosts, must list
 /// the file by its exact name exactly once, and the file's SHA-256 must match.
 /// </summary>
-public sealed record SumsFileVerification(Uri Url) : Verification;
+/// <param name="Url">Where the sums file is.</param>
+/// <param name="ListedName">
+/// The name the sums file lists the file under, when the cache keeps it under another one (the
+/// publisher's asset name); <see langword="null"/> for the download's own file name.
+/// </param>
+public sealed record SumsFileVerification(Uri Url, string? ListedName = null) : Verification;
 
 /// <summary>No publisher offers a check; <paramref name="Reason"/> is logged. The magic-byte check still runs.</summary>
 public sealed record NoVerification(string Reason) : Verification

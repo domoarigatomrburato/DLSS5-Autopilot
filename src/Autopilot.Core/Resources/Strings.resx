@@ -691,4 +691,62 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <data name="DlssnrOverridden" xml:space="preserve">
     <value>dlssnr {0} does not match your card - installed anyway</value>
   </data>
+  <!-- ReShade: each source's reason joins the error that lists them all. {0} is an HTTP status. -->
+  <data name="ReShadeNoLink" xml:space="preserve">
+    <value>reshade.me: HTTP {0}, with no add-on installer link on the page</value>
+  </data>
+  <data name="ReShadeNoTag" xml:space="preserve">
+    <value>GitHub: no version tag on crosire/reshade (HTTP {0})</value>
+  </data>
+  <data name="ReShadeNotCached" xml:space="preserve">
+    <value>the download cache: no ReShade add-on installer kept</value>
+  </data>
+  <data name="ReShadeNotFound" xml:space="preserve">
+    <value>Could not find the ReShade add-on installer: {0}</value>
+  </data>
+  <!-- DLSS5-Feeder builds. {0} is a tag; FeederTagNotListed's {1} is how many releases are checked. -->
+  <data name="FeederTagNotListed" xml:space="preserve">
+    <value>DLSS5-Feeder release {0} is not on GitHub's release list (the newest {1} are checked).</value>
+  </data>
+  <data name="FeederNoRelease" xml:space="preserve">
+    <value>DLSS5-Feeder has no release on GitHub.</value>
+  </data>
+  <data name="FeederNoFiles" xml:space="preserve">
+    <value>DLSS5-Feeder release {0} carries neither the feeder's zip nor its files. Pick another version under 'feeder build'.</value>
+  </data>
+  <data name="FeederEveryReleaseTest" xml:space="preserve">
+    <value>Every recent DLSS5-Feeder release is a test build; {0} was installed. Pick an exact version under 'feeder build' to change that.</value>
+  </data>
+  <!-- Feeder pins, named FeederPin + the need: {0} is the feeder build, {1} the first build that meets the need. -->
+  <data name="FeederPinDirect3D10" xml:space="preserve">
+    <value>DLSS5-Feeder {0} refuses Direct3D 10 games; support arrived in {1}. Pick {1} or newer under 'feeder build'.</value>
+  </data>
+  <data name="FeederPinHelperProcess" xml:space="preserve">
+    <value>DLSS5-Feeder {0} has no 64-bit helper-process mode; it arrived in {1}. Pick {1} or newer under 'feeder build'.</value>
+  </data>
+  <data name="FeederPinBuiltInProvider" xml:space="preserve">
+    <value>DLSS5-Feeder {0} has no built-in motion-vector provider; it arrived in {1}. Pick {1} or newer under 'feeder build', or another provider.</value>
+  </data>
+  <data name="FeederPinHdrDisplay" xml:space="preserve">
+    <value>DLSS5-Feeder {0} blows out HDR highlights; {1} fixed that. Pick {1} or newer under 'feeder build' for an HDR display.</value>
+  </data>
+  <!-- OptiScaler builds. {0} is a repository or a tag, as each says. -->
+  <data name="OptiScalerNoPackage" xml:space="preserve">
+    <value>No recent release on {0} carries an OptiScaler package (.zip or .7z). Pick another 'optiscaler build' under settings, or try again later.</value>
+  </data>
+  <data name="OptiScalerNoVariant" xml:space="preserve">
+    <value>No recent release on {0} carries the {1} package any more. Choose "wilsjo2's fork" in 'optiscaler build' for the standard one.</value>
+  </data>
+  <data name="OptiScalerSumsMissing" xml:space="preserve">
+    <value>The release {0} of {1} carries no SHA256SUMS file, which this build publishes with every release, so its package cannot be checked and is not installed. Try again later, or pick another 'optiscaler build' under settings.</value>
+  </data>
+  <data name="OptiScalerNotAPackage" xml:space="preserve">
+    <value>The release {0} carries no OptiScaler.dll - it holds {1}, so it is not an OptiScaler build. Pick another 'optiscaler build' under settings, or try again later.</value>
+  </data>
+  <data name="OptiScalerHeldNothing" xml:space="preserve">
+    <value>nothing</value>
+  </data>
+  <data name="OptiScalerMfgCard" xml:space="preserve">
+    <value>The RTX 40 MFG package unlocks multi-frame generation on RTX 40 cards only. On an RTX 50 it broke frame generation; on other cards it has not been tried. Choose "wilsjo2's fork" in 'optiscaler build' for the same neural pass without it.</value>
+  </data>
 </root>

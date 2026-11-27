@@ -1,0 +1,347 @@
+[
+  {
+    "tag_name": "v2.0.0",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-12T18:44:21Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v2.0.0/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:43449c1ce4bbc39a53dd467f0009347acb6e06e6b6185bb3f399e040316b0e89"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v2.0.0/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-2.0.0.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v2.0.0/DLSS5-Feeder-2.0.0.zip",
+        "digest": "sha256:fa41fe2c5d3da803688775b802dc373a922daab0e721c8154a17066fcdd62584"
+      },
+      {
+        "name": "Install-DLSS5Feeder.ps1",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v2.0.0/Install-DLSS5Feeder.ps1",
+        "digest": "sha256:69e05c4e48ecda67d68987bb7325c7609ac35246a58e32ee5998bf54c81b4f47"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.19.1-beta.1",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-05T20:19:52Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.19.1-beta.1/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:97dfa93475a01925d2940a4f742eafa6281f0a958c2d4d354149af5c9cff5070"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.19.1-beta.1/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.19.1-beta.1.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.19.1-beta.1/DLSS5-Feeder-1.19.1-beta.1.zip",
+        "digest": "sha256:8cec629b5fe2fad245675f68ee53241aa67ca31c28b34798f2f48bc7a9345838"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.19.0",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-10-11T05:56:10Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.19.0/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:97dfa93475a01925d2940a4f742eafa6281f0a958c2d4d354149af5c9cff5070"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.19.0/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.19.0.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.19.0/DLSS5-Feeder-1.19.0.zip",
+        "digest": "sha256:9cc19e28f8fb4e216ea61621fdf6443e207e338ec639979ab335503c75f48f36"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.18.0-beta.2",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-10-06T04:30:05Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.18.0-beta.2/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:97dfa93475a01925d2940a4f742eafa6281f0a958c2d4d354149af5c9cff5070"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.18.0-beta.2/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.18.0-beta.2.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.18.0-beta.2/DLSS5-Feeder-1.18.0-beta.2.zip",
+        "digest": "sha256:4d459f902d5a8faace03c6909962334e800a58b73e0aee49eb1b30a3572f43dc"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.18.0-beta.1",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-29T04:19:46Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.18.0-beta.1/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:97dfa93475a01925d2940a4f742eafa6281f0a958c2d4d354149af5c9cff5070"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.18.0-beta.1/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.18.0-beta.1.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.18.0-beta.1/DLSS5-Feeder-1.18.0-beta.1.zip",
+        "digest": "sha256:df5e5dd5d15a88de73885ad164fe6bf9e6cafc728db1133b9be3fc8a25f5bbcb"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.17.0",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-27T04:32:03Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:3f38146a917b86bba1e01688e8eb0fc2daf39e743e041f2d91167bac644c8f5b"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.17.0.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0/DLSS5-Feeder-1.17.0.zip",
+        "digest": "sha256:11a96b36ae89ef75b3cff0e03849db35591143fe4df171986502905809469e12"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.17.0-beta.3",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-25T06:30:10Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0-beta.3/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:3f38146a917b86bba1e01688e8eb0fc2daf39e743e041f2d91167bac644c8f5b"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0-beta.3/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.17.0-beta.3.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0-beta.3/DLSS5-Feeder-1.17.0-beta.3.zip",
+        "digest": "sha256:7db0d8c2b29de702deaafcfea9112dc15a35d62bb15e6fe0c982c150ef8d2392"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.17.0-beta.2",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-24T16:32:36Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0-beta.2/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:3f38146a917b86bba1e01688e8eb0fc2daf39e743e041f2d91167bac644c8f5b"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0-beta.2/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.17.0-beta.2.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0-beta.2/DLSS5-Feeder-1.17.0-beta.2.zip",
+        "digest": "sha256:f5ba6d53e476f432f0fa4fc5de5df3cab7b699133a3be60d2f3c72e87ea4b3f7"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.17.0-beta.1",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-22T16:26:17Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0-beta.1/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:3f38146a917b86bba1e01688e8eb0fc2daf39e743e041f2d91167bac644c8f5b"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0-beta.1/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.17.0-beta.1.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.17.0-beta.1/DLSS5-Feeder-1.17.0-beta.1.zip",
+        "digest": "sha256:6827e3cd076090c44d39391282a0e69ca63d366ec714ea3aa54f9bccf313ffce"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.16.0-beta.7",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-22T04:16:39Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.7/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:c513f2b7f60797d1f73e6409447690320217a606dc01d011b38cae610404fa31"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.7/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.16.0-beta.7.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.7/DLSS5-Feeder-1.16.0-beta.7.zip",
+        "digest": "sha256:0ff4999c1d00ff6b40555cd127ee83e64494e45d41f6ca56510a791292fbebbf"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.16.0-beta.6",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-20T11:28:08Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.6/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:c513f2b7f60797d1f73e6409447690320217a606dc01d011b38cae610404fa31"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.6/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.16.0-beta.6.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.6/DLSS5-Feeder-1.16.0-beta.6.zip",
+        "digest": "sha256:0f9d9cda66e05a0f21ccabbd778694b826c8c80402cc62046aedea6d157bdcad"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.16.0-beta.5",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-19T07:08:50Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.5/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:c513f2b7f60797d1f73e6409447690320217a606dc01d011b38cae610404fa31"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.5/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.16.0-beta.5.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.5/DLSS5-Feeder-1.16.0-beta.5.zip",
+        "digest": "sha256:7e94b15a43c398946fd6195ef5c972461ee66736508fd84548d8c29ec798d3dc"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.16.0-beta.4",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-16T16:38:38Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.4/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:c513f2b7f60797d1f73e6409447690320217a606dc01d011b38cae610404fa31"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.4/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.16.0-beta.4.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.4/DLSS5-Feeder-1.16.0-beta.4.zip",
+        "digest": "sha256:d16f8b527f76ff1f531682a576d699cb5634838c0e2899585e3671814eda2745"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.16.0-beta.3",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-16T16:04:41Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.3/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:c513f2b7f60797d1f73e6409447690320217a606dc01d011b38cae610404fa31"
+      },
+      {
+        "name": "CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.3/CAREFUL_FAKE_MALICIOUS_FEEDER.txt",
+        "digest": "sha256:1fe12f86faf98017de7b48bdf4f4cfb16398c0c9c7e993d8534ac3804e184b3d"
+      },
+      {
+        "name": "DLSS5-Feeder-1.16.0-beta.3.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.3/DLSS5-Feeder-1.16.0-beta.3.zip",
+        "digest": "sha256:0d1deebf531436a6d0914548e450a790aefa53cb4e9f6dfdcd48aff74831cb21"
+      }
+    ]
+  },
+  {
+    "tag_name": "v1.16.0-beta.2",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-09-14T06:18:25Z",
+    "assets": [
+      {
+        "name": "AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.2/AUTOMATIC_INSTALLATION_AVAILABLE.txt",
+        "digest": "sha256:c513f2b7f60797d1f73e6409447690320217a606dc01d011b38cae610404fa31"
+      },
+      {
+        "name": "DLSS5-Feeder-1.16.0-beta.2.zip",
+        "browser_download_url": "https://github.com/jlrouzies-fr/DLSS5-Feeder/releases/download/v1.16.0-beta.2/DLSS5-Feeder-1.16.0-beta.2.zip",
+        "digest": "sha256:b6c2a5a5e69812a91b10edb1fc84617caef4becf163b7f87960af1a802f25e0d"
+      }
+    ]
+  }
+]
