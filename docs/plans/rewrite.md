@@ -95,17 +95,19 @@ specified.
       path with retries, TLS, size limits, no downgrade, a download cache,
       and safe archive extraction. The Windows Authenticode verifier behind
       `ISignatureVerifier` lands with M5, its first user.
-- [ ] **M2. Reading games.** PE files: architecture, imports and version
+- [x] **M2. Reading games.** PE files: architecture, imports and version
       resources, which decide the graphics API. The game library: Steam,
       Epic, GOG, EA, Ubisoft, Battle.net, Rockstar, Xbox, Amazon, Heroic,
       folders added by hand, emulators (detection only). itch waits for M8.
+      Cover art and the library's search, hiding and sorting moved to M7.
 - [ ] **M3. Routes.** Which route a game gets and why, from what was read;
       the components each route needs, and where they come from. Net gains
       a HEAD that reports a redirect without following it, and a 5xx body
       read when the caller asks (reshade.me).
 - [ ] **M4. Install and uninstall.** The record written first; backups;
       rollback; the preview ("what will happen?") that writes nothing;
-      uninstall from the record alone. Emulator config edits wait for M8.
+      uninstall from the record alone. Implements `IInstallRecords`, and the
+      graphics decision's own reading of the record goes through it. Emulator config edits wait for M8.
       Archives gain the zip appended to ReShade's installer and a member
       listing that writes nothing (for the preview); the download cache
       gains cache-only reads and deleting an entry under its lock; storage
@@ -119,7 +121,7 @@ specified.
 - [ ] **M6. Diagnosis.** Logs to a verdict and a next step, driven by the
       report corpus: only the verdicts the corpus exercises; the bug-report
       text.
-- [ ] **M7. The app and autopilot.** Library, game page, DLSS page,
+- [ ] **M7. The app and autopilot.** Library (with cover art and search), game page, DLSS page,
       settings; the game watcher, the "did it work?" answer after a
       session, "try another route", and autopilot
       ([watch](../spec/watch.md)); the Windows implementations; the first
