@@ -1,5 +1,4 @@
 using Autopilot.Core.Archives;
-using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Install;
 
@@ -22,11 +21,19 @@ internal sealed class OwnedFiles
         }
 
         _gameFolder = gameFolder;
-        foreach (RecordEntry entry in record.Entries)
+        // A held file is beside its path and a restored original is the game's: the entry placed at the path answers for it.
+        foreach (RecordEntry entry in record.Placed)
         {
             // The reader kept the first of two entries naming one path; so does this.
             _ = _entries.TryAdd(RecordPaths.Key(entry.Path), entry);
         }
+    }
+
+    /// <param name="record">A record as a transaction holds it, its entries relative to <paramref name="gameFolder"/>.</param>
+    /// <param name="gameFolder">The game folder.</param>
+    public OwnedFiles(InstallRecord record, string gameFolder)
+        : this(new RecordedInstall(InstallState.Installing, []) { Record = record, GameFolder = gameFolder })
+    {
     }
 
     /// <summary>
@@ -48,17 +55,12 @@ internal sealed class OwnedFiles
     /// <exception cref="IOException">The file cannot be read.</exception>
     /// <exception cref="UnauthorizedAccessException">The file cannot be opened.</exception>
     /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
-    public async Task<bool> IsOursAsync(string path, CancellationToken cancellationToken)
-    {
-        FileInfo file = new(path);
-        if (Listed(path) is not { } entry || !file.Exists)
-        {
-            return false;
-        }
+    public async Task<bool> IsOursAsync(string path, CancellationToken cancellationToken) =>
+        Listed(path) is not null && IsOurs(path, await FileFacts.OfAsync(path, cancellationToken));
 
-        return entry.Class == EntryClass.Config
-            || (entry.Written is { } written && await HoldsAsync(file, written, cancellationToken));
-    }
+    /// <summary>Whether the file at <paramref name="path"/>, whose content is <paramref name="current"/> (null: no file), is ours, as <see cref="IsOursAsync"/> decides.</summary>
+    public bool IsOurs(string path, FileFacts? current) =>
+        current is not null && Listed(path) is { } entry && (entry.Class == EntryClass.Config || current.Matches(entry.Written));
 
     /// <summary>Whether <paramref name="entry"/>'s backup is there and holds exactly the recorded original.</summary>
     /// <exception cref="IOException">The backup cannot be read.</exception>
@@ -67,13 +69,28 @@ internal sealed class OwnedFiles
     public async Task<bool> IsBackupValidAsync(RecordEntry entry, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return BackupOf(entry) is { } backup && await HoldsAsync(new FileInfo(backup), entry.Original!.Facts, cancellationToken);
+        return BackupOf(entry) is { } backup && await entry.Original!.Facts.IsAtAsync(backup, cancellationToken);
     }
 
-    private static async Task<bool> HoldsAsync(FileInfo file, FileFacts facts, CancellationToken cancellationToken) =>
-        file.Exists
-        && file.Length == facts.Size
-        && string.Equals(await FileDigest.Sha256Async(file.FullName, cancellationToken), facts.Sha256, StringComparison.OrdinalIgnoreCase);
+    /// <summary>Whether the file at <paramref name="entry"/>'s path is there and holds exactly its recorded original.</summary>
+    /// <exception cref="IOException">The file cannot be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">The file cannot be opened.</exception>
+    /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
+    public Task<bool> HoldsOriginalAsync(RecordEntry entry, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return _gameFolder is null ? Task.FromResult(false) : IsOriginalAsync(entry, SafePath.Join(_gameFolder, entry.Path), cancellationToken);
+    }
+
+    /// <summary>Whether the file at <paramref name="path"/> (a superseded backup, say) is there and holds exactly <paramref name="entry"/>'s recorded original.</summary>
+    /// <exception cref="IOException">The file cannot be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">The file cannot be opened.</exception>
+    /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
+    public static async Task<bool> IsOriginalAsync(RecordEntry entry, string path, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return entry.Original is { } original && await original.Facts.IsAtAsync(path, cancellationToken);
+    }
 
     // The backup's name is derived from the entry's path, never read from the record.
     private string? BackupOf(RecordEntry entry) =>

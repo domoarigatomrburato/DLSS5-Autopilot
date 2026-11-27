@@ -44,7 +44,7 @@ internal static class NetFailures
     /// <summary>A failure from sending a request or reading its body.</summary>
     public static NetException FromTransport(Exception failure, string host)
     {
-        if (Find<AuthenticationException>(failure) is { } refused)
+        if (ExceptionChain.Find<AuthenticationException>(failure) is { } refused)
         {
             CertificateProblem problem = _certificateTokens.FirstOrDefault(t => refused.Message.Contains(t.Token, StringComparison.Ordinal)).Problem;
             return new(NetErrorKind.Certificate, host, $"{host}: certificate refused, {problem} ({refused.Message})", failure)
@@ -85,7 +85,7 @@ internal static class NetFailures
             return NetErrorKind.BadResponse;
         }
 
-        return Find<SocketException>(failure) is { } socket && _bySocketCode.TryGetValue(socket.SocketErrorCode, out NetErrorKind kind)
+        return ExceptionChain.Find<SocketException>(failure) is { } socket && _bySocketCode.TryGetValue(socket.SocketErrorCode, out NetErrorKind kind)
             ? kind
             : FromText(failure);
     }
@@ -103,7 +103,4 @@ internal static class NetFailures
 
         return NetErrorKind.Cut;
     }
-
-    private static T? Find<T>(Exception failure)
-        where T : Exception => ExceptionChain.Of(failure).OfType<T>().FirstOrDefault();
 }

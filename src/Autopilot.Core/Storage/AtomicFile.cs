@@ -98,16 +98,24 @@ internal static partial class AtomicFile
     [GeneratedRegex(@"\A.+\.ic-[0-9]{1,10}-[0-9a-f]{8}\.tmp\z", RegexOptions.CultureInvariant)]
     private static partial Regex TemporaryPattern();
 
-    private static async Task MoveAsync(string temporary, string path, TimeProvider time, Action<string, string> move, CancellationToken cancellationToken)
+    // Windows asks for a write-through rename (MOVEFILE_WRITE_THROUGH) here; that needs a Windows API,
+    // so it lands with the Windows implementations in M7.
+    private static Task MoveAsync(string temporary, string path, TimeProvider time, Action<string, string> move, CancellationToken cancellationToken) =>
+        RetryWhileHeldAsync(() => move(temporary, path), time, cancellationToken);
+
+    /// <summary>
+    /// Runs <paramref name="change"/> (a rename, a delete), trying again 100 ms apart, up to 6 times in all,
+    /// while another program holds the file, as antivirus and indexers do for a moment. The last failure is thrown.
+    /// </summary>
+    /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
+    internal static async Task RetryWhileHeldAsync(Action change, TimeProvider time, CancellationToken cancellationToken)
     {
         for (int tried = 1; ; tried++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                // Windows asks for a write-through rename (MOVEFILE_WRITE_THROUGH) here; that needs a
-                // Windows API, so it lands with the Windows implementations in M7.
-                move(temporary, path);
+                change();
                 return;
             }
             catch (Exception held) when (tried < MoveTries && IsHeld(held))
@@ -117,8 +125,8 @@ internal static partial class AtomicFile
         }
     }
 
-    // Windows reports a replace of a file another program holds open either way.
-    private static bool IsHeld(Exception failure) =>
+    /// <summary>Whether <paramref name="failure"/> is how Windows reports a change to a file another program holds open: either way.</summary>
+    internal static bool IsHeld(Exception failure) =>
         failure is UnauthorizedAccessException || IoErrors.IsSharingViolation(failure);
 
     // A temporary file that cannot be removed is left behind rather than hiding why the write failed.

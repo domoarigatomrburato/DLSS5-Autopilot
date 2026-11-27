@@ -859,4 +859,52 @@ So: the route is real, the pieces are not fetchable yet. When either project shi
   <data name="GameStateNotSaved" xml:space="preserve">
     <value>What the tool learned about {0} could not be saved: its file cannot be written. It is kept until the tool closes.</value>
   </data>
+  <data name="InstallOpeningNothingWritten" xml:space="preserve">
+    <value>Nothing was written into the game folder.</value>
+  </data>
+  <data name="InstallOpeningRolledBack" xml:space="preserve">
+    <value>Nothing of it was left in the game folder: what it had written was taken back out, so the game runs as it did before.</value>
+  </data>
+  <data name="InstallOpeningIncomplete" xml:space="preserve">
+    <value>Part of what it wrote could not be removed - a file is in use. Close the game and press 'uninstall'.</value>
+  </data>
+  <data name="InstallBackupFailed" xml:space="preserve">
+    <value>{0} could not be backed up ({1}), so it was left as it is. Free some space on the drive, or close whatever has the file open, and install again.</value>
+  </data>
+  <data name="InstallWriteRefused" xml:space="preserve">
+    <value>Windows refused to write a file:
+{0}
+
+Almost always this means the game (or its launcher) is running and holding the file open. Close it and run the install again.</value>
+  </data>
+  <data name="InstallNotPutBack" xml:space="preserve">
+    <value>{0} could not be put back: its backup is missing or changed, or another file took its place, so it is kept as it is.</value>
+  </data>
+  <data name="InstallQuarantined" xml:space="preserve">
+    <value>{0} file(s) were written and are no longer there: {1}. Almost always this is antivirus. Restore them from its quarantine and exclude the game folder from its scans, then install again.</value>
+  </data>
+  <data name="InstallSupersededNote" xml:space="preserve">
+    <value>The game had updated {0} since it was backed up: the older original is kept beside it as {1}, which no restore touches.</value>
+  </data>
+  <data name="InstallCancelled" xml:space="preserve">
+    <value>The install was cancelled.</value>
+  </data>
+  <data name="InstallNotVerified" xml:space="preserve">
+    <value>{0} was not written: its bytes were not the verified ones, so the install stopped. Try again.</value>
+  </data>
+  <data name="InstallUnexpected" xml:space="preserve">
+    <value>The install stopped on an unexpected error: {0}</value>
+  </data>
+  <data name="InstallStepJournal" xml:space="preserve">
+    <value>Recording what will change</value>
+  </data>
+  <data name="InstallStepSetAside" xml:space="preserve">
+    <value>Setting the previous install aside</value>
+  </data>
+  <data name="InstallStepVerify" xml:space="preserve">
+    <value>Checking the files written</value>
+  </data>
+  <data name="InstallStepCommit" xml:space="preserve">
+    <value>Finishing the install</value>
+  </data>
 </root>

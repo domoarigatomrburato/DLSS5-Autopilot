@@ -91,9 +91,10 @@ them apart by file-name suffix, which misclassifies; `installer.py:2976`,
 | --- | --- |
 | path | relative to the game folder, `/` separators, spelled as on disk. Compared ignoring case and with both slashes read as separators on every host (the net spec's rule). |
 | class | `component` (a binary the tool placed; expected to stay as written) or `config` (a file its components rewrite while running: `ReShade.ini`, `ReShadePreset.ini`, `dlss5-feed.cfg`, `dlss5-bridge.cfg`, `OptiScaler.ini`, `host64/ReShade.ini`, an ASI loader's `.ini`). |
-| state | `pending` (named, maybe not yet written), `written`, `moved-aside`, `restore-failed`, `stuck` |
+| state | `pending` (named, maybe not yet written), `written`, `moved-aside`, `restore-failed`, `stuck`; while a transaction is open also `held` (a file held until commit, under its held name) and `restored` (a game original put back from its backup during the install, moved back on a rollback) |
 | written | SHA-256 and size of what the tool wrote (known before the write: the file was downloaded and verified first) |
 | original | present only when the path held a file the tool did not write: SHA-256, size, attributes and modified time of that file, and the name its backup has |
+| superseded | on a `restored` entry only: which superseded name (1 for `.invidia-claritatis-superseded`, then 2, 3, ...) an old original went to; the name itself is derived from the path, never stored |
 
 Hashes are lowercase hex SHA-256. The reference recorded no hash anywhere.
 Every written file is hashed at commit and every file is hashed again at
@@ -178,8 +179,8 @@ leaves the game folder, the registry and every config file untouched.
    registrations, the graphics preference and config edits are journaled the
    same way before they are changed (the record names the registry value and
    what it held, the config key and its original text).
-5. **Verify and commit.** Check every written file is there with its size and
-   hash (see "Quarantined files"), set state `installed`, save. Only then are
+5. **Verify and commit.** Check every file this install wrote is there with
+   its size and hash (see "Quarantined files"), set state `installed`, save. Only then are
    the files held back during a switch deleted (see "Switching routes").
 
 Progress is reported as (step index, step count, step name) and a percentage;
@@ -299,7 +300,9 @@ network request.
   original, is not trusted: a copy cut short by a crash looked like a
   finished backup to the reference ("a copy cut short is removed first, or
   the next install took it for the backup", `refw.py:77`, `mfg.py:432`,
-  `installer.py:860-866`).
+  `installer.py:860-866`). It is held like a previous route's file (see
+  "Switching routes"): out of the backup name before the real backup is
+  made, deleted at commit, back under its name on a rollback.
 - **Backup exists, file is ours:** keep the backup, write over our file.
   **Backup exists, file is not ours** (the game updated it since): the old
   backup is moved to `.invidia-claritatis-superseded`, a name no restore ever
@@ -338,7 +341,8 @@ Suffixes, all in the game's own folder, and what each means:
 | --- | --- | --- |
 | `.invidia-claritatis-backup` | the game's own file the tool replaced or removed | yes |
 | `.dlss5-off` | the game's `d3dcompiler_47.dll`, renamed so Windows' newer one loads (the neural pass compiles for `cs_5_1`; route spec) (`installer.py:318-319`) | yes, as a backup (same rules) |
-| `.invidia-claritatis-superseded` | an old original replaced by a newer one the game shipped | never; left for the person, named in the report |
+| `.invidia-claritatis-superseded` | an old original replaced by a newer one the game shipped; `.2`, `.3`, ... appended when the name is taken | never; left for the person, named in the report (a rollback puts it back as the backup) |
+| `.invidia-claritatis-held` | our file of the previous install, or an untrusted file under a backup name, held until the install commits | no; deleted at commit, renamed back on a rollback |
 | `.dlss5-dlss-original` | the DLSS page's own backup of a runtime it updated ([dlss-updates](dlss-updates.md)) | never touched by this spec |
 
 **Changed from the reference:** the `.dlss5-autopilot-orphan` suffix
@@ -444,7 +448,12 @@ first, those texts are not needed.
 Installing again with the same route (an "update", "update all", a new
 choice) replaces our files and keeps what was recorded:
 
-- Components that the install does not touch keep their entries, hashes and
+- The plan names every previous entry it keeps as it is; a previous entry
+  the plan neither places, moves aside nor keeps is held and goes at commit,
+  so a route that forgets a file removes too much rather than leaving a
+  second route loaded. A kept entry the previous record does not list is a
+  plan error, refused before any write.
+- Components that the install keeps carry their entries, hashes and
   backups. A file written the first time and merely left alone the second
   (a kept `nvngx_dlss.dll`) must stay on the record, or no uninstall could
   remove it (`installer.py:3131-3142`).
@@ -478,10 +487,13 @@ in-process and helper mode, `installer.py:271-281`) leaves nothing of X.
 - **Held until commit.** **Changed from the reference:** the reference ran
   X's whole uninstall first and irrevocably (`installer.py:3845-3861`), so a
   failure in Y's install left neither, and said "the previous X install stays
-  removed" (`:1281-1289`). Here the files of X that Y does not overwrite are
-  renamed into a recorded holding place inside the install folder, the files
-  Y overwrites are held as the replaced originals are, and all of it is
-  deleted only at commit; a rollback renames them back. The cost is
+  removed" (`:1281-1289`). Here every file of X that Y overwrites or no
+  longer places is renamed beside itself to
+  `<name>.invidia-claritatis-held` (recorded before the rename, out of
+  ReShade's reach since the name no longer ends in `.addon64`) and deleted
+  only at commit; a rollback renames them back. A game original that X had
+  replaced or moved aside, at a path Y leaves alone, returns from its
+  backup during the install, and a rollback reverses that too. The cost is
   transient disk use of the old and new files together, counted in the free
   space check.
 - **The game's own originals survive the switch.** Their backups carry over
@@ -527,8 +539,9 @@ Antivirus can remove a freshly written file: the components are unsigned,
 uncommon and heuristically flagged (`installer.py:5347-5377`; README "Is it
 safe").
 
-- At commit the install checks every `component` entry exists with the
-  recorded size and hash. Missing or changed files go in a warning: "N file(s)
+- At commit the install checks every `component` file it wrote in this run
+  exists with the recorded size and hash (files it kept from the previous
+  install are "verify"'s). Missing or changed files go in a warning: "N file(s)
   were written and are no longer there: a, b, c, d... Almost always this is
   antivirus." The warning names the first four and logs the first eight.
   **Changed from the reference:** it checked existence only and skipped

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Autopilot.Core.Graphics;
 using Autopilot.Core.Install;
 using Autopilot.Core.Tests.TestBeds;
 using Microsoft.Extensions.Logging.Testing;
@@ -23,7 +22,7 @@ internal sealed class RecordBed(params IEnumerable<TreeFile> files) : IDisposabl
     public string Files => string.Join(", ", Directory.GetFiles(Tree.Root).Select(Path.GetFileName).Order(StringComparer.Ordinal));
 
     /// <summary>The record file in <paramref name="installFolder"/>, relative to the game folder.</summary>
-    public string RecordPath(string installFolder = "") => Path.Join(Tree.PathOf(installFolder), KnownFiles.InstallRecord);
+    public string RecordPath(string installFolder = "") => InstallRecords.PathOf(Tree.PathOf(installFolder));
 
     /// <summary>Writes these bytes as the record, as a crash, a person or another tool may leave it.</summary>
     public void PlantRaw(string text, string installFolder = "") => TestFiles.Plant(RecordPath(installFolder), text);

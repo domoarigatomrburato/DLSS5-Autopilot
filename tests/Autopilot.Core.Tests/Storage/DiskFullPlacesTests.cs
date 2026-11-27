@@ -1,6 +1,8 @@
 using Autopilot.Core.Platform;
 using Autopilot.Core.Storage;
 
+using Autopilot.Core.Tests.TestBeds;
+
 namespace Autopilot.Core.Tests.Storage;
 
 /// <summary>The drives a full-drive failure names, read through a fake free-space answer per drive.</summary>
@@ -74,11 +76,4 @@ public sealed class DiskFullPlacesTests
     [DataRow(@"D:\GamesSSD\Arena", @"D:\Games", false)]
     public void A_path_is_on_a_drive_by_whole_parts_not_by_prefix(string path, string root, bool expected) =>
         Assert.AreEqual(expected, PathParts.IsAtOrBelow(root, path), "the drive choice's own comparison");
-
-    /// <summary>Answers each path by the first folder it starts with.</summary>
-    private sealed class FakeFreeSpace(params (string Folder, DriveSpace Drive)[] drives) : IFreeSpace
-    {
-        public DriveSpace DriveOf(string path) =>
-            drives.First(drive => path.StartsWith(drive.Folder, StringComparison.Ordinal)).Drive;
-    }
 }

@@ -1,6 +1,14 @@
 using Autopilot.Core.Platform;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Tests.TestBeds;
+
+/// <summary>Free space answering each path by the first folder it starts with.</summary>
+internal sealed class FakeFreeSpace(params (string Folder, DriveSpace Drive)[] drives) : IFreeSpace
+{
+    public DriveSpace DriveOf(string path) =>
+        drives.First(drive => path.StartsWith(drive.Folder, StringComparison.Ordinal)).Drive;
+}
 
 /// <summary>A process list the test fills.</summary>
 internal sealed class FakeProcesses : IProcesses

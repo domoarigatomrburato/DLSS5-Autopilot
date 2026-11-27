@@ -147,7 +147,9 @@ Tests advance a fake clock; no test sleeps to pass a window.
   says "cancelled".
 - Each job owns one cancellation source. Closing the app, the job's cancel
   button and Ctrl+C in the CLI all cancel through it.
-- `CancellationToken.None` appears only at a process's root.
+- `CancellationToken.None` appears only at a process's root, and in the
+  rollback a cancellation starts: putting the folder back is not itself
+  cancelled.
 
 ### Jobs
 

@@ -16,6 +16,12 @@ internal static class KnownFiles
     /// <summary>The game's <c>d3dcompiler_47.dll</c>, renamed so Windows' newer one loads; restored by uninstall as a backup.</summary>
     public const string DlssOffSuffix = ".dlss5-off";
 
+    /// <summary>A file of the previous install, kept beside itself until the install over it commits; no longer loaded by ReShade.</summary>
+    public const string HeldSuffix = ".invidia-claritatis-held";
+
+    /// <summary>An old original replaced by a newer one the game shipped; no restore ever touches it (a taken name gains <c>.2</c>, <c>.3</c> ...).</summary>
+    public const string SupersededSuffix = ".invidia-claritatis-superseded";
+
     public const string AgilityFolder = "D3D12";
 
     public const string AgilityCore = "D3D12Core.dll";

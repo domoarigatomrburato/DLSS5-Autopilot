@@ -39,4 +39,29 @@ public sealed class RecordJsonTests(TestContext testContext)
         Assert.AreEqual("dlss5-off", (string?)entries[2]!["original"]!["backup"]);
         Assert.AreEqual("restore-failed", (string?)entries[3]!["state"]);
     }
+
+    [TestMethod]
+    public async Task An_open_install_names_its_held_files_and_carries_the_previous_record()
+    {
+        using RecordBed bed = new();
+
+        await bed.SaveAsync(FullRecord.Value with { InstallFolder = "" }, Ct);
+        JsonObject json = bed.OnDisk();
+
+        Assert.AreEqual("held", (string?)json["entries"]![5]!["state"]);
+        Assert.AreEqual("native", (string?)json["previous"]!["route"]);
+        Assert.IsNull(json["previous"]!["previous"]);
+    }
+
+    [TestMethod]
+    public async Task An_open_install_names_the_originals_it_renamed_and_where_they_went()
+    {
+        using RecordBed bed = new();
+
+        await bed.SaveAsync(FullRecord.Value with { InstallFolder = "" }, Ct);
+        JsonObject entry = bed.OnDisk()["entries"]![6]!.AsObject();
+
+        Assert.AreEqual("restored", (string?)entry["state"]);
+        Assert.AreEqual(2, (int?)entry["superseded"]);
+    }
 }

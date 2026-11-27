@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Autopilot.Core.Graphics;
+using Autopilot.Core.Platform;
 using Microsoft.Extensions.Logging;
 
 namespace Autopilot.Core.Install;
@@ -33,14 +35,34 @@ internal static partial class RecordShape
             return null;
         }
 
-        InstallRecord kept = record with
+        // The earlier install an open one replaces is held to the same rules, and lies at or below the same game folder.
+        if (record.Previous is { } previous
+            && (previous.Previous is not null
+                || RecordPaths.GameFolderOf(folder, previous.InstallFolder) is not { } previousFolder
+                || !PathParts.IsAtOrBelow(gameFolder, previousFolder)))
         {
-            Entries = Safe(folder, logger, record.Entries, entry => entry.Path, entry => RecordPaths.Key(entry.Path)),
-            CreatedFolders = Safe(folder, logger, record.CreatedFolders, created => created, RecordPaths.Key),
-            ConfigEdits = Safe(folder, logger, record.ConfigEdits, edit => edit.File, ConfigKey),
-        };
+            return null;
+        }
+
+        InstallRecord kept = Kept(record, folder, logger) with { Previous = record.Previous is { } earlier ? Kept(earlier, folder, logger) : null };
         return new RecordedInstall(StateOf(kept.State), kept.Game.Executables) { Record = kept, GameFolder = gameFolder };
     }
+
+    private static InstallRecord Kept(InstallRecord record, string folder, ILogger logger) => record with
+    {
+        Entries = Safe(folder, logger, record.Entries, entry => entry.Path, EntryKey),
+        CreatedFolders = Safe(folder, logger, record.CreatedFolders, created => created, RecordPaths.Key),
+        ConfigEdits = Safe(folder, logger, record.ConfigEdits, edit => edit.File, ConfigKey),
+    };
+
+    // A held entry names the held file beside its path, and a restored one the original put back: neither is the
+    // entry standing for the file at the path, so each is a place of its own.
+    private static string EntryKey(RecordEntry entry) => entry.State switch
+    {
+        EntryState.Held => RecordPaths.Key(entry.Path) + KnownFiles.HeldSuffix,
+        EntryState.Restored => RecordPaths.Key(entry.Path) + "\nrestored",
+        _ => RecordPaths.Key(entry.Path),
+    };
 
     private static InstallState StateOf(RecordState state) => state switch
     {
@@ -52,9 +74,11 @@ internal static partial class RecordShape
     // A list holding null, or a record of another format, is the wrong shape: nothing in it can be trusted.
     private static bool IsWhole(InstallRecord record) =>
         record.FormatVersion == InstallRecords.Format
+        && (record.Previous is null || IsWhole(record.Previous))
         && record.Game.Executables.All(name => name is not null)
         && record.Components.Values.All(version => version is not null)
         && AllPresent(record.Entries, record.ConfigEdits, record.Registrations, record.GraphicsPreferences)
+        && record.Entries.All(entry => entry is null or { Superseded: null or >= 1 })
         && AllPresent(record.CreatedFolders, record.Notes, record.Warnings, record.Skipped);
 
     private static bool AllPresent(params IEnumerable<IEnumerable<object?>> lists) =>

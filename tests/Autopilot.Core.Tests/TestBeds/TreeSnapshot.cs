@@ -31,16 +31,21 @@ internal sealed class TreeSnapshot
         return new(files);
     }
 
-    /// <summary>What changed from this snapshot to <paramref name="after"/>; null when nothing did.</summary>
-    public string? Difference(TreeSnapshot after)
+    /// <summary>
+    /// What changed from this snapshot to <paramref name="after"/>; null when nothing did. The files of
+    /// <paramref name="rewritten"/> (a record saved back whole) may carry a new modified time.
+    /// </summary>
+    public string? Difference(TreeSnapshot after, params IReadOnlyCollection<string> rewritten)
     {
         ArgumentNullException.ThrowIfNull(after);
+        HashSet<string> timeFree = [with(StringComparer.OrdinalIgnoreCase), .. rewritten];
         string[] added = [.. after._files.Keys.Where(path => !_files.ContainsKey(path)).Order(StringComparer.OrdinalIgnoreCase)];
         string[] removed = [.. _files.Keys.Where(path => !after._files.ContainsKey(path)).Order(StringComparer.OrdinalIgnoreCase)];
         string[] changed =
         [
             .. _files
-                .Where(file => after._files.TryGetValue(file.Key, out FileFacts? facts) && facts != file.Value)
+                .Where(file => after._files.TryGetValue(file.Key, out FileFacts? facts)
+                    && (timeFree.Contains(file.Key) ? facts with { LastWriteUtc = file.Value.LastWriteUtc } : facts) != file.Value)
                 .Select(file => $"{file.Key} ({file.Value.Change(after._files[file.Key])})")
                 .Order(StringComparer.OrdinalIgnoreCase),
         ];
@@ -51,10 +56,13 @@ internal sealed class TreeSnapshot
         return parts.Count == 0 ? null : string.Join("; ", parts);
     }
 
-    /// <summary>Fails the test, listing the added, removed and changed paths, unless <paramref name="after"/> is the same tree.</summary>
-    public void AssertSame(TreeSnapshot after)
+    /// <summary>
+    /// Fails the test, listing the added, removed and changed paths, unless <paramref name="after"/> is the same
+    /// tree; the files of <paramref name="rewritten"/> may carry a new modified time.
+    /// </summary>
+    public void AssertSame(TreeSnapshot after, params IReadOnlyCollection<string> rewritten)
     {
-        if (Difference(after) is { } difference)
+        if (Difference(after, rewritten) is { } difference)
         {
             Assert.Fail("the tree changed: " + difference);
         }

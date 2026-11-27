@@ -2,6 +2,10 @@ namespace Autopilot.Core;
 
 internal static class ExceptionChain
 {
+    /// <summary>The first exception of type <typeparamref name="T"/> in <paramref name="exception"/>'s chain; null when none is.</summary>
+    public static T? Find<T>(Exception exception)
+        where T : Exception => Of(exception).OfType<T>().FirstOrDefault();
+
     /// <summary>
     /// The exception and everything it wraps, depth first: its inner exception, or every one an
     /// <see cref="AggregateException"/> holds.

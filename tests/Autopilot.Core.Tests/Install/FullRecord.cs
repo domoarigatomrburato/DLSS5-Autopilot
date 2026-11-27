@@ -8,7 +8,7 @@ using Autopilot.Core.Tests.TestBeds;
 
 namespace Autopilot.Core.Tests.Install;
 
-/// <summary>A record holding something in every part, every entry state and both backup kinds, and a check that two records say the same.</summary>
+/// <summary>A record holding something in every part, every entry state, both backup kinds and a previous install, and a check that two records say the same.</summary>
 internal static class FullRecord
 {
     private static readonly FileFacts _ours = new("6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b", 214_016);
@@ -24,6 +24,7 @@ internal static class FullRecord
         Route = RouteId.OptiScaler,
         Choices = new JsonObject { ["provider"] = "dlss", ["dials"] = new JsonObject { ["sharpness"] = 0.25, ["modes"] = new JsonArray("a", "b") } },
         Components = new Dictionary<string, string> { ["reshade"] = "6.4.1", ["optiscaler"] = "0.7.9" },
+        Previous = Recorded.Install("Binaries/Win64", Recorded.Ours("Binaries/Win64/dxgi.dll", _ours)) with { ToolVersion = "1.1.0", Route = RouteId.Native },
     });
 
     // What the install did beyond its entries, and what it said.
@@ -45,6 +46,8 @@ internal static class FullRecord
         new("Binaries/Win64/d3dcompiler_47.dll", EntryClass.Component, EntryState.MovedAside, null, Original(FileAttributes.Normal, BackupKind.Dlss5Off)),
         new("Plugins/nvngx_dlss.dll", EntryClass.Component, EntryState.RestoreFailed, _ours, Original(FileAttributes.Archive, BackupKind.Backup)),
         new("Binaries/Win64/nvngx.dll", EntryClass.Component, EntryState.Stuck, _ours, null),
+        new("Binaries/Win64/dxgi.dll", EntryClass.Component, EntryState.Held, _games, null),
+        new("Binaries/Win64/version.dll", EntryClass.Component, EntryState.Restored, null, Original(FileAttributes.Normal, BackupKind.Backup)) { Superseded = 2 },
     ];
 
     /// <summary>Checks <paramref name="actual"/> says what <paramref name="expected"/> does, part by part.</summary>
@@ -55,6 +58,11 @@ internal static class FullRecord
         Assert.IsTrue(JsonNode.DeepEquals(expected.Choices, actual.Choices), actual.Choices.ToJsonString());
         CollectionAssert.AreEquivalent(expected.Components.ToList(), actual.Components.ToList());
         SameLists(expected, actual);
+        Assert.AreEqual(expected.Previous is null, actual.Previous is null, "a previous install on one side only");
+        if (expected.Previous is { } previous)
+        {
+            AssertSame(previous, actual.Previous!);
+        }
     }
 
     private static void SameLists(InstallRecord expected, InstallRecord actual)

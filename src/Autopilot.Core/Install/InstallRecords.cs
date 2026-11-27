@@ -72,7 +72,8 @@ public sealed partial class InstallRecords(ILogger<InstallRecords> logger, TimeP
         return Task.CompletedTask;
     }
 
-    private static string PathOf(string folder) => Path.Join(folder, KnownFiles.InstallRecord);
+    /// <summary>The record file of the install folder <paramref name="folder"/>.</summary>
+    internal static string PathOf(string folder) => Path.Join(folder, KnownFiles.InstallRecord);
 
     // Read-only is cleared on a file of ours before it is replaced or deleted.
     private static void Writable(string path)

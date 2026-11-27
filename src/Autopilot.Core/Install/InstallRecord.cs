@@ -4,6 +4,7 @@ using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
 using Autopilot.Core.Library.Stores;
 using Autopilot.Core.Routes;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Install;
 
@@ -50,6 +51,15 @@ public sealed record InstallRecord(
 {
     /// <summary>The key the format version is stored under.</summary>
     internal const string VersionKey = "version";
+
+    /// <summary>
+    /// While an install over an earlier one is open (an update, a reinstall, a route switch): that earlier
+    /// install's record, whole, which a rollback saves back; null on a fresh install and once committed.
+    /// </summary>
+    public InstallRecord? Previous { get; init; }
+
+    /// <summary>The entries standing for the files at their paths: every one but the held files' and the originals put back.</summary>
+    internal IEnumerable<RecordEntry> Placed => Entries.Where(entry => entry.IsPlaced);
 }
 
 /// <summary>The game an install was made for.</summary>
@@ -65,7 +75,18 @@ public sealed record RecordedGame(IReadOnlyList<string> Executables, Bitness Bit
 /// <param name="State">Where the path stands.</param>
 /// <param name="Written">What the tool wrote there, known before the write; null when it writes nothing there (a moved-aside file).</param>
 /// <param name="Original">The file the tool found there and did not write; null when there was none.</param>
-public sealed record RecordEntry(string Path, EntryClass Class, EntryState State, FileFacts? Written, OriginalFile? Original);
+public sealed record RecordEntry(string Path, EntryClass Class, EntryState State, FileFacts? Written, OriginalFile? Original)
+{
+    /// <summary>
+    /// For a <see cref="EntryState.Restored"/> entry whose original was superseded rather than put back: which
+    /// superseded name of the path holds it, counted from 1 (<c>.invidia-claritatis-superseded</c>, then <c>.2</c> ...).
+    /// The name is derived from the path, never stored.
+    /// </summary>
+    public int? Superseded { get; init; }
+
+    /// <summary>Whether the entry stands for the file at its path: neither a held file beside it nor an original put back.</summary>
+    internal bool IsPlaced => State is not (EntryState.Held or EntryState.Restored);
+}
 
 /// <summary>Whether a file the tool placed is expected to stay as written.</summary>
 public enum EntryClass
@@ -94,12 +115,45 @@ public enum EntryState
 
     /// <summary>It could not be removed (locked).</summary>
     Stuck,
+
+    /// <summary>
+    /// A file of the previous install, renamed beside itself to <c>&lt;path&gt;.invidia-claritatis-held</c>
+    /// until the install commits (then deleted) or rolls back (then renamed back).
+    /// </summary>
+    Held,
+
+    /// <summary>
+    /// A game's original this install renamed from its backup name: back under its path, or, when
+    /// <see cref="RecordEntry.Superseded"/> is set, to a superseded name. Dropped from the record at commit;
+    /// a rollback renames it back to its backup name.
+    /// </summary>
+    Restored,
 }
 
 /// <summary>A file's content as the record knows it.</summary>
 /// <param name="Sha256">The SHA-256 of its bytes, lowercase hex.</param>
 /// <param name="Size">Its length in bytes.</param>
-public sealed record FileFacts(string Sha256, long Size);
+public sealed record FileFacts(string Sha256, long Size)
+{
+    /// <summary>The facts of the file at <paramref name="path"/>; null when no file is there.</summary>
+    /// <exception cref="IOException">The file cannot be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">The file cannot be opened.</exception>
+    /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
+    internal static async Task<FileFacts?> OfAsync(string path, CancellationToken cancellationToken)
+    {
+        FileInfo file = new(path);
+        return file.Exists ? new(await FileDigest.Sha256Async(path, cancellationToken), file.Length) : null;
+    }
+
+    /// <summary>Whether <paramref name="other"/> is the same content: same size, same hash whatever its case.</summary>
+    internal bool Matches(FileFacts? other) => other is not null && Size == other.Size && FileDigest.SameHash(Sha256, other.Sha256);
+
+    /// <summary>Whether the file at <paramref name="path"/> is there with exactly this content.</summary>
+    /// <exception cref="IOException">The file cannot be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">The file cannot be opened.</exception>
+    /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
+    internal Task<bool> IsAtAsync(string path, CancellationToken cancellationToken) => FileDigest.HoldsAsync(path, Sha256, Size, cancellationToken);
+}
 
 /// <summary>
 /// The file the tool found at a path and did not write. Its backup's name is derived from the path
@@ -118,7 +172,10 @@ public sealed record OriginalFile(FileFacts Facts, FileAttributes Attributes, Da
     public FileAttributes Attributes { get; init => field = value & Restored; } = Attributes & Restored;
 
     /// <summary>The suffix the backup's name adds to the path.</summary>
-    internal string Suffix => Backup == BackupKind.Dlss5Off ? KnownFiles.DlssOffSuffix : KnownFiles.BackupSuffix;
+    internal string Suffix => SuffixOf(Backup);
+
+    /// <summary>The suffix <paramref name="kind"/>'s backup name adds to the path.</summary>
+    internal static string SuffixOf(BackupKind kind) => kind == BackupKind.Dlss5Off ? KnownFiles.DlssOffSuffix : KnownFiles.BackupSuffix;
 }
 
 /// <summary>Which name a game's original is kept under, beside it.</summary>
