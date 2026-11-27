@@ -1,7 +1,7 @@
 namespace Autopilot.Core.Library;
 
 /// <summary>Finds and ranks the executables of a game folder: the first is the one the tool installs beside.</summary>
-public static class ExecutableCandidates
+internal static class ExecutableCandidates
 {
     // Below this a file is dropped from the answer, unless every file is.
     private const double DroppedBelow = -500;

@@ -12,4 +12,7 @@ internal static class TestFiles
     }
 
     public static void Plant(string path, string text) => Plant(path, Encoding.UTF8.GetBytes(text));
+
+    /// <summary>Puts a UTF-8 byte order mark in front of a file, as Notepad and some tools save one.</summary>
+    public static void AddByteOrderMark(string path) => File.WriteAllBytes(path, [.. Encoding.UTF8.GetPreamble(), .. File.ReadAllBytes(path)]);
 }

@@ -14,12 +14,12 @@ public sealed class EmulatorSource(IRegistry registry, IDrives drives, HostFolde
 
     public async Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
     {
-        FoundGames found = new();
-        foreach (string root in await new EmulatorRoots(registry, drives, folders).ListAsync(cancellationToken))
+        FoundGames found = new(GameSource.Emulator);
+        foreach (EmulatorRoot root in await new EmulatorRoots(registry, drives, folders).ListAsync(cancellationToken))
         {
-            foreach (string executable in EmulatorWalk.Executables(root, cancellationToken))
+            foreach (string executable in EmulatorWalk.Executables(root.Folder, cancellationToken))
             {
-                if (EmulatorProfiles.For(executable, GameSource.Emulator) is { } profile)
+                if (EmulatorProfiles.For(executable, genericNamesCount: root.Dedicated) is { } profile)
                 {
                     found.Add(new(profile.Title, Path.GetDirectoryName(executable)!, GameSource.Emulator, executable));
                 }

@@ -16,7 +16,7 @@ public sealed class XboxSource(IDrives drives) : IGameSource
 
     public async Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
     {
-        FoundGames found = new();
+        FoundGames found = new(GameSource.Xbox);
         foreach (string container in Containers())
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -36,7 +36,7 @@ public sealed class XboxSource(IDrives drives) : IGameSource
 
     private IEnumerable<string> Containers() =>
         drives.List()
-            .Where(drive => drive.Kind is DriveKind.Fixed or DriveKind.Removable)
+            .Where(drive => drive.IsLocal)
             .SelectMany(drive => new[] { Path.Join(drive.Root, "XboxGames"), Path.Join(drive.Root, "Program Files", "ModifiableWindowsApps") })
             .SelectMany(DrivePaths.Subfolders);
 }

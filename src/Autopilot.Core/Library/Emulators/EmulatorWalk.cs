@@ -29,29 +29,45 @@ internal static class EmulatorWalk
             foreach (string folder in level.TakeWhile(_ => listed++ < FolderCap))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                foreach (string executable in List(folder, Directory.EnumerateFiles, "*.exe"))
+                (List<string> executables, List<string> subfolders) = List(folder);
+                foreach (string executable in executables)
                 {
                     yield return executable;
                 }
 
-                below.AddRange(depth < Depth ? List(folder, Directory.EnumerateDirectories, "*").Where(sub => !Path.GetFileName(sub).StartsWith('.', StringComparison.Ordinal)) : []);
+                below.AddRange(depth < Depth ? subfolders.Where(sub => !Path.GetFileName(sub).StartsWith('.', StringComparison.Ordinal)) : []);
             }
 
             level = below;
         }
     }
 
-    private static List<string> List(string folder, Func<string, string, EnumerationOptions, IEnumerable<string>> enumerate, string pattern)
+    // One listing per folder: its .exe files and its subfolders, each sorted by name.
+    private static (List<string> Executables, List<string> Subfolders) List(string folder)
     {
+        List<string> executables = [];
+        List<string> subfolders = [];
         try
         {
-            List<string> entries = [.. enumerate(folder, pattern, _listing)];
-            entries.Sort(StringComparer.OrdinalIgnoreCase);
-            return entries;
+            foreach (FileSystemInfo entry in new DirectoryInfo(folder).EnumerateFileSystemInfos("*", _listing))
+            {
+                if (entry is DirectoryInfo)
+                {
+                    subfolders.Add(Path.Join(folder, entry.Name));
+                }
+                else if (entry.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    executables.Add(Path.Join(folder, entry.Name));
+                }
+            }
         }
         catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
-            return [];
+            return ([], []);
         }
+
+        executables.Sort(StringComparer.OrdinalIgnoreCase);
+        subfolders.Sort(StringComparer.OrdinalIgnoreCase);
+        return (executables, subfolders);
     }
 }

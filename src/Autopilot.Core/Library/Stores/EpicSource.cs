@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Autopilot.Core.Platform;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Library.Stores;
 
@@ -23,7 +24,7 @@ public sealed class EpicSource(HostFolders folders) : IGameSource
         List<EpicManifest> manifests = await ManifestsAsync(Path.Join(epic, "EpicGamesLauncher", "Data", "Manifests"), cancellationToken);
         Dictionary<string, string> launcherList = await LauncherInstalledAsync(Path.Join(epic, "UnrealEngineLauncher", "LauncherInstalled.dat"), cancellationToken);
 
-        FoundGames found = new();
+        FoundGames found = new(GameSource.Epic);
         foreach ((EpicManifest manifest, string? folder) in manifests
             .Select(manifest => (manifest, folder: Location(manifest, launcherList)))
             .Where(pair => pair.folder is not null)
@@ -66,15 +67,14 @@ public sealed class EpicSource(HostFolders folders) : IGameSource
     {
         Dictionary<string, string> locations = [with(StringComparer.OrdinalIgnoreCase)];
         using JsonDocument? list = await StoreFiles.ReadJsonAsync(path, cancellationToken);
-        if (list is null || list.RootElement.ValueKind != JsonValueKind.Object
-            || !list.RootElement.TryGetProperty("InstallationList", out JsonElement apps) || apps.ValueKind != JsonValueKind.Array)
+        if (list is null)
         {
             return locations;
         }
 
-        foreach (JsonElement app in apps.EnumerateArray())
+        foreach (JsonElement app in UntrustedJson.Array(list.RootElement, "InstallationList"))
         {
-            if (StoreFiles.Text(app, "AppName") is { Length: > 0 } name && StoreFiles.Text(app, "InstallLocation") is { } location)
+            if (UntrustedJson.Text(app, "AppName") is { Length: > 0 } name && UntrustedJson.Text(app, "InstallLocation") is { } location)
             {
                 _ = locations.TryAdd(name, location);
             }

@@ -14,7 +14,7 @@ internal static class EmulatorApi
     /// </summary>
     public static (GraphicsApi Api, string Explanation) Automatic(ApiDecision detected, EmulatorProfile? emulator) =>
         emulator is { Fallback: { } fallback } && IsDirect3D(detected.Api)
-            ? (fallback, Texts.Format("EmulatorApiFallback", emulator.Name, ExecutableFacts.ApiName(detected.Api)))
+            ? (fallback, Texts.Format("EmulatorApiFallback", emulator.Name, ApiNames.Of(detected.Api)))
             : (detected.Api, detected.Explanation);
 
     private static bool IsDirect3D(GraphicsApi api) => api is GraphicsApi.DX8 or GraphicsApi.DX9 or GraphicsApi.DX10 or GraphicsApi.DX11 or GraphicsApi.DX12 or GraphicsApi.Dxgi;

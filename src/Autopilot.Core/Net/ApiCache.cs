@@ -39,7 +39,7 @@ internal sealed partial class ApiCache(string cacheRoot, ILogger logger)
     {
         try
         {
-            await WriteAsync(url, entry, cancellationToken);
+            await AtomicFile.WriteAsync(PathFor(url), (file, token) => JsonSerializer.SerializeAsync(file, entry, _json, token), cancellationToken);
         }
         catch (Exception failure) when (failure is IOException or UnauthorizedAccessException)
         {
@@ -50,9 +50,6 @@ internal sealed partial class ApiCache(string cacheRoot, ILogger logger)
             }
         }
     }
-
-    private async Task WriteAsync(Uri url, CachedText entry, CancellationToken cancellationToken) =>
-        await AtomicFile.WriteAsync(PathFor(url), async (file, token) => await JsonSerializer.SerializeAsync(file, entry, _json, token), cancellationToken);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The answer from {Host} for {Path} could not be kept in the cache ({Reason})")]
     private static partial void LogNotKept(ILogger logger, string host, string path, string reason);

@@ -98,7 +98,7 @@ public sealed class EmulatorSearchTests(TestContext testContext) : IDisposable
     public async Task The_usual_emulator_folders_on_the_system_drive_are_searched(string folder)
     {
         DriveRoot system = SystemDrive();
-        _ = _bed.WriteFile($"C/{folder}/Sets/Dolphin/Dolphin.exe");
+        _ = _bed.WriteFile($"C/{folder}/Sets/Dolphin/DolphinQt.exe");
 
         StoreBed.AssertNames(await FindAsync(_bed.Folders with { ProgramFiles = _bed.PathOf("C/Program Files") }, system), "Dolphin (GameCube / Wii)");
     }
@@ -150,6 +150,44 @@ public sealed class EmulatorSearchTests(TestContext testContext) : IDisposable
         _ = _bed.Registry.Set(RegistryRoot.CurrentUser, RegistryView.Registry64, @"Software\Valve\Steam", "SteamPath", Path.GetDirectoryName(Path.GetDirectoryName(steam))!);
 
         StoreBed.AssertNames(await FindAsync(), "RetroArch (multi-system)", "DuckStation (PlayStation 1)");
+    }
+
+    [TestMethod]
+    public async Task A_generic_name_in_a_steam_library_is_a_game_not_an_emulator()
+    {
+        string steam = _bed.Folder("Steam/steamapps/common");
+        _ = _bed.WriteFile("Steam/steamapps/common/Foo/bin/Play.exe");
+        _ = _bed.Registry.Set(RegistryRoot.CurrentUser, RegistryView.Registry64, @"Software\Valve\Steam", "SteamPath", Path.GetDirectoryName(Path.GetDirectoryName(steam))!);
+
+        Assert.IsEmpty(await FindAsync());
+    }
+
+    [TestMethod]
+    public async Task A_generic_name_counts_in_an_emulators_folder()
+    {
+        DriveRoot drive = _bed.Drive("D");
+        _ = _bed.WriteFile("D/Emulators/Play/Play.exe");
+
+        StoreBed.AssertNames(await FindAsync(drive), "Play! (PlayStation 2)");
+    }
+
+    [TestMethod]
+    public async Task In_a_games_folder_only_a_distinctive_name_counts()
+    {
+        DriveRoot drive = _bed.Drive("D");
+        _ = _bed.WriteFile("D/Games/Dolphin/Dolphin.exe");
+        _ = _bed.WriteFile("D/Games/DuckStation/duckstation-qt-x64.exe");
+
+        StoreBed.AssertNames(await FindAsync(drive), "DuckStation (PlayStation 1)");
+    }
+
+    [TestMethod]
+    public async Task A_folder_searched_both_as_an_emulators_folder_and_as_a_personal_one_counts_as_an_emulators_folder()
+    {
+        DriveRoot drive = _bed.Drive("D");
+        _ = _bed.WriteFile("D/Emulators/Play/Play.exe");
+
+        StoreBed.AssertNames(await FindAsync(_noFolders with { Documents = _bed.PathOf("D/Emulators") }, drive), "Play! (PlayStation 2)");
     }
 
     [TestMethod]

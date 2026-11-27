@@ -40,8 +40,8 @@ internal sealed record SteamManifest(string InstallDir, string? Name, bool Fully
             return null;
         }
 
-        string? name = NonEmpty(ValveText.Text(state, "name"))
-            ?? (ValveText.Child(state, "UserConfig") is { IsCollection: true } user ? NonEmpty(ValveText.Text(user, "name")) : null);
+        string? name = StoreFiles.NonEmpty(ValveText.Text(state, "name"))
+            ?? (ValveText.Child(state, "UserConfig") is { IsCollection: true } user ? StoreFiles.NonEmpty(ValveText.Text(user, "name")) : null);
         string? appId = ValveText.Text(state, "appid");
         return new(installDir, name, IsFullyInstalled(ValveText.Text(state, "StateFlags")), IsSteamTool(appId, name));
     }
@@ -53,6 +53,4 @@ internal sealed record SteamManifest(string InstallDir, string? Name, bool Fully
     private static bool IsSteamTool(string? appId, string? name) =>
         _toolIds.Contains(appId, StringComparer.Ordinal)
         || (name is not null && _toolPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)));
-
-    private static string? NonEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

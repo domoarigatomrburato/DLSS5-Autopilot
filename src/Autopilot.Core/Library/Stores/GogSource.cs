@@ -15,7 +15,7 @@ public sealed partial class GogSource(IRegistry registry) : IGameSource
 
     public async Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
     {
-        FoundGames found = new();
+        FoundGames found = new(GameSource.Gog);
         foreach (UninstallEntry entry in UninstallEntry.ReadAll(registry))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -45,16 +45,14 @@ public sealed partial class GogSource(IRegistry registry) : IGameSource
             return null;
         }
 
-        string name = GameName(id) ?? NonEmpty(entry.DisplayName) ?? NonEmpty(info?.Name) ?? StoreFiles.FolderName(folder);
+        string name = GameName(id) ?? StoreFiles.NonEmpty(entry.DisplayName) ?? StoreFiles.NonEmpty(info?.Name) ?? StoreFiles.FolderName(folder);
         return new(name, folder, GameSource.Gog, StoreFiles.ExistingExecutable(folder, info?.PrimaryExecutable));
     }
 
     // GOG Galaxy's own name for the game, from either registry view.
     private string? GameName(string id) =>
-        NonEmpty(registry.ReadString(RegistryRoot.LocalMachine, RegistryView.Registry32, $@"{GamesKey}\{id}", "gameName"))
-        ?? NonEmpty(registry.ReadString(RegistryRoot.LocalMachine, RegistryView.Registry64, $@"{GamesKey}\{id}", "gameName"));
-
-    private static string? NonEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        StoreFiles.NonEmpty(registry.ReadString(RegistryRoot.LocalMachine, RegistryView.Registry32, $@"{GamesKey}\{id}", "gameName"))
+        ?? StoreFiles.NonEmpty(registry.ReadString(RegistryRoot.LocalMachine, RegistryView.Registry64, $@"{GamesKey}\{id}", "gameName"));
 
     [GeneratedRegex(@"^(?<id>\d+)_is1$", RegexOptions.CultureInvariant)]
     private static partial Regex GogKey();

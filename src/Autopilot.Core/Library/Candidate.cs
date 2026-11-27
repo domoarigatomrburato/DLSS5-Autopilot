@@ -1,3 +1,5 @@
+using Autopilot.Core.Platform;
+
 namespace Autopilot.Core.Library;
 
 /// <summary>One executable found below a game folder, with the score it is ranked by.</summary>
@@ -44,7 +46,7 @@ internal sealed class Candidate
         {
             return null;
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             length = 0;
         }

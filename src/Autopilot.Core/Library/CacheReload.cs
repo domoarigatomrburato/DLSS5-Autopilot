@@ -48,22 +48,9 @@ internal sealed class CacheReload(GameReading reading, TimeProvider clock)
     // no longer holds an executable; any other game as its source listed it.
     private async Task<GameEntry?> ReadAgainAsync(GameEntry entry, CancellationToken cancellationToken)
     {
-        long started = clock.GetTimestamp();
-        GameRead? read = entry.Source == GameSource.Manual
+        GameRead? read = await TimedRead.RunAsync(clock, _notes, async () => entry.Source == GameSource.Manual
             ? await ManualGames.ReadFolderAsync(entry.Folder, reading, cancellationToken)
-            : await GameReader.ReadAsync(GameReader.Listing(entry), reading, cancellationToken);
-        if (read is null)
-        {
-            return null;
-        }
-
-        _notes.AddRange(read.Notes);
-        TimeSpan took = clock.GetElapsedTime(started);
-        if (took >= Scanner.SlowReading)
-        {
-            _notes.Add(new SlowRead(read.Entry.Name, took));
-        }
-
-        return read.Entry;
+            : await GameReader.ReadAsync(GameReader.Listing(entry), reading, cancellationToken));
+        return read?.Entry;
     }
 }

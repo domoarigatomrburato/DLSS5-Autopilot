@@ -1,7 +1,7 @@
 namespace Autopilot.Core.Executables;
 
 /// <summary>Why a file could not be read as a Windows executable.</summary>
-public enum PeFailure
+internal enum PeFailure
 {
     /// <summary>The file does not start with <c>MZ</c>, or is shorter than a DOS header.</summary>
     NotExecutable,

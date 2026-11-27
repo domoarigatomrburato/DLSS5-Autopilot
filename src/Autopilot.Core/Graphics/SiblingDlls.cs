@@ -10,14 +10,14 @@ namespace Autopilot.Core.Graphics;
 internal static class SiblingDlls
 {
     /// <summary>Sibling DLLs whose import tables are read at most, by name.</summary>
-    public const int MaxSiblings = 60;
+    private const int MaxSiblings = 60;
 
     /// <summary>The largest sibling DLLs whose strings are read.</summary>
-    public const int MaxSiblingStrings = 6;
+    private const int MaxSiblingStrings = 6;
 
-    public const long MinStringSibling = 512 * 1024;
+    private const long MinStringSibling = 512 * 1024;
 
-    public const long MaxStringSibling = 64 * 1024 * 1024;
+    private const long MaxStringSibling = 64 * 1024 * 1024;
 
     /// <summary>Renderer names in the siblings' import tables, then in the strings of the largest, in the order seen.</summary>
     public static async Task<List<NameFinding>> FindAsync(GameFolder game, CancellationToken cancellationToken)

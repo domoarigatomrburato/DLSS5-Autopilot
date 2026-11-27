@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Collections.Frozen;
 using System.Text;
+using Autopilot.Core.Platform;
 
 namespace Autopilot.Core.Graphics;
 
@@ -11,7 +12,7 @@ namespace Autopilot.Core.Graphics;
 internal static class NameSearch
 {
     /// <summary>A file larger than this is not searched.</summary>
-    public const long MaxFileSize = 512L * 1024 * 1024;
+    private const long MaxFileSize = 512L * 1024 * 1024;
 
     private const int BlockSize = 4 * 1024 * 1024;
 
@@ -39,7 +40,7 @@ internal static class NameSearch
                 await SearchAsync(file, found, cancellationToken);
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             return [];
         }

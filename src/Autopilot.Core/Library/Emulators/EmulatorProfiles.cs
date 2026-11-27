@@ -45,7 +45,14 @@ internal static class EmulatorProfiles
     /// The profile of the executable at <paramref name="path"/>, by its file name in any case. A name
     /// other programs use too counts only for an entry the emulator search found or the person added.
     /// </summary>
-    public static EmulatorProfile? For(string path, GameSource source)
+    public static EmulatorProfile? For(string path, GameSource source) =>
+        For(path, genericNamesCount: source is GameSource.Emulator or GameSource.Manual);
+
+    /// <summary>
+    /// The profile of the executable at <paramref name="path"/>, by its file name in any case; a name
+    /// other programs use too counts only with <paramref name="genericNamesCount"/>.
+    /// </summary>
+    public static EmulatorProfile? For(string path, bool genericNamesCount)
     {
         string name = Path.GetFileName(path.Replace('\\', '/'));
         if (!_byExecutable.TryGetValue(name, out EmulatorProfile? profile))
@@ -53,6 +60,6 @@ internal static class EmulatorProfiles
             return null;
         }
 
-        return !_generic.Contains(name) || source is GameSource.Emulator or GameSource.Manual ? profile : null;
+        return genericNamesCount || !_generic.Contains(name) ? profile : null;
     }
 }

@@ -17,14 +17,11 @@ public sealed class AmazonSource(IDrives drives, HostFolders folders) : IGameSou
         List<(string? Title, string Folder)>? installed = amazon is null
             ? null
             : await AmazonInstallDatabase.ReadAsync(Path.Join(amazon, "Data", "Games", "Sql", "GameInstallInfo.sqlite"), cancellationToken);
-        FoundGames found = new();
+        FoundGames found = new(GameSource.Amazon);
         foreach ((string? title, string folder) in installed ?? LibraryFolders(amazon))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (DrivePaths.IsDirectory(folder))
-            {
-                found.Add(new(string.IsNullOrWhiteSpace(title) ? StoreFiles.FolderName(folder) : title.Trim(), folder, GameSource.Amazon, null));
-            }
+            found.Add(title, folder);
         }
 
         return found.Games;
@@ -33,7 +30,7 @@ public sealed class AmazonSource(IDrives drives, HostFolders folders) : IGameSou
     private List<(string? Title, string Folder)> LibraryFolders(string? amazon)
     {
         IEnumerable<string> libraries = drives.List()
-            .Where(drive => drive.Kind is DriveKind.Fixed or DriveKind.Removable)
+            .Where(drive => drive.IsLocal)
             .Select(drive => Path.Join(drive.Root, "Amazon Games", "Library"));
         if (amazon is not null)
         {

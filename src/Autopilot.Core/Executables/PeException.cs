@@ -6,7 +6,7 @@ namespace Autopilot.Core.Executables;
 /// A file that is not a Windows executable this tool can read, with the reason. Unlike an
 /// executable that simply imports nothing of interest, this is an error with a stated cause.
 /// </summary>
-public sealed class PeException : IOException
+internal sealed class PeException : IOException
 {
     // ARM64 and ARM64EC are named because a person can act on the name; other machines are a number.
     private const ushort Arm64 = 0xAA64;

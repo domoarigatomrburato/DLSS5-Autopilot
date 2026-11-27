@@ -40,6 +40,45 @@ public sealed class AtomicFileTests(TestContext testContext) : IDisposable
         Assert.HasCount(1, Directory.GetFiles(Path.GetDirectoryName(Target)!));
     }
 
+    [TestMethod]
+    public async Task A_cancelled_write_says_it_was_cancelled_even_when_its_temporary_file_cannot_be_removed()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Windows has no Unix file modes to keep the temporary file in place with");
+            return;
+        }
+
+        if (Environment.IsPrivilegedProcess)
+        {
+            Assert.Inconclusive("a privileged process deletes anything");
+        }
+
+        await WriteAsync("old");
+        string folder = Path.GetDirectoryName(Target)!;
+        using CancellationTokenSource cancel = new();
+        try
+        {
+            _ = await Assert.ThrowsAsync<OperationCanceledException>(() => AtomicFile.WriteAsync(Target, async (file, token) =>
+            {
+                await file.WriteAsync("half"u8.ToArray(), token);
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(folder, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                }
+
+                await cancel.CancelAsync();
+                token.ThrowIfCancellationRequested();
+            }, cancel.Token));
+        }
+        finally
+        {
+            File.SetUnixFileMode(folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        Assert.AreEqual("old", await File.ReadAllTextAsync(Target, Ct));
+    }
+
     private async Task WriteAsync(string text) =>
         await AtomicFile.WriteAsync(Target, async (file, token) => await file.WriteAsync(Encoding.UTF8.GetBytes(text), token), Ct);
 }

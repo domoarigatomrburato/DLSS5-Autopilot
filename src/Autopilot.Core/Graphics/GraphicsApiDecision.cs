@@ -8,17 +8,12 @@ namespace Autopilot.Core.Graphics;
 /// it, and says why in words that name the evidence. Nothing is executed or loaded; files are read
 /// as bytes, and a bad file beside the executable is no evidence rather than an error.
 /// </summary>
-public static class GraphicsApiDecision
+internal static class GraphicsApiDecision
 {
-    private const string D3d12 = "d3d12.dll";
-    private const string D3d11 = "d3d11.dll";
-
-    private static readonly string[] _d3d10 = ["d3d10.dll", "d3d10_1.dll", "d3d10core.dll"];
-
     // The static table's ranking, the d3d10 family in d3d10's place.
     private static readonly (string Name, GraphicsApi Api)[] _delayRanking =
     [
-        .. KnownFiles.Renderers.SelectMany(renderer => renderer.Api == GraphicsApi.DX10 ? _d3d10.Select(name => (name, renderer.Api)) : [renderer]),
+        .. KnownFiles.Renderers.SelectMany(renderer => renderer.Api == GraphicsApi.DX10 ? KnownFiles.D3d10Family.Select(name => (name, renderer.Api)) : [renderer]),
     ];
 
     /// <summary>
@@ -45,22 +40,22 @@ public static class GraphicsApiDecision
     private static async Task<ApiDecision> DecideAsync(GameFolder game, CancellationToken cancellationToken)
     {
         IReadOnlySet<string> imports = game.Imports;
-        if (imports.Contains(D3d12))
+        if (imports.Contains(KnownFiles.D3d12))
         {
-            return Static(GraphicsApi.DX12, "ApiStaticImport", D3d12);
+            return Static(GraphicsApi.DX12, "ApiStaticImport", KnownFiles.D3d12);
         }
 
-        if (imports.Contains(D3d11))
+        if (imports.Contains(KnownFiles.D3d11))
         {
             return await D3d11Async(game, cancellationToken);
         }
 
-        if (_d3d10.FirstOrDefault(imports.Contains) is { } d3d10)
+        if (KnownFiles.D3d10Family.FirstOrDefault(imports.Contains) is { } d3d10)
         {
             return Static(GraphicsApi.DX10, "ApiStaticImport", d3d10);
         }
 
-        if (imports.Contains("dxgi.dll"))
+        if (imports.Contains(KnownFiles.Dxgi))
         {
             return new ApiDecision(GraphicsApi.Dxgi, ApiReason.StaticImport, Texts.Text("ApiStaticDxgi"));
         }
@@ -81,30 +76,30 @@ public static class GraphicsApiDecision
             return new ApiDecision(GraphicsApi.DX12, ApiReason.UnrealPlugin, Texts.Format("ApiUnrealPlugin", plugin, runtime));
         }
 
-        return Static(GraphicsApi.DX11, "ApiStaticImport", D3d11);
+        return Static(GraphicsApi.DX11, "ApiStaticImport", KnownFiles.D3d11);
     }
 
     private static async Task<ApiDecision> WithoutDxgiAsync(GameFolder game, CancellationToken cancellationToken)
     {
         IReadOnlySet<string> imports = game.Imports;
-        if (imports.Contains("vulkan-1.dll"))
+        if (imports.Contains(KnownFiles.Vulkan))
         {
-            return Static(GraphicsApi.Vulkan, "ApiStaticNoDxgi", "vulkan-1.dll");
+            return Static(GraphicsApi.Vulkan, "ApiStaticNoDxgi", KnownFiles.Vulkan);
         }
 
-        if (imports.Contains("opengl32.dll"))
+        if (imports.Contains(KnownFiles.OpenGL))
         {
-            return await EngineRules.DecideAsync(game, cancellationToken) ?? Static(GraphicsApi.OpenGL, "ApiStaticNoDxgi", "opengl32.dll");
+            return await EngineRules.DecideAsync(game, cancellationToken) ?? Static(GraphicsApi.OpenGL, "ApiStaticNoDxgi", KnownFiles.OpenGL);
         }
 
-        if (imports.Contains("d3d9.dll"))
+        if (imports.Contains(KnownFiles.D3d9))
         {
             return await D3d9Sequence.DecideAsync(game, cancellationToken);
         }
 
-        if (imports.Contains("d3d8.dll"))
+        if (imports.Contains(KnownFiles.D3d8))
         {
-            return Static(GraphicsApi.DX8, "ApiStaticNoDxgi", "d3d8.dll");
+            return Static(GraphicsApi.DX8, "ApiStaticNoDxgi", KnownFiles.D3d8);
         }
 
         return await NoImportAsync(game, cancellationToken);

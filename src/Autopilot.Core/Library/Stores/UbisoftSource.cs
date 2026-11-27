@@ -17,15 +17,11 @@ public sealed class UbisoftSource(IRegistry registry) : IGameSource
         RegistryView view = registry.SubKeyNames(RegistryRoot.LocalMachine, RegistryView.Registry32, InstallsKey).Count > 0
             ? RegistryView.Registry32
             : RegistryView.Registry64;
-        FoundGames found = new();
+        FoundGames found = new(GameSource.Ubisoft);
         foreach (string id in registry.SubKeyNames(RegistryRoot.LocalMachine, view, InstallsKey))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            string? folder = registry.ReadString(RegistryRoot.LocalMachine, view, $@"{InstallsKey}\{id}", "InstallDir");
-            if (DrivePaths.IsDirectory(folder))
-            {
-                found.Add(new(StoreFiles.FolderName(folder!), folder!, GameSource.Ubisoft, null));
-            }
+            found.Add(null, registry.ReadString(RegistryRoot.LocalMachine, view, $@"{InstallsKey}\{id}", "InstallDir"));
         }
 
         return Task.FromResult(found.Games);

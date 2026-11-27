@@ -1,3 +1,5 @@
+using Autopilot.Core.Platform;
+
 namespace Autopilot.Core.Library;
 
 /// <summary>
@@ -20,7 +22,7 @@ internal static class SourceLayout
         {
             return Directory.EnumerateDirectories(folder).Any(game => File.Exists(Path.Join(game, "gameinfo.txt")));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             return false;
         }

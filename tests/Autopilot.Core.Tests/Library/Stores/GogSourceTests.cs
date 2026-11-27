@@ -103,6 +103,17 @@ public sealed class GogSourceTests(TestContext testContext) : IDisposable
     }
 
     [TestMethod]
+    public async Task An_info_file_saved_with_a_byte_order_mark_is_read()
+    {
+        string folder = _bed.Game("GOG Games/Marked", "marked.exe");
+        Installed("7", folder, null);
+        Info(folder, "7", new { name = "Marked Info", playTasks = new[] { new { isPrimary = true, type = "FileTask", path = "marked.exe" } } });
+        TestFiles.AddByteOrderMark(Path.Join(folder, "goggame-7.info"));
+
+        Assert.AreEqual(new StoreGame("Marked Info", folder, GameSource.Gog, Path.Join(folder, "marked.exe")), (await FindAsync()).Single());
+    }
+
+    [TestMethod]
     public void The_source_says_it_is_gog() => Assert.AreEqual(GameSource.Gog, new GogSource(_bed.Registry).Source);
 
     private Task<StoreGame[]> FindAsync() => StoreBed.FindAsync(new GogSource(_bed.Registry), Ct);

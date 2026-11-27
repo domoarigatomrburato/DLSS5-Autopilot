@@ -1,4 +1,5 @@
 using Autopilot.Core.Library.Stores;
+using Autopilot.Core.Platform;
 
 namespace Autopilot.Core.Library;
 
@@ -8,18 +9,16 @@ internal static class SourceListing
     public static async Task<IReadOnlyList<StoreGame>> ListAsync(
         IReadOnlyList<IGameSource> sources, IProgress<ScanProgress>? progress, List<LibraryNote> notes, CancellationToken cancellationToken)
     {
-        FoundGames found = new();
+        ResolvedPathSet folders = new();
+        List<StoreGame> games = [];
         foreach (IGameSource source in sources)
         {
             cancellationToken.ThrowIfCancellationRequested();
             progress?.Report(new ScanningSource(source.Source));
-            foreach (StoreGame game in await FindAsync(source, notes, cancellationToken))
-            {
-                found.Add(game);
-            }
+            games.AddRange((await FindAsync(source, notes, cancellationToken)).Where(game => folders.Add(game.Folder)));
         }
 
-        return found.Games;
+        return games;
     }
 
     // One store failing must not take the others down, nor go unsaid.

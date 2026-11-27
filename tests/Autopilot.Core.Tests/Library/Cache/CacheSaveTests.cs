@@ -46,6 +46,17 @@ public sealed class CacheSaveTests(TestContext testContext) : IDisposable
     }
 
     [TestMethod]
+    public async Task The_saved_file_holds_the_library_and_no_checks_of_its_own()
+    {
+        _ = _bed.Game("Arena");
+        _ = await _bed.SaveAsync(Ct, await _bed.ReadAsync("Arena", Ct));
+
+        string saved = await File.ReadAllTextAsync(_bed.CachePath, Ct);
+
+        Assert.DoesNotContain("isWellFormed", saved);
+    }
+
+    [TestMethod]
     public async Task A_save_that_worked_has_nothing_to_say()
     {
         _ = _bed.Game("Arena");

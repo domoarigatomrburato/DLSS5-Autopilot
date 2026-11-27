@@ -29,6 +29,17 @@ public sealed class ExecutableChoiceTests(TestContext testContext) : IDisposable
     }
 
     [TestMethod]
+    public async Task A_library_under_a_folder_named_Binaries_does_not_make_the_stub_look_like_the_real_executable()
+    {
+        _ = _bed.Exe("Binaries/Ghostwire Tokyo/GWT.exe");
+        string real = _bed.Exe("Binaries/Ghostwire Tokyo/Snowfall/Binaries/Win64/GWT.exe", megabytes: 120);
+
+        GameRead read = await _bed.ReadWithNotesAsync(_bed.Game("Ghostwire: Tokyo", "Binaries/Ghostwire Tokyo", GameSource.Epic, "Binaries/Ghostwire Tokyo/GWT.exe"), Ct);
+
+        Assert.AreEqual(real, read.Entry.Executable);
+    }
+
+    [TestMethod]
     public async Task A_store_pick_stands_when_the_ranking_finds_nothing_under_a_Binaries_folder()
     {
         string store = _bed.Exe("Game/Play.exe");

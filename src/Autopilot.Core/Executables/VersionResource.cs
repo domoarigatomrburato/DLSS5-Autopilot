@@ -10,10 +10,10 @@ namespace Autopilot.Core.Executables;
 internal static class VersionResource
 {
     /// <summary>Entries read at most from one resource directory.</summary>
-    public const int MaxEntries = 4096;
+    private const int MaxEntries = 4096;
 
     /// <summary>Bytes of the <c>VS_VERSIONINFO</c> block read: its header, key and fixed block fit well within.</summary>
-    public const int MaxBlockBytes = 1024;
+    private const int MaxBlockBytes = 1024;
 
     private const uint VersionType = 16;
     private const uint HighBit = 0x8000_0000;

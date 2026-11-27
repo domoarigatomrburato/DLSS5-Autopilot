@@ -157,6 +157,16 @@ public sealed class EpicSourceTests(TestContext testContext) : IDisposable
     }
 
     [TestMethod]
+    public async Task A_manifest_saved_with_a_byte_order_mark_is_read()
+    {
+        string folder = _bed.Folder("Epic Games/Marked");
+        Item("marked", folder, ("DisplayName", "Marked"));
+        TestFiles.AddByteOrderMark(_bed.PathOf($"{Manifests}/marked.item"));
+
+        StoreBed.AssertNames(await FindAsync(), "Marked");
+    }
+
+    [TestMethod]
     public async Task An_oversize_manifest_is_not_read()
     {
         string folder = _bed.Folder("Epic Games/Big");

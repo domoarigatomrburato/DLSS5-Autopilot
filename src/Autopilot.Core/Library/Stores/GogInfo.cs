@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Library.Stores;
 
@@ -18,25 +19,20 @@ internal sealed record GogInfo(bool IsGame, string? Name, string? PrimaryExecuta
         }
 
         JsonElement root = info.RootElement;
-        string? rootGame = StoreFiles.Text(root, "rootGameId");
+        string? rootGame = UntrustedJson.Text(root, "rootGameId");
         JsonElement? primary = PrimaryTask(root);
         bool isGame = primary is not null && (string.IsNullOrEmpty(rootGame) || rootGame == id);
-        string? executable = primary is { } task && string.Equals(StoreFiles.Text(task, "type"), "FileTask", StringComparison.OrdinalIgnoreCase)
-            ? StoreFiles.Text(task, "path")
+        string? executable = primary is { } task && string.Equals(UntrustedJson.Text(task, "type"), "FileTask", StringComparison.OrdinalIgnoreCase)
+            ? UntrustedJson.Text(task, "path")
             : null;
-        return new(isGame, StoreFiles.Text(root, "name"), executable);
+        return new(isGame, UntrustedJson.Text(root, "name"), executable);
     }
 
     private static JsonElement? PrimaryTask(JsonElement root)
     {
-        if (!root.TryGetProperty("playTasks", out JsonElement tasks) || tasks.ValueKind != JsonValueKind.Array)
+        foreach (JsonElement task in UntrustedJson.Array(root, "playTasks"))
         {
-            return null;
-        }
-
-        foreach (JsonElement task in tasks.EnumerateArray())
-        {
-            if (StoreFiles.Flag(task, "isPrimary") == true)
+            if (UntrustedJson.Flag(task, "isPrimary") == true)
             {
                 return task;
             }

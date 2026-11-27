@@ -55,7 +55,7 @@ internal sealed class GameFolder
         string folder = Path.GetDirectoryName(full) ?? "";
         var files = FolderListing.Files(folder, cancellationToken)
             .ToFrozenDictionary(path => Path.GetFileName(path), path => path, StringComparer.OrdinalIgnoreCase);
-        FrozenSet<string> written = await InstallRecord.WrittenAsync(folder, cancellationToken);
+        FrozenSet<string> written = files.ContainsKey(KnownFiles.InstallRecord) ? await InstallRecord.WrittenAsync(folder, cancellationToken) : [];
         return new GameFolder(full, reading, search, files, written);
     }
 

@@ -18,7 +18,7 @@ public sealed class SteamSource(IRegistry registry, HostFolders folders) : IGame
             return [];
         }
 
-        FoundGames found = new();
+        FoundGames found = new(GameSource.Steam);
         foreach (string library in await SteamLibraries.ListAsync(root, cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();

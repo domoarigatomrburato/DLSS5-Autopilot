@@ -7,10 +7,10 @@ namespace Autopilot.Core.Executables;
 internal static class AgilityExports
 {
     /// <summary>Export names walked at most; an executable exports far fewer.</summary>
-    public const int MaxNames = 65_536;
+    private const int MaxNames = 65_536;
 
     /// <summary>A path's bytes read at most, terminator included, as Windows' MAX_PATH.</summary>
-    public const int MaxPathBytes = 260;
+    private const int MaxPathBytes = 260;
 
     private const int NamesPerRead = 1024;
     private const int ExportDirectorySize = 40;

@@ -74,5 +74,5 @@ public static class LibraryCache
     private static bool IsUsable([NotNullWhen(true)] CacheFile? file, CacheKey key) =>
         file is not null
         && file.Schema == Schema && file.ToolVersion == key.ToolVersion && file.GpuSm == key.GpuSm
-        && file.Games.Count > 0 && file.IsWellFormed;
+        && file.Games.Count > 0 && file.IsWellFormed();
 }

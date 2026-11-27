@@ -11,22 +11,8 @@ public sealed partial class BattleNetSource(IRegistry registry) : IGameSource
 {
     public GameSource Source => GameSource.BattleNet;
 
-    public Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
-    {
-        FoundGames found = new();
-        foreach (UninstallEntry entry in UninstallEntry.ReadAll(registry))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (IsGame(entry) && DrivePaths.IsDirectory(entry.InstallLocation))
-            {
-                string folder = entry.InstallLocation!;
-                string name = string.IsNullOrWhiteSpace(entry.DisplayName) ? StoreFiles.FolderName(folder) : entry.DisplayName.Trim();
-                found.Add(new(name, folder, GameSource.BattleNet, null));
-            }
-        }
-
-        return Task.FromResult(found.Games);
-    }
+    public Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken) =>
+        UninstallEntry.GamesAsync(registry, IsGame, GameSource.BattleNet, cancellationToken);
 
     private static bool IsGame(UninstallEntry entry)
     {

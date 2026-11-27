@@ -6,7 +6,7 @@ namespace Autopilot.Core.Executables;
 /// Reads what a Windows executable or DLL says about itself, as bytes on every host: nothing is
 /// loaded or run, and only bounded ranges of the file are read.
 /// </summary>
-public static class Executable
+internal static class Executable
 {
     private const string AgilityCore = "D3D12Core.dll";
 
@@ -17,7 +17,7 @@ public static class Executable
     /// <exception cref="PeException">The file is not an x86 or x64 executable, or cannot be read.</exception>
     public static async Task<ExecutableReading> ReadAsync(string path, CancellationToken cancellationToken)
     {
-        using PeImage? image = await OpenUnlessProtectedAsync(path, cancellationToken);
+        using PeImage? image = await OpenAsync(path, protectedAsNull: true, cancellationToken);
         if (image is null)
         {
             return new ProtectedExecutable();
@@ -35,7 +35,7 @@ public static class Executable
     /// <exception cref="PeException">The file is not an x86 or x64 executable, or cannot be read.</exception>
     public static async Task<string> FileVersionAsync(string path, CancellationToken cancellationToken)
     {
-        using PeImage image = await OpenAsync(path, cancellationToken);
+        using PeImage image = (await OpenAsync(path, protectedAsNull: false, cancellationToken))!;
         return await VersionResource.ReadAsync(image, cancellationToken);
     }
 
@@ -43,7 +43,7 @@ public static class Executable
     /// <exception cref="PeException">The file is not an x86 or x64 executable, or cannot be read.</exception>
     public static async Task<AgilityRequest?> AgilityRequestAsync(string path, CancellationToken cancellationToken)
     {
-        using PeImage image = await OpenAsync(path, cancellationToken);
+        using PeImage image = (await OpenAsync(path, protectedAsNull: false, cancellationToken))!;
         return await AgilityExports.ReadAsync(image, cancellationToken);
     }
 
@@ -69,28 +69,17 @@ public static class Executable
         return system < request.Version ? new AgilityUnmet(executablePath, request.Version, request.Path, system.Value) : null;
     }
 
-    // Null when the file is listed but Windows refuses its content: a protected executable.
-    private static async Task<PeImage?> OpenUnlessProtectedAsync(string path, CancellationToken cancellationToken)
+    // With protectedAsNull, null when the file is listed but Windows refuses its content: a protected
+    // executable. Any other refusal is a PeException.
+    private static async Task<PeImage?> OpenAsync(string path, bool protectedAsNull, CancellationToken cancellationToken)
     {
         try
         {
             return await PeImage.OpenAsync(path, cancellationToken);
         }
-        catch (UnauthorizedAccessException) when (File.Exists(path))
+        catch (UnauthorizedAccessException) when (protectedAsNull && File.Exists(path))
         {
             return null;
-        }
-        catch (UnauthorizedAccessException e)
-        {
-            throw new PeException(PeFailure.Unreadable, path, e);
-        }
-    }
-
-    private static async Task<PeImage> OpenAsync(string path, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await PeImage.OpenAsync(path, cancellationToken);
         }
         catch (UnauthorizedAccessException e)
         {
@@ -115,15 +104,9 @@ public static class Executable
 
     private static async Task<uint?> SystemVersionAsync(string systemFolder, CancellationToken cancellationToken)
     {
-        string core = Path.Join(systemFolder, AgilityCore);
-        if (!File.Exists(core))
-        {
-            return null;
-        }
-
         try
         {
-            return (await AgilityRequestAsync(core, cancellationToken))?.Version;
+            return (await AgilityRequestAsync(Path.Join(systemFolder, AgilityCore), cancellationToken))?.Version;
         }
         catch (PeException)
         {

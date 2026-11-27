@@ -14,7 +14,7 @@ internal static class QuickScan
     /// </summary>
     public static async Task<List<GameEntry>> KeptAsync(IReadOnlyList<GameEntry> known, IReadOnlyList<StoreGame> listed, IInstallRecords records, CancellationToken cancellationToken)
     {
-        HashSet<string> seen = Folders(listed.Select(game => game.Folder));
+        ResolvedPathSet seen = new(listed.Select(game => game.Folder));
         List<GameEntry> kept = [];
         foreach (GameEntry game in known)
         {
@@ -30,12 +30,12 @@ internal static class QuickScan
     /// <summary>The listed games whose folder no known game has.</summary>
     public static IEnumerable<StoreGame> NotSeenBefore(IReadOnlyList<GameEntry> known, IReadOnlyList<StoreGame> listed)
     {
-        HashSet<string> have = Folders(known.Select(game => game.Folder));
-        return listed.Where(game => !have.Contains(ResolvedPath.Of(game.Folder)));
+        ResolvedPathSet have = new(known.Select(game => game.Folder));
+        return listed.Where(game => !have.Contains(game.Folder));
     }
 
-    private static bool StillWanted(GameEntry game, HashSet<string> seen) =>
-        game.Source is GameSource.Emulator or GameSource.Manual || game.Install is not null || seen.Contains(ResolvedPath.Of(game.Folder));
+    private static bool StillWanted(GameEntry game, ResolvedPathSet seen) =>
+        game.Source is GameSource.Emulator or GameSource.Manual || game.Install is not null || seen.Contains(game.Folder);
 
     // An install made since the game was read is not in its entry; the folders are asked again.
     private static async Task<bool> HoldsRecordAsync(GameEntry game, IInstallRecords records, CancellationToken cancellationToken)
@@ -51,6 +51,4 @@ internal static class QuickScan
 
         return false;
     }
-
-    private static HashSet<string> Folders(IEnumerable<string> folders) => [with(StringComparer.OrdinalIgnoreCase), .. folders.Select(ResolvedPath.Of)];
 }

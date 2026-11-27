@@ -6,4 +6,4 @@ namespace Autopilot.Core.Executables;
 /// executable's folder; it is empty when the path export is missing or unreadable, which the
 /// D3D12 loader treats as the executable's own folder.
 /// </summary>
-public sealed record AgilityRequest(uint Version, string Path);
+internal sealed record AgilityRequest(uint Version, string Path);

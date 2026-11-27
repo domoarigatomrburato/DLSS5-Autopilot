@@ -53,6 +53,9 @@ public sealed class GameNameTests
         Assert.AreEqual(expected, GameNames.DisplayNameFor(executable));
 
     [TestMethod]
-    public void An_executable_with_no_folder_has_no_name() =>
-        Assert.AreEqual("", GameNames.DisplayNameFor("game.exe"));
+    [DataRow("game.exe", "game")]
+    [DataRow(@"D:\Tetris.exe", "Tetris")]
+    [DataRow("/Tetris.exe", "Tetris")]
+    public void An_executable_with_no_folder_is_named_after_itself(string executable, string expected) =>
+        Assert.AreEqual(expected, GameNames.DisplayNameFor(executable));
 }

@@ -11,7 +11,7 @@ namespace Autopilot.Core.Executables;
 /// <param name="Requested">The SDK version the executable asks for.</param>
 /// <param name="Path">The path the executable exports, as exported.</param>
 /// <param name="SystemVersion">The SDK version of Windows' own <c>D3D12Core.dll</c>.</param>
-public sealed record AgilityUnmet(string Executable, uint Requested, string Path, uint SystemVersion)
+internal sealed record AgilityUnmet(string Executable, uint Requested, string Path, uint SystemVersion)
 {
     /// <summary>The verdict in words: the executable, the version it asks for, its path, and what Windows has.</summary>
     public string Explain() =>

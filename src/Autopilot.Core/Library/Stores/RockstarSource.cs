@@ -14,22 +14,8 @@ public sealed partial class RockstarSource(IRegistry registry) : IGameSource
 
     public GameSource Source => GameSource.Rockstar;
 
-    public Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
-    {
-        FoundGames found = new();
-        foreach (UninstallEntry entry in UninstallEntry.ReadAll(registry))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (IsGame(entry) && DrivePaths.IsDirectory(entry.InstallLocation))
-            {
-                string folder = entry.InstallLocation!;
-                string name = string.IsNullOrWhiteSpace(entry.DisplayName) ? StoreFiles.FolderName(folder) : entry.DisplayName.Trim();
-                found.Add(new(name, folder, GameSource.Rockstar, null));
-            }
-        }
-
-        return Task.FromResult(found.Games);
-    }
+    public Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken) =>
+        UninstallEntry.GamesAsync(registry, IsGame, GameSource.Rockstar, cancellationToken);
 
     private static bool IsGame(UninstallEntry entry) =>
         entry.UninstallString is not null

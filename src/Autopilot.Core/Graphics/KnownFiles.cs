@@ -24,6 +24,25 @@ internal static class KnownFiles
 
     public const string UnityPlayer = "UnityPlayer.dll";
 
+    public const string D3d12 = "d3d12.dll";
+
+    public const string D3d11 = "d3d11.dll";
+
+    public const string D3d10 = "d3d10.dll";
+
+    public const string Dxgi = "dxgi.dll";
+
+    public const string Vulkan = "vulkan-1.dll";
+
+    public const string OpenGL = "opengl32.dll";
+
+    public const string D3d9 = "d3d9.dll";
+
+    public const string D3d8 = "d3d8.dll";
+
+    /// <summary>Direct3D 10's DLLs, any of which a Direct3D 10 game may load.</summary>
+    public static readonly IReadOnlyList<string> D3d10Family = [D3d10, "d3d10_1.dll", "d3d10core.dll"];
+
     /// <summary>The game's own NGX runtimes, in the order they are named as evidence.</summary>
     public static readonly IReadOnlyList<string> NgxRuntimes = [Dlss, FrameGeneration, RayReconstruction];
 
@@ -33,18 +52,18 @@ internal static class KnownFiles
     /// <summary>Renderer DLL names a game loads, ranked: a Direct3D name outranks OpenGL and Vulkan.</summary>
     public static readonly IReadOnlyList<(string Name, GraphicsApi Api)> Renderers =
     [
-        ("d3d12.dll", GraphicsApi.DX12),
-        ("d3d11.dll", GraphicsApi.DX11),
-        ("d3d10.dll", GraphicsApi.DX10),
-        ("dxgi.dll", GraphicsApi.Dxgi),
-        ("vulkan-1.dll", GraphicsApi.Vulkan),
-        ("opengl32.dll", GraphicsApi.OpenGL),
-        ("d3d9.dll", GraphicsApi.DX9),
-        ("d3d8.dll", GraphicsApi.DX8),
+        (D3d12, GraphicsApi.DX12),
+        (D3d11, GraphicsApi.DX11),
+        (D3d10, GraphicsApi.DX10),
+        (Dxgi, GraphicsApi.Dxgi),
+        (Vulkan, GraphicsApi.Vulkan),
+        (OpenGL, GraphicsApi.OpenGL),
+        (D3d9, GraphicsApi.DX9),
+        (D3d8, GraphicsApi.DX8),
     ];
 
     /// <summary>Names engines that can drive several backends carry without drawing with them.</summary>
-    public static readonly FrozenSet<string> Ambiguous = Set("opengl32.dll", "vulkan-1.dll");
+    public static readonly FrozenSet<string> Ambiguous = Set(OpenGL, Vulkan);
 
     /// <summary>The add-ons this tool installs.</summary>
     public static readonly FrozenSet<string> OurAddons = Set(

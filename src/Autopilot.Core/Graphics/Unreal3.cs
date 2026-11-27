@@ -11,13 +11,13 @@ namespace Autopilot.Core.Graphics;
 internal static class Unreal3
 {
     /// <summary>Entries listed at most per folder: the root, each project, <c>My Games</c>.</summary>
-    public const int MaxEntries = 60;
+    private const int MaxEntries = 60;
 
     /// <summary>Ini files read at most per config folder.</summary>
-    public const int MaxIniFiles = 10;
+    private const int MaxIniFiles = 10;
 
     /// <summary>Characters of each ini file looked at.</summary>
-    public const int MaxCharacters = 400_000;
+    private const int MaxCharacters = 400_000;
 
     private const string Key = "AllowD3D11";
 

@@ -12,7 +12,7 @@ public sealed class RegistryStoreTests(TestContext testContext) : IDisposable
 
     public void Dispose() => _bed.Dispose();
 
-    private Task<StoreGame[]> FindEaAsync(HostFolders folders) => StoreBed.FindAsync(new EaSource(_bed.Registry, folders), Ct);
+    private Task<StoreGame[]> FindEaAsync(HostFolders folders) => StoreBed.FindAsync(new EaSource(_bed.Registry, folders, new FixedIdentity(null)), Ct);
 
     [TestMethod]
     public async Task Ea_games_come_from_both_registry_views_and_the_ea_games_folders_named_after_the_folder()
@@ -148,7 +148,7 @@ public sealed class RegistryStoreTests(TestContext testContext) : IDisposable
     [TestMethod]
     public void Each_registry_source_says_which_store_it_reads()
     {
-        Assert.AreEqual(GameSource.Ea, new EaSource(_bed.Registry, _bed.Folders).Source);
+        Assert.AreEqual(GameSource.Ea, new EaSource(_bed.Registry, _bed.Folders, new FixedIdentity(null)).Source);
         Assert.AreEqual(GameSource.Ubisoft, new UbisoftSource(_bed.Registry).Source);
         Assert.AreEqual(GameSource.BattleNet, new BattleNetSource(_bed.Registry).Source);
         Assert.AreEqual(GameSource.Rockstar, new RockstarSource(_bed.Registry).Source);

@@ -3,7 +3,7 @@ using System.Collections.Frozen;
 namespace Autopilot.Core.Library;
 
 /// <summary>What a game added by hand is called.</summary>
-public static class GameNames
+internal static class GameNames
 {
     private static readonly FrozenSet<string> _generic = new[]
     {
@@ -14,7 +14,8 @@ public static class GameNames
     /// The nearest folder name going up from the executable's folder that says something about the
     /// game: <c>D:\Games\World War Z\bin\WWZ.exe</c> is "World War Z" and
     /// <c>Ghostwire\Snowfall\Binaries\Win64\GWT.exe</c> is "Snowfall". When every folder is generic
-    /// it is the executable's own. Both kinds of separator count, so a Windows path reads the same on
+    /// it is the executable's own folder; with no folder at all (<c>D:\Tetris.exe</c>), the executable's
+    /// name without <c>.exe</c>. Both kinds of separator count, so a Windows path reads the same on
     /// every host.
     /// </summary>
     public static string DisplayNameFor(string executablePath)
@@ -28,7 +29,7 @@ public static class GameNames
             }
         }
 
-        return folders.Length > 0 ? folders[^1] : "";
+        return folders.Length > 0 ? folders[^1] : Path.GetFileNameWithoutExtension(executablePath.Replace('\\', '/'));
     }
 
     // The folders from the root down to the executable's own, without a drive ("D:").

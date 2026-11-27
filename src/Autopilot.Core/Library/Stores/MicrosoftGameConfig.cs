@@ -1,18 +1,12 @@
 using System.Xml;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Library.Stores;
 
 /// <summary>Reads the executable a GDK game declares in its <c>MicrosoftGame.config</c>, as untrusted XML.</summary>
 internal static class MicrosoftGameConfig
 {
-    private static readonly XmlReaderSettings _settings = new()
-    {
-        Async = true,
-        DtdProcessing = DtdProcessing.Prohibit,
-        XmlResolver = null,
-        IgnoreComments = true,
-        MaxCharactersInDocument = StoreFiles.MaxBytes,
-    };
+    private static readonly XmlReaderSettings _settings = UntrustedXml.Settings(StoreFiles.MaxBytes, async: true);
 
     /// <summary>
     /// The <c>ExecutableList</c> entry for <c>PC</c>, else the first, as a full path below the game

@@ -21,7 +21,7 @@ public sealed class FolderSource(IDrives drives) : IGameSource
 
     public Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
     {
-        FoundGames found = new();
+        FoundGames found = new(GameSource.Folder);
         foreach (string folder in Candidates())
         {
             cancellationToken.ThrowIfCancellationRequested();

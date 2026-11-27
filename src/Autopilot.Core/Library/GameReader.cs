@@ -6,13 +6,13 @@ using Autopilot.Core.Resources;
 namespace Autopilot.Core.Library;
 
 /// <summary>Reads one game: which executable it is, its architecture and graphics API, and what was installed.</summary>
-public static class GameReader
+internal static class GameReader
 {
     /// <summary>
     /// Reads the game a source found, in library.md's order: the executable and its candidates, the
     /// ranking over a store's stub and an earlier install's folder (unless the person picked the
     /// executable), the executable's tables, the graphics API, the API the person chose, and the
-    /// emulator the executable is (a game added by hand is then named after it). A folder with no
+    /// emulator the executable is. A folder with no
     /// executable, or one that cannot be read, gives an entry with the reason. The folders are listed
     /// on the calling thread, so call it from a background thread.
     /// </summary>
@@ -60,10 +60,6 @@ public static class GameReader
         return await ExecutableFacts.ReadAsync(WithEmulator(entry, executable), executable, choices, context.ApiSearch, cancellationToken);
     }
 
-    // Attached before the executable is read, so the API the emulator really draws with is decided in
-    // one go; a game added by hand that is an emulator is named after it.
-    private static GameEntry WithEmulator(GameEntry entry, string executable) =>
-        EmulatorProfiles.For(executable, entry.Source) is { } emulator
-            ? entry with { Emulator = emulator, Name = entry.Source == GameSource.Manual ? emulator.Title : entry.Name }
-            : entry;
+    // Attached before the executable is read, so the API the emulator really draws with is decided in one go.
+    private static GameEntry WithEmulator(GameEntry entry, string executable) => entry with { Emulator = EmulatorProfiles.For(executable, entry.Source) };
 }

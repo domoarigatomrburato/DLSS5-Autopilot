@@ -1,4 +1,4 @@
-namespace Autopilot.Core.Library.Stores;
+namespace Autopilot.Core.Platform;
 
 /// <summary>A folder's path after its junctions and symbolic links, so one folder reached two ways is one folder.</summary>
 internal static class ResolvedPath
@@ -34,7 +34,7 @@ internal static class ResolvedPath
         {
             return new DirectoryInfo(path).LinkTarget is { } target ? Path.GetFullPath(target, Path.GetDirectoryName(path)!) : null;
         }
-        catch (Exception e) when (Platform.DrivePaths.IsNotThere(e))
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             return null;
         }

@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Autopilot.Core.Library.Stores;
 using Autopilot.Core.Platform;
@@ -82,6 +83,15 @@ public sealed class EaDesktopTests(TestContext testContext) : IDisposable
     }
 
     [TestMethod]
+    public async Task An_install_file_whose_text_starts_with_a_byte_order_mark_is_read()
+    {
+        byte[] json = Encoding.UTF8.GetBytes(Body(Installed("1", "titanfall-2", _bed.Folder("E/Titanfall2"))));
+        TestFiles.Plant(_bed.PathOf(EaDesktopFile.RelativePath), EaDesktopFile.Encrypt([0xEF, 0xBB, 0xBF, .. json]));
+
+        StoreBed.AssertNames(await FindAsync(), "Titanfall2");
+    }
+
+    [TestMethod]
     public async Task A_hardware_string_is_built_from_every_value_in_order()
     {
         HardwareIdentity swapped = EaDesktopFile.Machine with { ProcessorId = EaDesktopFile.Machine.ProcessorName, ProcessorName = EaDesktopFile.Machine.ProcessorId };
@@ -136,7 +146,6 @@ public sealed class EaDesktopTests(TestContext testContext) : IDisposable
         Plant(Installed("1", "titanfall-2", _bed.Folder("E/Titanfall2")));
 
         StoreBed.AssertNames(await StoreBed.FindAsync(new EaSource(_bed.Registry, _bed.Folders, new FixedIdentity(null)), Ct), "Mass Effect");
-        StoreBed.AssertNames(await StoreBed.FindAsync(new EaSource(_bed.Registry, _bed.Folders), Ct), "Mass Effect");
     }
 
     [TestMethod]
@@ -190,9 +199,4 @@ public sealed class EaDesktopTests(TestContext testContext) : IDisposable
         ["installCheck"] = @"[HKEY_LOCAL_MACHINE\SOFTWARE\Respawn\Titanfall2\Install Dir]__Installer\installerdata.xml",
         ["softwareId"] = softwareId,
     };
-
-    private sealed class FixedIdentity(HardwareIdentity? identity) : IHardwareIdentity
-    {
-        public Task<HardwareIdentity?> ReadAsync(CancellationToken cancellationToken) => Task.FromResult(identity);
-    }
 }

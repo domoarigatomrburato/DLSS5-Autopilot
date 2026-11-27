@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Library.Stores;
 
@@ -13,21 +14,21 @@ internal sealed record EpicManifest(string AppName, string? DisplayName, string?
             return null;
         }
 
-        string appName = StoreFiles.Text(item, "AppName") ?? "";
-        string? main = StoreFiles.Text(item, "MainGameAppName");
+        string appName = UntrustedJson.Text(item, "AppName") ?? "";
+        string? main = UntrustedJson.Text(item, "MainGameAppName");
         return new(
             appName,
-            StoreFiles.Text(item, "DisplayName"),
-            StoreFiles.Text(item, "InstallLocation"),
-            StoreFiles.Text(item, "LaunchExecutable"),
+            UntrustedJson.Text(item, "DisplayName"),
+            UntrustedJson.Text(item, "InstallLocation"),
+            UntrustedJson.Text(item, "LaunchExecutable"),
             appName.Length > 0 && string.Equals(appName, main, StringComparison.OrdinalIgnoreCase));
     }
 
     // Older manifests carry none of the flags, and stay.
     private static bool IsGame(JsonElement item) =>
-        StoreFiles.Flag(item, "bIsApplication") != false
-        && StoreFiles.Flag(item, "bIsExecutable") != false
-        && StoreFiles.Flag(item, "bIsIncompleteInstall") != true
+        UntrustedJson.Flag(item, "bIsApplication") != false
+        && UntrustedJson.Flag(item, "bIsExecutable") != false
+        && UntrustedJson.Flag(item, "bIsIncompleteInstall") != true
         && !IsAddOn(item)
         && !IsEnginePlugin(item);
 
@@ -41,10 +42,8 @@ internal sealed record EpicManifest(string AppName, string? DisplayName, string?
     private static bool IsEnginePlugin(JsonElement item) =>
         Strings(item, "AppCategories").Any(category => category.Equals("plugins", StringComparison.OrdinalIgnoreCase) || category.Equals("plugins/engine", StringComparison.OrdinalIgnoreCase))
         || Strings(item, "CompatibleApps").Any(app => app.StartsWith("UE_", StringComparison.OrdinalIgnoreCase))
-        || (StoreFiles.Text(item, "TechnicalType")?.Contains("plugins/engine", StringComparison.OrdinalIgnoreCase) ?? false);
+        || (UntrustedJson.Text(item, "TechnicalType")?.Contains("plugins/engine", StringComparison.OrdinalIgnoreCase) ?? false);
 
     private static List<string> Strings(JsonElement item, string name) =>
-        item.TryGetProperty(name, out JsonElement array) && array.ValueKind == JsonValueKind.Array
-            ? [.. array.EnumerateArray().Where(entry => entry.ValueKind == JsonValueKind.String).Select(entry => entry.GetString()!)]
-            : [];
+        [.. UntrustedJson.Array(item, name).Where(entry => entry.ValueKind == JsonValueKind.String).Select(entry => entry.GetString()!)];
 }

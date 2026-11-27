@@ -510,7 +510,12 @@ opengl32.dll and is the least reliable."
   - Settled (M2h): a profile's executable name gives the profile from any
     source, except the generic names `Play.exe`, `Dolphin.exe`, `Cemu.exe`
     and `xenia.exe`, which give it only to an entry found by the emulator
-    search or added by hand. The registry roots match an uninstall
+    search or added by hand, and within the search only in a folder kept for
+    emulators (an emulator's own install folder, or the drive folders
+    `Emulators`, `Emulator`, `Emu`, `RetroArch`, `PS2`, `PS1`, `Emulation`,
+    `Roms`, `EmuDeck`, `Emulators_Portable`, `LaunchBox`): in `Games`, `Apps`,
+    a Steam library or the host folders a game's `bin\Play.exe` is no
+    emulator. The registry roots match an uninstall
     `DisplayName` against each profile's executable stems and names as
     whole words. "The drive root except `C:`" is every drive root except
     the one holding Program Files; no root is searched when that is

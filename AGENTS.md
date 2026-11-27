@@ -61,6 +61,9 @@ MSTest on Microsoft.Testing.Platform; run one project with
 
 - Tests describe what the tool does for the user, at a project's public seam,
   not how the code is arranged.
+- A step with no public seam of its own (the PE reader, the graphics API
+  decision, the executable ranking) is tested as an internal through
+  `InternalsVisibleTo`; nothing is made public for tests.
 - Coverage counts our own code: `coverage.config` leaves out sources
   generated under `obj/`.
 - Every test has 5 seconds by default (`tests/testconfig.json`); raise it on

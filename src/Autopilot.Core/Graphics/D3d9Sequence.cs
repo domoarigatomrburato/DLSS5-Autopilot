@@ -34,12 +34,12 @@ internal static class D3d9Sequence
             return modern;
         }
 
-        return new ApiDecision(GraphicsApi.DX9, ApiReason.StaticImport, Texts.Format("ApiStaticNoDxgi", "d3d9.dll"));
+        return new ApiDecision(GraphicsApi.DX9, ApiReason.StaticImport, Texts.Format("ApiStaticNoDxgi", KnownFiles.D3d9));
     }
 
     private static ApiDecision? DelayLoaded(GameFolder game)
     {
-        foreach ((string name, GraphicsApi api, string words) in new[] { ("d3d12.dll", GraphicsApi.DX12, Direct3D12), ("d3d11.dll", GraphicsApi.DX11, Direct3D11) })
+        foreach ((string name, GraphicsApi api, string words) in new[] { (KnownFiles.D3d12, GraphicsApi.DX12, Direct3D12), (KnownFiles.D3d11, GraphicsApi.DX11, Direct3D11) })
         {
             if (game.DelayImports.Contains(name))
             {

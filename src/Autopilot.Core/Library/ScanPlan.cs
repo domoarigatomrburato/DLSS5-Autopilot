@@ -27,10 +27,10 @@ internal sealed record ScanPlan(IReadOnlyList<GameEntry> Kept, IReadOnlyList<Sto
     // word, since the saved list is a file people edit.
     private static IEnumerable<string> Remembered(IReadOnlyList<string> folders, IReadOnlyList<StoreGame> listed)
     {
-        HashSet<string> present = [with(StringComparer.OrdinalIgnoreCase), .. listed.Select(game => ResolvedPath.Of(game.Folder))];
+        ResolvedPathSet present = new(listed.Select(game => game.Folder));
         return folders
             .Where(DrivePaths.IsDirectory)
             .Select(Path.TrimEndingDirectorySeparator)
-            .Where(folder => present.Add(ResolvedPath.Of(folder)));
+            .Where(present.Add);
     }
 }

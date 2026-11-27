@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using System.Text.Json;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Graphics;
 
@@ -7,42 +8,20 @@ namespace Autopilot.Core.Graphics;
 internal static class InstallRecord
 {
     /// <summary>A record larger than this is not one of ours.</summary>
-    public const int MaxBytes = 1024 * 1024;
+    private const int MaxBytes = 1024 * 1024;
 
     /// <summary>The names under <c>files</c>, by file name; empty for a missing, oversize or malformed record.</summary>
     public static async Task<FrozenSet<string>> WrittenAsync(string folder, CancellationToken cancellationToken)
     {
-        string path = Path.Join(folder, KnownFiles.InstallRecord);
-        try
-        {
-            FileInfo file = new(path);
-            if (!file.Exists || file.Length > MaxBytes)
-            {
-                return [];
-            }
-
-            byte[] bytes = await File.ReadAllBytesAsync(path, cancellationToken);
-            using var record = JsonDocument.Parse(bytes);
-            return Names(record.RootElement);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
-        {
-            return [];
-        }
+        using JsonDocument? record = await UntrustedJson.ReadAsync(Path.Join(folder, KnownFiles.InstallRecord), MaxBytes, cancellationToken);
+        return record is null ? [] : Names(record.RootElement);
     }
 
-    private static FrozenSet<string> Names(JsonElement root)
-    {
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("files", out JsonElement files) || files.ValueKind != JsonValueKind.Array)
-        {
-            return [];
-        }
-
-        return files.EnumerateArray()
+    private static FrozenSet<string> Names(JsonElement root) =>
+        UntrustedJson.Array(root, "files")
             .Where(file => file.ValueKind == JsonValueKind.String)
             .Select(file => FileName(file.GetString()!))
             .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
-    }
 
     // Recorded as relative paths with either kind of slash; compared by file name.
     private static string FileName(string recorded) => recorded[(recorded.LastIndexOfAny(['/', '\\']) + 1)..];

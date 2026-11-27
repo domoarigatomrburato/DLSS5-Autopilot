@@ -1,4 +1,5 @@
 using System.Text;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Graphics;
 
@@ -12,30 +13,15 @@ internal sealed record IniEntry(string Section, string Key, string Value);
 internal static class IniFile
 {
     /// <summary>A larger file is not read.</summary>
-    public const int MaxBytes = 4 * 1024 * 1024;
+    private const int MaxBytes = 4 * 1024 * 1024;
 
     private const int NulProbe = 256;
 
     private static readonly string[] _lineEnds = ["\r\n", "\r", "\n"];
 
     /// <summary>The file's text, or null when it is missing, too large or unreadable.</summary>
-    public static async Task<string?> ReadAsync(string path, CancellationToken cancellationToken)
-    {
-        try
-        {
-            FileInfo file = new(path);
-            if (!file.Exists || file.Length > MaxBytes)
-            {
-                return null;
-            }
-
-            return Decode(await File.ReadAllBytesAsync(path, cancellationToken));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
-    }
+    public static async Task<string?> ReadAsync(string path, CancellationToken cancellationToken) =>
+        await BoundedFile.ReadAsync(path, MaxBytes, cancellationToken) is { } bytes ? Decode(bytes) : null;
 
     /// <summary>The entries in file order; section and key names are compared ignoring case by the caller.</summary>
     public static IEnumerable<IniEntry> Entries(string text)

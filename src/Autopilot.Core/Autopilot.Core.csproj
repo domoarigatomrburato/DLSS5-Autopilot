@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The library cache's full-drive test fills the drive through an internal overload. -->
+    <!-- Steps with no public seam of their own (the PE reader, the graphics API decision, the executable ranking) are tested as internals, as is the overload the library cache's full-drive test fills the drive through; nothing is made public for tests. -->
     <InternalsVisibleTo Include="Autopilot.Core.Tests" />
   </ItemGroup>
 

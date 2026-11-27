@@ -7,10 +7,10 @@ namespace Autopilot.Core.Executables;
 internal static class ImportTables
 {
     /// <summary>Descriptors read at most, so a table with no terminator ends.</summary>
-    public const int MaxDescriptors = 1024;
+    private const int MaxDescriptors = 1024;
 
     /// <summary>A DLL name is a short string; the bytes read for one, terminator included.</summary>
-    public const int MaxNameBytes = 256;
+    private const int MaxNameBytes = 256;
 
     private static readonly Layout _static = new(DataDirectory.Import, DescriptorSize: 20, NameOffset: 12, NeedsRvaFlag: false);
 

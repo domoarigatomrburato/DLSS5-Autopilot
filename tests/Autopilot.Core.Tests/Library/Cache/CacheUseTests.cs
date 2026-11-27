@@ -38,6 +38,17 @@ public sealed class CacheUseTests(TestContext testContext) : IDisposable
     }
 
     [TestMethod]
+    public async Task A_library_saved_with_a_byte_order_mark_is_used()
+    {
+        _ = _bed.Game("Arena");
+        GameEntry saved = await _bed.ReadAsync("Arena", Ct);
+        _ = await _bed.SaveAsync(Ct, saved);
+        TestFiles.AddByteOrderMark(_bed.CachePath);
+
+        CacheBed.AssertSameLibrary([saved], (await _bed.LoadedAsync(Ct)).Games);
+    }
+
+    [TestMethod]
     [DataRow("2.0.1", 89, DisplayName = "another tool version")]
     [DataRow("2.0.0", 120, DisplayName = "another GPU")]
     [DataRow("2.0.0", null, DisplayName = "no GPU read")]

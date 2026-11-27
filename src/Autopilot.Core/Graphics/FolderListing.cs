@@ -1,3 +1,5 @@
+using Autopilot.Core.Platform;
+
 namespace Autopilot.Core.Graphics;
 
 /// <summary>Lists folders for the decision, treating a folder that cannot be listed as empty.</summary>
@@ -23,7 +25,7 @@ internal static class FolderListing
                 entries.Add(entry);
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             return [];
         }

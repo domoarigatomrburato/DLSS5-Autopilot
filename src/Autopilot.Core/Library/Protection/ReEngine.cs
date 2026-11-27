@@ -1,3 +1,4 @@
+using Autopilot.Core.Platform;
 using Autopilot.Core.Resources;
 
 namespace Autopilot.Core.Library.Protection;
@@ -30,7 +31,7 @@ public static class ReEngine
         {
             return Directory.EnumerateFiles(folder, MarkerFile, _anyCase).Any();
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             return false;
         }

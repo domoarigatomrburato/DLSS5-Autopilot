@@ -39,7 +39,7 @@ public abstract class ExecutableTestBase(TestContext testContext)
         return Assert.IsInstanceOfType<ReadableExecutable>(reading);
     }
 
-    protected static async Task<PeException> FailsAsync(PeFailure reason, Func<Task> read)
+    internal static async Task<PeException> FailsAsync(PeFailure reason, Func<Task> read)
     {
         PeException failure = await Assert.ThrowsExactlyAsync<PeException>(read);
         Assert.AreEqual(reason, failure.Reason, failure.Message);

@@ -5,10 +5,10 @@ namespace Autopilot.Core.Library.Stores;
 /// <summary>
 /// The EA app's and Origin's games: every <c>Electronic Arts\&lt;game&gt;</c> key's <c>Install Dir</c>,
 /// every folder under <c>Program Files\EA Games</c>, and the installed games of the EA app's encrypted
-/// install file, which needs the machine's <paramref name="hardware"/> identity and is skipped without
-/// it. Named after the folder.
+/// install file, which needs the machine's <paramref name="hardware"/> identity and is skipped when
+/// that cannot tell it. Named after the folder.
 /// </summary>
-public sealed class EaSource(IRegistry registry, HostFolders folders, IHardwareIdentity? hardware = null) : IGameSource
+public sealed class EaSource(IRegistry registry, HostFolders folders, IHardwareIdentity hardware) : IGameSource
 {
     private const string EaKey = @"SOFTWARE\Electronic Arts";
 
@@ -19,21 +19,18 @@ public sealed class EaSource(IRegistry registry, HostFolders folders, IHardwareI
     public async Task<IReadOnlyList<StoreGame>> FindAsync(CancellationToken cancellationToken)
     {
         IReadOnlyList<string> eaDesktop = await EaDesktopFoldersAsync(cancellationToken);
-        FoundGames found = new();
+        FoundGames found = new(GameSource.Ea);
         foreach (string folder in RegistryFolders().Concat(DefaultFolders()).Concat(eaDesktop))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (DrivePaths.IsDirectory(folder))
-            {
-                found.Add(new(StoreFiles.FolderName(folder), folder, GameSource.Ea, null));
-            }
+            found.Add(null, folder);
         }
 
         return found.Games;
     }
 
     private async Task<IReadOnlyList<string>> EaDesktopFoldersAsync(CancellationToken cancellationToken) =>
-        folders.ProgramData is { } programData && hardware is not null && await hardware.ReadAsync(cancellationToken) is { } identity
+        folders.ProgramData is { } programData && await hardware.ReadAsync(cancellationToken) is { } identity
             ? await EaDesktopInstalls.FoldersAsync(programData, identity, cancellationToken)
             : [];
 

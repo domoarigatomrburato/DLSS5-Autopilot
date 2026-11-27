@@ -35,8 +35,8 @@ internal static class SteamLibraries
             candidates.AddRange(folders.Children.Where(child => int.TryParse(child.Key, out _)).Select(child => PathOf(child.Value)).OfType<string>());
         }
 
-        HashSet<string> seen = [with(StringComparer.OrdinalIgnoreCase)];
-        return [.. candidates.Where(library => DrivePaths.IsDirectory(Path.Join(library, "steamapps", "common")) && seen.Add(ResolvedPath.Of(library)))];
+        ResolvedPathSet seen = new();
+        return [.. candidates.Where(library => DrivePaths.IsDirectory(Path.Join(library, "steamapps", "common")) && seen.Add(library))];
     }
 
     private static string? PathOf(KVObject entry) => entry.IsCollection ? ValveText.Text(entry, "path") : ValveText.Text(entry);

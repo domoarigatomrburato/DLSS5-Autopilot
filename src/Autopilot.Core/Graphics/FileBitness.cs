@@ -1,4 +1,5 @@
 using Autopilot.Core.Executables;
+using Autopilot.Core.Platform;
 
 namespace Autopilot.Core.Graphics;
 
@@ -13,7 +14,7 @@ internal static class FileBitness
             using PeImage image = await PeImage.OpenAsync(path, cancellationToken);
             return image.Bitness;
         }
-        catch (Exception e) when (e is PeException or UnauthorizedAccessException)
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             return null;
         }

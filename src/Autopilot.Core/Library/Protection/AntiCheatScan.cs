@@ -1,3 +1,5 @@
+using Autopilot.Core.Platform;
+
 namespace Autopilot.Core.Library.Protection;
 
 /// <summary>
@@ -46,7 +48,7 @@ internal sealed class AntiCheatScan
         {
             return Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
         }
-        catch (Exception e) when (e is ArgumentException or NotSupportedException or IOException)
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             return folder;
         }
@@ -89,7 +91,7 @@ internal sealed class AntiCheatScan
         {
             return list();
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             _unreadable = true;
             return null;

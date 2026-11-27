@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Autopilot.Core.Platform;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Library.Stores;
 
@@ -26,7 +27,7 @@ public sealed class HeroicSource(HostFolders folders) : IGameSource
             return [];
         }
 
-        FoundGames found = new();
+        FoundGames found = new(GameSource.Heroic);
         foreach (string[] list in _lists)
         {
             using JsonDocument? installed = await StoreFiles.ReadJsonAsync(Path.Join([appData, "heroic", .. list]), cancellationToken);
@@ -41,14 +42,9 @@ public sealed class HeroicSource(HostFolders folders) : IGameSource
 
     private static void AddAll(IEnumerable<JsonElement> records, FoundGames found)
     {
-        foreach (JsonElement record in records.Where(record => StoreFiles.Flag(record, "is_dlc") != true))
+        foreach (JsonElement record in records.Where(record => UntrustedJson.Flag(record, "is_dlc") != true))
         {
-            string? folder = StoreFiles.Text(record, "install_path") ?? StoreFiles.Text(record, "path");
-            if (DrivePaths.IsDirectory(folder))
-            {
-                string? title = StoreFiles.Text(record, "title");
-                found.Add(new(string.IsNullOrWhiteSpace(title) ? StoreFiles.FolderName(folder!) : title.Trim(), folder!, GameSource.Heroic, null));
-            }
+            found.Add(UntrustedJson.Text(record, "title"), UntrustedJson.Text(record, "install_path") ?? UntrustedJson.Text(record, "path"));
         }
     }
 

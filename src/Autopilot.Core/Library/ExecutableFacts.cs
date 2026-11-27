@@ -52,20 +52,12 @@ internal static class ExecutableFacts
         return chosen.Protected ? chosen with { Bitness = choices?.Bitness } : chosen;
     }
 
-    /// <summary>An API as the person reads it in a reason.</summary>
-    public static string ApiName(GraphicsApi api) => api switch
-    {
-        GraphicsApi.Unknown => Texts.Text("GameApiUnknown"),
-        GraphicsApi.Dxgi => Texts.Text("GameApiDxgi"),
-        _ => api.ToString(),
-    };
-
     // The import table can lie: R.U.S.E. links D3D11 and renders with D3D9, so a choice made by hand wins.
     private static GameEntry WithApi(GameEntry entry, ApiDecision detected, GraphicsApi? chosen)
     {
         if (chosen is { } api)
         {
-            return entry with { Api = api, ApiExplanation = Texts.Format("GameApiSetByHand", ApiName(detected.Api)), Detected = detected, ApiSetByHand = true };
+            return entry with { Api = api, ApiExplanation = Texts.Format("GameApiSetByHand", ApiNames.Of(detected.Api)), Detected = detected, ApiSetByHand = true };
         }
 
         (GraphicsApi automatic, string explanation) = EmulatorApi.Automatic(detected, entry.Emulator);

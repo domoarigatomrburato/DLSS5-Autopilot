@@ -78,7 +78,7 @@ internal static partial class ScoreAdjustments
             Dictionary<Candidate, Executables.Bitness> bits = [];
             foreach (Candidate twin in twins)
             {
-                if (await HeaderBitnessAsync(twin, cancellationToken) is { } bitness)
+                if (await Graphics.FileBitness.ReadAsync(twin.Path, cancellationToken) is { } bitness)
                 {
                     bits[twin] = bitness;
                 }
@@ -95,19 +95,6 @@ internal static partial class ScoreAdjustments
     }
 
     private static string Key(string directory, string stem) => directory + "/" + stem;
-
-    // A protected or unreadable header says nothing about the file.
-    private static async Task<Executables.Bitness?> HeaderBitnessAsync(Candidate candidate, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await Executables.Executable.ReadAsync(candidate.Path, cancellationToken) is Executables.ReadableExecutable readable ? readable.Bitness : null;
-        }
-        catch (Executables.PeException)
-        {
-            return null;
-        }
-    }
 
     [GeneratedRegex(@"[\s._-]*(trial|demo)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture)]
     private static partial Regex TrialOrDemo();

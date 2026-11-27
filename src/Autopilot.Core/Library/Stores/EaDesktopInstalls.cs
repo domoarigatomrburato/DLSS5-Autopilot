@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Autopilot.Core.Platform;
+using Autopilot.Core.Storage;
 using Org.BouncyCastle.Crypto.Digests;
 
 namespace Autopilot.Core.Library.Stores;
@@ -35,7 +36,7 @@ internal static class EaDesktopInstalls
 
         try
         {
-            using var document = JsonDocument.Parse(plain);
+            using var document = JsonDocument.Parse(UntrustedJson.Utf8(plain));
             return InstalledFolders(document.RootElement);
         }
         catch (JsonException)
@@ -93,17 +94,11 @@ internal static class EaDesktopInstalls
     private static List<string> InstalledFolders(JsonElement root)
     {
         List<string> folders = [];
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("installInfos", out JsonElement infos) || infos.ValueKind != JsonValueKind.Array)
+        foreach (JsonElement info in UntrustedJson.Array(root, "installInfos"))
         {
-            return folders;
-        }
-
-        foreach (JsonElement info in infos.EnumerateArray())
-        {
-            if (!string.IsNullOrEmpty(StoreFiles.Text(info, "softwareId"))
-                && !string.IsNullOrEmpty(StoreFiles.Text(info, "baseSlug"))
-                && StoreFiles.Text(info, "baseInstallPath") is { } folder
-                && DrivePaths.IsDirectory(folder))
+            if (!string.IsNullOrEmpty(UntrustedJson.Text(info, "softwareId"))
+                && !string.IsNullOrEmpty(UntrustedJson.Text(info, "baseSlug"))
+                && UntrustedJson.Text(info, "baseInstallPath") is { } folder)
             {
                 folders.Add(folder);
             }

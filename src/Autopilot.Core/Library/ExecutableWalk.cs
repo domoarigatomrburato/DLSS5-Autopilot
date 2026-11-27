@@ -1,4 +1,6 @@
 using System.Collections.Frozen;
+using System.IO.Enumeration;
+using Autopilot.Core.Platform;
 
 namespace Autopilot.Core.Library;
 
@@ -99,16 +101,21 @@ internal sealed class ExecutableWalk
         && !_skipped.Contains(directory.Name)
         && !directory.Attributes.HasFlag(FileAttributes.ReparsePoint);
 
-    // A folder that cannot be listed (access denied, an I/O error, gone) is skipped, never fatal.
+    // Only folders and .exe files are listed. A folder that cannot be listed (access denied, an I/O
+    // error, gone) is skipped, never fatal.
     private static List<FileSystemInfo> Children(string path)
     {
         try
         {
-            return [.. new DirectoryInfo(path).EnumerateFileSystemInfos("*", _listing)
+            FileSystemEnumerable<FileSystemInfo> folderAndExecutables = new(path, (ref entry) => entry.ToFileSystemInfo(), _listing)
+            {
+                ShouldIncludePredicate = (ref entry) => entry.IsDirectory || entry.FileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase),
+            };
+            return [.. folderAndExecutables
                 .OrderBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(entry => entry.Name, StringComparer.Ordinal)];
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e) when (DrivePaths.IsNotThere(e))
         {
             return [];
         }

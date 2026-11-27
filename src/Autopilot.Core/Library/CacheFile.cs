@@ -4,7 +4,6 @@ using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
 using Autopilot.Core.Install;
 using Autopilot.Core.Library.Stores;
-using Autopilot.Core.Platform;
 using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Library;
@@ -35,18 +34,23 @@ internal sealed record CacheFile(int Schema, string ToolVersion, int? GpuSm, IRe
     };
 
     /// <summary>Whether every game is there and every path in it is absolute.</summary>
-    public bool IsWellFormed => Games.All(game => game is not null && game.IsWellFormed);
+    public bool IsWellFormed() => Games.All(game => game is not null && game.IsWellFormed());
 
     /// <summary>The file at <paramref name="path"/>, or null when it cannot be opened, is too large or does not parse.</summary>
     /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
     public static async Task<CacheFile?> ReadAsync(string path, CancellationToken cancellationToken)
     {
+        byte[]? bytes = await BoundedFile.ReadAsync(path, MaxBytes, cancellationToken);
+        if (bytes is null)
+        {
+            return null;
+        }
+
         try
         {
-            await using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.Asynchronous);
-            return stream.Length > MaxBytes ? null : await JsonSerializer.DeserializeAsync<CacheFile>(stream, _json, cancellationToken);
+            return JsonSerializer.Deserialize<CacheFile>(UntrustedJson.Utf8(bytes).Span, _json);
         }
-        catch (Exception e) when (e is JsonException || DrivePaths.IsNotThere(e))
+        catch (JsonException)
         {
             return null;
         }
@@ -56,7 +60,7 @@ internal sealed record CacheFile(int Schema, string ToolVersion, int? GpuSm, IRe
     /// <exception cref="IOException">The write or the move failed.</exception>
     /// <exception cref="UnauthorizedAccessException">The folder or the file cannot be written.</exception>
     public Task WriteAsync(string path, Func<Stream, Stream> through, CancellationToken cancellationToken) =>
-        AtomicFile.WriteAsync(path, async (file, token) => await JsonSerializer.SerializeAsync(through(file), this, _json, token), cancellationToken);
+        AtomicFile.WriteAsync(path, (file, token) => JsonSerializer.SerializeAsync(through(file), this, _json, token), cancellationToken);
 }
 
 /// <summary>One game as saved: its entry without the emulator profile, which is found again from the executable, and its stamp.</summary>
@@ -72,7 +76,7 @@ internal sealed record CachedEntry(
     string ApiExplanation,
     CachedDecision? Detected,
     bool ApiSetByHand,
-    CachedError? Error,
+    GameReadError? Error,
     bool Protected,
     string? InstallFolder,
     InstallState? Install,
@@ -90,14 +94,14 @@ internal sealed record CachedEntry(
         game.ApiExplanation,
         game.Detected is { } detected ? new(detected.Api, detected.Reason, detected.Explanation) : null,
         game.ApiSetByHand,
-        game.Error is { } error ? new(error.Failure, error.Explanation) : null,
+        game.Error,
         game.Protected,
         game.InstallFolder,
         game.Install,
         GameStamp.Of(game));
 
     /// <summary>Every path is absolute; the file is read as untrusted, and a relative path would be read against the working folder.</summary>
-    public bool IsWellFormed =>
+    public bool IsWellFormed() =>
         Path.IsPathFullyQualified(Folder)
         && new[] { Executable, StoreExecutable, InstallFolder }.All(path => path is null || Path.IsPathFullyQualified(path))
         && Candidates.All(path => path is not null && Path.IsPathFullyQualified(path));
@@ -115,7 +119,7 @@ internal sealed record CachedEntry(
         ApiExplanation = ApiExplanation,
         Detected = Detected is { } detected ? new ApiDecision(detected.Api, detected.Reason, detected.Explanation) : null,
         ApiSetByHand = ApiSetByHand,
-        Error = Error is { } error ? new GameReadError(error.Failure, error.Explanation) : null,
+        Error = Error,
         Protected = Protected,
         InstallFolder = InstallFolder,
         Install = Install,
@@ -123,8 +127,6 @@ internal sealed record CachedEntry(
 }
 
 internal sealed record CachedDecision(GraphicsApi Api, ApiReason Reason, string Explanation);
-
-internal sealed record CachedError(GameReadFailure Failure, string Explanation);
 
 /// <summary>Enums by name only: a number from a hand-edited or damaged file could be a value no code expects.</summary>
 internal sealed class NamedOnly<TEnum>() : JsonStringEnumConverter<TEnum>(namingPolicy: null, allowIntegerValues: false)

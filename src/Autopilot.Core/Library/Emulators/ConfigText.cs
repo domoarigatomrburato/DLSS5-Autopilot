@@ -1,7 +1,7 @@
 using System.Xml;
 using System.Xml.Linq;
 using Autopilot.Core.Graphics;
-using Autopilot.Core.Platform;
+using Autopilot.Core.Storage;
 
 namespace Autopilot.Core.Library.Emulators;
 
@@ -13,23 +13,14 @@ namespace Autopilot.Core.Library.Emulators;
 internal static class ConfigText
 {
     /// <summary>A larger file is not an emulator's config.</summary>
-    public const int MaxBytes = 1024 * 1024;
+    private const int MaxBytes = 1024 * 1024;
 
     private static readonly string[] _lineEnds = ["\r\n", "\r", "\n"];
 
+    private static readonly XmlReaderSettings _xml = UntrustedXml.Settings(MaxBytes);
+
     /// <summary>The file's bytes; null when it is missing, too large or cannot be read.</summary>
-    public static async Task<byte[]?> ReadAsync(string path, CancellationToken cancellationToken)
-    {
-        try
-        {
-            FileInfo file = new(path);
-            return file.Exists && file.Length <= MaxBytes ? await File.ReadAllBytesAsync(path, cancellationToken) : null;
-        }
-        catch (Exception e) when (DrivePaths.IsNotThere(e))
-        {
-            return null;
-        }
-    }
+    public static Task<byte[]?> ReadAsync(string path, CancellationToken cancellationToken) => BoundedFile.ReadAsync(path, MaxBytes, cancellationToken);
 
     /// <summary>The lines of a text file, decoded from its BOM.</summary>
     public static string[] Lines(byte[] bytes) => IniFile.Decode(bytes).Split(_lineEnds, StringSplitOptions.None);
@@ -85,11 +76,10 @@ internal static class ConfigText
     /// <summary>The text of the element at <paramref name="path"/> below the root, in an XML file read with no DTD and no external entities.</summary>
     public static string? XmlValue(byte[] bytes, params string[] path)
     {
-        XmlReaderSettings settings = new() { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = MaxBytes };
         try
         {
             using MemoryStream stream = new(bytes);
-            using var reader = XmlReader.Create(stream, settings);
+            using var reader = XmlReader.Create(stream, _xml);
             XElement? element = XDocument.Load(reader).Root;
             foreach (string name in path)
             {

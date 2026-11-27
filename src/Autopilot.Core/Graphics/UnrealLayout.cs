@@ -37,6 +37,11 @@ internal static class UnrealLayout
         }
 
         string nvidia = Path.Join(game.Folder, "..", "..", "..", "Engine", "Plugins", "Runtime", "Nvidia");
+        if (!Directory.Exists(nvidia))
+        {
+            return null;
+        }
+
         foreach (string plugin in _plugins)
         {
             foreach (string runtime in KnownFiles.D3d12OnlyRuntimes)

@@ -1,4 +1,5 @@
 using Autopilot.Core.Library.Stores;
+using Autopilot.Core.Platform;
 
 namespace Autopilot.Core.Library;
 
@@ -23,13 +24,13 @@ internal static class LibraryOrder
             {
                 once.Add(game);
             }
-            else if (at.TryGetValue(ResolvedPath.Of(game.Executable), out int index))
+            else if (ResolvedPath.Of(game.Executable) is var executable && at.TryGetValue(executable, out int index))
             {
                 once[index] = Weight(game, choices) > Weight(once[index], choices) ? game : once[index];
             }
             else
             {
-                at[ResolvedPath.Of(game.Executable)] = once.Count;
+                at[executable] = once.Count;
                 once.Add(game);
             }
         }

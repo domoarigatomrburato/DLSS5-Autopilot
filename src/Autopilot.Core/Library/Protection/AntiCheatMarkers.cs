@@ -44,20 +44,6 @@ internal static class AntiCheatMarkers
             return name.Equals(marker, StringComparison.OrdinalIgnoreCase);
         }
 
-        for (int at = name.IndexOf(marker, StringComparison.OrdinalIgnoreCase); at >= 0; at = name.IndexOf(marker, at + 1, StringComparison.OrdinalIgnoreCase))
-        {
-            int end = at + marker.Length;
-            while (end < name.Length && char.IsDigit(name[end]))
-            {
-                end++;
-            }
-
-            if ((at == 0 || !char.IsLetterOrDigit(name[at - 1])) && (end == name.Length || !char.IsLetterOrDigit(name[end])))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return WholeWord.In(name, marker, digitsAfter: true);
     }
 }

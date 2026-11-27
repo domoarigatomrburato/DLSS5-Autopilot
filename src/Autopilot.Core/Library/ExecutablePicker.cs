@@ -1,3 +1,4 @@
+using Autopilot.Core.Archives;
 using Autopilot.Core.Install;
 using Autopilot.Core.Library.Stores;
 using Autopilot.Core.Platform;
@@ -64,7 +65,7 @@ internal static class ExecutablePicker
     private static string PreferRanking(StoreGame found, string executable, IReadOnlyList<string> candidates, List<LibraryNote> notes)
     {
         string top = candidates[0];
-        if (SamePath(top, executable) || !UnderBinaries(top) || UnderBinaries(executable))
+        if (SamePath(top, executable) || !UnderBinaries(found.Folder, top) || UnderBinaries(found.Folder, executable))
         {
             return executable;
         }
@@ -106,12 +107,26 @@ internal static class ExecutablePicker
     // A name the record holds is a file name; anything that would leave the folder is not followed.
     private static string? Named(string folder, RecordedInstall record) =>
         record.Executables
-            .Where(name => name.Length > 0 && name.IndexOfAny(['/', '\\', ':']) < 0 && name is not ("." or ".."))
+            .Where(IsFileName)
             .Select(name => Path.Join(folder, name))
             .FirstOrDefault(DrivePaths.IsFile);
 
-    private static bool UnderBinaries(string path) =>
-        path.Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries).Any(part => part.Equals(Binaries, StringComparison.OrdinalIgnoreCase));
+    private static bool IsFileName(string name)
+    {
+        try
+        {
+            SafePath.ValidateFileName(name);
+            return true;
+        }
+        catch (UnsafePathException)
+        {
+            return false;
+        }
+    }
+
+    // Below the game folder only: a library kept under a folder named Binaries says nothing.
+    private static bool UnderBinaries(string gameFolder, string path) =>
+        Path.GetRelativePath(gameFolder, path).Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries).Any(part => part.Equals(Binaries, StringComparison.OrdinalIgnoreCase));
 
     private static string FolderOf(string path) => Path.GetDirectoryName(Path.GetFullPath(path)) ?? path;
 
