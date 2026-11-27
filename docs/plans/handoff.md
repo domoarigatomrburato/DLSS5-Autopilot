@@ -43,9 +43,10 @@ What b1 and b2 left for the next sub-tasks:
   install.md game folders (`GameFolders`, ReShade and OptiScaler contents are
   marker constants to replace), `TreeSnapshot`, `WritePoints`,
   `PlatformFakes`, `Runs` (a `ComponentRun` per job).
-- **Open, ask Ale before g:** whether to download one real
-  `ReShade_Setup_*_Addon.exe` (about 3 MB) to confirm the appended-zip shape
-  the extractor now opens; the tests use a built fake.
+- **ReShade's setup:** the real 6.8.0 addon setup opens with the extractor
+  (relative offsets, the signature after the zip, six members including
+  `ReShade32_XR.json` and `ReShade64_XR.json`); notes in
+  `~/coding/claude-lab/reshade-setup-shape/results.md`.
 
 Carry into later sub-tasks:
 
