@@ -28,7 +28,7 @@ public static class GameRuntimesReader
     /// <param name="executablePath">The game's executable.</param>
     /// <param name="gameFolder">The game's library folder, walked for runtimes nested under it.</param>
     /// <param name="installFolder">The folder this tool installs into; null for the executable's folder.</param>
-    /// <param name="record">The install record found in <paramref name="installFolder"/>, or null: the files it lists are this tool's.</param>
+    /// <param name="record">The install record found in <paramref name="installFolder"/>, or null: the files it lists as written over nothing of the game's are this tool's.</param>
     /// <param name="cancellationToken">Cancels the listings.</param>
     /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
     public static Task<GameRuntimes> ReadAsync(string executablePath, string gameFolder, string? installFolder, RecordedInstall? record, CancellationToken cancellationToken) =>
@@ -40,11 +40,11 @@ public static class GameRuntimesReader
         string install = Path.GetFullPath(installFolder ?? exeFolder);
         string game = Path.GetFullPath(gameFolder);
         string[] beside = [.. new[] { exeFolder, install }.DistinctBy(RuntimeWalk.Normal, StringComparer.OrdinalIgnoreCase)];
-        OwnedFiles owned = new(install, record?.Files ?? []);
+        OwnedFiles owned = new(record);
 
-        List<RuntimeHit> besideHits = [.. beside.SelectMany(folder => Beside(folder, cancellationToken)).Where(hit => owned.IsGames(hit.Path))];
+        List<RuntimeHit> besideHits = [.. beside.SelectMany(folder => Beside(folder, cancellationToken)).Where(hit => !owned.IsListedAsOurs(hit.Path))];
         SharedListings listings = new();
-        List<RuntimeHit> walkHits = [.. RuntimeWalk.Find(game, _names, beside, listings, cancellationToken).Where(hit => owned.IsGames(hit.Path))];
+        List<RuntimeHit> walkHits = [.. RuntimeWalk.Find(game, _names, beside, listings, cancellationToken).Where(hit => !owned.IsListedAsOurs(hit.Path))];
 
         string[] dlss = Evidence(game, besideHits.Concat(walkHits).Where(hit => _dlssNames.Contains(hit.Name)));
         bool own = dlss.Any(path => _superResolution.Contains(Path.GetFileName(path)));

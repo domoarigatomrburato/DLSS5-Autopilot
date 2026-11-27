@@ -80,6 +80,6 @@ public sealed class StaticImportTests(TestContext testContext) : GraphicsTestBas
         string exe = Game(imports: "d3d12.dll");
         ExecutableReading reading = await Executable.ReadAsync(exe, Ct);
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => GraphicsApiDecision.DecideAsync(exe, reading, Search, new CancellationToken(canceled: true)));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => GraphicsApiDecision.DecideAsync(exe, reading, Search, null, new CancellationToken(canceled: true)));
     }
 }

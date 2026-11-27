@@ -1,6 +1,7 @@
 using Autopilot.Core.Install;
 using Autopilot.Core.Routes;
 using Autopilot.Core.Tests.Executables;
+using Autopilot.Core.Tests.Install;
 
 namespace Autopilot.Core.Tests.Routes;
 
@@ -50,7 +51,7 @@ public sealed class GameRuntimesTests(TestContext testContext) : ExecutableTestB
     {
         Ship("nvngx_dlss.dll");
 
-        GameRuntimes runtimes = await ReadAsync(Recording("nvngx_dlss.dll"));
+        GameRuntimes runtimes = await ReadAsync(Recorded.Ours(Rel("nvngx_dlss.dll")));
 
         Assert.IsFalse(runtimes.OwnDlss);
         Assert.IsEmpty(runtimes.DlssEvidence);
@@ -61,7 +62,7 @@ public sealed class GameRuntimesTests(TestContext testContext) : ExecutableTestB
     {
         Ship("ngx/nvngx_dlss.dll");
 
-        Assert.IsFalse((await ReadAsync(Recording("NGX\\NVNGX_DLSS.DLL"))).OwnDlss);
+        Assert.IsFalse((await ReadAsync(Recorded.Ours("BINARIES\\Win64\\NGX\\NVNGX_DLSS.DLL"))).OwnDlss);
     }
 
     [TestMethod]
@@ -70,7 +71,7 @@ public sealed class GameRuntimesTests(TestContext testContext) : ExecutableTestB
         Ship("nvngx_dlss.dll");
         Ship("nvngx_dlss.dll.invidia-claritatis-backup");
 
-        GameRuntimes runtimes = await ReadAsync(Recording("nvngx_dlss.dll"));
+        GameRuntimes runtimes = await ReadAsync(Recorded.Swapped(Rel("nvngx_dlss.dll")));
 
         Assert.IsTrue(runtimes.OwnDlss);
         CollectionAssert.AreEqual(new[] { Rel("nvngx_dlss.dll") }, runtimes.DlssEvidence.ToList());
@@ -97,7 +98,7 @@ public sealed class GameRuntimesTests(TestContext testContext) : ExecutableTestB
         Plant("Engine/Plugins/nvngx_dlss.dll");
         Executable();
 
-        Assert.IsFalse((await ReadAsync(Recording("../../Engine/Plugins/nvngx_dlss.dll"))).OwnDlss);
+        Assert.IsFalse((await ReadAsync(Recorded.Ours("Engine/Plugins/nvngx_dlss.dll"))).OwnDlss);
     }
 
     [TestMethod]
@@ -182,7 +183,7 @@ public sealed class GameRuntimesTests(TestContext testContext) : ExecutableTestB
         Ship("nvngx_dlss.dll");
         Ship("nvngx_dlssg.dll");
 
-        GameRuntimes runtimes = await ReadAsync(Recording("nvngx_dlssg.dll"));
+        GameRuntimes runtimes = await ReadAsync(Recorded.Ours(Rel("nvngx_dlssg.dll")));
 
         Assert.IsTrue(runtimes.OwnDlss);
         Assert.IsFalse(runtimes.ShipsFrameGeneration);
@@ -258,7 +259,7 @@ public sealed class GameRuntimesTests(TestContext testContext) : ExecutableTestB
     {
         Ship("libxess.dll");
 
-        Assert.AreEqual(Upscaler.None, (await ReadAsync(Recording("libxess.dll"))).Upscaler);
+        Assert.AreEqual(Upscaler.None, (await ReadAsync(Recorded.Ours(Rel("libxess.dll")))).Upscaler);
     }
 
     [TestMethod]
@@ -350,8 +351,6 @@ public sealed class GameRuntimesTests(TestContext testContext) : ExecutableTestB
         _ = await Assert.ThrowsAsync<OperationCanceledException>(() => GameRuntimesReader.ReadAsync(In("Game", Exe), In("Game"), null, null, new CancellationToken(canceled: true)));
     }
 
-    private static RecordedInstall Recording(params string[] files) => new(InstallState.Installed, ["Game.exe"]) { Files = files };
-
     private static string Rel(string besideExe) => Path.Join([.. Exe.Split('/')[..^1], .. besideExe.Split('/')]);
 
     private static void Link(string link, string target)
@@ -366,8 +365,19 @@ public sealed class GameRuntimesTests(TestContext testContext) : ExecutableTestB
         }
     }
 
-    private Task<GameRuntimes> ReadAsync(RecordedInstall? record = null) =>
-        GameRuntimesReader.ReadAsync(In("Game", Exe), In("Game"), null, record, Ct);
+    // The entries, relative to the game folder, go in a record in the executable's folder, read back through install's reader.
+    private async Task<GameRuntimes> ReadAsync(params RecordEntry[] recorded)
+    {
+        string install = Path.GetDirectoryName(In("Game", Exe))!;
+        RecordedInstall? record = null;
+        if (recorded.Length > 0)
+        {
+            Recorded.Plant(install, Recorded.Install("Binaries/Win64", recorded));
+            record = await Recorded.FindAsync(install, Ct);
+        }
+
+        return await GameRuntimesReader.ReadAsync(In("Game", Exe), In("Game"), null, record, Ct);
+    }
 
     private void Executable() => Plant(Exe);
 

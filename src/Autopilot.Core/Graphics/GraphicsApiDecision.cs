@@ -1,4 +1,5 @@
 using Autopilot.Core.Executables;
+using Autopilot.Core.Install;
 using Autopilot.Core.Resources;
 
 namespace Autopilot.Core.Graphics;
@@ -24,11 +25,12 @@ internal static class GraphicsApiDecision
     /// <param name="executablePath">The game's executable.</param>
     /// <param name="reading">What <see cref="Executable.ReadAsync"/> read from it.</param>
     /// <param name="search">Where else the decision may look.</param>
+    /// <param name="record">The install record found for the game, or null: a file of ours beside the executable is not the game's evidence.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
-    public static async Task<ApiDecision> DecideAsync(string executablePath, ExecutableReading reading, ApiSearch search, CancellationToken cancellationToken)
+    public static async Task<ApiDecision> DecideAsync(string executablePath, ExecutableReading reading, ApiSearch search, RecordedInstall? record, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        GameFolder game = await GameFolder.OpenAsync(executablePath, reading, search, cancellationToken);
+        var game = GameFolder.Open(executablePath, reading, search, record, cancellationToken);
         ApiDecision decision = await DecideAsync(game, cancellationToken);
         // Windows ships no 64-bit d3d8.dll, so a 64-bit executable that names it does not draw with it.
         return decision.Api == GraphicsApi.DX8 && game.Bitness == Bitness.Bits64

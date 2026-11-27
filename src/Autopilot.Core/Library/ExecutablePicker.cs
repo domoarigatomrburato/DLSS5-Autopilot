@@ -28,8 +28,8 @@ internal static class ExecutablePicker
 
         if ((StorePick(found) ?? (ranked.Count > 0 ? ranked[0] : null)) is not { } executable)
         {
-            InstallState? install = (await records.FindAsync(found.Folder, cancellationToken))?.State;
-            return new PickedExecutable(null, [], install is null ? null : found.Folder, install);
+            RecordedInstall? recorded = await records.FindAsync(found.Folder, cancellationToken);
+            return new PickedExecutable(null, [], recorded is null ? null : found.Folder, recorded);
         }
 
         IReadOnlyList<string> candidates = OrOnly(ranked, executable);
@@ -40,7 +40,7 @@ internal static class ExecutablePicker
     public static async Task<PickedExecutable> PickedAsync(string executable, IReadOnlyList<string> candidates, IInstallRecords records, CancellationToken cancellationToken)
     {
         RecordedInstall? record = await records.FindAsync(FolderOf(executable), cancellationToken);
-        return new PickedExecutable(executable, candidates, null, record?.State);
+        return new PickedExecutable(executable, candidates, null, record);
     }
 
     private static async Task<IReadOnlyList<string>> RankAsync(string folder, List<LibraryNote> notes, CancellationToken cancellationToken)
@@ -94,7 +94,7 @@ internal static class ExecutablePicker
             }
 
             string adopted = Named(folder, record) ?? (beside ? executable : candidates.FirstOrDefault(candidate => SamePath(FolderOf(candidate), folder)) ?? executable);
-            return new PickedExecutable(adopted, candidates, SamePath(FolderOf(adopted), folder) ? null : folder, record.State);
+            return new PickedExecutable(adopted, candidates, SamePath(FolderOf(adopted), folder) ? null : folder, record);
         }
 
         return new PickedExecutable(executable, candidates, null, null);

@@ -1,6 +1,9 @@
+using System.Text.Json;
 using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
+using Autopilot.Core.Install;
 using Autopilot.Core.Tests.Executables;
+using Autopilot.Core.Tests.Install;
 
 namespace Autopilot.Core.Tests.Graphics;
 
@@ -56,7 +59,7 @@ public sealed class FolderEvidenceTests(TestContext testContext) : GraphicsTestB
         string exe = Game(imports: "d3d11.dll");
         Dll(exe, "nvngx_dlssg.dll");
         Dll(exe, "nvngx_dlssg.dll.invidia-claritatis-backup");
-        Record(exe, "sub\\NVNGX_DLSSG.dll");
+        Recorded.Plant(Path.GetDirectoryName(exe)!, Recorded.Install("", Recorded.Swapped("nvngx_dlssg.dll")));
 
         Is(await DecideAsync(exe), GraphicsApi.DX12, ApiReason.AgilitySdk);
     }
@@ -79,7 +82,7 @@ public sealed class FolderEvidenceTests(TestContext testContext) : GraphicsTestB
     {
         string exe = Game(imports: "d3d11.dll");
         Dll(exe, "nvngx_dlssg.dll");
-        Junk(exe, "invidia-claritatis.json", /*lang=json,strict*/ "{\"files\": [\"nvngx_dlssg.dll\"]}" + new string(' ', 1024 * 1024));
+        Junk(exe, "invidia-claritatis.json", JsonSerializer.Serialize(Recorded.Install("", Recorded.Ours("nvngx_dlssg.dll")), RecordJson.Record) + new string(' ', 1024 * 1024));
 
         Is(await DecideAsync(exe), GraphicsApi.DX12, ApiReason.AgilitySdk);
     }
@@ -203,7 +206,7 @@ public sealed class FolderEvidenceTests(TestContext testContext) : GraphicsTestB
         string exe = Game();
         Dll(exe, "nvngx_dlssg.dll");
 
-        ApiDecision decision = await GraphicsApiDecision.DecideAsync(exe, new ProtectedExecutable(), Search, Ct);
+        ApiDecision decision = await GraphicsApiDecision.DecideAsync(exe, new ProtectedExecutable(), Search, null, Ct);
 
         Is(decision, GraphicsApi.DX12, ApiReason.AgilitySdk);
     }
@@ -213,7 +216,7 @@ public sealed class FolderEvidenceTests(TestContext testContext) : GraphicsTestB
     {
         string exe = Game();
 
-        ApiDecision decision = await GraphicsApiDecision.DecideAsync(exe, new ProtectedExecutable(), Search, Ct);
+        ApiDecision decision = await GraphicsApiDecision.DecideAsync(exe, new ProtectedExecutable(), Search, null, Ct);
 
         Is(decision, GraphicsApi.Unknown, ApiReason.None);
     }

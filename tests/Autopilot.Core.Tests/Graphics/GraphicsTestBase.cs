@@ -1,8 +1,8 @@
 using System.Text;
-using System.Text.Json;
 using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
 using Autopilot.Core.Tests.Executables;
+using Autopilot.Core.Tests.Install;
 
 namespace Autopilot.Core.Tests.Graphics;
 
@@ -38,14 +38,14 @@ public abstract class GraphicsTestBase(TestContext testContext) : ExecutableTest
     protected static void Junk(string exe, string relative, string content = "MZ") =>
         TestFiles.Plant(Path.Join(Path.GetDirectoryName(exe), relative), content);
 
-    /// <summary>This tool's install record beside the executable, listing these files as written.</summary>
+    /// <summary>This tool's install record beside the executable, listing these files as written over nothing of the game's.</summary>
     protected static void Record(string exe, params string[] files) =>
-        Junk(exe, "invidia-claritatis.json", JsonSerializer.Serialize(new { files }));
+        Recorded.Plant(Path.GetDirectoryName(exe)!, Recorded.Install("", files.Select(file => Recorded.Ours(file))));
 
     protected static void Folder(params string[] parts) => Directory.CreateDirectory(Path.Join(parts));
 
     protected async Task<ApiDecision> DecideAsync(string exe) =>
-        await GraphicsApiDecision.DecideAsync(exe, await Executable.ReadAsync(exe, Ct), Search, Ct);
+        await GraphicsApiDecision.DecideAsync(exe, await Executable.ReadAsync(exe, Ct), Search, await Recorded.FindAsync(Path.GetDirectoryName(exe)!, Ct), Ct);
 
     /// <summary>Checks the API, the kind of evidence, and that the words name the evidence.</summary>
     protected static void Is(ApiDecision decision, GraphicsApi api, ApiReason reason, params string[] words)

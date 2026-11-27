@@ -9,6 +9,9 @@ internal sealed class FakeInstallRecords : IInstallRecords
 
     public void Add(string folder, InstallState state, params string[] executables) => _records[Normal(folder)] = new RecordedInstall(state, executables);
 
+    /// <summary>A record as install's reader answers for it, with its entries.</summary>
+    public void Add(string folder, RecordedInstall record) => _records[Normal(folder)] = record;
+
     public Task<RecordedInstall?> FindAsync(string folder, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

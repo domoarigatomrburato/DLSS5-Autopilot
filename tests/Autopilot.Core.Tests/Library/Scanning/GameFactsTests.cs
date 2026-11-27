@@ -2,6 +2,7 @@ using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
 using Autopilot.Core.Install;
 using Autopilot.Core.Library;
+using Autopilot.Core.Tests.Install;
 
 namespace Autopilot.Core.Tests.Library.Scanning;
 
@@ -29,6 +30,39 @@ public sealed class GameFactsTests(TestContext testContext) : IDisposable
         Assert.AreEqual("imports d3d11.dll statically", entry.ApiExplanation);
         Assert.IsFalse(entry.ApiSetByHand);
         Assert.IsNull(entry.Unsupported);
+    }
+
+    [TestMethod]
+    public async Task Frame_generation_our_record_lists_beside_the_executable_is_not_the_games_evidence()
+    {
+        _ = _bed.Exe("Game/Game.exe", imports: "d3d11.dll");
+        _ = _bed.Exe("Game/nvngx_dlssg.dll");
+        await RecordAsync("Game", Recorded.Install("", Recorded.Ours("nvngx_dlssg.dll")));
+
+        Assert.AreEqual(GraphicsApi.DX11, (await ReadAsync()).Api);
+    }
+
+    [TestMethod]
+    public async Task A_record_in_the_game_root_marks_our_files_beside_an_executable_under_binaries()
+    {
+        _ = _bed.Exe("Game/Binaries/Win64/Game-Win64-Shipping.exe", imports: "d3d11.dll");
+        _ = _bed.Exe("Game/Binaries/Win64/nvngx_dlssg.dll");
+        await RecordAsync("Game", Recorded.Install("", Recorded.Ours("Binaries/Win64/nvngx_dlssg.dll")));
+
+        GameEntry entry = await ReadAsync();
+
+        Assert.AreEqual(_bed.PathOf("Game"), entry.InstallFolder, "the record was found away from the executable");
+        Assert.AreEqual(GraphicsApi.DX11, entry.Api);
+    }
+
+    [TestMethod]
+    public async Task A_record_in_the_game_root_that_does_not_list_the_runtime_leaves_it_the_games()
+    {
+        _ = _bed.Exe("Game/Binaries/Win64/Game-Win64-Shipping.exe", imports: "d3d11.dll");
+        _ = _bed.Exe("Game/Binaries/Win64/nvngx_dlssg.dll");
+        await RecordAsync("Game", Recorded.Install("", Recorded.Ours("nvngx_dlssg.dll")));
+
+        Assert.AreEqual(GraphicsApi.DX12, (await ReadAsync()).Api);
     }
 
     [TestMethod]
@@ -184,4 +218,11 @@ public sealed class GameFactsTests(TestContext testContext) : IDisposable
     private void Choose(GameChoices choices) => _bed.Choices.Set(_bed.PathOf("Game"), choices);
 
     private Task<GameEntry> ReadAsync() => _bed.ReadAsync(_bed.Game("Game", "Game"), Ct);
+
+    // The record written in the folder and read back through install's reader, as the host's reader would answer.
+    private async Task RecordAsync(string folder, InstallRecord record)
+    {
+        Recorded.Plant(_bed.PathOf(folder), record);
+        _bed.Records.Add(_bed.PathOf(folder), (await Recorded.FindAsync(_bed.PathOf(folder), Ct))!);
+    }
 }

@@ -57,7 +57,7 @@ internal static class GameReader
             return entry with { Error = new GameReadError(GameReadFailure.NoExecutable, Texts.Text("GameNoExecutable")) };
         }
 
-        return await ExecutableFacts.ReadAsync(WithEmulator(entry, executable), executable, choices, context.ApiSearch, cancellationToken);
+        return await ExecutableFacts.ReadAsync(WithEmulator(entry, executable), executable, choices, context.ApiSearch, pick.Record, cancellationToken);
     }
 
     // Attached before the executable is read, so the API the emulator really draws with is decided in one go.

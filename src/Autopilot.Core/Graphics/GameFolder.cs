@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using Autopilot.Core.Executables;
+using Autopilot.Core.Install;
 
 namespace Autopilot.Core.Graphics;
 
@@ -9,22 +10,20 @@ namespace Autopilot.Core.Graphics;
 /// </summary>
 internal sealed class GameFolder
 {
-    private GameFolder(string executable, ExecutableReading reading, ApiSearch search, FrozenDictionary<string, string> files, FrozenSet<string> written)
+    private GameFolder(string executable, ExecutableReading reading, ApiSearch search, FrozenDictionary<string, string> files, OwnedFiles owned)
     {
         Executable = executable;
         Folder = Path.GetDirectoryName(executable) ?? "";
         Search = search;
         Files = files;
-        Written = written;
+        Written = Names(files, owned.IsListed);
+        Ours = Names(files, owned.IsListedAsOurs);
         if (reading is ReadableExecutable readable)
         {
             Bitness = readable.Bitness;
             Imports = readable.Imports;
             DelayImports = readable.DelayImports;
         }
-
-        // A file of ours whose original sits backed up beside it is the game's.
-        Ours = written.Where(name => !files.ContainsKey(name + KnownFiles.BackupSuffix)).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
     }
 
     public string Executable { get; }
@@ -43,21 +42,28 @@ internal sealed class GameFolder
     /// <summary>The files directly in the executable's folder, by name ignoring case.</summary>
     public FrozenDictionary<string, string> Files { get; }
 
-    /// <summary>Every name the install record lists as written by this tool.</summary>
+    /// <summary>The names beside the executable that the install record lists as written by this tool, over the game's own file or not.</summary>
     public FrozenSet<string> Written { get; }
 
-    /// <summary>The written names that are not the game's: no backup of the game's original beside them.</summary>
+    /// <summary>The written names that are not the game's: the record keeps no original of the game's under them.</summary>
     public FrozenSet<string> Ours { get; }
 
-    public static async Task<GameFolder> OpenAsync(string executable, ExecutableReading reading, ApiSearch search, CancellationToken cancellationToken)
+    /// <param name="executable">The game's executable.</param>
+    /// <param name="reading">What was read from it.</param>
+    /// <param name="search">Where else the decision may look.</param>
+    /// <param name="record">The install record found for the game, beside the executable or elsewhere in its folder, or null: the files it lists beside the executable are this tool's.</param>
+    /// <param name="cancellationToken">Cancels the listing.</param>
+    public static GameFolder Open(string executable, ExecutableReading reading, ApiSearch search, RecordedInstall? record, CancellationToken cancellationToken)
     {
         string full = Path.GetFullPath(executable);
         string folder = Path.GetDirectoryName(full) ?? "";
         var files = FolderListing.Files(folder, cancellationToken)
             .ToFrozenDictionary(path => Path.GetFileName(path), path => path, StringComparer.OrdinalIgnoreCase);
-        FrozenSet<string> written = files.ContainsKey(KnownFiles.InstallRecord) ? await InstallRecord.WrittenAsync(folder, cancellationToken) : [];
-        return new GameFolder(full, reading, search, files, written);
+        return new GameFolder(full, reading, search, files, new OwnedFiles(record));
     }
+
+    private static FrozenSet<string> Names(FrozenDictionary<string, string> files, Func<string, bool> listed) =>
+        files.Where(file => listed(file.Value)).Select(file => file.Key).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The path of a file beside the executable that the game shipped (not ours), or null.</summary>
     public string? GameFile(string name) => !Ours.Contains(name) && Files.TryGetValue(name, out string? path) ? path : null;

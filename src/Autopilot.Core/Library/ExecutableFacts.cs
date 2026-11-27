@@ -1,5 +1,6 @@
 using Autopilot.Core.Executables;
 using Autopilot.Core.Graphics;
+using Autopilot.Core.Install;
 using Autopilot.Core.Library.Emulators;
 using Autopilot.Core.Resources;
 
@@ -12,9 +13,10 @@ internal static class ExecutableFacts
     /// Reads <paramref name="executable"/> once into <paramref name="entry"/>. A file that is not an
     /// executable this tool reads is the entry's error. A protected one takes its architecture from
     /// the person's choice; a readable one ignores that choice. Without a chosen API, the entry's
-    /// emulator decides what the imports really mean.
+    /// emulator decides what the imports really mean. The files <paramref name="record"/> (the install
+    /// record found for the game, or null) lists beside it are not the game's evidence.
     /// </summary>
-    public static async Task<GameEntry> ReadAsync(GameEntry entry, string executable, GameChoices? choices, ApiSearch search, CancellationToken cancellationToken)
+    public static async Task<GameEntry> ReadAsync(GameEntry entry, string executable, GameChoices? choices, ApiSearch search, RecordedInstall? record, CancellationToken cancellationToken)
     {
         ExecutableReading reading;
         try
@@ -26,7 +28,7 @@ internal static class ExecutableFacts
             return entry with { Error = new GameReadError(GameReadFailure.Unreadable, e.Message) };
         }
 
-        ApiDecision detected = await GraphicsApiDecision.DecideAsync(executable, reading, search, cancellationToken);
+        ApiDecision detected = await GraphicsApiDecision.DecideAsync(executable, reading, search, record, cancellationToken);
         GameEntry read = entry with
         {
             Detected = detected,

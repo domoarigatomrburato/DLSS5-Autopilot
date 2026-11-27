@@ -1,5 +1,5 @@
 using System.Net;
-using System.Security.Cryptography;
+using Autopilot.Core.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace Autopilot.Core.Net;
@@ -71,7 +71,7 @@ internal sealed partial class Verifier(NetClient client, ISignatureVerifier sign
         }
         switch (expected)
         {
-            case Sha256Verification { Digest: var digest } when await DigestOfAsync(part, cancellationToken) != digest:
+            case Sha256Verification { Digest: var digest } when await FileDigest.Sha256Async(part, cancellationToken) != digest:
                 throw Refused(host, fileName, VerificationProblem.DigestMismatch, "its SHA-256 is not the expected one");
             case SignerVerification { Publisher: var publisher } when !await signatures.IsSignedByAsync(part, publisher, cancellationToken):
                 throw Refused(host, fileName, VerificationProblem.NotSigned, $"it is not signed by {publisher}");
@@ -86,12 +86,6 @@ internal sealed partial class Verifier(NetClient client, ISignatureVerifier sign
         {
             Detail = new VerificationFailedDetail(problem, fileName),
         };
-
-    private static async Task<string> DigestOfAsync(string path, CancellationToken cancellationToken)
-    {
-        await using FileStream file = File.OpenRead(path);
-        return Convert.ToHexStringLower(await SHA256.HashDataAsync(file, cancellationToken));
-    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "{FileName} from {Host} is used without verification: {Reason}")]
     private static partial void LogUnverified(ILogger logger, string fileName, string host, string reason);

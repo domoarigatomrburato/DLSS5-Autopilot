@@ -10,7 +10,11 @@ internal static class KnownFiles
 {
     public const string InstallRecord = "invidia-claritatis.json";
 
+    /// <summary>The game's own file the tool replaced or removed, kept beside it; restored by uninstall.</summary>
     public const string BackupSuffix = ".invidia-claritatis-backup";
+
+    /// <summary>The game's <c>d3dcompiler_47.dll</c>, renamed so Windows' newer one loads; restored by uninstall as a backup.</summary>
+    public const string DlssOffSuffix = ".dlss5-off";
 
     public const string AgilityFolder = "D3D12";
 
