@@ -56,6 +56,11 @@ first:
   so it is not a strict order when a family mixes numeric and other labels.
   Check the mirror's real tags or sort comparable labels first.
 
+**First sub-task, decided by Ale:** the mirror's `dlssd-` releases become
+the `dlssd` family (a `dlssd-` prefix before `dlss-` in `MirrorFamilies`),
+behind NVIDIA's own entry and checked by NVIDIA's signer like `dlss` and
+`dlssg`. `components.md` already says so.
+
 ## How we work (binding, besides AGENTS.md and the plan's Decisions)
 
 - Replies to Ale in Italian, short; code, docs, commits in English.
@@ -97,7 +102,6 @@ first:
 
 ## Questions for Ale from M3
 
-- The mirror's `dlssd-…` releases are ignored, as the spec says. Keep?
 - Newer `nvngx_dlssnr` builds exist than the label preference names
   (`gpu.md` Q1): prefer by label or by version?
 - LumeniteFX `mainline` no longer has `lumenite_QuantMotion.fx`, so motion

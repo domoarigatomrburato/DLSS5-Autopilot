@@ -29,7 +29,7 @@ those come from.
 | `renodx-dlss5` (Krish) | the mirror, releases tagged `renodx-dlss5-<v>` | the `.addon64` inside the zip | native, bridge, feeder |
 | `renodx-dlss` "SF" (ShortFuse) | the mirror, releases tagged `renodx-dlss-SF-<v>` | the `.addon64` inside the zip | renodx-dlss |
 | `nvngx_dlssnr.dll` | the mirror, releases tagged `dlssnr-<label>` | `nvngx_dlssnr.dll` inside the zip, per card | every route |
-| `nvngx_dlss.dll`, `nvngx_dlssd.dll`, `nvngx_dlssg.dll` | NVIDIA, `NVIDIA/DLSS` repository, tree of the newest release tag, `lib/Windows_x86_64/rel/`; mirror releases `dlss-<v>` and `dlssg-<v>` behind it (no `dlssd` on the mirror) | the DLL itself | super resolution, ray reconstruction, frame generation |
+| `nvngx_dlss.dll`, `nvngx_dlssd.dll`, `nvngx_dlssg.dll` | NVIDIA, `NVIDIA/DLSS` repository, tree of the newest release tag, `lib/Windows_x86_64/rel/`; mirror releases `dlss-<v>`, `dlssd-<v>` and `dlssg-<v>` behind it | the DLL itself | super resolution, ray reconstruction, frame generation |
 | DLSS5-Feeder | `jlrouzies-fr/DLSS5-Feeder` | `dlss5-feed.addon64` or `.addon32` or `dlss5-feed-helper.addon64`, `dlss5-feed-host64.exe`, `DLSS5_Feed.fx`, loose or in one zip | feeder |
 | LumeniteFX | `umar-afzaal/LumeniteFX`, branch zip | one provider `.fx` (`lumenite_Kernel.fx` or `lumenite_QuantMotion.fx`), the four `.fxh` includes, `lumenite_bluenoise256.png` | feeder, provider 3 or 4 |
 | VORT shaders | `vortigern11/vort_Shaders`, branch zip | `vort_Motion.fx`, its includes under `Includes`, `vort_BlueNoise.png` | feeder provider 2, standalone |
@@ -111,10 +111,12 @@ Which rule applies to which component:
 | Shader headers | raw files from the `slim` branch, each install |
 
 **The mirror's families.** A release belongs to the first family whose
-prefix its tag starts with, longest prefix first (`dlssnr` and `dlssg` both
-start with `dlss`, so the bare `dlss-` family is last): `renodx-dlss5` ->
-`renodx`; `renodx-dlss-SF` -> `renodx_sf`; `dlssnr` -> `dlssnr`; `dlssg` ->
-`dlssg`; `dlss-` -> `dlss`. The label is the tag minus the prefix and a
+prefix its tag starts with, longest prefix first (`dlssnr`, `dlssd` and
+`dlssg` all start with `dlss`, so the bare `dlss-` family is last):
+`renodx-dlss5` -> `renodx`; `renodx-dlss-SF` -> `renodx_sf`; `dlssnr` ->
+`dlssnr`; `dlssd` -> `dlssd`; `dlssg` -> `dlssg`; `dlss-` -> `dlss`.
+Changed from the reference: it ignored the mirror's `dlssd-` releases, so
+ray reconstruction had no build when NVIDIA's redirect failed. The label is the tag minus the prefix and a
 leading `-` (`4.55`, `310.8.0-RTX40`, `310.8.SF-v2`). An entry is the
 release's `.zip` asset. Entries are sorted newest first by the integers in
 the tag (`310.8.0` is `(310, 8, 0)`). NVIDIA's entries are put in front of
@@ -424,7 +426,7 @@ What the reference verifies, and what it does not:
 | That `releases/expanded_assets/<tag>` and the releases list page stay stable enough as a fallback (HTML scraping) | observe them; GitHub offers no contract. A pinned fixture catches a change |
 | That `github.com/<repo>/releases/latest` redirects to `/tag/<tag>` and a `HEAD` is enough | observe |
 | That NVIDIA's SDK repository keeps the three runtimes at `lib/Windows_x86_64/rel/` for every tag, and that the files are signed by NVIDIA | `NVIDIA/DLSS` tree and `signtool`/`Get-AuthenticodeSignature` on the real files |
-| That the mirror's tag prefixes (`renodx-dlss5-`, `renodx-dlss-SF-`, `dlssnr-`, `dlssg-`, `dlss-`) and one `.zip` per release are stable | `RankFTW/rhi-repo` releases |
+| That the mirror's tag prefixes (`renodx-dlss5-`, `renodx-dlss-SF-`, `dlssnr-`, `dlssd-`, `dlssg-`, `dlss-`) and one `.zip` per release are stable | `RankFTW/rhi-repo` releases |
 | That each fork still publishes releases in the shape the skip lists assume (package word `optiscaler`, `rtx40-mfg`, `-test-`, `with_dlss`) and which carry a SHA256SUMS | each fork's release page and licence (OptiScaler is GPL-3.0; the tool never bundles it) |
 | That `doitsujin/dxvk` assets are `dxvk-<v>.tar.gz` and `dxvk-native-<v>-*.tar.gz` and the archive layout `x64/`, `x32/`; that DXVK ships `d3d8.dll` | DXVK releases and README |
 | That `REFramework.zip` of the nightly repository carries one universal `dinput8.dll` | `praydog/REFramework-nightly` |
