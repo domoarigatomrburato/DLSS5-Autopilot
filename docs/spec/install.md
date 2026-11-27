@@ -1237,25 +1237,17 @@ interfaces"); the reference had the registry one already (`gpupref.py:73-90`).
 
 ## Open questions
 
-1. **Hold until commit costs disk and complexity.** Switching routes and
-   updates keep the old files until commit (transient old plus new). The
-   alternative is the reference's irreversible removal with rollback of fresh
-   installs only. Recommendation: keep the design; cap it with the free-space
-   check, which gather makes exact.
-2. **"Quarantined files" scope.** Read here as files an antivirus removes
-   after the install wrote them. If the term meant something else (a
-   deliberate holding area the tool makes for files it moved aside), the
-   moved-aside section is where it would live; confirm.
-3. **Verification after the first launch.** Cloud heuristics can act
-   minutes or hours after a write. The "verify" operation reports it when
-   asked; should the library check each installed game's files at start and
-   show a banner? Recommendation: yes, a quick size check at start and the
-   full hash when a game page opens.
-4. **Config-class list.** Which files count as rewritten at run time is a
-   per-component judgment (the list above is from the reference's notes);
-   each route spec must confirm its files. A file listed `config` that a
-   component does not rewrite loses the hash protection for nothing.
-5. **Refuse uninstall while the game runs.** The reference tried and
-   reported locks. This spec refuses. If a person wants to uninstall with a
-   launcher holding one DLL, the stuck path covers it; confirm refusing is
-   the right default.
+Answered with Ale on 2026-11-27, at the start of M4:
+
+1. **Hold until commit** stays, capped by the free-space check, which gather
+   makes exact.
+2. **"Quarantined files"** are files an antivirus removes after the install
+   wrote them, as "Quarantined files" reads.
+3. **Verification after the first launch**: the "verify" operation is M4's;
+   the library's quick size check at start and the full hash when a game page
+   opens come with the app (M7).
+4. **Config-class list**: the list in "The install record" stands as the
+   reference's notes give it; a route spec that finds a file listed `config`
+   its component does not rewrite moves it to `component`.
+5. **Uninstall is refused while the game runs**; a launcher holding one DLL
+   after the game closed is covered by the stuck path.

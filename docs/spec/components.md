@@ -48,6 +48,15 @@ those come from.
 Nothing else is fetched for the routes. Remix mod downloads and the
 self-update are other areas; video and webcam are dropped from scope.
 
+The tool's own catalog holds **one row per source**: its publisher, where it
+is taken from and how its files are checked. Each of the six OptiScaler builds
+is its own row, and so is each mirror family: the mirror's `dlss`, `dlssd` and
+`dlssg` rows are NVIDIA's files through the mirror, checked by NVIDIA's
+signer like NVIDIA's own rows; the `dlssnr` row by NVIDIA's signer or the
+digest pinned for the label (see "The mirror is accepted"). No row is borrowed
+by another source and rewritten in code, so the catalog is the whole truth of
+where a file comes from and how it is checked.
+
 ### Hosts
 
 Every URL stays on the hosts this area passes as its allowlist, redirects
@@ -95,7 +104,7 @@ Which rule applies to which component:
 | --- | --- |
 | ReShade | `reshade.me` home page: the first link matching `/downloads/ReShade_Setup_<v>_Addon.exe`. Three attempts with a growing pause; a 5xx whose body still contains the link counts; a bare 5xx is retried. Then the newest tag of `crosire/reshade` matching `v<n>(.<n>)+` (the setup exe is not a release asset: its URL is built from the version). Then the newest `ReShade_Setup_*_Addon.exe` already in the cache. Then an error listing every reason |
 | The mirror catalog | `RankFTW/rhi-repo` release list (100 per page) grouped by tag prefix into families (below). Fallback: the github.com pages, at most 3 builds per family, always keeping the builds the tool pins; that shortened list is never cached for the session |
-| NVIDIA runtimes | tag from the `NVIDIA/DLSS` "latest" redirect (no API call). The DLL URL is `raw.githubusercontent.com/NVIDIA/DLSS/<tag>/lib/Windows_x86_64/rel/<name>`. If the redirect fails nothing is added and the mirror alone serves the family; that failure is not remembered |
+| NVIDIA runtimes | tag from the `NVIDIA/DLSS` "latest" redirect (no API call). The DLL URL is `raw.githubusercontent.com/NVIDIA/DLSS/<tag>/lib/Windows_x86_64/rel/<name>`. If the redirect fails, a refusal included (a blocked host, a downgrade), nothing is added and the mirror alone serves the family: its copies must carry NVIDIA's signature too, so the trust is the same. The log warns, the install's report notes "NVIDIA's list could not be read; the mirror's copy, signed by NVIDIA, was used", and the failure is not remembered |
 | DLSS5-Feeder | the release list (15 newest). See "Feeder builds" |
 | dlss5-bridge | `/latest`; the first asset ending `.addon64`; the API-or-pages rule |
 | neural-upstream | `/latest`; asset named `nvngx.dll.addon64`; with the API unreachable and nothing cached: the `latest/download` redirect, version `latest` |
@@ -119,11 +128,22 @@ Changed from the reference: it ignored the mirror's `dlssd-` releases, so
 ray reconstruction had no build when NVIDIA's redirect failed. The label is the tag minus the prefix and a
 leading `-` (`4.55`, `310.8.0-RTX40`, `310.8.SF-v2`). An entry is the
 release's `.zip` asset. Entries are sorted newest first by the integers in
-the tag (`310.8.0` is `(310, 8, 0)`). NVIDIA's entries are put in front of
+the tag (`310.8.0` is `(310, 8, 0)`); two entries whose versions cannot say
+which is newer (`310.8.SF` and `310.8.Lecram`) are ordered by tag, ordinal,
+so the order is strict and the same on every run. NVIDIA's entries are put in front of
 the mirror's in the `dlss`, `dlssd` and `dlssg` families, with the label
 `<sdk tag> (NVIDIA SDK)` (one SDK ships all three, and NVIDIA numbers each
 runtime separately, so the label names the SDK). The catalog is remembered
-for the process, except the shortened pages version.
+for the run, except the shortened pages version.
+
+**A run** is one job ([platform](platform.md), "Jobs"): an install, an
+uninstall, "update all", an autopilot pass. The run owns every memory of this
+area (the mirror catalog, NVIDIA's runtime list, each component's latest tag,
+release list and release page), so two installs in one job share one answer
+and the next job asks again; a resolution runs under the job's cancellation.
+The API cache on disk (fresh 6 h, net) is shared across runs. Changed from
+the M3 code, which kept the memories for the process: an app left open never
+saw a new release.
 
 **Choosing an entry** (`pick`): the entry whose label or tag equals the wanted
 text, else the newest. An empty family is "a build list that could not be
@@ -295,7 +315,7 @@ The cache's layout, keys and locking are [net](net.md)'s. This area caches:
 | downloads | until the file fails its checks, or is cleared |
 | unpacked OptiScaler archives | with the archive |
 | GitHub API answers | fresh 6 h; used at any age when the live call fails |
-| the mirror catalog, the NVIDIA runtime list, each component's latest | memory, per process, for the run |
+| the mirror catalog, the NVIDIA runtime list, each component's latest | memory, for the run (one job) |
 | the person's own frame generation files, in `%LOCALAPPDATA%\dlss5-autopilot\own-fg\<recipe>` (not the cache: the person's files) | until "forget" |
 
 The readable part of each cached file's name is the asset's own name

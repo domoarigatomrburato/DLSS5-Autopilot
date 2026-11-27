@@ -118,8 +118,38 @@ specified.
       types (the DXVK box, MFG, the ray-reconstruction swap, the motion
       provider, today plain parameters), the refusals before an install
       beyond the reliability level, and the staleness check ("check
-      versions"), which needs the record. Decide what a "run" is: the
-      component memories live for the process today.
+      versions"), which needs the record. A run is one job: it owns the
+      component memories, which the M3 code kept for the process
+      ([components](../spec/components.md), "A run"). Sub-tasks, each
+      reviewed on its own diff:
+  - [ ] a. decided changes: the mirror's `dlssd` family, the `dlssnr`
+        trust rule (NVIDIA's signer or a pinned digest) and its label
+        table, motion provider 4 out, the Remix runtime pinned to
+        `dlssnr-v1`, one catalog row per source, a strict mirror order,
+        NVIDIA's redirect failure noted;
+  - [ ] b1. storage and archives: the atomic-write helper, the free-space
+        seam, drive data on `DiskFullException`, ReShade's appended zip, a
+        member listing that writes nothing, cache-only reads and deletes
+        under the lock, archive texts from resources;
+  - [ ] b2. platform seams for install (processes, access and lock checks),
+        the per-game state store, the run, the test beds (game folders from
+        a description, tree snapshots, crash points);
+  - [ ] c. the install record: contract, reader (states, `Unreadable`, the
+        Python release's records), writer, `IInstallRecords`; the one home
+        of which files are ours;
+  - [ ] d. the transaction: journal before every write, one backup
+        mechanism, rollback, hold until commit, verify, recovery,
+        cancellation;
+  - [ ] e. uninstall from the record and without one; "verify";
+  - [ ] f. refusals and the preview as a reader of the same plan; each
+        route's settings and option types;
+  - [ ] i. shared registrations (Vulkan, OpenXR, the old all-users
+        cleanup) and the Windows graphics preference;
+  - [ ] g. route plans: the ReShade base, native, upstream, bridge, renodx;
+  - [ ] h. route plans: feeder, standalone, uplift, optiscaler, remix, MFG;
+  - [ ] j. the staleness check, the end-to-end tests (preview equals
+        install, byte-for-byte survival, crash-point replay), one
+        cross-cutting `/simplify`.
 - [ ] **M5. DLSS files kept current.** Every game's DLSS runtimes against
       NVIDIA's newest; update and restore original. The Authenticode
       verifier reports who signed and why a check failed, not only yes or

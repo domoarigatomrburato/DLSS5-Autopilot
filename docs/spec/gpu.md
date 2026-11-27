@@ -168,8 +168,7 @@ downloaded, and its contents are checked against the card before it is used.
   | --- | --- | --- |
   | `310.8.0`, `310.9.16-nvidia` | sm 120 | yes |
   | `310.8.0-RTX40` | sm 89, 120 | no (modified) |
-  | `310.8.SF-v2`, `310.8.Lecram`, `310.9.16` | sm 75, 86, 89, 120 | no (modified or unsigned) |
-  | `310.8.SF` | sm 75, 86, 89, 120 (the reference's notes, not measured) | not measured |
+  | `310.8.SF`, `310.8.SF-v2`, `310.8.Lecram`, `310.9.16` | sm 75, 86, 89, 120 | no (modified or unsigned) |
 
   Only NVIDIA's own builds carry its signature, and they carry code for RTX 50
   alone: every build for RTX 20, 30 and 40 is a community build, placed only

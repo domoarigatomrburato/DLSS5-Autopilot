@@ -33,28 +33,21 @@ session from this file.
 
 Spec: `docs/spec/install.md` and the M4 line of the plan, which now also
 carries M3's leftovers (route settings and option types, refusals before an
-install, the staleness check of `components.md`). Open questions to settle
-first:
+install, the staleness check of `components.md`). The M4 plan and its
+sub-tasks are in `rewrite.md`. M3's open questions, settled with Ale on
+2026-11-27:
 
-- **What a "run" is.** `ResolutionMemory`, the latest-tag, list and
-  release-page memories live for the process: a long-running app never sees
-  new releases, and shared resolutions run uncancelled. M4 (install) and M7
-  (autopilot) need a run object that owns them.
-- **`OwnedFiles` vs `GameFolder`:** the rule of which files the tool owns is
-  written twice; M4's record should become its one home.
-- **`CatalogEntry.Repository`** throws for a web-site source (ReShade's
-  `reshade.me`); callers must not reach it for that row.
-- **NVIDIA redirect refusals:** `NvidiaRuntimes` swallows every
-  `NetException`, refusals included, and the mirror serves alone
-  (`MirrorCatalog` tests encode it on purpose). Keep or narrow, decided with
-  the install's error texts.
-- **Catalog rows per source:** OptiScaler's six repositories and the
-  mirror's `dlss`/`dlssg` borrow one row each and are rewritten in code.
-  One row per source would make the catalog the whole truth; it changes
-  `components.md`'s table, so it needs Ale.
-- **Mirror sort:** `ComponentVersion.Order` ties labels that do not compare,
-  so it is not a strict order when a family mixes numeric and other labels.
-  Check the mirror's real tags or sort comparable labels first.
+- **A run is one job**, owning the component memories (`components.md`,
+  "A run"); sub-task b2.
+- **`OwnedFiles` vs `GameFolder`:** the record (sub-task c) becomes the one
+  home of which files are ours; both read it.
+- **`CatalogEntry.Repository`:** the source becomes typed (a GitHub
+  repository or a web site), so ReShade's row has no repository; sub-task a.
+- **NVIDIA redirect refusals:** kept; the mirror's copies carry NVIDIA's
+  signature, the log warns and the report notes it; sub-task a.
+- **One catalog row per source** (`components.md`, "The catalog"); sub-task a.
+- **Mirror sort:** by version, then by tag, ordinal, where versions do not
+  compare; sub-task a.
 
 **First sub-task, decided by Ale:** the mirror's `dlssd-` releases become
 the `dlssd` family (a `dlssd-` prefix before `dlss-` in `MirrorFamilies`),
