@@ -49,8 +49,9 @@ Nothing else is fetched for the routes. Remix mod downloads and the
 self-update are other areas; video and webcam are dropped from scope.
 
 The tool's own catalog holds **one row per source**: its publisher, where it
-is taken from and how its files are checked. Each of the six OptiScaler builds
-is its own row, and so is each mirror family: the mirror's `dlss`, `dlssd` and
+is taken from and how its files are checked. Each OptiScaler repository is
+its own row (`wilsjo2` and `wilsjo2-mfg` are one repository and share its
+row), and so is each mirror family: the mirror's `dlss`, `dlssd` and
 `dlssg` rows are NVIDIA's files through the mirror, checked by NVIDIA's
 signer like NVIDIA's own rows; the `dlssnr` row by NVIDIA's signer or the
 digest pinned for the label (see "The mirror is accepted"). No row is borrowed
