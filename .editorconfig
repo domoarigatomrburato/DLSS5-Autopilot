@@ -156,3 +156,12 @@ csharp_indent_case_contents = true
 csharp_indent_switch_labels = true
 csharp_preserve_single_line_statements = false
 csharp_preserve_single_line_blocks = true
+
+# ---------------------------------------------------------------------------
+# Source-generated JSON contexts, one per *JsonContext.cs file: the one place
+# CA1506 (class coupling) is waived. The generator adds a JsonTypeInfo
+# property per serialized type to our partial class, so its coupling grows
+# with the shapes it serializes; there is nothing to split.
+# ---------------------------------------------------------------------------
+[**/*JsonContext.cs]
+dotnet_diagnostic.CA1506.severity = none

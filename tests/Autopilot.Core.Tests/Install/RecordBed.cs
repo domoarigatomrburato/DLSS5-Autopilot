@@ -31,7 +31,7 @@ internal sealed class RecordBed(params IEnumerable<TreeFile> files) : IDisposabl
     /// <summary>Writes <paramref name="record"/> after <paramref name="change"/> edits its JSON.</summary>
     public void PlantEdited(InstallRecord record, Action<JsonObject> change, string installFolder = "")
     {
-        JsonObject json = JsonSerializer.SerializeToNode(record, RecordJson.Record)!.AsObject();
+        JsonObject json = JsonSerializer.SerializeToNode(record, InstallJsonContext.Default.InstallRecord)!.AsObject();
         change(json);
         PlantRaw(json.ToJsonString(), installFolder);
     }

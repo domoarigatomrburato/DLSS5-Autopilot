@@ -59,6 +59,9 @@ specified.
   - formatting is checked;
   - the package lock files are enforced;
   - the tests run with a coverage floor that only rises.
+- **JSON through source-generated contexts.** Production code serializes
+  JSON through a source-generated context in a `*JsonContext.cs` file
+  (reflection is off in `src/`), the one place CA1506 is waived.
 - **Idiomatic tooling only:**
   - the `dotnet` CLI and a `.slnx` solution;
   - `global.json` pinning the SDK;

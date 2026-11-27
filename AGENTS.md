@@ -49,7 +49,9 @@ Everything blocks: warnings are errors, nullable is on, every analyzer is on
 `CodeMetricsConfig.txt`, and the package lock files are enforced (`fix`
 refreshes them after a package change; commit them). Production code takes its
 clock, delays and HTTP handler from the caller: `src/BannedSymbols.txt` fails
-the build on the APIs that bypass them. Packages come from nuget.org only
+the build on the APIs that bypass them. JSON in production code goes through a
+source-generated context in a `*JsonContext.cs` file (reflection is off in
+`src/`), the one place CA1506 is waived. Packages come from nuget.org only
 (`nuget.config`). A false positive of the secret scan goes in
 `.gitleaksignore` by its fingerprint. Never lower a limit, a severity or the coverage floor to make
 a gate pass; the floor in `coverage-floor.txt` only rises.

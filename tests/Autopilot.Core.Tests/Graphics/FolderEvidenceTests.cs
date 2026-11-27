@@ -82,7 +82,7 @@ public sealed class FolderEvidenceTests(TestContext testContext) : GraphicsTestB
     {
         string exe = Game(imports: "d3d11.dll");
         Dll(exe, "nvngx_dlssg.dll");
-        Junk(exe, "invidia-claritatis.json", JsonSerializer.Serialize(Recorded.Install("", Recorded.Ours("nvngx_dlssg.dll")), RecordJson.Record) + new string(' ', 1024 * 1024));
+        Junk(exe, "invidia-claritatis.json", JsonSerializer.Serialize(Recorded.Install("", Recorded.Ours("nvngx_dlssg.dll")), InstallJsonContext.Default.InstallRecord) + new string(' ', 1024 * 1024));
 
         Is(await DecideAsync(exe), GraphicsApi.DX12, ApiReason.AgilitySdk);
     }

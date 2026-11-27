@@ -7,12 +7,6 @@ namespace Autopilot.Core.Net;
 /// <summary>API answers kept under <c>&lt;cache&gt;/api/&lt;key&gt;.json</c>, written atomically.</summary>
 internal sealed partial class ApiCache(string cacheRoot, TimeProvider time, ILogger logger)
 {
-    private static readonly JsonSerializerOptions _json = new()
-    {
-        RespectNullableAnnotations = true,
-        RespectRequiredConstructorParameters = true,
-    };
-
     private readonly string _folder = Path.Combine(cacheRoot, "api");
 
     /// <summary>The kept answer for a URL; a missing or unreadable file is no answer.</summary>
@@ -22,7 +16,7 @@ internal sealed partial class ApiCache(string cacheRoot, TimeProvider time, ILog
         {
             // Another process may replace the file while it is read.
             await using FileStream file = new(PathFor(url), FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.Asynchronous);
-            CachedText? entry = await JsonSerializer.DeserializeAsync<CachedText>(file, _json, cancellationToken);
+            CachedText? entry = await JsonSerializer.DeserializeAsync(file, NetJsonContext.Default.CachedText, cancellationToken);
             return entry?.Url == url.AbsoluteUri ? entry : null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
@@ -39,7 +33,7 @@ internal sealed partial class ApiCache(string cacheRoot, TimeProvider time, ILog
     {
         try
         {
-            await AtomicFile.WriteAsync(PathFor(url), (file, token) => JsonSerializer.SerializeAsync(file, entry, _json, token), check: null, time, cancellationToken);
+            await AtomicFile.WriteAsync(PathFor(url), (file, token) => JsonSerializer.SerializeAsync(file, entry, NetJsonContext.Default.CachedText, token), check: null, time, cancellationToken);
         }
         catch (Exception failure) when (failure is IOException or UnauthorizedAccessException)
         {

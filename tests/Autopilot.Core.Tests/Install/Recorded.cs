@@ -46,7 +46,7 @@ internal static class Recorded
 
     /// <summary>Writes <paramref name="record"/> as the record in <paramref name="installFolder"/>, as the writer would.</summary>
     public static void Plant(string installFolder, InstallRecord record) =>
-        TestFiles.Plant(Path.Join(installFolder, KnownFiles.InstallRecord), JsonSerializer.Serialize(record, RecordJson.Record));
+        TestFiles.Plant(Path.Join(installFolder, KnownFiles.InstallRecord), JsonSerializer.Serialize(record, InstallJsonContext.Default.InstallRecord));
 
     /// <summary>The reader, logging to <paramref name="logger"/> when given.</summary>
     public static InstallRecords Reader(ILogger<InstallRecords>? logger = null) => new(logger ?? NullLogger<InstallRecords>.Instance, new FakeTimeProvider());

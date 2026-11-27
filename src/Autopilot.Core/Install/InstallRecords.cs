@@ -45,7 +45,7 @@ public sealed partial class InstallRecords(ILogger<InstallRecords> logger, TimeP
         Writable(path);
         return AtomicFile.WriteAsync(
             path,
-            (file, token) => JsonSerializer.SerializeAsync(file, stamped, RecordJson.Record, token),
+            (file, token) => JsonSerializer.SerializeAsync(file, stamped, InstallJsonContext.Default.InstallRecord, token),
             check: null,
             time,
             cancellationToken);

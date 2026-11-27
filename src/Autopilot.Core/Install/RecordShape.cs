@@ -21,7 +21,7 @@ internal static partial class RecordShape
         InstallRecord? record;
         try
         {
-            record = document.Deserialize(RecordJson.Record);
+            record = document.Deserialize(InstallJsonContext.Default.InstallRecord);
         }
         catch (JsonException)
         {

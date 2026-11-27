@@ -83,7 +83,7 @@ public static class FailureNotes
     public static FailureNote? Read(GameStateStore store, GameIdentity game)
     {
         ArgumentNullException.ThrowIfNull(store);
-        return store.Read(game).Get(Key, RecordJson.Note);
+        return store.Read(game).Get(Key, InstallJsonContext.Default.FailureNote);
     }
 
     /// <summary>Keeps <paramref name="note"/> as the game's failure note, its text cut to 400 characters and its exception to the last 4,000.</summary>
@@ -97,7 +97,7 @@ public static class FailureNotes
             Text = Head(note.Text, MaxText),
             Exception = note.Exception is { } exception ? Tail(exception, MaxException) : null,
         };
-        store.Update(game, state => state.Set(Key, kept, RecordJson.Note), cancellationToken);
+        store.Update(game, state => state.Set(Key, kept, InstallJsonContext.Default.FailureNote), cancellationToken);
     }
 
     // At most the first max characters, never half of a character made of two (an emoji).
