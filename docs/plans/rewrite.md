@@ -164,7 +164,8 @@ specified.
         it reports whether Windows trusts the signature and who signed it,
         not only yes or no (M7's self-update needs the signer); its tests
         build everywhere and run on Windows;
-  - [ ] g. route plans: the ReShade base, native, upstream, bridge, renodx;
+  - [ ] g. route plans: the ReShade base, native, upstream, bridge, renodx
+        (g1 done: the plan infrastructure, the ReShade base, native);
   - [ ] h. route plans: feeder, standalone, uplift, optiscaler, remix, MFG;
   - [ ] j. the staleness check, the end-to-end tests (preview equals
         install, byte-for-byte survival, crash-point replay), one

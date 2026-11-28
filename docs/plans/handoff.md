@@ -13,8 +13,8 @@ from this file.
 - The Python reference is tag `python-reference`, checked out read-only beside
   the repository as `invidia-claritatis-reference`.
 - M0–M3 ticked in `docs/plans/rewrite.md`; M4 planned there as sub-tasks
-  a–j, with **a, b1, b2, c, d, e, f and i done**. Gate green: 2681 tests,
-  98.14% line coverage, floor 98 in `coverage-floor.txt`.
+  a–j, with **a, b1, b2, c, d, e, f, i, k and g1 done**. Gate green: 2759 tests,
+  98.06% line coverage, floor 98 in `coverage-floor.txt`.
 - **The tool is now Invidia Claritatis** (Decisions in `rewrite.md`); every
   name the tool gives is `invidia-claritatis`, in the specs and in the code.
 - **Greenfield, never published:** nothing reads the reference's records,
@@ -23,26 +23,45 @@ from this file.
 - The `nvngx_dlssnr.dll` digests behind `DlssnrPins` were measured in
   `~/coding/claude-lab/dlssnr-digests/results.md`.
 
-## Next: finish M4 g1 (uncommitted), then g2, then h
+## Next: M4 sub-task g2, then h
 
 Plan and order in `rewrite.md` (a → b1∥b2 → c → d → e∥f∥i → k → g → h → j).
-g is split in two: **g1** (plan infrastructure, the ReShade base, native) and
-**g2** (upstream, bridge, renodx, DXVK, REFramework, the "route not offered"
-refusal, the bridge's ofa settings).
+g is split in two: **g1 is done** (the plan infrastructure, the ReShade base,
+native); **g2** is next: upstream, bridge (with `dlss5-bridge.cfg` and the
+bridge's ofa settings), renodx (`[RENODX-DLSS]`, the game that closes itself
+at start), DXVK (native, bridge; the feeder reuses it in h), REFramework on RE
+Engine games, and the "route not offered for the game" refusal. Write g2's
+brief fresh, on g1's shape (below).
 
-**g1 sits uncommitted in the working tree** (40 paths, local only), gate
-green (2745 tests, 98.02%), fingerprint
-`2f32aa3b8e8dd7e37adafe56bca8433a596dae80`. Its brief is
-`docs/plans/brief-g1.md`. `/simplify` ran; its 21 fixes are **not applied
-yet**: they are `docs/plans/brief-g1-simplify.md`, ready for a fresh Opus
-implementer (the `lockf` path in both briefs points at an old scratchpad:
-replace it). Then: `/code-review` at high on the result, the gate, one commit
-"M4g1: route plans, the ReShade base and native", push, delete the two
-briefs. Open question from the fixes' implementer, item 11: keep
-`RefusalRequest`'s survey nullable (null for hand-built test plans), the
-likely answer. g1 also settled: the overlay key stays per game in
-`RouteSettings` (the app fills in its one global value, M7); the preview's
-plan names files with a `PendingSource`, which the transaction refuses.
+Where g1 put things (`src/Autopilot.Core/Install/Plans/`):
+
+- `FolderSurvey` reads the folder once (names by relative path, config bytes
+  through `Content(path)`, proxy content by `ContentMarks`, previous record's
+  entries and components); `RoutePlans.For(request, survey, files)` is pure.
+  `PlanRequest.Facts` must come from runtimes read **with** the record
+  (`GameRuntimesReader` leaves our own files out).
+- `PlanGather` resolves and fetches into the cache: a handler map for
+  reshade, renodx, dlssnr, dlss, dlssd, and a generic path
+  (`ReleaseGather.ComponentAsync`) for ids `ComponentSources` resolves, with an
+  empty "generic ids supported" set g2 fills (upstream, bridge, dxvk,
+  reframework). Other ids throw `NotSupportedException`; so does a native plan
+  through DXVK until g2.
+- `PlanFiles`: `GatheredFiles` (cache paths, facts hashed once; pinned
+  `dlssnr` facts from the pin's digest) or `PreviewFiles` (names only,
+  `PendingSource`; the transaction refuses a plan that `NeedsGathering`).
+- `IniText` edits config files in place (keeps every other line, the BOM,
+  UTF-16, the line endings); `ReShadeIni` writes `ReShade.ini`.
+- `PlanNames.AddOnsOf(route)` is the purge table, read by placing and purging.
+- The proxy name taken by DXVK, REFramework, Special K or anything not ReShade
+  refuses in phase 1 (`FileRefusals.ProxyTaken`, `BlockerKind.ProxyTaken`); a
+  hand-installed OptiScaler is moved aside with its companions.
+- On Auto, a pinned `dlssnr` build whose pin excludes the card is skipped
+  before it is downloaded.
+- Settled: the overlay key stays per game in `RouteSettings` (the app fills in
+  its one global value, M7); `ComponentRelease` takes its `CatalogEntry`.
+- **To check on Windows:** the content marks (ReShade, OptiScaler in UTF-16,
+  DXVK, REFramework, "SpecialK") against real DLLs: an injector naming
+  ReShade must not pass for it.
 
 **Waiting on Windows:** `dotnet test --project tests/Autopilot.Windows.Tests`
 has been built but never run (it runs only on Windows). It checks the struct
@@ -111,9 +130,6 @@ For g and h:
   `dlssd`, `dlssg`, `optiscaler`) must carry its row: `ComponentLayout` and
   `ReleaseAssets` look rows up by id, and `ComponentCatalog.Of(id)` refuses
   such ids.
-- **h, wiring `DlssnrBuilds.ChooseAsync`:** on Auto, skip a pinned build
-  whose `DlssnrPin.Sm` excludes the card before downloading it (165–276 MB
-  each); today the fatbin is read after the download.
 
 ## How we work (binding, besides AGENTS.md and the plan's Decisions)
 
