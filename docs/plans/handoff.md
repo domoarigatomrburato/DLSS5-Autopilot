@@ -23,10 +23,15 @@ from this file.
 - The `nvngx_dlssnr.dll` digests behind `DlssnrPins` were measured in
   `~/coding/claude-lab/dlssnr-digests/results.md`.
 
-## Next: M4 sub-task k, then g, then h
+## Next: M4 sub-task g, then h
 
 Plan and order in `rewrite.md` (a → b1∥b2 → c → d → e∥f∥i → k → g → h → j).
-Ale moved the Windows Authenticode verifier from M5 into M4 (sub-task k).
+
+**Waiting on Windows:** `dotnet test --project tests/Autopilot.Windows.Tests`
+has been built but never run (it runs only on Windows). It checks the struct
+layouts of `Signatures/NativeMethods`, the `.part` name and the signer read.
+Not covered by a test: the cache-only chain build on a clean install and the
+second `WinVerifyTrust` without revocation (net.md, "To verify").
 
 Where things are:
 
@@ -52,6 +57,11 @@ Where things are:
 - **Uninstall** (e) is `Install/Uninstaller`; with no usable record,
   `KnownNamesCleanup` (a damaged record kept as `.corrupt`). "Verify" is
   `InstallVerification.VerifyAsync`.
+- **Signatures** (k): `ISignatureVerifier.CheckAsync` reports a
+  `SignatureCheck` (status, signer, Windows' detail); `Net/Verifier` decides
+  (`NotSigned`, `WrongSigner`, `SignatureInvalid`). The Windows
+  implementation is `Autopilot.Windows/Signatures/AuthenticodeVerifier`; M7
+  passes it to `DownloadCache` in `CompositionRoot`.
 - **Outside the game folder** (i): `SharedPlaces` (HKCU registry, the
   machine's for reading, the layer folder) is null everywhere until M7 wires
   it in `CompositionRoot`, so a plan with layer or preference steps is

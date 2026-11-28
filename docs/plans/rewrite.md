@@ -160,7 +160,7 @@ specified.
         route's settings and option types;
   - [x] i. shared registrations (Vulkan, OpenXR) and the Windows graphics
         preference;
-  - [ ] k. the Windows Authenticode verifier behind `ISignatureVerifier`:
+  - [x] k. the Windows Authenticode verifier behind `ISignatureVerifier`:
         it reports whether Windows trusts the signature and who signed it,
         not only yes or no (M7's self-update needs the signer); its tests
         build everywhere and run on Windows;
