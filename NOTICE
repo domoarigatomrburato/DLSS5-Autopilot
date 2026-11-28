@@ -4,8 +4,10 @@ Invidia Claritatis
 This project began as a fork of Kizzuwatnaa/DLSS5-Autopilot
 (https://github.com/Kizzuwatnaa/DLSS5-Autopilot), used under the MIT licence,
 and is being rewritten from scratch in C#. The original's copyright notice is
-kept in LICENSE, beside this project's. The original Python code is kept in
-this repository's history under the tag `python-reference`.
+kept in LICENSE, beside this project's; its contributors are listed at
+https://github.com/Kizzuwatnaa/DLSS5-Autopilot/graphs/contributors. The
+original Python code is kept in this repository's history under the tag
+`python-reference`.
 
 The MIT licence in LICENSE covers only this project's own source code. The tool
 downloads third-party components at run time; those remain under their own
