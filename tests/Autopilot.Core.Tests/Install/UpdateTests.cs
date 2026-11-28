@@ -40,7 +40,7 @@ public sealed class UpdateTests(TestContext testContext)
         InstallRecord updated = await bed.RecordAsync(Ct);
         Assert.HasCount(2, updated.Entries);
         Assert.AreEqual(first.Entries[1], updated.Entries[0], "nvngx_dlss.dll is kept as it was, its backup with it");
-        Assert.AreEqual(first.Entries[0] with { Written = Plans.Facts(_newer) }, updated.Entries[1], "dxgi.dll's original is the game's, still");
+        Assert.AreEqual(first.Entries[0] with { Written = PlanBeds.Facts(_newer) }, updated.Entries[1], "dxgi.dll's original is the game's, still");
         Assert.IsTrue(bed.BackupIsTheOriginal());
         Assert.AreEqual("", bed.HeldFiles(), "our older dxgi.dll is deleted at commit");
     }
@@ -58,9 +58,9 @@ public sealed class UpdateTests(TestContext testContext)
     private static async Task<TransactionBed> InstalledAsync(CancellationToken cancellationToken)
     {
         TransactionBed bed = new(Switches.GameFiles);
-        _ = await bed.CommitAsync(bed.Plan(RouteId.Native, Plans.Place("dxgi.dll", _dxgi), Plans.Place("nvngx_dlss.dll", _dlss)), cancellationToken);
+        _ = await bed.CommitAsync(bed.Plan(RouteId.Native, PlanBeds.Place("dxgi.dll", _dxgi), PlanBeds.Place("nvngx_dlss.dll", _dlss)), cancellationToken);
         return bed;
     }
 
-    private static InstallPlan Update(TransactionBed bed) => bed.Plan(RouteId.Native, Plans.Place("dxgi.dll", _newer), new KeepEntry("nvngx_dlss.dll"));
+    private static InstallPlan Update(TransactionBed bed) => bed.Plan(RouteId.Native, PlanBeds.Place("dxgi.dll", _newer), new KeepEntry("nvngx_dlss.dll"));
 }

@@ -19,7 +19,7 @@ public sealed class RollbackTests(TestContext testContext)
         TreeSnapshot before = bed.Snapshot();
 
         // The drive fills as the install commits: everything it wrote is on disk by then.
-        InstallFailed failed = await bed.FailAtCommitAsync(bed.Plan(RouteId.Native, Plans.Place("dlss5-feed.addon64", _addon), Plans.Place("reshade-shaders/Shaders/a.fx", _addon)), Ct);
+        InstallFailed failed = await bed.FailAtCommitAsync(bed.Plan(RouteId.Native, PlanBeds.Place("dlss5-feed.addon64", _addon), PlanBeds.Place("reshade-shaders/Shaders/a.fx", _addon)), Ct);
 
         before.AssertSame(bed.Snapshot());
         AssertRolledBack(bed, failed);
@@ -41,7 +41,7 @@ public sealed class RollbackTests(TestContext testContext)
     private static async Task CrashMidWriteAsync(TransactionBed bed, CancellationToken cancellationToken)
     {
         bed.Steps = CrashPoints.After(3);
-        _ = await bed.InstallAsync(bed.Plan(RouteId.Native, Plans.Place("Shaders/a.fx", _addon)), cancellationToken);
+        _ = await bed.InstallAsync(bed.Plan(RouteId.Native, PlanBeds.Place("Shaders/a.fx", _addon)), cancellationToken);
         TestFiles.Plant(bed.Tree.PathOf("Shaders/a.fx.ic-1234-0123abcd.tmp"), "half of it"u8.ToArray());
     }
 

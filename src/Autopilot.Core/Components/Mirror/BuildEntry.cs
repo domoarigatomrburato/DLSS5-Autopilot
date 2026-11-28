@@ -31,6 +31,15 @@ public sealed record BuildEntry(BuildFamily Family, BuildPublisher Publisher, st
             ContentsCheck.PinnedDigestOrNvidiaSigner => DlssnrPins.Of(Label)?.Verification ?? (Verification)CatalogEntry.NvidiaSignerCheck,
             _ => null,
         };
+
+    /// <summary>
+    /// The build as a component to fetch: its one download, holding <paramref name="file"/> (the download itself for NVIDIA's
+    /// raw DLL), recorded under the family's id with its label, and its catalog row, since a family's id has several.
+    /// </summary>
+    /// <param name="file">The file the download holds (<c>nvngx_dlssnr.dll</c>, <c>renodx-dlss5.addon64</c>).</param>
+    /// <param name="source">Where the build list came from.</param>
+    internal ComponentRelease ReleaseOf(string file, ReleaseSource? source) =>
+        new(MirrorFamilies.EntryOf(Family, Publisher), new(Label), [new(FileName, Url, Download)], [new(file)], source);
 }
 
 /// <summary>The entry chosen from a family.</summary>

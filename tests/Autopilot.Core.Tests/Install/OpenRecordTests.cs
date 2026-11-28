@@ -20,7 +20,7 @@ public sealed class OpenRecordTests(TestContext testContext)
         using TransactionBed bed = new(GameFolders.Empty);
         await CrashMidInstallAsync(bed, Ct);
 
-        InstallCommitted next = await bed.CommitAsync(bed.Plan(RouteId.Native, Plans.Place("second.dll", _second)), Ct);
+        InstallCommitted next = await bed.CommitAsync(bed.Plan(RouteId.Native, PlanBeds.Place("second.dll", _second)), Ct);
 
         AssertRolledBackFirst(bed, next, await bed.EntriesAsync(Ct));
     }
@@ -29,7 +29,7 @@ public sealed class OpenRecordTests(TestContext testContext)
     private static async Task CrashMidInstallAsync(TransactionBed bed, CancellationToken cancellationToken)
     {
         bed.Steps = CrashPoints.After(3);
-        _ = await bed.InstallAsync(bed.Plan(RouteId.Native, Plans.Place("first.dll", _first), Plans.Place("other.dll", _first)), cancellationToken);
+        _ = await bed.InstallAsync(bed.Plan(RouteId.Native, PlanBeds.Place("first.dll", _first), PlanBeds.Place("other.dll", _first)), cancellationToken);
         bed.Steps = NoWriteSteps.Instance;
         Assert.IsTrue(bed.Exists("first.dll"), "the crash came after the first file");
     }

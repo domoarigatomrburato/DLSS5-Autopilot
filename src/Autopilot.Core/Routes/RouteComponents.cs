@@ -174,7 +174,7 @@ public static class RouteComponents
     private static IEnumerable<string> EveryReShadeRoute(RouteId route, RouteFacts facts, RouteSettings read)
     {
         yield return ComponentIds.ReShade;
-        if (PlacesDlss(route, facts))
+        if (PlacesDlss(route, facts) && !(read.KeepGameDlss && facts.DlssBesideExecutable))
         {
             yield return ComponentIds.Dlss;
         }

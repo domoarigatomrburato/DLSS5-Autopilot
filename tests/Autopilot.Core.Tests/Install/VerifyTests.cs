@@ -66,7 +66,7 @@ public sealed class VerifyTests(TestContext testContext)
     // a.dll ours, dxgi.dll over the game's, the compiler moved aside.
     private static async Task<TransactionBed> InstalledAsync(CancellationToken cancellationToken)
     {
-        TransactionBed bed = await UninstallBed.InstalledAsync(Switches.GameFiles, cancellationToken, Plans.Place("a.dll", UninstallBed.Ours), Plans.Place("dxgi.dll", UninstallBed.Ours), _aside);
+        TransactionBed bed = await UninstallBed.InstalledAsync(Switches.GameFiles, cancellationToken, PlanBeds.Place("a.dll", UninstallBed.Ours), PlanBeds.Place("dxgi.dll", UninstallBed.Ours), _aside);
         return bed;
     }
 

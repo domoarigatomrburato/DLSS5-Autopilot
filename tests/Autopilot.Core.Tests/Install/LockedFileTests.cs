@@ -67,9 +67,9 @@ public sealed class LockedFileTests(TestContext testContext)
         AssertStuck(bed, failed, await bed.RecordAsync(Ct));
     }
 
-    private static InstallPlan AddOnAndDxgi(TransactionBed bed) => bed.Plan(RouteId.Native, Plans.Place("dlss5-feed.addon64", _addon), Plans.Place("dxgi.dll", _ours));
+    private static InstallPlan AddOnAndDxgi(TransactionBed bed) => bed.Plan(RouteId.Native, PlanBeds.Place("dlss5-feed.addon64", _addon), PlanBeds.Place("dxgi.dll", _ours));
 
-    private static InstallPlan TwoFiles(TransactionBed bed) => bed.Plan(RouteId.Native, Plans.Place("b.dll", _ours), Plans.Place("a.dll", _ours));
+    private static InstallPlan TwoFiles(TransactionBed bed) => bed.Plan(RouteId.Native, PlanBeds.Place("b.dll", _ours), PlanBeds.Place("a.dll", _ours));
 
     private static void AssertLocked(TreeSnapshot before, TransactionBed bed, InstallFailed failed, string path)
     {

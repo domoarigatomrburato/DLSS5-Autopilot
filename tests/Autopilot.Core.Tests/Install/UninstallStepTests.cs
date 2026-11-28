@@ -28,7 +28,7 @@ public sealed class UninstallStepTests(TestContext testContext)
     [TestMethod]
     public async Task A_helper_folder_holding_other_files_stays_with_them()
     {
-        using TransactionBed bed = await UninstallBed.InstalledAsync([TreeFile.Text("host64/notes.txt", "mine")], Ct, Plans.Place(Helper, UninstallBed.Ours));
+        using TransactionBed bed = await UninstallBed.InstalledAsync([TreeFile.Text("host64/notes.txt", "mine")], Ct, PlanBeds.Place(Helper, UninstallBed.Ours));
 
         _ = await bed.UninstallFinishedAsync(Ct);
 
@@ -38,7 +38,7 @@ public sealed class UninstallStepTests(TestContext testContext)
     [TestMethod]
     public async Task Runtime_logs_go_by_exact_name_and_the_games_own_logs_stay()
     {
-        using TransactionBed bed = await UninstallBed.InstalledAsync([TreeFile.Text("Logs/game.log", "the game's")], Ct, Plans.Place("a.dll", UninstallBed.Ours));
+        using TransactionBed bed = await UninstallBed.InstalledAsync([TreeFile.Text("Logs/game.log", "the game's")], Ct, PlanBeds.Place("a.dll", UninstallBed.Ours));
         bed.Plant("ReShade.log", "nvngx.log", "dlss5-feed.log", "Game_d3d11.log", "other.log", "Logs/OptiScaler.log");
 
         UninstallFinished finished = await bed.UninstallFinishedAsync(Ct);
@@ -105,8 +105,8 @@ public sealed class UninstallStepTests(TestContext testContext)
         using TransactionBed bed = await UninstallBed.InstalledAsync(
             [TreeFile.Text("reshade-shaders/Textures/mine.png", "mine")],
             Ct,
-            Plans.Place("reshade-shaders/Shaders/include/a.fxh", UninstallBed.Ours),
-            Plans.Place("mods/new/b.dll", UninstallBed.Ours));
+            PlanBeds.Place("reshade-shaders/Shaders/include/a.fxh", UninstallBed.Ours),
+            PlanBeds.Place("mods/new/b.dll", UninstallBed.Ours));
         _ = bed.Tree.Folder("mods/new/empty-of-mine");
 
         _ = await bed.UninstallFinishedAsync(Ct);

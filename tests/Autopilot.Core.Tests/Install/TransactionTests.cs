@@ -18,7 +18,7 @@ public sealed class TransactionTests(TestContext testContext)
     {
         using TransactionBed bed = new(GameFolders.Empty);
 
-        InstallCommitted committed = await bed.CommitAsync(bed.Plan(RouteId.Native, Plans.Place("dxgi.dll", _dxgi), Plans.Place("Shaders/a.fx", _shader, EntryClass.Config)), Ct);
+        InstallCommitted committed = await bed.CommitAsync(bed.Plan(RouteId.Native, PlanBeds.Place("dxgi.dll", _dxgi), PlanBeds.Place("Shaders/a.fx", _shader, EntryClass.Config)), Ct);
 
         AssertFresh(bed, committed, await bed.RecordAsync(Ct));
     }
@@ -40,8 +40,8 @@ public sealed class TransactionTests(TestContext testContext)
         Assert.AreEqual(RecordState.Installed, record.State);
         Assert.IsNull(record.Previous);
         Assert.AreEqual("Shaders", string.Join("|", record.CreatedFolders));
-        Assert.AreEqual(new RecordEntry("dxgi.dll", EntryClass.Component, EntryState.Written, Plans.Facts(_dxgi), null), record.Entries[0]);
-        Assert.AreEqual(new RecordEntry("Shaders/a.fx", EntryClass.Config, EntryState.Written, Plans.Facts(_shader), null), record.Entries[1]);
+        Assert.AreEqual(new RecordEntry("dxgi.dll", EntryClass.Component, EntryState.Written, PlanBeds.Facts(_dxgi), null), record.Entries[0]);
+        Assert.AreEqual(new RecordEntry("Shaders/a.fx", EntryClass.Config, EntryState.Written, PlanBeds.Facts(_shader), null), record.Entries[1]);
         Assert.AreEqual("installed native", committed.Notes.Single());
         Assert.IsFalse(committed.Recovered);
         Assert.IsNull(bed.Note);

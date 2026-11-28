@@ -93,7 +93,7 @@ public sealed class LayerTests(TestContext testContext)
     public async Task A_layer_folder_file_in_the_game_folder_is_still_released_by_a_plan_that_registers_the_layer()
     {
         using TransactionBed bed = New();
-        _ = await bed.CommitAsync(Ct, Plans.Place("ReShade64.json", Dll32));
+        _ = await bed.CommitAsync(Ct, PlanBeds.Place("ReShade64.json", Dll32));
 
         _ = await bed.CommitAsync(Ct, Layer(RegisteredLayer.VulkanLayer64));
 

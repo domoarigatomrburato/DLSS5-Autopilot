@@ -32,12 +32,12 @@ public sealed class BackupTests(TestContext testContext)
     {
         using TransactionBed bed = new(Switches.GameFiles);
 
-        _ = await bed.CommitAsync(bed.Plan(RouteId.Native, Plans.Place("dxgi.dll", _dxgi)), Ct);
+        _ = await bed.CommitAsync(bed.Plan(RouteId.Native, PlanBeds.Place("dxgi.dll", _dxgi)), Ct);
 
         AssertOriginal(bed, await bed.RecordAsync(Ct));
     }
 
-    private static InstallPlan DxgiAndAddOn(TransactionBed bed) => bed.Plan(RouteId.Native, Plans.Place("dxgi.dll", _dxgi), Plans.Place("dlss5-feed.addon64", _addon));
+    private static InstallPlan DxgiAndAddOn(TransactionBed bed) => bed.Plan(RouteId.Native, PlanBeds.Place("dxgi.dll", _dxgi), PlanBeds.Place("dlss5-feed.addon64", _addon));
 
     private static void AssertRestored(TreeSnapshot before, TransactionBed bed, bool backedUp, InstallFailed failed)
     {
@@ -51,7 +51,7 @@ public sealed class BackupTests(TestContext testContext)
     private static void AssertOriginal(TransactionBed bed, InstallRecord record)
     {
         Assert.IsTrue(bed.BackupIsTheOriginal());
-        OriginalFile expected = new(Plans.Facts(Switches.GameDxgi), FileAttributes.ReadOnly, Switches.GameTime.UtcDateTime, BackupKind.Backup);
+        OriginalFile expected = new(PlanBeds.Facts(Switches.GameDxgi), FileAttributes.ReadOnly, Switches.GameTime.UtcDateTime, BackupKind.Backup);
         Assert.AreEqual(expected, record.Entries.Single().Original);
     }
 }

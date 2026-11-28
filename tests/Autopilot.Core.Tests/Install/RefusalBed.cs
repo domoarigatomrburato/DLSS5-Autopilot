@@ -46,10 +46,6 @@ internal sealed class RefusalBed(params IEnumerable<TreeFile> files) : IDisposab
         Api = GraphicsApi.DX12,
     };
 
-    /// <summary>A request to install <paramref name="plan"/>'s route, stable and without warnings, with <paramref name="settings"/>; the card not read.</summary>
-    public RefusalRequest Request(InstallPlan plan, RouteSettings? settings = null) =>
-        new(Game, RefusalGames.Option(plan.Header.Route), RefusalGames.Facts, settings ?? RouteSettings.Default, plan);
-
     public Task<InstallCheck> CheckAsync(RefusalRequest request, CancellationToken cancellationToken) => Refusals().CheckAsync(request, cancellationToken);
 
     public void Dispose() => Bed.Dispose();
@@ -67,9 +63,13 @@ internal static class RefusalGames
 /// <summary>What a test does to a refusal bed besides checking.</summary>
 internal static class RefusalBedRuns
 {
+    /// <summary>A request to install <paramref name="plan"/>'s route, stable and without warnings, with <paramref name="settings"/>; the card not read.</summary>
+    public static RefusalRequest Request(this RefusalBed bed, InstallPlan plan, RouteSettings? settings = null) =>
+        new(bed.Game, RefusalGames.Option(plan.Header.Route), RefusalGames.Facts, settings ?? RouteSettings.Default, plan, null);
+
     /// <summary>A request for <paramref name="route"/> placing one add-on (or <paramref name="placed"/>) in the game folder, with <paramref name="settings"/>.</summary>
     public static RefusalRequest Request(this RefusalBed bed, RouteId route, RouteSettings? settings = null, string placed = "some.addon64") =>
-        bed.Request(bed.Bed.Plan(route, Plans.Place(placed, GameFolders.Dll("ours"))), settings);
+        bed.Request(bed.Bed.Plan(route, PlanBeds.Place(placed, GameFolders.Dll("ours"))), settings);
 
     /// <summary>Holds <paramref name="relative"/> open for reading, as a launcher holds the proxy DLL, until disposed.</summary>
     public static FileStream Hold(this RefusalBed bed, string relative) => new(bed.Tree.PathOf(relative), FileMode.Open, FileAccess.Read, FileShare.Read);

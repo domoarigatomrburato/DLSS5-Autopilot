@@ -12,7 +12,7 @@ namespace Autopilot.Core.Components.Mirror;
 /// </summary>
 public sealed partial class NvidiaRuntimes
 {
-    private const string Folder = "lib/Windows_x86_64/rel";
+    internal const string Folder = "lib/Windows_x86_64/rel";
 
     private static readonly GitHubSource _source = GitHubSource.Parse(ComponentRepositories.Nvidia);
 
@@ -83,7 +83,7 @@ public sealed partial class NvidiaRuntimes
             label,
             _source.Repository.RawFile(Uri.EscapeDataString(tag), $"{Folder}/{MirrorFamilies.NameOf(family)}"),
             MirrorFamilies.NameOf(family),
-            ComponentCatalog.Of(MirrorFamilies.IdOf(family), _source).Signer ?? throw new InvalidOperationException($"{family} is not checked by its signer"));
+            MirrorFamilies.EntryOf(family, BuildPublisher.Nvidia).Signer ?? throw new InvalidOperationException($"{family} is not checked by its signer"));
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "NVIDIA's latest-release redirect failed at {Host} ({Kind}); the mirror alone serves the DLSS runtimes this time")]
     private static partial void LogFailed(ILogger logger, string host, NetErrorKind kind);

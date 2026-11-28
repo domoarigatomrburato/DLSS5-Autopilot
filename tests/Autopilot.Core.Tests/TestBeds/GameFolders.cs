@@ -27,12 +27,12 @@ internal static class GameFolders
     /// <summary>An OptiScaler the person installed by hand under <c>dxgi.dll</c>, with its <c>OptiScaler.ini</c>.</summary>
     public static TreeFile[] HandInstalledOptiScaler =>
     [
-        TreeFile.Bytes("dxgi.dll", Dll(Markers.OptiScaler)),
+        TreeFile.Bytes("dxgi.dll", Markers.OptiScalerDll),
         TreeFile.Text("OptiScaler.ini", "[Upscalers]\r\nDx12Upscaler=auto\r\n"),
     ];
 
     /// <summary>A second ReShade, installed under <c>d3d11.dll</c>.</summary>
-    public static TreeFile[] SecondReShade => [TreeFile.Bytes("d3d11.dll", Dll(Markers.ReShade))];
+    public static TreeFile[] SecondReShade => [TreeFile.Bytes("d3d11.dll", Markers.ReShadeDll)];
 
     /// <summary>An RTX Remix mod: its runtime <c>.trex\d3d9.dll</c> and its <c>rtx.conf</c>, written as <paramref name="conf"/> says.</summary>
     public static TreeFile[] Remix(RtxConf conf) =>
@@ -72,12 +72,34 @@ internal enum RtxConf
 }
 
 /// <summary>
-/// What makes a test file look like a component's own. Placeholders: the sub-tasks that recognise
-/// ReShade and OptiScaler replace each with what they read, here and nowhere else.
+/// What makes a test file look like a component's own, as <c>ContentMarks</c> reads it: a DLL of 1 MB or more naming
+/// ReShade in ASCII, or OptiScaler's original file name in UTF-16.
 /// </summary>
 internal static class Markers
 {
-    public const string ReShade = "test marker: ReShade";
+    private const int MarkedSize = 1 << 20;
 
-    public const string OptiScaler = "test marker: OptiScaler";
+    /// <summary>A DLL ReShade's mark tells as ReShade.</summary>
+    public static byte[] ReShadeDll => Marked(Encoding.ASCII.GetBytes("ReShade"));
+
+    /// <summary>A DLL OptiScaler's mark tells as OptiScaler, whatever it is called.</summary>
+    public static byte[] OptiScalerDll => Marked(Encoding.Unicode.GetBytes("OptiScaler.dll"));
+
+    /// <summary>An OptiScaler DLL that also names ReShade, as one built with ReShade support does.</summary>
+    public static byte[] OptiScalerNamingReShade => Marked([.. Encoding.Unicode.GetBytes("OptiScaler.dll"), .. Encoding.ASCII.GetBytes("ReShade")]);
+
+    /// <summary>A Special K DLL, which can load ReShade and names it.</summary>
+    public static byte[] SpecialKNamingReShade => Marked(Encoding.ASCII.GetBytes("SpecialK ReShade"));
+
+    /// <summary>A DLL that names <paramref name="mark"/> in ASCII, padded to the size the marks are read at.</summary>
+    public static byte[] Carrying(string mark) => Marked(Encoding.ASCII.GetBytes(mark));
+
+    private static byte[] Marked(byte[] mark)
+    {
+        byte[] stub = GameFolders.Dll();
+        byte[] file = new byte[MarkedSize + stub.Length + mark.Length];
+        stub.CopyTo(file, 0);
+        mark.CopyTo(file, MarkedSize);
+        return file;
+    }
 }

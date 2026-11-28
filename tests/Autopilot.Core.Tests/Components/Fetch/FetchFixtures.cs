@@ -1,5 +1,6 @@
 using System.Text;
 using Autopilot.Core.Components;
+using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Components.Fetch;
 using Autopilot.Core.Net;
 using Autopilot.Core.Tests.Archives;
@@ -29,7 +30,7 @@ internal static class FetchFixtures
     }
 
     public static ComponentRelease Release(string id, ComponentDownload[] downloads, ExpectedFile[] files) =>
-        new(id, new("v1.0.0"), downloads, files, new(ReleaseOrigin.Api, TimeSpan.Zero));
+        new(ComponentCatalog.Of(id), new("v1.0.0"), downloads, files, new(ReleaseOrigin.Api, TimeSpan.Zero));
 
     public static ComponentDownload Download(string fileName, string url, byte[] content) =>
         new(fileName, new(url), new Sha256Verification(CacheFixtures.DigestOf(content)));

@@ -41,7 +41,7 @@ public sealed class GameTreeTests
         ];
         CollectionAssert.AreEquivalent(expected, TreeSnapshot.Of(game.Root).Paths.Select(path => path.Replace('\\', '/')).ToArray());
         StringAssert.Contains(File.ReadAllText(game.PathOf("rtx.conf")), GameFolders.RtxNeuralKey + " = False", StringComparison.Ordinal);
-        StringAssert.EndsWith(File.ReadAllText(game.PathOf("d3d11.dll")), Markers.ReShade, StringComparison.Ordinal);
+        CollectionAssert.AreEqual(Markers.ReShadeDll, File.ReadAllBytes(game.PathOf("d3d11.dll")));
         Assert.IsEmpty(GameFolders.Empty);
     }
 
@@ -58,7 +58,7 @@ public sealed class GameTreeTests
     {
         using var game = GameTree.Of(GameFolders.HandInstalledOptiScaler);
 
-        StringAssert.EndsWith(File.ReadAllText(game.PathOf("dxgi.dll")), Markers.OptiScaler, StringComparison.Ordinal);
+        CollectionAssert.AreEqual(Markers.OptiScalerDll, File.ReadAllBytes(game.PathOf("dxgi.dll")));
         Assert.IsTrue(File.Exists(game.PathOf("OptiScaler.ini")));
     }
 

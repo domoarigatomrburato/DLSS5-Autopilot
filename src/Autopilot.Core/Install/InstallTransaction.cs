@@ -62,13 +62,13 @@ internal sealed class InstallTransaction
     /// a removal left part way that cannot be finished now refuses it.
     /// </summary>
     /// <exception cref="OperationCanceledException">The token was cancelled: the install was rolled back and its note says so.</exception>
-    /// <exception cref="ArgumentException">A step of the plan is still a pattern: only the preview reads such a plan.</exception>
+    /// <exception cref="ArgumentException">A step of the plan is still a pattern or a pending file: only the preview reads such a plan.</exception>
     public async Task<InstallOutcome> RunAsync(InstallPlan plan, IProgress<InstallProgress>? progress, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        if (plan.HasPatterns)
+        if (plan.NeedsGathering)
         {
-            throw new ArgumentException("a plan with patterns is the preview's: gather the real file lists first", nameof(plan));
+            throw new ArgumentException("a plan with patterns or pending files is the preview's: gather the real files first", nameof(plan));
         }
 
         string installFolder = Path.GetFullPath(plan.InstallFolder);

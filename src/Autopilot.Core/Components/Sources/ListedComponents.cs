@@ -34,12 +34,21 @@ internal sealed partial class ListedComponents(GitHubReleases releases)
     /// </summary>
     internal const string RemixRuntimePin = "dlssnr-v1";
 
+    /// <summary>GITC-Uplift's 64-bit add-on.</summary>
+    internal const string UpliftAddon64 = "gitc-uplift.addon64";
+
+    /// <summary>GITC-Uplift's 32-bit add-on.</summary>
+    internal const string UpliftAddon32 = "gitc-uplift.addon32";
+
+    /// <summary>GITC-Uplift's helper.</summary>
+    internal const string UpliftHelper = "gitc-uplift-helper64.exe";
+
     private const string MfgPrefix = "universal-rtx-40-mfg-unlock";
 
     private static readonly string[] _remixRuntimeFiles = [KnownFiles.D3d9, KnownFiles.RemixNgx];
 
     private static readonly ExpectedFile[] _upliftLayout =
-        [.. new[] { "gitc-uplift.addon64", "gitc-uplift.addon32", "gitc-uplift-helper64.exe", "Uplift.fx", "UpliftMask.fx" }.Select(name => new ExpectedFile(name))];
+        [.. new[] { UpliftAddon64, UpliftAddon32, UpliftHelper, "Uplift.fx", "UpliftMask.fx" }.Select(name => new ExpectedFile(name))];
 
     /// <summary>The files an RTX40MFG-Unlock release carries, by name.</summary>
     internal static readonly IReadOnlyList<string> MfgFiles = ["RTX40MFGCore.dll", "RTX40MFG.asi", "RTX40MFG-UI.addon64"];

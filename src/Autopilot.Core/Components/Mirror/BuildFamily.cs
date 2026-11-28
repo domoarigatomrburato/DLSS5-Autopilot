@@ -42,6 +42,7 @@ public enum BuildPublisher
 internal static class MirrorFamilies
 {
     private static readonly GitHubSource _mirror = GitHubSource.Parse(ComponentRepositories.Mirror);
+    private static readonly GitHubSource _nvidia = GitHubSource.Parse(ComponentRepositories.Nvidia);
 
     // Longest prefix first: "dlssnr", "dlssd" and "dlssg" all start with "dlss", so the bare "dlss-" is tried last.
     private static readonly (BuildFamily Family, string Prefix, string Id, string Name)[] _families =
@@ -65,6 +66,10 @@ internal static class MirrorFamilies
 
     /// <summary>The family's mirror row: where the mirror's zips come from and how they and the file inside are checked.</summary>
     public static CatalogEntry EntryOf(BuildFamily family) => ComponentCatalog.Of(Row(family).Id, _mirror);
+
+    /// <summary>The catalog row of <paramref name="family"/>'s builds from <paramref name="publisher"/>: the mirror's, or NVIDIA's own.</summary>
+    public static CatalogEntry EntryOf(BuildFamily family, BuildPublisher publisher) =>
+        publisher == BuildPublisher.Mirror ? EntryOf(family) : ComponentCatalog.Of(Row(family).Id, _nvidia);
 
     /// <summary>The family of the first prefix the tag starts with, and its label: the tag minus the prefix and a leading <c>-</c>.</summary>
     public static (BuildFamily Family, string Label)? Classify(string tag)

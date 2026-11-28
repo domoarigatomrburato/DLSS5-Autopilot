@@ -24,5 +24,5 @@ public sealed class CachedSourceTests(TestContext testContext)
     }
 
     private static InstallPlan FromCache(TransactionBed bed, string cached) =>
-        bed.Plan(RouteId.Native, new PlaceFile("a.dll", EntryClass.Component, Plans.Facts(_ours), new CachedSource(cached)));
+        bed.Plan(RouteId.Native, new PlaceFile("a.dll", EntryClass.Component, PlanBeds.Facts(_ours), new CachedSource(cached)));
 }

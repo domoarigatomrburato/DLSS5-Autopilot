@@ -50,7 +50,7 @@ public sealed class UninstallEntryTests(TestContext testContext)
     [TestMethod]
     public async Task A_config_file_of_ours_is_deleted_whatever_it_holds_now()
     {
-        using TransactionBed bed = await UninstallBed.InstalledAsync(GameFolders.Empty, Ct, Plans.Place("ReShade.ini", UninstallBed.OurIni, EntryClass.Config));
+        using TransactionBed bed = await UninstallBed.InstalledAsync(GameFolders.Empty, Ct, PlanBeds.Place("ReShade.ini", UninstallBed.OurIni, EntryClass.Config));
         bed.Append("ReShade.ini");
 
         UninstallFinished finished = await bed.UninstallFinishedAsync(Ct);
@@ -62,7 +62,7 @@ public sealed class UninstallEntryTests(TestContext testContext)
     [TestMethod]
     public async Task A_config_file_over_the_persons_own_brings_theirs_back_whatever_ours_holds_now()
     {
-        using TransactionBed bed = await UninstallBed.InstalledAsync(GameFolders.OwnFiles, Ct, Plans.Place("ReShade.ini", UninstallBed.OurIni, EntryClass.Config));
+        using TransactionBed bed = await UninstallBed.InstalledAsync(GameFolders.OwnFiles, Ct, PlanBeds.Place("ReShade.ini", UninstallBed.OurIni, EntryClass.Config));
         bed.Append("ReShade.ini");
 
         UninstallFinished finished = await bed.UninstallFinishedAsync(Ct);

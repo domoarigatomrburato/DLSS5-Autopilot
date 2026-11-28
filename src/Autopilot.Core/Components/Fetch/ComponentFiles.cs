@@ -1,3 +1,4 @@
+using Autopilot.Core.Components.Mirror;
 using Autopilot.Core.Net;
 
 namespace Autopilot.Core.Components.Fetch;
@@ -28,6 +29,46 @@ public sealed class ComponentFiles(DownloadCache cache)
         IReadOnlyDictionary<string, string> found = ComponentLayout.Match(release, held);
         await ComponentLayout.CheckAddonsAsync(release, found, cancellationToken);
         return new(release, found, folders);
+    }
+
+    /// <summary>
+    /// <paramref name="entry"/>'s <paramref name="file"/> in the cache, past every check: the download's, a raw DLL's (one that
+    /// is not a runtime is deleted from the cache, so the next fetch takes it again rather than trusting it), and the file's
+    /// own (<see cref="BuildEntry.Contents"/>, a pinned digest or NVIDIA's signer).
+    /// </summary>
+    /// <param name="entry">The build.</param>
+    /// <param name="file">The file its download holds.</param>
+    /// <param name="source">Where the build list came from.</param>
+    /// <param name="progress">Where the download reports.</param>
+    /// <param name="cancellationToken">Cancels the fetch.</param>
+    /// <exception cref="ComponentException">The download lacks the file, or NVIDIA's raw DLL is not a runtime (<see cref="ComponentFailure.NotARuntime"/>).</exception>
+    /// <exception cref="NetException">A download failed, or the file fails its own check (with a <see cref="VerificationFailedDetail"/>).</exception>
+    /// <exception cref="Archives.ArchiveException">The archive was refused.</exception>
+    internal async Task<string> FetchBuildAsync(BuildEntry entry, string file, ReleaseSource? source, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        string path = (await FetchAsync(entry.ReleaseOf(file, source), progress, cancellationToken)).Files[file];
+        if (entry.IsRaw)
+        {
+            await CheckRawAsync(entry, path, cancellationToken);
+        }
+
+        if (entry.Contents is { } contents)
+        {
+            await cache.CheckContentsAsync(path, entry.Url, contents, cancellationToken);
+        }
+
+        return path;
+    }
+
+    // NVIDIA's raw DLL checked as a runtime; one that is not is thrown away, so the next fetch takes it again rather than trusting it.
+    private async Task CheckRawAsync(BuildEntry entry, string path, CancellationToken cancellationToken)
+    {
+        if (await NvidiaFiles.CheckRawAsync(path, cancellationToken) is { } rejected)
+        {
+            await cache.DeleteAsync(new CachedFile(path, new FileInfo(path).Length, entry.Download), cancellationToken);
+            throw new ComponentException(ComponentFailure.NotARuntime, rejected.Message);
+        }
     }
 
     // One download into the cache: a file as it is, an archive unpacked.

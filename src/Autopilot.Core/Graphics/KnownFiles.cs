@@ -86,6 +86,24 @@ internal static class KnownFiles
     /// <summary>dlssg_for_sm86's settings file.</summary>
     public const string Sm86Ini = "dlssg_sm86.ini";
 
+    /// <summary>The Direct3D compiler a game may ship, moved aside when older than Windows'.</summary>
+    public const string Compiler = "d3dcompiler_47.dll";
+
+    /// <summary>Krish's <c>renodx-dlss5</c> add-on.</summary>
+    public const string RenodxAddon = "renodx-dlss5.addon64";
+
+    /// <summary>The older bridge add-on, which loads beside a new one.</summary>
+    public const string OldBridgeAddon = "dlss5-dx11-bridge.addon64";
+
+    /// <summary>OptiScaler's DLL as it ships, whatever name it is installed under.</summary>
+    public const string OptiScalerDll = "OptiScaler.dll";
+
+    /// <summary>OptiScaler's settings.</summary>
+    public const string OptiScalerIni = "OptiScaler.ini";
+
+    /// <summary>OptiScaler's forwarder of <c>nvngx_dlssnr.dll</c>.</summary>
+    public const string OptiScalerForwarder = "nvngx.dll_dlssnr.dll";
+
     /// <summary>The proxy DLLs DXVK ships per architecture folder.</summary>
     public static readonly IReadOnlyList<string> DxvkProxies = [Dxgi, D3d11, D3d9, D3d8];
 
@@ -144,17 +162,17 @@ internal static class KnownFiles
         "dlss5-feed.addon64",
         "dlss5-feed.addon32",
         "dlss5-bridge.addon64",
-        "renodx-dlss5.addon64",
+        RenodxAddon,
         "renodx-dlss.addon64",
         "nvngx.dll.addon64",
         "standalone-dlssnr.addon64",
         "rtx40mfg-ui.addon64",
         "dlss5-feed-helper.addon64",
-        "dlss5-dx11-bridge.addon64");
+        OldBridgeAddon);
 
     /// <summary>Files that mean another DLSS or NGX tool is installed in the folder.</summary>
     public static readonly FrozenSet<string> ForeignNgxFiles = Set(
-        "optiscaler.ini",
+        OptiScalerIni,
         "nvngx.ini",
         "fakenvapi.ini",
         "dlss-enabler.dll",
@@ -162,7 +180,7 @@ internal static class KnownFiles
         "nvngx-wrapper.dll",
         "dlssg_to_fsr3_amd_is_better.dll",
         "dlssg_to_fsr3.ini",
-        "nvngx.dll_dlssnr.dll",
+        OptiScalerForwarder,
         Sm86Ini,
         "nvngx_dlssnr.ini",
         "gitc-uplift-helper64.exe",
@@ -187,9 +205,9 @@ internal static class KnownFiles
         .. Streamline,
         .. XessRuntimes,
         "reshade32.dll", "reshade64.dll", "reshade.dll", "ddraw.dll", Dinput8, Winmm,
-        Version, Dbghelp, Winhttp, Wininet, "d3dcompiler_47.dll",
+        Version, Dbghelp, Winhttp, Wininet, Compiler,
         NeuralRendering, Dlss, RayReconstruction, FrameGeneration, "_nvngx.dll", "nvngx-wrapper.dll",
-        RemixNgx, "optiscaler.dll", "dlss5-bridge.dll", "dlss-enabler.dll",
+        RemixNgx, OptiScalerDll, "dlss5-bridge.dll", "dlss-enabler.dll",
         DlssEnablerHeadless, "rtx40mfgcore.dll", "sl.dlss_d.dll", "sl.pcl.dll", "libxell.dll", "amd_fidelityfx_dx12.dll",
         "amd_fidelityfx_vk.dll", "amd_fidelityfx_upscaler_dx12.dll",
         "amd_fidelityfx_framegeneration_dx12.dll", "amd_fidelityfx_loader_dx12.dll",

@@ -56,7 +56,7 @@ public sealed class RefusalTests(TestContext testContext)
         AssertRefused(InstallRefusal.PathOutsideGameFolder, refused, before, bed);
     }
 
-    private static InstallPlan OneFile(TransactionBed bed, string path) => bed.Plan(RouteId.Native, Plans.Place(path, _ours));
+    private static InstallPlan OneFile(TransactionBed bed, string path) => bed.Plan(RouteId.Native, PlanBeds.Place(path, _ours));
 
     private static void Plant(TransactionBed bed, string record) => TestFiles.Plant(bed.Tree.PathOf(KnownFiles.InstallRecord), record);
 

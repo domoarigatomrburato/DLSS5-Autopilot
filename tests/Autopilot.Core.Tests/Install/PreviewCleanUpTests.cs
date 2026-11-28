@@ -36,7 +36,7 @@ public sealed class PreviewCleanUpTests(TestContext testContext)
     private static RefusalBed PreviousShaderAndAddOn()
     {
         RefusalBed bed = new(TreeFile.Bytes(OldShader, PreviewScenes.Ours), TreeFile.Bytes("old.addon64", PreviewScenes.Ours));
-        Recorded.Plant(bed.Tree.Root, Recorded.Install("", Recorded.Ours(OldShader, Plans.Facts(PreviewScenes.Ours)), Recorded.Ours("old.addon64", Plans.Facts(PreviewScenes.Ours))));
+        Recorded.Plant(bed.Tree.Root, Recorded.Install("", Recorded.Ours(OldShader, PlanBeds.Facts(PreviewScenes.Ours)), Recorded.Ours("old.addon64", PlanBeds.Facts(PreviewScenes.Ours))));
         return bed;
     }
 
@@ -45,7 +45,7 @@ public sealed class PreviewCleanUpTests(TestContext testContext)
     {
         byte[] games = GameFolders.Dll("the game's");
         RefusalBed bed = new(TreeFile.Bytes("dxgi.dll", PreviewScenes.Ours), TreeFile.Bytes("dxgi.dll" + OriginalFile.SuffixOf(BackupKind.Backup), games));
-        Recorded.Plant(bed.Tree.Root, Recorded.Install("", Recorded.Swapped("dxgi.dll", Plans.Facts(games), Plans.Facts(PreviewScenes.Ours))));
+        Recorded.Plant(bed.Tree.Root, Recorded.Install("", Recorded.Swapped("dxgi.dll", PlanBeds.Facts(games), PlanBeds.Facts(PreviewScenes.Ours))));
         return bed;
     }
 }

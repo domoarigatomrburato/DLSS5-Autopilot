@@ -15,8 +15,17 @@ internal static class LayerFiles
     {
         List<DiskChange> made = [];
         await RefreshAsync(made, kind.LibraryIn(folder), step.LibraryFacts, step.Library, cancellationToken);
-        byte[] manifest = kind.Rewrite(step.Manifest);
-        await RefreshAsync(made, kind.ManifestIn(folder), FileFacts.Of(manifest), new GeneratedSource(manifest), cancellationToken);
+        if (step.Library is PendingSource)
+        {
+            // A preview's layer: its manifest is not gathered either, so it is named, not rewritten.
+            made.Add(new WriteLayerFile(kind.ManifestIn(folder), PendingSource.Facts, PendingSource.Instance));
+        }
+        else
+        {
+            byte[] manifest = kind.Rewrite(step.Manifest);
+            await RefreshAsync(made, kind.ManifestIn(folder), FileFacts.Of(manifest), new GeneratedSource(manifest), cancellationToken);
+        }
+
         if (register is not null)
         {
             made.Add(new SetRegistryDword(user, kind.Key, register, 0));

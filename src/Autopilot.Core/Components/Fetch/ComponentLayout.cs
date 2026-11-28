@@ -1,4 +1,3 @@
-using Autopilot.Core.Components.Catalog;
 using Autopilot.Core.Executables;
 using Autopilot.Core.Resources;
 
@@ -44,7 +43,7 @@ internal static class ComponentLayout
 
         return missing.Count == 0
             ? found
-            : throw ComponentCatalog.Of(release.Id).LayoutChanged(release.Version.Label, string.Join(", ", missing));
+            : throw release.Entry.LayoutChanged(release.Version.Label, string.Join(", ", missing));
     }
 
     /// <summary>Every <c>.addon64</c> must be a 64-bit Windows binary and every <c>.addon32</c> a 32-bit one.</summary>
@@ -60,7 +59,7 @@ internal static class ComponentLayout
             {
                 throw new ComponentException(
                     ComponentFailure.WrongBitness,
-                    Texts.Format("ComponentAddonBitness", Path.GetFileName(name), ComponentCatalog.Of(release.Id).Source, release.Version.Label, bitness == Bitness.Bits64 ? 64 : 32));
+                    Texts.Format("ComponentAddonBitness", Path.GetFileName(name), release.Entry.Source, release.Version.Label, bitness == Bitness.Bits64 ? 64 : 32));
             }
         }
     }

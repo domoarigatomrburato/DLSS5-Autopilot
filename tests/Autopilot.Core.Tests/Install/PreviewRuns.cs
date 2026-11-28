@@ -58,5 +58,5 @@ internal static class PreviewRuns
 
     // The previous install's record, vouching for old.addon64.
     private static void PlantPrevious(RefusalBed bed) =>
-        Recorded.Plant(bed.Tree.Root, Recorded.Install("", Recorded.Ours("old.addon64", Plans.Facts(PreviewScenes.Ours))));
+        Recorded.Plant(bed.Tree.Root, Recorded.Install("", Recorded.Ours("old.addon64", PlanBeds.Facts(PreviewScenes.Ours))));
 }

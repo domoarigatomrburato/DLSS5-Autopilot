@@ -48,7 +48,7 @@ internal static class SharedBeds
     public static PlanStep Layer(RegisteredLayer layer, byte[]? library = null)
     {
         byte[] dll = library ?? (layer == RegisteredLayer.VulkanLayer32 ? Dll32 : Dll64);
-        return new RegisterLayer(layer, Plans.Facts(dll), new GeneratedSource(dll), SetupManifest(layer));
+        return new RegisterLayer(layer, PlanBeds.Facts(dll), new GeneratedSource(dll), SetupManifest(layer));
     }
 
     /// <summary>The manifest of <paramref name="layer"/> as ReShade's setup ships it.</summary>
@@ -63,7 +63,7 @@ internal static class SharedBeds
     public static PlanStep Preference(string program = "Game.exe") => new SetGraphicsPreference(program, GpuVendor.Intel);
 
     /// <summary>A step placing a <c>dxgi.dll</c>: a file of the game folder beside the shared steps.</summary>
-    public static PlanStep Dxgi(byte[]? content = null) => Plans.Place("dxgi.dll", content ?? Dll32);
+    public static PlanStep Dxgi(byte[]? content = null) => PlanBeds.Place("dxgi.dll", content ?? Dll32);
 
     /// <summary>A plan of one group for a game of <paramref name="bitness"/>.</summary>
     public static InstallPlan Plan(this TransactionBed bed, Bitness bitness, params PlanStep[] steps)

@@ -17,7 +17,7 @@ internal static class ReleaseAssets
     {
         CatalogEntry entry = ComponentCatalog.Of(id);
         return new(
-            id,
+            entry,
             new(answer.Release.Tag),
             [.. assets.Select(asset => new ComponentDownload(asset.Name, asset.Url, entry.VerificationOf(answer.Release, asset)))],
             files,
@@ -66,9 +66,10 @@ internal static class ReleaseAssets
     /// </summary>
     public static ComponentRelease ByDownload(string id, ComponentVersion version, Func<string, Uri> url, IReadOnlyList<string> names)
     {
-        NoVerification check = ComponentCatalog.Of(id).Unchecked(NoReleaseData);
+        CatalogEntry entry = ComponentCatalog.Of(id);
+        NoVerification check = entry.Unchecked(NoReleaseData);
         return new(
-            id,
+            entry,
             version,
             [.. names.Select(name => new ComponentDownload(name, url(name), check))],
             [.. names.Select(name => new ExpectedFile(name))],

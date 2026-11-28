@@ -155,4 +155,30 @@ public sealed record ReShadeInstaller(ComponentVersion Version, ReShadeOrigin Or
     /// signed, and by whom, is still to be verified.
     /// </summary>
     public Verification Verification { get; } = ComponentCatalog.Of(ComponentIds.ReShade).Unchecked();
+
+    /// <summary>
+    /// The installer as a component to fetch: the setup, unpacked from the zip appended to it, holding both runtimes and both
+    /// Vulkan layer manifests (components.md, "The catalog").
+    /// </summary>
+    public ComponentRelease Release => new(
+        ComponentCatalog.Of(ComponentIds.ReShade),
+        Version,
+        [new(FileName, Url, Verification) { AppendedArchive = true }],
+        [.. Files.Select(file => new ExpectedFile(file))],
+        null);
+
+    /// <summary>The 64-bit runtime in the setup.</summary>
+    public const string Runtime64 = "ReShade64.dll";
+
+    /// <summary>The 32-bit runtime in the setup.</summary>
+    public const string Runtime32 = "ReShade32.dll";
+
+    /// <summary>The 64-bit runtime's Vulkan layer manifest in the setup.</summary>
+    public const string Manifest64 = "ReShade64.json";
+
+    /// <summary>The 32-bit runtime's Vulkan layer manifest in the setup.</summary>
+    public const string Manifest32 = "ReShade32.json";
+
+    /// <summary>The files taken from the setup.</summary>
+    public static IReadOnlyList<string> Files { get; } = [Runtime64, Runtime32, Manifest64, Manifest32];
 }

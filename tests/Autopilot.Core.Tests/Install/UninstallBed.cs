@@ -38,11 +38,11 @@ internal static class UninstallBed
 
     /// <summary>A plan placing our <paramref name="paths"/> on the native route.</summary>
     public static InstallPlan OursPlan(this TransactionBed bed, params string[] paths) =>
-        bed.Plan(RouteId.Native, [.. paths.Select(path => Plans.Place(path, Ours))]);
+        bed.Plan(RouteId.Native, [.. paths.Select(path => PlanBeds.Place(path, Ours))]);
 
     /// <summary>The game's read-only <c>dxgi.dll</c> and the rest of <see cref="Switches.GameFiles"/>, with ours over <c>dxgi.dll</c> and its backup beside.</summary>
     public static Task<TransactionBed> SwappedAsync(CancellationToken cancellationToken) =>
-        InstalledAsync(Switches.GameFiles, cancellationToken, Plans.Place("dxgi.dll", Ours));
+        InstalledAsync(Switches.GameFiles, cancellationToken, PlanBeds.Place("dxgi.dll", Ours));
 
     /// <summary>A bed with <see cref="Switches.X"/> installed over <see cref="Switches.GameFiles"/>.</summary>
     public static async Task<TransactionBed> XInstalledAsync(CancellationToken cancellationToken)

@@ -156,9 +156,18 @@ public sealed record FeederChoice
 /// <param name="Notice">"Every recent release is a test build", when the default pick had to install one.</param>
 public sealed record FeederRelease(string Tag, GitHubAsset? Package, IReadOnlyList<GitHubAsset> LooseFiles, ReleaseSource Source, string? Notice)
 {
+    /// <summary>The feeder's 64-bit add-on.</summary>
+    internal const string Addon64 = "dlss5-feed.addon64";
+
+    /// <summary>The feeder's 32-bit add-on.</summary>
+    internal const string Addon32 = "dlss5-feed.addon32";
+
+    /// <summary>The feeder's helper add-on.</summary>
+    internal const string HelperAddon = "dlss5-feed-helper.addon64";
+
     /// <summary>The files a feeder release publishes loose, before 0.10.0 put them in one zip.</summary>
     public static IReadOnlyList<string> LooseNames { get; } =
-        ["dlss5-feed.addon64", "dlss5-feed.addon32", "dlss5-feed-helper.addon64", "dlss5-feed-host64.exe", "DLSS5_Feed.fx"];
+        [Addon64, Addon32, HelperAddon, "dlss5-feed-host64.exe", "DLSS5_Feed.fx"];
 
     public ComponentVersion Version => new(Tag);
 

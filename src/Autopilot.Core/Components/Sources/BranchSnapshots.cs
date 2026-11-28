@@ -50,7 +50,7 @@ internal sealed class BranchSnapshots(NetClient client, TimeProvider time, ILogg
         (string commit, ReleaseSource source) = await HeadAsync(repo, "slim", cancellationToken);
         NoVerification check = entry.Unchecked();
         return new(
-            ComponentIds.ShaderHeaders,
+            entry,
             new(commit),
             [.. Headers.Select(name => new ComponentDownload(name, repo.RawFile(commit, "Shaders/" + name), check))],
             [.. Headers.Select(name => new ExpectedFile(name))],
@@ -63,7 +63,7 @@ internal sealed class BranchSnapshots(NetClient client, TimeProvider time, ILogg
         GitHubRepository repo = entry.Repository;
         (string commit, ReleaseSource source) = await HeadAsync(repo, branch, cancellationToken);
         ComponentDownload archive = new($"{repo.Name}-{commit}.zip", repo.CommitArchive(commit), entry.Unchecked());
-        return new(id, new(commit), [archive], files, source);
+        return new(entry, new(commit), [archive], files, source);
     }
 
     private Task<(string Commit, ReleaseSource Source)> HeadAsync(GitHubRepository repo, string branch, CancellationToken cancellationToken) =>

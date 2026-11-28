@@ -68,6 +68,9 @@ public enum BlockerKind
 
     /// <summary>The Remix runtime's <c>d3d9.dll</c> is missing or cannot be opened.</summary>
     RemixRuntimeUnreadable,
+
+    /// <summary>The name ReShade loads as is taken by something that is not ReShade (DXVK, REFramework, Special K, another injector).</summary>
+    ProxyTaken,
 }
 
 /// <summary>One reason an install cannot go ahead, ending with what to do.</summary>

@@ -45,12 +45,12 @@ public sealed class UninstallWithoutRecordTests(TestContext testContext)
     public async Task A_proxy_goes_only_when_its_content_says_it_is_a_component_and_the_games_own_stays()
     {
         using TransactionBed bed = new(
-            TreeFile.Bytes("dxgi.dll", Big(ContentMarks.ReShade)),
+            TreeFile.Bytes("dxgi.dll", Markers.Carrying(ContentMarks.ReShade)),
             TreeFile.Bytes("d3d11.dll", _gameD3d11),
-            TreeFile.Bytes("d3d12.dll", Big("nothing of ours")),
-            TreeFile.Bytes("d3d8.dll", Big(ContentMarks.Dxvk)),
-            TreeFile.Bytes("dinput8.dll", Big(ContentMarks.Reframework)),
-            TreeFile.Bytes("bin/win64/d3d9.dll", Big(ContentMarks.Dxvk)),
+            TreeFile.Bytes("d3d12.dll", Markers.Carrying("nothing of ours")),
+            TreeFile.Bytes("d3d8.dll", Markers.Carrying(ContentMarks.Dxvk)),
+            TreeFile.Bytes("dinput8.dll", Markers.Carrying(ContentMarks.Reframework)),
+            TreeFile.Bytes("bin/win64/d3d9.dll", Markers.Carrying(ContentMarks.Dxvk)),
             TreeFile.Bytes("opengl32.dll", Encoding.ASCII.GetBytes(ContentMarks.ReShade)));
 
         _ = await bed.UninstallFinishedAsync(Ct);
@@ -77,7 +77,7 @@ public sealed class UninstallWithoutRecordTests(TestContext testContext)
     [TestMethod]
     public async Task A_d3d9_dll_beside_a_Remix_runtime_is_left_alone()
     {
-        using TransactionBed bed = new([.. GameFolders.Remix(RtxConf.FinalNewline), TreeFile.Bytes("d3d9.dll", Big(ContentMarks.Dxvk))]);
+        using TransactionBed bed = new([.. GameFolders.Remix(RtxConf.FinalNewline), TreeFile.Bytes("d3d9.dll", Markers.Carrying(ContentMarks.Dxvk))]);
 
         UninstallFinished finished = await bed.UninstallFinishedAsync(Ct);
 
@@ -89,7 +89,7 @@ public sealed class UninstallWithoutRecordTests(TestContext testContext)
     public async Task Backups_with_the_tools_suffixes_are_put_back_and_the_log_warns_they_had_no_record()
     {
         using TransactionBed bed = new(
-            TreeFile.Bytes("dxgi.dll", Big(ContentMarks.ReShade)),
+            TreeFile.Bytes("dxgi.dll", Markers.Carrying(ContentMarks.ReShade)),
             TreeFile.Bytes("dxgi.dll" + KnownFiles.BackupSuffix, Switches.GameDxgi),
             TreeFile.Bytes("d3dcompiler_47.dll" + KnownFiles.DlssOffSuffix, Switches.GameCompiler),
             TreeFile.Bytes("Plugins/DLSS/nvngx_dlss.dll", GameFolders.Dll("ours")),
@@ -171,9 +171,6 @@ public sealed class UninstallWithoutRecordTests(TestContext testContext)
         Assert.IsTrue(bed.Exists(held));
         UninstallBed.AssertSaidStarting(finished, $"could not remove: {held}");
     }
-
-    // A DLL over 1 MB carrying mark past its first megabyte, as a component's DLL does somewhere in its bytes.
-    private static byte[] Big(string mark) => [.. GameFolders.Dll(), .. new byte[1 << 20], .. Encoding.ASCII.GetBytes(mark)];
 
     [TestMethod]
     [DataRow(false)]

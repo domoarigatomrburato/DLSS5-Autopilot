@@ -7,18 +7,24 @@ namespace Autopilot.Core.Components;
 /// One component as resolved for an install: the version to record, what to download and how each
 /// download proves itself, and the files the downloads must hold before anything is placed.
 /// </summary>
-/// <param name="Id">The catalog id (<see cref="Catalog.ComponentIds"/>).</param>
+/// <param name="Entry">
+/// The catalog row it was taken from: for a component with several sources (<c>dlss</c>, <c>dlssd</c>, a mirror build), the
+/// one it came from.
+/// </param>
 /// <param name="Version">The tag or commit recorded; <see cref="ComponentVersion.Latest"/> when only GitHub's redirect knew it.</param>
 /// <param name="Downloads">What is fetched: loose files and archives.</param>
 /// <param name="Files">The files the downloads must hold, loose or inside an archive.</param>
 /// <param name="Source">Where the release data came from; <see langword="null"/> when none was read.</param>
 public sealed record ComponentRelease(
-    string Id,
+    Catalog.CatalogEntry Entry,
     ComponentVersion Version,
     IReadOnlyList<ComponentDownload> Downloads,
     IReadOnlyList<ExpectedFile> Files,
     ReleaseSource? Source)
 {
+    /// <summary>The catalog id (<see cref="Catalog.ComponentIds"/>).</summary>
+    public string Id => Entry.Id;
+
     /// <summary>
     /// The words the install shows about where this came from: the source's notice, or the
     /// <c>latest/download</c> notice for a version nobody could read; <see langword="null"/> when there is nothing to say.
@@ -34,8 +40,11 @@ public sealed record ComponentDownload(string FileName, Uri Url, Verification Ve
 {
     private static readonly string[] _archiveEndings = [".zip", ".7z", ".tar.gz", ".tgz"];
 
+    /// <summary>A program with a zip appended to it (ReShade's setup), unpacked like an archive rather than placed.</summary>
+    public bool AppendedArchive { get; init; }
+
     /// <summary>Whether the download is an archive, unpacked in the cache, rather than a file placed as it is.</summary>
-    public bool IsArchive => Array.Exists(_archiveEndings, ending => FileName.EndsWith(ending, StringComparison.OrdinalIgnoreCase));
+    public bool IsArchive => AppendedArchive || Array.Exists(_archiveEndings, ending => FileName.EndsWith(ending, StringComparison.OrdinalIgnoreCase));
 }
 
 /// <summary>A file a component's downloads must hold.</summary>
@@ -84,6 +93,12 @@ public enum ComponentFailure
 
     /// <summary>A family's build list came back empty: GitHub could not be reached and nothing was kept.</summary>
     BuildListUnavailable,
+
+    /// <summary>No build of a family can be placed: none fits the card or passes its trust check, or every source of a runtime failed.</summary>
+    NoUsableBuild,
+
+    /// <summary>A raw NVIDIA DLL is not a 64-bit runtime of the size one has.</summary>
+    NotARuntime,
 }
 
 /// <summary>A component refused before anything was written to a game, with the words the install shows.</summary>

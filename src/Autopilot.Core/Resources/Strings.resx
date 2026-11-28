@@ -913,6 +913,77 @@ Almost always this means the game (or its launcher) is running and holding the f
   <data name="InstallStepCommit" xml:space="preserve">
     <value>Finishing the install</value>
   </data>
+  <!-- The route plans' steps, as progress names them. -->
+  <data name="PlanStepCleanUp" xml:space="preserve">
+    <value>Taking other add-ons and ReShade copies out of the way</value>
+  </data>
+  <data name="PlanStepCompiler" xml:space="preserve">
+    <value>Moving the game's older Direct3D compiler aside</value>
+  </data>
+  <data name="PlanStepReShade" xml:space="preserve">
+    <value>Placing ReShade</value>
+  </data>
+  <data name="PlanStepReShadeLayer" xml:space="preserve">
+    <value>Registering ReShade's Vulkan layer</value>
+  </data>
+  <data name="PlanStepReShadeIni" xml:space="preserve">
+    <value>Writing ReShade.ini</value>
+  </data>
+  <data name="PlanStepDlssnr" xml:space="preserve">
+    <value>Placing nvngx_dlssnr.dll</value>
+  </data>
+  <data name="PlanStepDlss" xml:space="preserve">
+    <value>Placing nvngx_dlss.dll</value>
+  </data>
+  <data name="PlanStepDlssd" xml:space="preserve">
+    <value>Swapping nvngx_dlssd.dll</value>
+  </data>
+  <data name="PlanStepRenodx" xml:space="preserve">
+    <value>Placing the renodx-dlss5 add-on</value>
+  </data>
+  <data name="PlanStepPreference" xml:space="preserve">
+    <value>Setting Windows' graphics preference</value>
+  </data>
+  <!-- What a route plan says in the report. {0} and {1} are as named. -->
+  <data name="PlanNoteOptiScalerMoved" xml:space="preserve">
+    <value>an OptiScaler installed by hand as {0} was backed up and moved aside with its settings: two injectors cannot share the name</value>
+  </data>
+  <data name="PlanVersionUnknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <!-- {0} is the game's d3dcompiler_47.dll version, {1} Windows'. -->
+  <data name="PlanNoteCompilerAside" xml:space="preserve">
+    <value>the game's d3dcompiler_47.dll ({0}) is older than Windows' ({1}): moved aside so Windows' loads</value>
+  </data>
+  <data name="PlanNoteCompilerKept" xml:space="preserve">
+    <value>the game's d3dcompiler_47.dll ({0}) is not older than Windows' ({1}): left as it is</value>
+  </data>
+  <data name="PlanSkippedDlssRoute" xml:space="preserve">
+    <value>nvngx_dlss.dll: this route places none</value>
+  </data>
+  <data name="PlanSkippedDlssKept" xml:space="preserve">
+    <value>nvngx_dlss.dll: the game's own is kept, as 'keep the game's own' asks</value>
+  </data>
+  <data name="PlanSkippedDlssdAbsent" xml:space="preserve">
+    <value>nvngx_dlssd.dll: this game does not ship one, so ray reconstruction is not something it asks for</value>
+  </data>
+  <!-- {0} is the label asked for, {1} the file, {2} the label taken instead. -->
+  <data name="PlanNoteWantedMissing" xml:space="preserve">
+    <value>{1} {0} is not on the build list any more; {2}, the newest, was taken instead</value>
+  </data>
+  <!-- {0} is the file, {1} each source's reason. -->
+  <data name="PlanRuntimeFailed" xml:space="preserve">
+    <value>{0} could not be fetched from any source ({1}). Nothing was written. Try again later.</value>
+  </data>
+  <data name="PlanSkippedRuntimeFailed" xml:space="preserve">
+    <value>{0}: the download did not arrive</value>
+  </data>
+  <data name="PlanWarningRuntimeFailedKept" xml:space="preserve">
+    <value>{0} could not be downloaded ({1}): the one the previous install swapped in stays.</value>
+  </data>
+  <data name="PlanWarningRuntimeFailed" xml:space="preserve">
+    <value>{0} was not swapped: the download did not arrive ({1}). The game keeps the one it shipped, and everything else installed normally.</value>
+  </data>
   <!-- Refusals before an install (install.md, "Refusal checks"): each ends with what to do. {0} is a folder, a file or a reason as named. -->
   <data name="RefusalGame" xml:space="preserve">
     <value>{0} Nothing was installed; set it in the game's settings, then install again.</value>
@@ -988,6 +1059,13 @@ Almost always this means the game (or its launcher) is running and holding the f
   </data>
   <data name="RefusalUpliftReShade" xml:space="preserve">
     <value>GITC-Uplift needs ReShade {1} or newer on Vulkan and OpenGL games, and the newest this PC can get is {0}. Try again later, or choose another route.</value>
+  </data>
+  <!-- A ReShade route's proxy name taken by something that is not ReShade. {0} is the file, {1} what it was recognised as. -->
+  <data name="RefusalProxyTaken" xml:space="preserve">
+    <value>{0} already exists but is not ReShade (DXVK, Special K or another injector?). Remove it first, or choose another name under 'ReShade loads as', then install again.</value>
+  </data>
+  <data name="RefusalProxyTakenBy" xml:space="preserve">
+    <value>{0} already exists and is {1}, not ReShade. Remove it first, or choose another name under 'ReShade loads as', then install again.</value>
   </data>
   <!-- Warnings before an install: they do not stop it. {0} is a route's or a file's name. -->
   <data name="WarningBeta" xml:space="preserve">

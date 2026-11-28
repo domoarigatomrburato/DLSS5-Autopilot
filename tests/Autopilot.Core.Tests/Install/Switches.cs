@@ -43,9 +43,9 @@ internal static class Switches
     /// <summary>X: its <c>dxgi.dll</c> and <c>version.dll</c> over the game's, its add-on, and the game's compiler moved aside.</summary>
     public static InstallPlan X(TransactionBed bed) => bed.Plan(
         RouteId.Native,
-        Plans.Place("dxgi.dll", XDxgi),
-        Plans.Place("dlss5-feed.addon64", XFeed),
-        Plans.Place("version.dll", XVersion),
+        PlanBeds.Place("dxgi.dll", XDxgi),
+        PlanBeds.Place("dlss5-feed.addon64", XFeed),
+        PlanBeds.Place("version.dll", XVersion),
         new MoveAside("d3dcompiler_47.dll", BackupKind.Dlss5Off));
 
     /// <summary>
@@ -54,8 +54,8 @@ internal static class Switches
     /// </summary>
     public static InstallPlan Y(TransactionBed bed) => bed.Plan(
         RouteId.OptiScaler,
-        new PlanGroup("ReShade", [Plans.Place("dxgi.dll", YDxgi), Plans.Place("renodx-dlss5.addon64", YAddon)]),
-        new PlanGroup("Runtimes", [Plans.Place("nvngx_dlss.dll", YDlss), Plans.Place("version.dll", YVersion), Plans.Place("reshade-shaders/Shaders/y.fx", YShader, EntryClass.Config)]));
+        new PlanGroup("ReShade", [PlanBeds.Place("dxgi.dll", YDxgi), PlanBeds.Place("renodx-dlss5.addon64", YAddon)]),
+        new PlanGroup("Runtimes", [PlanBeds.Place("nvngx_dlss.dll", YDlss), PlanBeds.Place("version.dll", YVersion), PlanBeds.Place("reshade-shaders/Shaders/y.fx", YShader, EntryClass.Config)]));
 
     /// <summary>A bed with X installed, the game's update of <c>version.dll</c> over X's, and a leftover under <c>nvngx_dlss.dll</c>'s backup name.</summary>
     public static async Task<TransactionBed> InstalledAsync(CancellationToken cancellationToken)

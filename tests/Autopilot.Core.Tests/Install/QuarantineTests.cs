@@ -16,7 +16,7 @@ public sealed class QuarantineTests(TestContext testContext)
     public async Task Files_gone_by_the_check_are_named_in_a_warning_and_stay_on_the_record()
     {
         using TransactionBed bed = new(GameFolders.Empty);
-        InstallPlan plan = bed.Plan(RouteId.Native, Plans.Place("a.dll", _ours), Plans.Place("b.addon64", _ours));
+        InstallPlan plan = bed.Plan(RouteId.Native, PlanBeds.Place("a.dll", _ours), PlanBeds.Place("b.addon64", _ours));
         QuarantineBeforeTheCheck(bed, await bed.CommitStepAsync(plan, Ct));
 
         InstallCommitted committed = await bed.CommitAsync(plan, Ct);

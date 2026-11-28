@@ -32,6 +32,11 @@ internal static class RouteRefusals
             found.Add(new(BlockerKind.LocalAddOn, local));
         }
 
+        if (request.Survey is { } survey && FileRefusals.ProxyTaken(request.Route.Route, request.Facts, read, survey) is { } taken)
+        {
+            found.Add(new(BlockerKind.ProxyTaken, taken));
+        }
+
         return found;
     }
 

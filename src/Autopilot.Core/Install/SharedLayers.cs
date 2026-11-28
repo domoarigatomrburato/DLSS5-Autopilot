@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Autopilot.Core.Components.Sources;
 using Autopilot.Core.Executables;
 using Autopilot.Core.Platform;
 using Autopilot.Core.Storage;
@@ -48,10 +49,10 @@ internal sealed record LayerKind(RegisteredLayer Layer, string Key, string Libra
     /// <summary>Every layer an install registers.</summary>
     public static IReadOnlyList<LayerKind> All { get; } =
     [
-        new(RegisteredLayer.VulkanLayer64, VulkanKey, "ReShade64.dll", "ReShade64.json", "layer", null, Bitness.Bits64, "Vulkan"),
+        new(RegisteredLayer.VulkanLayer64, VulkanKey, ReShadeInstaller.Runtime64, ReShadeInstaller.Manifest64, "layer", null, Bitness.Bits64, "Vulkan"),
         // The loader drops a second layer of one name, so the 32-bit layer carries its own (install spec, "What is registered").
-        new(RegisteredLayer.VulkanLayer32, VulkanKey, "ReShade32.dll", "ReShade32.json", "layer", "VK_LAYER_reshade32", Bitness.Bits32, "Vulkan"),
-        new(RegisteredLayer.OpenXr, OpenXrKey, "ReShade64.dll", "ReShade64_XR.json", "api_layer", null, Bitness.Bits64, "OpenXR"),
+        new(RegisteredLayer.VulkanLayer32, VulkanKey, ReShadeInstaller.Runtime32, ReShadeInstaller.Manifest32, "layer", "VK_LAYER_reshade32", Bitness.Bits32, "Vulkan"),
+        new(RegisteredLayer.OpenXr, OpenXrKey, ReShadeInstaller.Runtime64, "ReShade64_XR.json", "api_layer", null, Bitness.Bits64, "OpenXR"),
     ];
 
     /// <summary>The kind of <paramref name="layer"/>.</summary>

@@ -12,7 +12,13 @@ namespace Autopilot.Core.Components.Sources;
 internal sealed class StandaloneComponent(GitHubReleases releases, NetClient client)
 {
     /// <summary>The files of the standalone add-on, published loose before 2.1.0 and inside the <c>-64-bit.zip</c> from then.</summary>
-    public static readonly string[] StandaloneFiles = ["standalone-dlssnr.addon64", "nvngx.dll", "DLSS5_AIO_Feed.fx"];
+    public static readonly string[] StandaloneFiles = [StandaloneAddon, StandaloneForwarder, "DLSS5_AIO_Feed.fx"];
+
+    /// <summary>The standalone add-on itself.</summary>
+    internal const string StandaloneAddon = "standalone-dlssnr.addon64";
+
+    /// <summary>The standalone add-on's <c>nvngx.dll</c>.</summary>
+    internal const string StandaloneForwarder = "nvngx.dll";
 
     /// <summary>The standalone add-on's second shader, which later releases carry.</summary>
     public const string StandaloneBoundary = "StandaloneBoundary.fx";
@@ -63,7 +69,7 @@ internal sealed class StandaloneComponent(GitHubReleases releases, NetClient cli
 
     private static ComponentRelease Guessed(CatalogEntry entry, string tag, string name, Uri url) =>
         new(
-            ComponentIds.Standalone,
+            entry,
             new(tag),
             [new(name, url, entry.Unchecked(ReleaseAssets.NoReleaseData))],
             _standaloneLayout,

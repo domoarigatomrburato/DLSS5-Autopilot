@@ -16,8 +16,11 @@ namespace Autopilot.Core.Install;
 /// <param name="Groups">The steps, one group per component or route-specific step, in the order they run.</param>
 internal sealed record InstallPlan(string GameFolder, string InstallFolder, PlanHeader Header, IReadOnlyList<PlanGroup> Groups)
 {
-    /// <summary>Whether a step is still a pattern: such a plan is a preview's, and the transaction refuses to run it.</summary>
-    public bool HasPatterns => Groups.Any(group => group.Steps.Any(step => step is PlacePattern));
+    /// <summary>
+    /// Whether a step is still a pattern, or places a file whose bytes are not gathered yet (<see cref="PendingSource"/>):
+    /// such a plan is a preview's, and the transaction refuses to run it.
+    /// </summary>
+    public bool NeedsGathering => Groups.Any(group => group.Steps.Any(step => step.NeedsGathering));
 }
 
 /// <summary>What the record says about an install as a whole.</summary>
@@ -64,6 +67,9 @@ internal abstract record PlanStep(string Path)
 
     /// <summary>Whether the step names a path of the game folder, which the checks keep inside it; a layer names none.</summary>
     public virtual bool NamesPath => true;
+
+    /// <summary>Whether the step's files are not gathered yet (a pattern, a pending file): only the preview reads it.</summary>
+    public virtual bool NeedsGathering => false;
 }
 
 /// <summary>A file placed at <paramref name="Path"/>, whose bytes are known and verified before the install starts.</summary>
@@ -71,7 +77,10 @@ internal abstract record PlanStep(string Path)
 /// <param name="Class">Whether it stays as written.</param>
 /// <param name="Facts">The hash and size its bytes must have.</param>
 /// <param name="Source">Where its bytes come from.</param>
-internal sealed record PlaceFile(string Path, EntryClass Class, FileFacts Facts, FileSource Source) : PlanStep(Path);
+internal sealed record PlaceFile(string Path, EntryClass Class, FileFacts Facts, FileSource Source) : PlanStep(Path)
+{
+    public override bool NeedsGathering => Source is PendingSource;
+}
 
 /// <summary>
 /// A file that must not be under its name while the install stands: the game's <c>d3dcompiler_47.dll</c>
@@ -104,6 +113,8 @@ internal sealed record KeepEntry(string Path) : PlanStep(Path);
 /// </param>
 internal sealed record PlacePattern(string Path) : PlanStep(Path)
 {
+    public override bool NeedsGathering => true;
+
     /// <summary>The folder checked as any step's path, the pattern joined to it as it is, since <c>*</c> and <c>?</c> are no name's characters.</summary>
     public override string FullIn(InstallPaths paths)
     {
@@ -132,6 +143,8 @@ internal sealed record RegisterLayer(RegisteredLayer Layer, FileFacts LibraryFac
     : PlanStep(string.Empty)
 {
     public override bool NamesPath => false;
+
+    public override bool NeedsGathering => Library is PendingSource;
 
     public override string SharedKeyIn(InstallPaths paths) => $"layer\n{Layer}";
 }
@@ -212,4 +225,20 @@ internal sealed record CachedSource(string Path) : FileSource
 internal sealed record GeneratedSource(ReadOnlyMemory<byte> Bytes) : FileSource
 {
     protected override Stream Open() => new MemoryStream(Bytes.ToArray(), writable: false);
+}
+
+/// <summary>
+/// Bytes a preview names and does not have: the file is known by name only until the gather downloads it. Its facts
+/// are <see cref="Facts"/>, and opening it is a bug: a plan holding one is refused by the transaction.
+/// </summary>
+internal sealed record PendingSource : FileSource
+{
+    /// <summary>The one pending source.</summary>
+    public static PendingSource Instance { get; } = new();
+
+    /// <summary>The facts of a file not gathered yet: no hash, and no size, so the preview's free-space check counts only known sizes.</summary>
+    public static FileFacts Facts { get; } = new("", 0);
+
+    /// <exception cref="InvalidOperationException">Always: a pending file has no bytes.</exception>
+    protected override Stream Open() => throw new InvalidOperationException("a pending file has no bytes: gather the plan's files first");
 }

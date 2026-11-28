@@ -97,6 +97,16 @@ internal sealed class PriorInstall
     public bool IsOurs(Prior? prior, string full, FileFacts? current) =>
         prior is { Entry.State: not EntryState.MovedAside } && _owned.IsOurs(full, current);
 
+    /// <summary>
+    /// Whether the file at <paramref name="full"/> is ours by <paramref name="prior"/>, read only as far as needed: listed as written
+    /// by the previous install, then its size, then its hash (<see cref="OwnedFiles.IsOursAsync"/>).
+    /// </summary>
+    /// <exception cref="IOException">The file cannot be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">The file cannot be opened.</exception>
+    /// <exception cref="OperationCanceledException">The token was cancelled.</exception>
+    public async Task<bool> IsOursAsync(Prior? prior, string full, CancellationToken cancellationToken) =>
+        prior is { Entry.State: not EntryState.MovedAside } && await _owned.IsOursAsync(full, cancellationToken);
+
     /// <summary>Whether <paramref name="prior"/> keeps an original whose backup holds exactly the recorded bytes.</summary>
     public async Task<bool> IsBackupValidAsync(Prior? prior, CancellationToken cancellationToken) =>
         prior is { Entry.Original: not null } && await _owned.IsBackupValidAsync(prior.Recorded, cancellationToken);

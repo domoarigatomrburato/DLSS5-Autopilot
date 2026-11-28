@@ -18,6 +18,7 @@ public sealed class ComponentVersionTests
     [DataRow("310.8", "310.8.0", VersionOrder.Same, DisplayName = "a missing integer is zero")]
     [DataRow("1.2.3.4.9", "1.2.3.4.1", VersionOrder.Same, DisplayName = "the first four integers only")]
     [DataRow("1.2.3.5", "1.2.3.4", VersionOrder.Newer, DisplayName = "the fourth integer counts")]
+    [DataRow("10.0.17763.1", "10.0.26100.1", VersionOrder.Older, DisplayName = "a file version of four parts")]
     [DataRow("99999999999999999999999.0", "1.0", VersionOrder.Newer, DisplayName = "a number past any integer type")]
     [DataRow("007", "7", VersionOrder.Same, DisplayName = "leading zeros")]
     public void Versions_compare_by_their_integers(string version, string other, VersionOrder expected) =>

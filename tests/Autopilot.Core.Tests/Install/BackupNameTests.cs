@@ -20,7 +20,7 @@ public sealed class BackupNameTests(TestContext testContext)
     {
         using TransactionBed bed = await UpdatedByTheGameAsync(Ct);
 
-        InstallCommitted committed = await bed.CommitAsync(bed.Plan(RouteId.Native, Plans.Place("version.dll", _addon)), Ct);
+        InstallCommitted committed = await bed.CommitAsync(bed.Plan(RouteId.Native, PlanBeds.Place("version.dll", _addon)), Ct);
 
         AssertSuperseded(bed, committed, await bed.RecordAsync(Ct));
     }
@@ -30,7 +30,7 @@ public sealed class BackupNameTests(TestContext testContext)
     {
         using TransactionBed bed = new(Switches.WithLeftoverBackup);
 
-        _ = await bed.CommitAsync(bed.Plan(RouteId.Native, Plans.Place("dxgi.dll", _dxgi)), Ct);
+        _ = await bed.CommitAsync(bed.Plan(RouteId.Native, PlanBeds.Place("dxgi.dll", _dxgi)), Ct);
 
         Assert.IsTrue(bed.BackupIsTheOriginal());
     }
@@ -39,7 +39,7 @@ public sealed class BackupNameTests(TestContext testContext)
     private static async Task<TransactionBed> UpdatedByTheGameAsync(CancellationToken cancellationToken)
     {
         TransactionBed bed = new(Switches.GameFiles);
-        _ = await bed.CommitAsync(bed.Plan(RouteId.Native, Plans.Place("version.dll", _dxgi)), cancellationToken);
+        _ = await bed.CommitAsync(bed.Plan(RouteId.Native, PlanBeds.Place("version.dll", _dxgi)), cancellationToken);
         TestFiles.Plant(bed.Tree.PathOf("version.dll"), Switches.UpdatedVersion);
         TestFiles.Plant(bed.Tree.PathOf("version.dll.invidia-claritatis-superseded"), "an older one, kept"u8.ToArray());
         return bed;
@@ -49,7 +49,7 @@ public sealed class BackupNameTests(TestContext testContext)
     {
         Assert.IsTrue(bed.Holds("version.dll.invidia-claritatis-superseded.2", Switches.GameVersion), "a taken name is never overwritten");
         Assert.IsTrue(bed.Holds("version.dll.invidia-claritatis-backup", Switches.UpdatedVersion));
-        Assert.AreEqual(Plans.Facts(Switches.UpdatedVersion), record.Entries.Single().Original!.Facts);
+        Assert.AreEqual(PlanBeds.Facts(Switches.UpdatedVersion), record.Entries.Single().Original!.Facts);
         Assert.Contains(note => note.Contains("version.dll.invidia-claritatis-superseded.2", StringComparison.Ordinal), committed.Notes);
     }
 }

@@ -114,6 +114,17 @@ public sealed class DownloadCache
     }
 
     /// <summary>
+    /// Checks a file taken out of a download from <paramref name="from"/> (a DLL inside a mirror's zip) as a download is
+    /// checked: what its name says, then <paramref name="contents"/>, a pinned digest or a signer.
+    /// </summary>
+    /// <exception cref="NetException">The file is not what its name says (<see cref="NetErrorKind.WrongContent"/>) or fails the check (<see cref="NetErrorKind.VerificationFailed"/>, with a <see cref="VerificationFailedDetail"/>).</exception>
+    internal Task CheckContentsAsync(string path, Uri from, Verification contents, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        return _verifier.CheckAsync(path, Path.GetFileName(path), from.Host, contents, cancellationToken);
+    }
+
+    /// <summary>
     /// The readable names (the asset's own name, without the key) of the downloads kept in the
     /// cache that match <paramref name="searchPattern"/> (<c>*</c> and <c>?</c>, ignoring case), for
     /// a resolver whose every source failed. Nothing is fetched or checked: a name says what was

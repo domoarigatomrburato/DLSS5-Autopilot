@@ -12,13 +12,15 @@ internal sealed record RefusalRequest
     /// <param name="facts">The game and the card as the routes read them.</param>
     /// <param name="settings">The person's settings; only those the route shows for the game are read.</param>
     /// <param name="plan">The install the route wants, which the transaction would run.</param>
-    public RefusalRequest(GameEntry game, RouteOption route, RouteFacts facts, RouteSettings settings, InstallPlan plan)
+    /// <param name="survey">The folder as the route plans surveyed it; null for a plan built by hand.</param>
+    public RefusalRequest(GameEntry game, RouteOption route, RouteFacts facts, RouteSettings settings, InstallPlan plan, Plans.FolderSurvey? survey)
     {
         Game = game;
         Route = route;
         Facts = facts;
         Settings = settings;
         Plan = plan;
+        Survey = survey;
     }
 
     /// <summary>The game, as the library read it.</summary>
@@ -57,6 +59,9 @@ internal sealed record RefusalRequest
 
     /// <summary>The tool's own copy of the person's frame generation files (<c>own-fg</c> in its data folder); null when it has none.</summary>
     public string? OwnFrameGenerationStore { get; init; }
+
+    /// <summary>The folder as the route plans surveyed it, which says what sits under the name ReShade loads as; null when not surveyed.</summary>
+    public Plans.FolderSurvey? Survey { get; init; }
 
     /// <summary>The Agility SDK request this Windows cannot meet, when the executable makes one.</summary>
     public AgilityUnmet? Agility { get; init; }

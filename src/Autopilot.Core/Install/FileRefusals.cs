@@ -1,10 +1,11 @@
 using Autopilot.Core.Executables;
+using Autopilot.Core.Install.Plans;
 using Autopilot.Core.Resources;
 using Autopilot.Core.Routes;
 
 namespace Autopilot.Core.Install;
 
-/// <summary>The refusals the person's own files decide: their frame generation files and their own add-on. Read-only.</summary>
+/// <summary>The refusals the files in the way and the person's own files decide: the proxy name, their frame generation files and their own add-on. Read-only.</summary>
 internal static class FileRefusals
 {
     /// <summary>
@@ -62,5 +63,28 @@ internal static class FileRefusals
         }
 
         return await PeImage.BitnessOfAsync(addOn, cancellationToken) == Bitness.Bits64 ? null : Texts.Format("RefusalLocalAddOnNot64", addOn);
+    }
+
+    /// <summary>
+    /// Why ReShade cannot take its name on <paramref name="route"/>: a file under it that is neither ReShade, nor ours from the
+    /// previous install, nor a hand-installed OptiScaler (which is moved aside), named for what it was recognised as; null
+    /// when the name is free, or the route places no proxy.
+    /// </summary>
+    public static string? ProxyTaken(RouteId route, RouteFacts facts, RouteSettings read, FolderSurvey survey)
+    {
+        ArgumentNullException.ThrowIfNull(survey);
+        if (!RouteComponents.IsReShadeRoute(route) || ReShadeBase.ProxyName(route, facts, read) is not { } proxy)
+        {
+            return null;
+        }
+
+        return survey.At(survey.Beside(proxy))?.Content switch
+        {
+            ProxyContent.Dxvk => Texts.Format("RefusalProxyTakenBy", proxy, "DXVK"),
+            ProxyContent.Reframework => Texts.Format("RefusalProxyTakenBy", proxy, "REFramework"),
+            ProxyContent.SpecialK => Texts.Format("RefusalProxyTakenBy", proxy, "Special K"),
+            ProxyContent.Other => Texts.Format("RefusalProxyTaken", proxy),
+            _ => null,
+        };
     }
 }

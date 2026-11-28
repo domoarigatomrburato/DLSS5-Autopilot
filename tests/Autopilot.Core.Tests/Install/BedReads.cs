@@ -72,7 +72,7 @@ internal static class BedReads
 }
 
 /// <summary>Plans and plan steps as tests write them.</summary>
-internal static class Plans
+internal static class PlanBeds
 {
     /// <summary>A plan of one group, on <paramref name="route"/>, in the bed's game folder.</summary>
     public static InstallPlan Plan(this TransactionBed bed, RouteId route, params PlanStep[] steps) => bed.Plan(route, new PlanGroup("Component", steps));

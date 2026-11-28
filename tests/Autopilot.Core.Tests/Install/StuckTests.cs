@@ -37,7 +37,7 @@ public sealed class StuckTests(TestContext testContext)
         return held;
     }
 
-    private static InstallPlan OneFile(TransactionBed bed) => bed.Plan(RouteId.Native, Plans.Place("a.dll", _ours));
+    private static InstallPlan OneFile(TransactionBed bed) => bed.Plan(RouteId.Native, PlanBeds.Place("a.dll", _ours));
 
     private static void AssertFinished(InstallRefused again, InstallCommitted next, TransactionBed bed)
     {
