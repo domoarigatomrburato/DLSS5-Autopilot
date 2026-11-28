@@ -47,11 +47,52 @@ public sealed record NoVerification(string Reason) : Verification
         : Reason;
 }
 
-/// <summary>Checks Authenticode signatures. Windows only; tests pass a fake.</summary>
+/// <summary>
+/// Checks Authenticode signatures and reports what it found; the caller decides what to accept.
+/// Windows only; tests pass a fake.
+/// </summary>
 public interface ISignatureVerifier
 {
-    /// <summary>Whether the file carries a valid signature whose signer is <paramref name="publisher"/>.</summary>
-    Task<bool> IsSignedByAsync(string path, string publisher, CancellationToken cancellationToken);
+    /// <summary>
+    /// Whether Windows trusts the signature of the file at <paramref name="path"/>, and who signed it.
+    /// A file that is missing or cannot be opened is <see cref="SignatureStatus.Unreadable"/>, not an exception.
+    /// </summary>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
+    Task<SignatureCheck> CheckAsync(string path, CancellationToken cancellationToken);
+}
+
+/// <summary>What a signature check found. A <see cref="SignatureStatus.Valid"/> check always names its signer: one whose signer cannot be read is <see cref="SignatureStatus.Unreadable"/>.</summary>
+/// <param name="Status">Whether Windows trusts the signature.</param>
+/// <param name="Signer">
+/// The signing certificate's subject simple name (its CN, e.g. <c>NVIDIA Corporation</c>), whenever
+/// the signature could be parsed, even an untrusted one; <see langword="null"/> when the file is not
+/// signed or cannot be read.
+/// </param>
+/// <param name="Detail">Windows' reason, for the log: the HRESULT in hex and its message.</param>
+public sealed record SignatureCheck(SignatureStatus Status, string? Signer, string? Detail);
+
+public enum SignatureStatus
+{
+    /// <summary>
+    /// Windows trusts the signature. A timestamped signature stays valid after its certificate
+    /// expires; when revocation could not be checked, the detail says so.
+    /// </summary>
+    Valid,
+
+    /// <summary>The file carries no signature, or is of a kind that cannot carry one.</summary>
+    NotSigned,
+
+    /// <summary>The signature does not match the file (a bad digest) or is malformed.</summary>
+    Invalid,
+
+    /// <summary>The chain ends at an untrusted root, is broken, is explicitly distrusted, or holds a revoked certificate.</summary>
+    Untrusted,
+
+    /// <summary>The signing certificate has expired and the signature carries no timestamp.</summary>
+    Expired,
+
+    /// <summary>The file is missing or locked, or the check itself failed.</summary>
+    Unreadable,
 }
 
 /// <summary>A finished, verified download in the cache. A sums file comes back as the SHA-256 it resolved to.</summary>

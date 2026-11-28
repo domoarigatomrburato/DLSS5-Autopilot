@@ -9,5 +9,6 @@
     <Project Path="tests/Autopilot.App.Tests/Autopilot.App.Tests.csproj" />
     <Project Path="tests/Autopilot.Core.Tests/Autopilot.Core.Tests.csproj" />
     <Project Path="tests/Autopilot.ViewModels.Tests/Autopilot.ViewModels.Tests.csproj" />
+    <Project Path="tests/Autopilot.Windows.Tests/Autopilot.Windows.Tests.csproj" />
   </Folder>
 </Solution>

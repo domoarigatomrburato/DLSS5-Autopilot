@@ -31,23 +31,30 @@ internal static class CacheFixtures
     }
 }
 
-/// <summary>Answers each signature check from a queue; the last answer repeats.</summary>
+/// <summary>Answers each signature check from a queue, signed by NVIDIA unless told otherwise; the last answer repeats.</summary>
 internal sealed class FakeSigner : ISignatureVerifier
 {
-    private readonly Queue<bool> _answers = new([true]);
+    public const string Nvidia = "NVIDIA Corporation";
+
+    private readonly Queue<SignatureCheck> _answers = new([SignedBy(Nvidia)]);
+
+    public static SignatureCheck Unsigned { get; } = new(SignatureStatus.NotSigned, null, null);
 
     public List<string> Checked { get; } = [];
 
-    public void Answer(params bool[] answers)
+    /// <summary>A signature Windows trusts, by <paramref name="signer"/>.</summary>
+    public static SignatureCheck SignedBy(string signer) => new(SignatureStatus.Valid, signer, null);
+
+    public void Answer(params SignatureCheck[] answers)
     {
         _answers.Clear();
-        foreach (bool answer in answers)
+        foreach (SignatureCheck answer in answers)
         {
             _answers.Enqueue(answer);
         }
     }
 
-    public Task<bool> IsSignedByAsync(string path, string publisher, CancellationToken cancellationToken)
+    public Task<SignatureCheck> CheckAsync(string path, CancellationToken cancellationToken)
     {
         Checked.Add(path);
         return Task.FromResult(_answers.Count > 1 ? _answers.Dequeue() : _answers.Peek());

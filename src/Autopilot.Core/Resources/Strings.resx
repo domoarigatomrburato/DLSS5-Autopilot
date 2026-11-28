@@ -86,6 +86,12 @@
   <data name="NetVerificationFailedNotSigned" xml:space="preserve">
     <value>The file {2} from {0} is not signed by its publisher, so it was deleted. Try again later, and report it if it keeps happening.</value>
   </data>
+  <data name="NetVerificationFailedWrongSigner" xml:space="preserve">
+    <value>The file {2} from {0} is signed by someone other than its publisher, so it was deleted. Try again later, and report it if it keeps happening.</value>
+  </data>
+  <data name="NetVerificationFailedSignatureInvalid" xml:space="preserve">
+    <value>Windows does not accept the signature of {2} from {0}: it is damaged, expired or not trusted, or the file could not be read, so it was deleted. Try again later, and report it if it keeps happening.</value>
+  </data>
   <data name="NetVerificationFailedSumsUnavailable" xml:space="preserve">
     <value>The checksum list for {2} could not be read from {0}, and without it the download cannot be checked, so it was not used. Try again in a few minutes or from another network.</value>
   </data>

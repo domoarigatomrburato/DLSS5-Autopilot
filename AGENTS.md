@@ -13,7 +13,7 @@ work reads and does not edit.
 | `src/Autopilot.Windows` | Windows implementations of Core's interfaces (`net11.0-windows`) |
 | `src/Autopilot.ViewModels` | screens as view models; never references Avalonia |
 | `src/Autopilot.App` | Avalonia views and the composition root; references Windows only on its `net11.0-windows` target |
-| `tests/Autopilot.<Project>.Tests` | one test project per `src` project except Windows |
+| `tests/Autopilot.<Project>.Tests` | one test project per `src` project; `Autopilot.Windows.Tests` builds everywhere and runs only on Windows |
 | `gate.cs` | the gate |
 
 Layering is enforced by project references, so keep them as the table says:
@@ -75,3 +75,7 @@ MSTest on Microsoft.Testing.Platform; run one project with
   reaching a server. It is a backstop: code that talks to the network takes
   its `HttpMessageHandler` from the caller, and tests pass a fake one.
 - UI tests run headless (Avalonia.Headless) and open no window.
+- `Autopilot.Windows.Tests` holds the checks of the Windows implementations,
+  on real Windows APIs and files. It builds on every host, so a compile error
+  fails the gate anywhere, but runs only on Windows: on other hosts the gate
+  builds it without running it (its project file says how).

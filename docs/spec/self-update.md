@@ -336,7 +336,7 @@ confirmation text says. Nothing automatic goes back (open question 3).
 | `releases/latest` returns the newest non-draft, non-pre-release by creation date, not by version | GitHub REST docs for releases |
 | GitHub release assets expose a digest in the API; whether it can be a second hash source | GitHub REST docs: release asset fields |
 | Anonymous API limit of 60 requests an hour per address | GitHub REST docs: rate limits |
-| Authenticode verification on Windows from .NET: which API (`WinVerifyTrust`, or the signer's certificate) and how to read the signer subject reliably, including timestamped signatures after the certificate expires | Microsoft docs for `WinVerifyTrust`; `X509Certificate`; SignPath documentation for the signed subject |
+| Authenticode verification on Windows from .NET: `WinVerifyTrust` with the Authenticode policy, the signer read from the provider's signer chain as the certificate's subject simple name, timestamped signatures valid after expiry (M4 sub-task k) | a run of `Autopilot.Windows.Tests` on Windows; SignPath documentation for the signed subject |
 | The attestation can be verified without the GitHub CLI (Sigstore bundle, Fulcio chain, the workflow identity) | GitHub docs for artifact attestations; Sigstore verification libraries for .NET |
 | How the single-file self-contained .NET build behaves when run from a renamed `.old.exe` and when two instances start | .NET single-file deployment docs; tests on Windows |
 | Defender and SmartScreen behaviour on a new unsigned release (README "Antivirus warnings") | Microsoft Security Intelligence submissions; observation |

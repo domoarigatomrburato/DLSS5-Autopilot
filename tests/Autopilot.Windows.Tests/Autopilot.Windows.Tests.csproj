@@ -1,0 +1,31 @@
+<Project>
+
+  <!-- The SDK is imported by hand so the last property group comes after MSTest's own targets. -->
+  <Import Project="Sdk.props" Sdk="MSTest.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net11.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Autopilot.Windows\Autopilot.Windows.csproj" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="MSTest.Sdk" />
+
+  <!--
+    The checks of the Windows implementations build on every host, so a compile error fails the gate
+    anywhere, and run only on Windows: elsewhere `dotnet test` skips the project because it is not a
+    test application. Only this one property changes, after MSTest's targets have set it (hence the
+    import by hand), so every host keeps the same package graph and lock file, which
+    IsTestApplication=false would change; the runner's generated sources are kept on, so the build
+    stays the same.
+  -->
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+    <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
+    <GenerateTestingPlatformEntryPoint>true</GenerateTestingPlatformEntryPoint>
+    <GenerateSelfRegisteredExtensions>true</GenerateSelfRegisteredExtensions>
+    <GenerateTestingPlatformConfigurationFile>true</GenerateTestingPlatformConfigurationFile>
+  </PropertyGroup>
+
+</Project>

@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net11.0-windows</TargetFramework>
+    <!-- LibraryImport's source-generated marshalling needs it, and the Win32 structures are read through pointers. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

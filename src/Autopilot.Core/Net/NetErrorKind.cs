@@ -53,8 +53,14 @@ public enum VerificationProblem
     /// <summary>The file's SHA-256 is not the expected one.</summary>
     DigestMismatch,
 
-    /// <summary>The file is not signed by the expected publisher.</summary>
+    /// <summary>The file carries no signature, where its publisher's was expected.</summary>
     NotSigned,
+
+    /// <summary>The file carries a valid signature, but by someone other than the expected publisher.</summary>
+    WrongSigner,
+
+    /// <summary>The file's signature is invalid, untrusted or expired, or could not be checked.</summary>
+    SignatureInvalid,
 
     /// <summary>The sums file could not be read.</summary>
     SumsUnavailable,

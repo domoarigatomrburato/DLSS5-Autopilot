@@ -53,9 +53,10 @@ public sealed class CacheOnlyTests(TestContext testContext)
         SignerVerification signer = new("ReShade");
         string entry = bed.Files.EntryFor("");
         TestFiles.Plant(entry, CacheFixtures.Zip);
+        bed.Signatures.Answer(FakeSigner.SignedBy("ReShade"));
 
         CachedFile? found = await Find(bed, signer);
-        bed.Signatures.Answer(false);
+        bed.Signatures.Answer(FakeSigner.Unsigned);
         CachedFile? unsigned = await Find(bed, signer);
 
         Assert.AreEqual(entry, found?.Path);

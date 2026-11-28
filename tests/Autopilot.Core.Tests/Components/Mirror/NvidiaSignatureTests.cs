@@ -50,7 +50,7 @@ public sealed class NvidiaSignatureTests(TestContext testContext)
     private async Task<CachedFile> Download(Verification check, string name, bool signed = true)
     {
         using CacheBed cache = new(testContext, TestBed.SingleAttempt);
-        cache.Signatures.Answer(signed);
+        cache.Signatures.Answer(signed ? FakeSigner.SignedBy(FakeSigner.Nvidia) : FakeSigner.Unsigned);
         _ = cache.Server.AnswerBytes(CacheBed.Url, _dll);
         return await cache.Cache.DownloadAsync(new(CacheBed.Url), TestBed.Hosts, name, check, null, null, testContext.CancellationToken);
     }

@@ -97,7 +97,7 @@ The caller says which kind applies:
 | Kind | Passes when |
 | --- | --- |
 | expected SHA-256 | the file's SHA-256 equals the given value (from a pin shipped with the release, or GitHub's asset `digest`) |
-| Authenticode signer | the file carries a valid signature whose signer is the given publisher. Windows only, behind an interface; tests pass a fake |
+| Authenticode signer | Windows trusts the file's signature (`WinVerifyTrust`, Authenticode policy) and its signer, the signing certificate's subject simple name, is exactly the given publisher. A timestamped signature stays valid after its certificate expires. Revocation is checked over the whole chain from Windows' URL cache only, never the network; when it cannot be determined the file is verified again without it and passes with that noted in the log, while a known revocation refuses. The refusal says which failure it was: no signature, another signer (both named), or a signature Windows does not accept (invalid, untrusted, expired, unreadable). A cached entry is re-checked under the same rule and, when it fails, dropped with the reason logged. Windows only, behind an interface; tests pass a fake |
 | sums file | a sums file of the same release (signed, or published beside the asset) lists the file by its exact name, and the hash matches. The sums file comes through this same path |
 | none, with a reason | no publisher offers any of the above. The reason is logged and recorded with the component; the magic-byte check still runs |
 
@@ -308,7 +308,8 @@ them, on every host:
 | The certificate reasons are read from the `AuthenticationException` message tokens (`RemoteCertificateNameMismatch`, `NotTimeValid`, `UntrustedRoot`, `PartialChain`), on an English and a non-English Windows | a test against servers with each fault (badssl.com) |
 | A firewall-blocked socket arrives as `HttpRequestException(ConnectionError)` over `SocketException(AccessDenied)`; a DNS failure as `NameResolutionError`; a TLS handshake cut by an antivirus as an inner `IOException` | a test with a blocking firewall rule, a bad name, an inspecting antivirus |
 | The cache lock sees the sharing violation (`0x80070020`) when another process holds it, and a cache read opened with `FileShare.ReadWrite \| FileShare.Delete` does not block another process replacing the answer | two processes on Windows |
-| Authenticode verification works on a file still named `.part`, before the move | the signer check on Windows |
+| Authenticode verification works on a file still named `.part`, before the move | `Autopilot.Windows.Tests` (built, not yet run on Windows) |
+| A cache-only check (`WTD_CACHE_ONLY_URL_RETRIEVAL`) still builds a chain whose root or intermediate Windows has not fetched yet, and a second `WinVerifyTrust` without revocation answers like the first apart from revocation | a check on a clean Windows install with an empty URL cache |
 
 ## Fixtures
 

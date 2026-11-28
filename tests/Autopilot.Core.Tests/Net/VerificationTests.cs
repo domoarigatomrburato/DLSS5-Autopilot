@@ -57,33 +57,6 @@ public sealed class VerificationTests(TestContext testContext)
     }
 
     [TestMethod]
-    public async Task A_file_not_signed_by_its_publisher_is_refused_and_never_cached()
-    {
-        using CacheBed bed = new CacheBed(testContext).Serve(CacheFixtures.Zip);
-        bed.Signatures.Answer(false);
-
-        NetException failure = await bed.DownloadFails(new SignerVerification("NVIDIA Corporation"));
-
-        Assert.AreEqual(VerificationProblem.NotSigned, ProblemOf(failure));
-        Assert.IsEmpty(bed.Files.Cached);
-    }
-
-    [TestMethod]
-    public async Task A_signed_file_in_the_cache_is_checked_again_and_fetched_again_when_it_fails()
-    {
-        using CacheBed bed = new CacheBed(testContext).Serve(CacheFixtures.Zip);
-        SignerVerification signer = new("NVIDIA Corporation");
-        bed.Signatures.Answer(true, false, true);
-        _ = await bed.Download(signer);
-
-        CachedFile again = await bed.Download(signer);
-
-        Assert.HasCount(3, bed.Signatures.Checked, "the download, the cached entry, the new download");
-        Assert.AreEqual(2, bed.Requests);
-        Assert.AreEqual(signer, again.VerifiedBy);
-    }
-
-    [TestMethod]
     public async Task An_unverified_download_is_kept_and_its_reason_logged()
     {
         using CacheBed bed = new CacheBed(testContext).Serve(CacheFixtures.Zip);
