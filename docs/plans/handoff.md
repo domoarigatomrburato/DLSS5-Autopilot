@@ -23,11 +23,10 @@ from this file.
 - The `nvngx_dlssnr.dll` digests behind `DlssnrPins` were measured in
   `~/coding/claude-lab/dlssnr-digests/results.md`.
 
-## Next: M4 sub-task g, then h
+## Next: M4 sub-task k, then g, then h
 
-Plan and order in `rewrite.md` (a → b1∥b2 → c → d → e∥f∥i → g → h → j).
-**Ask Ale first** the open question at the end of this section
-(Authenticode).
+Plan and order in `rewrite.md` (a → b1∥b2 → c → d → e∥f∥i → k → g → h → j).
+Ale moved the Windows Authenticode verifier from M5 into M4 (sub-task k).
 
 Where things are:
 
@@ -88,11 +87,6 @@ For g and h:
 - **h, wiring `DlssnrBuilds.ChooseAsync`:** on Auto, skip a pinned build
   whose `DlssnrPin.Sm` excludes the card before downloading it (165–276 MB
   each); today the fatbin is read after the download.
-- **Open, ask Ale before g:** the Windows Authenticode verifier behind
-  `ISignatureVerifier` is planned for M5, but M4's route plans already place
-  files checked by NVIDIA's signer (`dlss`, `dlssd`, `dlssg`, NVIDIA's own
-  `dlssnr` builds). Either it moves into M4, or M4's installs stay
-  test-only until M5 (real games are checked on Windows in M7 anyway).
 
 ## How we work (binding, besides AGENTS.md and the plan's Decisions)
 

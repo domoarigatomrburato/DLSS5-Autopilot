@@ -109,7 +109,8 @@ specified.
 - [x] **M1. Network and downloads** (spec: [net](../spec/net.md)): one HTTP
       path with retries, TLS, size limits, no downgrade, a download cache,
       and safe archive extraction. The Windows Authenticode verifier behind
-      `ISignatureVerifier` lands with M5, its first user.
+      `ISignatureVerifier` lands with M4 (sub-task k), whose route plans
+      place NVIDIA's signed files.
 - [x] **M2. Reading games.** PE files: architecture, imports and version
       resources, which decide the graphics API. The game library: Steam,
       Epic, GOG, EA, Ubisoft, Battle.net, Rockstar, Xbox, Amazon, Heroic,
@@ -159,15 +160,17 @@ specified.
         route's settings and option types;
   - [x] i. shared registrations (Vulkan, OpenXR) and the Windows graphics
         preference;
+  - [ ] k. the Windows Authenticode verifier behind `ISignatureVerifier`:
+        it reports whether Windows trusts the signature and who signed it,
+        not only yes or no (M7's self-update needs the signer); its tests
+        build everywhere and run on Windows;
   - [ ] g. route plans: the ReShade base, native, upstream, bridge, renodx;
   - [ ] h. route plans: feeder, standalone, uplift, optiscaler, remix, MFG;
   - [ ] j. the staleness check, the end-to-end tests (preview equals
         install, byte-for-byte survival, crash-point replay), one
         cross-cutting `/simplify`.
 - [ ] **M5. DLSS files kept current.** Every game's DLSS runtimes against
-      NVIDIA's newest; update and restore original. The Authenticode
-      verifier reports who signed and why a check failed, not only yes or
-      no (M7's self-update needs the signer).
+      NVIDIA's newest; update and restore original.
 - [ ] **M6. Diagnosis.** Logs to a verdict and a next step, driven by the
       report corpus: only the verdicts the corpus exercises; the bug-report
       text.
