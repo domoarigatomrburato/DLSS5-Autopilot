@@ -23,9 +23,26 @@ from this file.
 - The `nvngx_dlssnr.dll` digests behind `DlssnrPins` were measured in
   `~/coding/claude-lab/dlssnr-digests/results.md`.
 
-## Next: M4 sub-task g, then h
+## Next: finish M4 g1 (uncommitted), then g2, then h
 
 Plan and order in `rewrite.md` (a → b1∥b2 → c → d → e∥f∥i → k → g → h → j).
+g is split in two: **g1** (plan infrastructure, the ReShade base, native) and
+**g2** (upstream, bridge, renodx, DXVK, REFramework, the "route not offered"
+refusal, the bridge's ofa settings).
+
+**g1 sits uncommitted in the working tree** (40 paths, local only), gate
+green (2745 tests, 98.02%), fingerprint
+`2f32aa3b8e8dd7e37adafe56bca8433a596dae80`. Its brief is
+`docs/plans/brief-g1.md`. `/simplify` ran; its 21 fixes are **not applied
+yet**: they are `docs/plans/brief-g1-simplify.md`, ready for a fresh Opus
+implementer (the `lockf` path in both briefs points at an old scratchpad:
+replace it). Then: `/code-review` at high on the result, the gate, one commit
+"M4g1: route plans, the ReShade base and native", push, delete the two
+briefs. Open question from the fixes' implementer, item 11: keep
+`RefusalRequest`'s survey nullable (null for hand-built test plans), the
+likely answer. g1 also settled: the overlay key stays per game in
+`RouteSettings` (the app fills in its one global value, M7); the preview's
+plan names files with a `PendingSource`, which the transaction refuses.
 
 **Waiting on Windows:** `dotnet test --project tests/Autopilot.Windows.Tests`
 has been built but never run (it runs only on Windows). It checks the struct
