@@ -1,4 +1,4 @@
-# DLSS 5 Autopilot
+# Invidia Claritatis for NVIDIA RTX
 
 A Windows tool that sets up NVIDIA's DLSS 5 neural rendering in your games,
 checks that it works, and keeps every game's DLSS files current.
